@@ -392,7 +392,10 @@ class _ScenarioLLM:
                 return {"text": "Analyst evidence complete.", "tool_calls": [], "usage": {}}
             self.used.add("analyst")
             calls = []
-            if "list_shortfalls" in names:
+            if self.scenario == "sleeve_revision_conflict" and "release_gate_status" in names:
+                calls.append({"name": "release_gate_status", "arguments": {"part_id": "CMP-GAM-004"},
+                              "reason": "which sleeve revision may be released"})
+            elif "list_shortfalls" in names:
                 calls.append({"name": "list_shortfalls", "arguments": {}, "reason": "identify gaps"})
             if "get_readiness" in names:
                 calls.append({"name": "get_readiness", "arguments": {}, "reason": "read cited forecast"})
@@ -414,7 +417,17 @@ class _ScenarioLLM:
                 return {"text": "Planner result complete.", "tool_calls": [], "usage": {}}
             self.used.add("planner")
             calls = []
-            if "propose_option" in names:
+            if self.scenario == "sleeve_revision_conflict" and "escalate_to_human" in names:
+                calls.append({"name": "escalate_to_human",
+                              "arguments": {"role": "Marketing / Head of Procurement",
+                                            "reason": "Sleeve revision conflict is a human decision",
+                                            "evidence": []},
+                              "reason": "human gate"})
+            elif self.scenario == "air_lot_priority" and "packplan" in names:
+                calls.append({"name": "packplan",
+                              "arguments": {"changes": {"part_arrives_earlier": {"CMP-GAM-001": 12}}},
+                              "reason": "what-if earlier game card air lot"})
+            elif "propose_option" in names:
                 calls.append({"name": "propose_option",
                               "arguments": {"kind": "plan_b", "title": "Pending Plan B",
                                             "rationale": "Assumptions unknown; human approval required.",
@@ -460,7 +473,7 @@ def _scenario_team(db_path: str | Path, scenario: str) -> AgentTeam:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--scenario", choices=("art_book", "quality_hold", "german_notice"), required=True)
+    parser.add_argument("--scenario", choices=("art_book", "quality_hold", "german_notice", "sleeve_revision_conflict", "air_lot_priority"), required=True)
     parser.add_argument("--db", type=Path, default=Path("store/soony.db"))
     parser.add_argument("--fake", action="store_true")
     parser.add_argument("--live", action="store_true")
