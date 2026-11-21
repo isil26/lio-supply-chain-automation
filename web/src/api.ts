@@ -213,7 +213,7 @@ export interface DashboardApi {
   reviewDecision(id: string): Promise<{ ok: boolean; status?: string }>;
   sendThread(id: string): Promise<{ ok: boolean }>;
   approveReply(id: number): Promise<{ ok: boolean }>;
-  replyThread(id: string, text?: string, scenario?: "on-time" | "delayed"): Promise<{ ok: boolean }>;
+  replyThread(id: string, text?: string, scenario?: "on-time" | "delayed" | "complete"): Promise<{ ok: boolean }>;
   sync(): Promise<{ ok: boolean }>;
   getSource(path: string): Promise<string>;
   dismissDrop(): Promise<{ ok: true }>;
@@ -264,7 +264,7 @@ class HttpDashboardApi implements DashboardApi {
   approveReply(id: number) {
     return json<{ ok: boolean }>(`/api/reply-decisions/${id}/approve`, { method: "POST", body: "{}" });
   }
-  replyThread(id: string, text?: string, scenario?: "on-time" | "delayed") {
+  replyThread(id: string, text?: string, scenario?: "on-time" | "delayed" | "complete") {
     return json<{ ok: boolean }>(`/api/threads/${id}/demo-reply`, { method: "POST", body: JSON.stringify({ text, scenario }) });
   }
   sync() {

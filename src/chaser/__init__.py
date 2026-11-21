@@ -150,7 +150,7 @@ def draft_documents(con, truth, options):
     return created
 
 
-def send(con, chase_id, demo=False, *, managed=False):
+def send(con, chase_id, demo=False, *, managed=False, auto=False):
     schema(con)
     if not demo:
         from .mailenv import load_team_mail_env
@@ -168,13 +168,25 @@ def send(con, chase_id, demo=False, *, managed=False):
         chase = con.execute("SELECT * FROM chases WHERE id=?", (chase_id,)).fetchone()
         if not chase:
             raise ValueError("Only a current draft can be sent")
+        action = None
         if supplier_loop.managed(chase["supplier_id"], chase["material"]):
-            if (not managed or chase["status"] != "loop draft"
-                    or not supplier_loop.eligible_draft(con, chase_id, "demo" if demo else "live")):
+            if managed and chase["status"] == "loop draft":
+                action = supplier_loop.eligible_draft(con, chase_id, "demo" if demo else "live",
+                                                      (chase["supplier_id"], chase["material"]))
+            if not action:
                 raise ValueError("This case requires a current supplier-loop draft")
             from .guardrails import Guardrails
             if not Guardrails().validate_draft(chase["body"]).ok:
                 raise ValueError("Supplier-loop request failed the information-only check")
+            if auto and not demo:
+                from .autosend import _recent_addresses
+                canonical = parseaddr(chase["address"])[1].casefold()
+                recent = _recent_addresses(con, int(os.getenv("CHASER_AUTO_COOLDOWN_MIN", "30")), datetime.now(timezone.utc))
+                already_sent = con.execute("""SELECT 1 FROM messages m JOIN chases c ON c.id=m.chase_id
+                                             WHERE m.side='out' AND lower(c.address)=? AND m.body=? LIMIT 1""",
+                                           (canonical, chase["body"])).fetchone()
+                if canonical in recent or already_sent:
+                    raise ValueError("Supplier-loop dispatch is on cooldown or was already sent")
         elif chase["status"] != "draft":
             raise ValueError("Only a current draft can be sent")
         message_id = make_msgid(domain=parseaddr(sender)[1].split("@")[-1])
@@ -183,11 +195,15 @@ def send(con, chase_id, demo=False, *, managed=False):
             check_recipient(chase["address"])
         message["To"], message["Subject"], message["Message-ID"] = chase["address"], chase["subject"], message_id
         message["Date"] = format_datetime(datetime.now(timezone.utc))
+        if action and action.get("replyTo"):
+            message["In-Reply-To"] = action["replyTo"]
+            message["References"] = f'{action["originMessageId"]} {action["replyTo"]}'
         if not demo:
             message["X-Soony-Chaser"] = "1"
         message.set_content(chase["body"])
         envelope = {"from": str(message["From"]), "to": chase["address"], "subject": chase["subject"],
-                    "messageId": message_id, "mode": "dry_run" if demo else "smtp", "status": "attempting"}
+                    "messageId": message_id, "inReplyTo": str(message.get("In-Reply-To", "")),
+                    "mode": "dry_run" if demo else "smtp", "status": "attempting"}
         recorded_at = now()
         con.execute("""INSERT INTO messages(chase_id,external_id,side,sender,body,time,transport)
                        VALUES(?,?,?,?,?,?,?)""",
@@ -362,6 +378,10 @@ def list_threads(con, decision_states=None):
     for row in con.execute("SELECT * FROM chases ORDER BY CASE status WHEN 'reply to verify' THEN 0 WHEN 'draft' THEN 2 ELSE 1 END, qty DESC, supplier"):
         thread = dict(row)
         if thread["status"] == "draft" and supplier_loop.managed(row["supplier_id"], row["material"]):
+            thread["status"] = "superseded draft"
+        if thread["status"] == "loop draft" and not con.execute(
+            "SELECT 1 FROM supplier_loop_actions WHERE active=1 AND json_extract(payload,'$.dispatchThread')=?", (row["id"],)
+        ).fetchone():
             thread["status"] = "superseded draft"
         thread["messages"] = []
         dry_run_thread = False

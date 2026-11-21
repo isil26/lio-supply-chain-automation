@@ -4,6 +4,9 @@ from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 import re
+import sqlite3
+from contextlib import closing
+from pathlib import Path
 
 from src.decide.inbound import EXPEDITED_HANDLING_HOURS, POLICY
 from src.truth.sensitivity import counterfactual
@@ -19,15 +22,62 @@ AMOUNT = r"(\d{1,3}(?:[., \u00a0]\d{3})+|\d+)"
 MOQ = re.compile(rf"\b(?:minimum|MOQ|minimaln\w+)[^\n]{{0,100}}?\b{AMOUNT}\s*(?:units?|pcs?|pieces?|szt(?:\.|uk\w*)?)\b", re.I)
 BOOK_QUANTITY = re.compile(rf"\b(?:możemy|potwierdzamy,? że możemy)\s+zarezerwować\s+{AMOUNT}\b", re.I)
 PRICE = re.compile(r"\b(?:EUR\s*\d[\d .\u00a0,]*|\d[\d .\u00a0,]*\s+EUR)\b", re.I)
-SMALL_LOT = re.compile(r"\b(?:small[- ]lot|MOQ|minimum|minimaln\w+)\b", re.I)
+SMALL_LOT = re.compile(r"\b(?:small[- ]lot|MOQ|minimum|minimaln\w+|mał\w+ parti\w+)\b", re.I)
 LOT_PENDING = re.compile(r"\b(?:sprawdz\w*[^\n.]{0,90}|wróc\w* z potwierdzon\w*[^\n.]{0,90}|(?:checking|check)\s+(?:internally|whether|if)[^\n.]{0,90}|(?:will|shall)\s+(?:get back|confirm)[^\n.]{0,90})", re.I)
 LOT_DENIAL = re.compile(r"\b(?:cannot|can’t|can't|can not|unable to)\s+(?:offer|accept|supply|make an exception)[^\n.]{0,80}|\bnie (?:możemy|będziemy mogli)\s+(?:zaoferować|dostarczyć|zrealizować)[^\n.]{0,80}", re.I)
 ACCEPTED = {"dry_run", "smtp_accepted", "gmail_sent"}
 DOCS = {"invoice", "packing_list", "air_waybill"}
+SLOT = re.compile(r"^(?:receiving |dock )slot\s*:\s*(?:confirmed|reserved)\b[^\n]*", re.I | re.M)
+MESSAGE_ID = re.compile(r"<[^<>\s]+>")
 
 
 def managed(supplier, material):
     return (supplier, material) in CASES
+
+
+def import_verified(con, path):
+    """Feed the operational worker from the local, verified mailbox checkpoint."""
+    if not path or not Path(path).is_file():
+        return False
+    path = Path(path).resolve()
+    if any(db_path and Path(db_path).resolve() == path for _, _, db_path in con.execute("PRAGMA database_list")):
+        return False
+    try:
+        with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=5)) as history:
+            history.row_factory = sqlite3.Row
+            history.execute("BEGIN")
+            records = []
+            for pair in CASES:
+                sent, replies = _correspondence(history, *pair, "verified")
+                for record in [*[m for m in sent if m["envelope"].get("status") == "gmail_sent"], *replies]:
+                    records.append(record)
+    except sqlite3.OperationalError:
+        return False
+    with con:
+        con.execute("BEGIN IMMEDIATE")
+        for record in records:
+            thread = record["chase_id"]
+            if record["side"] == "in":
+                parent = con.execute("SELECT chase_id FROM messages WHERE external_id=? AND side='out'",
+                                     (record["parent"]["external_id"],)).fetchone()
+                if not parent:
+                    continue
+                thread = parent[0]
+            else:
+                con.execute("""INSERT OR IGNORE INTO chases
+                               (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,message_id)
+                               VALUES (?,?,?,?,?,?,'verified correspondence',?,?,?,?,?)""",
+                            (thread, record["supplier_id"], record["supplier"], record["address"], record["language"],
+                             record["subject"], record["material"], record["qty"], record["body"], record["deadline"],
+                             record["external_id"]))
+                bound = con.execute("SELECT supplier_id,material,lower(address) FROM chases WHERE id=?", (thread,)).fetchone()
+                if tuple(bound) != (record["supplier_id"], record["material"], record["address"].casefold()):
+                    continue
+            con.execute("""INSERT OR IGNORE INTO messages
+                           (chase_id,external_id,side,sender,body,time,parsed,transport) VALUES (?,?,?,?,?,?,?,?)""",
+                        (thread, record["external_id"], record["side"], record["sender"], record["body"], record["time"],
+                         record["parsed"], record["transport"]))
+    return True
 
 
 def schema(con):
@@ -52,18 +102,18 @@ def number(value):
 
 
 def _correspondence(con, supplier, material, scope):
-    mode = {"verified": "gmail", "demo": "dry_run", "live": "smtp"}[scope]
+    modes = {"verified": {"gmail"}, "demo": {"dry_run"}, "live": {"smtp", "gmail"}}[scope]
     out = []
     inbound = []
     sent = {}
     for row in con.execute("""
-        SELECT m.*, c.subject, c.qty, c.due_at
+        SELECT m.*, c.subject, c.qty, c.due_at, c.address, c.language, c.supplier, c.supplier_id, c.material, c.deadline
         FROM messages m JOIN chases c ON c.id=m.chase_id
         WHERE c.supplier_id=? AND c.material=? ORDER BY m.id
     """, (supplier, material)):
         envelope = json.loads(row["transport"] or "{}")
         item = {**dict(row), "envelope": envelope}
-        if row["side"] == "out" and envelope.get("mode") == mode:
+        if row["side"] == "out" and envelope.get("mode") in modes:
             out.append(item)
             if envelope.get("status") in ACCEPTED | {"attempting", "delivery_uncertain"}:
                 sent[row["external_id"]] = item
@@ -143,7 +193,7 @@ def _queue_email(con, scope, case, truth, supplier_id, material, *, shipment=Non
     """, (ref, supplier_id, contact["name"], address, lang, f"[SOONY-{ref}] {subject.format(**values)}",
           material, gap, body, truth["deadline"]))
     return _action(case, "information_request", title, "queued", "This request asks for information only.",
-                   thread=ref, dispatchThread=ref)
+                   thread=ref, dispatchThread=ref, routine=game)
 
 
 def _pending(case, sent, clock):
@@ -164,6 +214,70 @@ def _pending(case, sent, clock):
     return _action(case, "await_reply", "Wait for the matched supplier reply", "awaiting_reply",
                    "The request is recorded. The loop will evaluate the matching inbox reply.",
                    thread=thread, dispatchThread=thread, dueAt=due.isoformat())
+
+
+def _followup(con, scope, case, truth, reply, clock, missing=()):
+    """Stage one informational request using the matched sender and mail thread."""
+    from .guardrails import Guardrails
+
+    karton = case == "karton"
+    kind = "karton_status_followup" if karton else "customs_followup"
+    title = "Follow up on Karton’s exception" if karton else "Request the missing shipment details"
+    origin = reply["parent"]
+    ref = sha256(f"loop:{truth['deadline']}:{scope}:{kind}".encode()).hexdigest()[:10].upper()
+    current = con.execute("""SELECT m.*, c.due_at FROM messages m JOIN chases c ON c.id=m.chase_id
+                             WHERE c.id=? AND m.side='out' ORDER BY m.id DESC LIMIT 1""", (ref,)).fetchone()
+    if current:
+        if origin["external_id"] == current["external_id"]:
+            return _action(case, kind, title, "escalated", "The follow-up reply still needs Procurement review.",
+                           reply=reply, dispatchThread=ref, owner="Procurement", policy=POLICY)
+        pending = _pending(case, [{**dict(current), "envelope": json.loads(current["transport"] or "{}")}], clock)
+        return dict(pending, kind=kind, title=title, threadId=reply["chase_id"], replyId=reply["id"])
+    context = dict(reply=reply, owner="Procurement", policy=POLICY)
+    if scope == "verified":
+        return _action(case, kind, title, "approval_required",
+                       "Send one status check on this thread from an authorized operational mailbox. This mailbox view is read-only.",
+                       **context)
+    if not MESSAGE_ID.fullmatch(reply["external_id"]) or not MESSAGE_ID.fullmatch(origin["external_id"]):
+        return _action(case, kind, title, "escalated", "A transport Message-ID is required to send on the existing thread.", **context)
+    try:
+        address = check_recipient(origin["address"])
+        if address != reply["sender"].casefold():
+            raise PermissionError
+    except PermissionError:
+        return _action(case, kind, title, "escalated",
+                       "The matched address is not an authorized outbound recipient. Procurement must verify the contact.",
+                       **context)
+    if clock >= as_time(truth["deadline"]):
+        return _action(case, kind, title, "escalated", "The launch cut-off has passed. Review the open request internally.", **context)
+
+    labels = ", ".join(field.replace("_", " ") for field in missing)
+    if karton:
+        body = ("Dzień dobry,\n\nCzy mają już Państwo odpowiedź w sprawie wyjątku dla małej partii? "
+                "Prosimy o potwierdzoną ilość, cenę DAP do Hamburga i możliwe okno dostawy. "
+                "To wyłącznie zapytanie informacyjne.\n\nZespół Soony") if origin["language"] == "pl" else (
+                "Hello,\n\nIs there an update on the small-lot exception? Please confirm the quantity, DAP Hamburg price, "
+                "and delivery window. This is a request for information only.\n\nSoony launch team")
+    else:
+        ko = {"invoice": "상업송장", "packing_list": "포장명세서", "air_waybill": "항공운송장",
+              "time_zoned_eta": "시간대가 표시된 도착 예정 시각", "receiving_slot": "하역 가능 시간"}
+        if origin["language"] == "ko":
+            labels_ko = ", ".join(ko[field] for field in missing)
+            body = f"안녕하세요.\n\n{SHIPMENT} 운송 건을 확인 중입니다. 필요한 정보: {labels_ko}. 확인된 내용만 알려 주십시오. 이 메일은 정보 확인 요청입니다.\n\nSoony 출시 담당팀"
+        else:
+            body = f"Hello,\n\nFor {SHIPMENT}, please confirm the following outstanding details: {labels}. This is a request for information only.\n\nSoony launch team"
+    if not Guardrails().validate_draft(body).ok:
+        return _action(case, kind, title, "escalated", "The follow-up draft needs an information-only wording check.", **context)
+    subject = re.sub(r"^(?:re:\s*)+", "", origin["subject"], flags=re.I)
+    con.execute("""INSERT INTO chases
+                   (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
+                   VALUES (?,?,?,?,?,?,'loop draft',?,?,?,?)
+                   ON CONFLICT(id) DO UPDATE SET body=excluded.body,address=excluded.address,subject=excluded.subject
+                   WHERE chases.status='loop draft'""",
+                (ref, origin["supplier_id"], origin["supplier"], address, origin["language"], "Re: " + subject,
+                 origin["material"], origin["qty"], body, truth["deadline"]))
+    return _action(case, kind, title, "queued", "Queued one information-only follow-up on the matched mail thread.",
+                   dispatchThread=ref, replyTo=reply["external_id"], routine=True, **context)
 
 
 def _card(con, scope, truth, options, sent, replies, clock):
@@ -190,6 +304,9 @@ def _card(con, scope, truth, options, sent, replies, clock):
             plan = json.loads(reply["parsed"] or "{}")
             attachment_types = {a.get("kind") for a in plan.get("attachments", []) if not a.get("needs_review")}
             missing = sorted(DOCS - attachment_types)
+            slot = SLOT.search(reply["body"])
+            if not slot:
+                missing.append("receiving_slot")
             hours = EXPEDITED_HANDLING_HOURS
             args = {"trials": truth["model"]["runs"]}
             baseline = counterfactual(truth, {}, **args)["editions"]
@@ -202,7 +319,8 @@ def _card(con, scope, truth, options, sent, replies, clock):
                 "withDock": expedited[edition]["p50"],
                 "pBefore": base["probability"], "pAfter": revised[edition]["probability"],
             } for edition, base in baseline.items()]
-            context = dict(common, reply=reply, facts=[dates[0][0].strip()], eta=when.isoformat(), impact=impact)
+            context = dict(common, reply=reply, facts=[dates[0][0].strip(), *([slot[0]] if slot else [])],
+                           eta=when.isoformat(), impact=impact)
             if when + timedelta(hours=hours) >= cutoff or clock >= cutoff:
                 detail = ("The packing cut-off has passed." if clock >= cutoff else
                           "The reported arrival plus modeled dock handling reaches or crosses the packing cut-off.")
@@ -218,11 +336,17 @@ def _card(con, scope, truth, options, sent, replies, clock):
             detail = "Confirm the slot and customs release with the site lead. Forwarder fees and any booking require approval."
             if missing:
                 detail += " Still needed: " + ", ".join(word.replace("_", " ") for word in missing) + "."
-            return [_action("game_card", "approve_dock", "Queue PP-07 dock and customs review", "approval_required",
-                            detail, **context)]
-        return [_action("game_card", "verify_eta", "Verify the shipment ETA", "escalated",
-                        "The matched reply did not establish one time-zoned ETA. Verify the shipment reference and any conflicting reports.",
-                        reply=reply, **common)]
+            actions = [_action("game_card", "approve_dock", "Queue PP-07 dock and customs review", "approval_required",
+                               detail, **context)]
+            if missing:
+                actions.append(_followup(con, scope, "game_card", truth, reply, clock, missing))
+            return actions
+        actions = [_action("game_card", "verify_eta", "Verify the shipment ETA", "escalated",
+                           "The matched reply did not establish one time-zoned ETA. Verify the shipment reference and any conflicting reports.",
+                           reply=reply, **common)]
+        if len(same_date) == 1:
+            actions.append(_followup(con, scope, "game_card", truth, reply, clock, ["time_zoned_eta"]))
+        return actions
     pending = _pending("game_card", sent, clock)
     if pending:
         return [dict(pending, reference=SHIPMENT, cutoff=cutoff.isoformat())]
@@ -285,8 +409,8 @@ def _karton(con, scope, truth, options, sent, replies, clock):
                 facts.append(pending[0])
                 due_at = min(r["authored"] + timedelta(hours=2), as_time(truth["deadline"]))
                 if clock >= due_at:
-                    kind, title, status = "check_small_lot_exception", "Check the outstanding exception internally", "escalated"
-                    detail += " Procurement should check the existing thread before further outreach."
+                    decisions.append(_followup(con, scope, "karton", truth, r, clock))
+                    kind, title = "small_lot_exception_overdue", "Karton’s exception is still pending"
             else:
                 kind, title, status = "verify_small_lot", "Review the terms of Karton’s small-lot reply", "escalated"
                 detail += " Verify whether the supplier will make an exception before changing the plan."
@@ -308,15 +432,23 @@ def _karton(con, scope, truth, options, sent, replies, clock):
     return decisions
 
 
-def _write(con, scope, case, items, clock):
+def _last_inbound(con, pair):
+    return con.execute("""SELECT COALESCE(max(m.id),0) FROM messages m JOIN chases c ON c.id=m.chase_id
+                          WHERE c.supplier_id=? AND c.material=? AND m.side='in'""", pair).fetchone()[0]
+
+
+def _write(con, scope, pair, items, clock):
     from . import activity
 
+    case = CASES[pair]
     ids = []
+    reviewed_through = _last_inbound(con, pair)
     for item in items:
         key = [scope, case, item["kind"], item.get("threadId"), item.get("replyId")]
         action_id = sha256(json.dumps(key).encode()).hexdigest()[:16]
         previous = con.execute("SELECT payload FROM supplier_loop_actions WHERE id=?", (action_id,)).fetchone()
-        item.update(id=action_id, scope=scope, queuedAt=json.loads(previous[0])["queuedAt"] if previous else clock.isoformat())
+        item.update(id=action_id, scope=scope, reviewedThrough=reviewed_through,
+                    queuedAt=json.loads(previous[0])["queuedAt"] if previous else clock.isoformat())
         con.execute("""INSERT INTO supplier_loop_actions VALUES (?,?,?,1,?)
                        ON CONFLICT(id) DO UPDATE SET active=1,payload=excluded.payload
                        WHERE supplier_loop_actions.active=0 OR supplier_loop_actions.payload!=excluded.payload""",
@@ -332,6 +464,7 @@ def _write(con, scope, case, items, clock):
 def advance(con, truth, options, *, scope, clock=None, dispatch=True):
     """Evaluate durable messages on a worker cycle. The verified mailbox cannot dispatch."""
     from . import send
+    from .autosend import enabled
 
     if not truth:
         return
@@ -340,16 +473,15 @@ def advance(con, truth, options, *, scope, clock=None, dispatch=True):
         con.execute("BEGIN IMMEDIATE")
         for pair, evaluate in ((CARD, _card), (BOOK, _karton)):
             sent, replies = _correspondence(con, *pair, scope)
-            _write(con, scope, CASES[pair], evaluate(con, scope, truth, options, sent, replies, clock), clock)
-    if scope == "demo" and dispatch:
+            _write(con, scope, pair, evaluate(con, scope, truth, options, sent, replies, clock), clock)
+    if dispatch and (scope == "demo" or (scope == "live" and enabled())):
         for item in view(con, scope):
-            if item["status"] == "queued" and item.get("dispatchThread"):
+            if item["status"] == "queued" and item.get("dispatchThread") and (scope == "demo" or item.get("routine")):
                 try:
-                    send(con, item["dispatchThread"], demo=True, managed=True)
-                except ValueError:
-                    # The claim may already belong to another worker. Never reset it.
-                    if con.execute("SELECT status FROM chases WHERE id=?", (item["dispatchThread"],)).fetchone()[0] == "loop draft":
-                        raise
+                    send(con, item["dispatchThread"], demo=scope == "demo", managed=True, auto=True)
+                except (ValueError, PermissionError):
+                    # A claim or new reply may have won the race. Transport attempts remain in the outbox.
+                    continue
 
 
 def view(con, scope):
@@ -362,9 +494,10 @@ def view(con, scope):
         dispatch_thread, origin = item.get("dispatchThread"), item.get("originMessageId")
         if not dispatch_thread and not origin:
             continue
-        row = con.execute("""SELECT external_id,time,transport FROM messages WHERE side='out' AND
-                              (external_id=? OR chase_id=?) ORDER BY id DESC LIMIT 1""",
-                          (origin, dispatch_thread)).fetchone()
+        row = (con.execute("""SELECT external_id,time,transport FROM messages WHERE side='out' AND chase_id=?
+                              ORDER BY id DESC LIMIT 1""", (dispatch_thread,)).fetchone() if dispatch_thread else
+               con.execute("SELECT external_id,time,transport FROM messages WHERE side='out' AND external_id=?",
+                           (origin,)).fetchone())
         if not row:
             continue
         meta = json.loads(row["transport"] or "{}")
@@ -376,13 +509,16 @@ def view(con, scope):
     return sorted(actions, key=lambda item: order[item["status"]])
 
 
-def eligible_draft(con, chase_id, scope):
-    return any(item["status"] == "queued" and item.get("dispatchThread") == chase_id for item in view(con, scope))
+def eligible_draft(con, chase_id, scope, pair):
+    latest = _last_inbound(con, pair)
+    return next((item for item in view(con, scope) if item["status"] == "queued"
+                 and item.get("dispatchThread") == chase_id and item.get("reviewedThrough") == latest), None)
 
 
 def sample_card_reply(truth, scenario):
-    if scenario not in {"on-time", "delayed"} or not truth.get("shifts"):
-        raise ValueError("Choose an on-time or delayed demo reply")
+    if scenario not in {"on-time", "delayed", "complete"} or not truth.get("shifts"):
+        raise ValueError("Choose an on-time, complete, or delayed demo reply")
     cutoff = as_time(truth["shifts"][-1][1])
     when = cutoff + (timedelta(hours=3) if scenario == "delayed" else -timedelta(hours=7))
-    return f"Shipment {SHIPMENT}.\nRevised ETA: {when.isoformat(timespec='minutes')}"
+    slot = "\nReceiving slot: confirmed at 15:00 CET by the simulated carrier." if scenario == "complete" else ""
+    return f"Shipment {SHIPMENT}.\nRevised ETA: {when.isoformat(timespec='minutes')}{slot}"

@@ -56,3 +56,11 @@ Factors (each 0-1, source in brackets): on-time chance (stated ETA, adjusted by 
 **Reminders.** `python3 -m src.chaser.mail_agent remind [--save-drafts]`: wait before reminding = hours left / 6, between 2 and 12 h. Two reminders, then the feed says to call.
 
 **Attachments.** Replies' attachments are stored in `messages.parsed.attachments` (name, type, kind: air_waybill / bill_of_lading / packing_list / invoice / delivery_note, text from PDF or text files). Any recognised shipping document counts as the strongest proof. Unreadable files are flagged `needs_review`.
+
+## Game-card and Karton follow-ups
+
+In **Agents**, the supplier actions show the matched reply, dispatch or pending status, and any PP-07 review. The game-card loop sends one same-thread request for outstanding shipment details. A complete reply needs no such request. A reply that moves the lot beyond the packing cut-off blocks the stale dock recommendation and raises launch recovery for review.
+
+The Karton loop keeps the art-book offer separate from the small-lot exception. It waits two hours after a pending exception reply before requesting the status once on the existing thread. A firm denial routes to alternate sourcing review. The operational worker can read the verified mailbox checkpoint specified by `SOONY_MAIL_HISTORY_DB`. It reconciles those messages before evaluating outbound actions.
+
+Routine live email uses the existing `CHASER_REAL_SMTP` and `CHASER_AUTO_SEND` settings, allowlist, and cooldown. The Mac demo uses dry-run transport. The verified mailbox view and one-shot replay packaging never dispatch. Booking a slot and issuing a purchase order still need the relevant PP-07 approvals.
