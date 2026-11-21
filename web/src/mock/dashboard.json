@@ -21,7 +21,7 @@
   ],
   "threads": [
     {
-      "id": "boise",
+      "id": "supplier-a",
       "supplier": "Supplier A",
       "subject": "CE lid magnet — revised allocation",
       "status": "Awaiting reply",
@@ -32,7 +32,7 @@
       ]
     },
     {
-      "id": "karton",
+      "id": "supplier-b",
       "supplier": "Supplier B",
       "subject": "Production downtime and game boxes",
       "status": "Escalated",

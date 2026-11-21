@@ -41,7 +41,7 @@ function Countdown({ deadline }: { deadline: string }) {
 function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [dark, setDark] = useState(true);
-  const [threadId, setThreadId] = useState("boise");
+  const [threadId, setThreadId] = useState("supplier-a");
   const [dropVisible, setDropVisible] = useState(true);
   const [approved, setApproved] = useState(false);
 
