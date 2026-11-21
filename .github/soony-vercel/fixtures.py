@@ -27,8 +27,8 @@ def stage(source, fixture_dir):
         shutil.copyfile(fixture_dir / fictional, suppliers / original)
     replace(
         suppliers / "Offers.tsx",
-        '{example ? `What the 6 suppliers answered by email${data.as_of ? ` (${data.as_of})` : ""}.` : "What the suppliers answered by email."}',
-        '{example ? "Fictional offers for this example. Decisions stay in this browser." : "Offers from the latest supplier replies. The mail agent sends your decision."}',
+        '{example ? `Simulated supplier offers${data.as_of ? ` (${data.as_of})` : ""}. Decisions stay in this browser.` : "Review supplier quotes and request a nonbinding reservation. The authorized signer issues the purchase order."}',
+        '{example ? "Fictional offers for this example. Decisions stay in this browser." : "Review supplier quotes and request a nonbinding reservation. The authorized signer issues the purchase order."}',
     )
     offers = suppliers / "Offers.tsx"
     text, count = re.subn(
