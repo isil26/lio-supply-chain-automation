@@ -6,7 +6,10 @@ import sys
 from pathlib import Path
 
 
-FIXTURES = {"offers-sample.json": "offers-sample.json", "sample.json": "best-supplier-sample.json"}
+# Supplier offers use the tracked web fixture (real case suppliers by name and country; no contacts or
+# quotes): Gülşah asked for real names on the public site, 21 Nov 20:52. Best supplier stays fictional
+# and is hidden in the hosted build.
+FIXTURES = {"sample.json": "best-supplier-sample.json"}
 
 
 def replace(path, before, after):
@@ -25,22 +28,6 @@ def stage(source, fixture_dir):
     suppliers = source / "web/src/suppliers"
     for original, fictional in FIXTURES.items():
         shutil.copyfile(fixture_dir / fictional, suppliers / original)
-    replace(
-        suppliers / "Offers.tsx",
-        '{example ? `What the 6 suppliers answered by email${data.as_of ? ` (${data.as_of})` : ""}.` : "What the suppliers answered by email."}',
-        '{example ? "Fictional offers for this example. Decisions stay in this browser." : "Offers from the latest supplier replies. The mail agent sends your decision."}',
-    )
-    offers = suppliers / "Offers.tsx"
-    text, count = re.subn(
-        r"^const COUNTRY: Record<[\s\S]*?^function product[^\n]+",
-        "function country(d: Deal) { return d.supplier; }\n"
-        "function product(material: string) { return material; }",
-        offers.read_text(),
-        flags=re.MULTILINE,
-    )
-    if count != 1:
-        raise SystemExit("The supplier country and product lookups changed. Review the hosted substitutions.")
-    offers.write_text(text)
     replace(
         suppliers / "BestSupplier.tsx",
         '{example ? "Example with sample replies." : "From the latest supplier replies."} In live mode the mail agent sends these emails by itself, only to the case suppliers.',
@@ -77,7 +64,7 @@ def audit(repo, output):
         for marker in set(case_markers(raw)) - safe:
             if marker in bundle or json.dumps(marker, ensure_ascii=False)[1:-1] in bundle:
                 raise SystemExit("A case-derived supplier fixture value appears in the public bundle.")
-    for marker in ("Fictional offers for this example", "Fictional suppliers illustrate", "(unconfirmed)"):
+    for marker in ("Fictional suppliers illustrate", "(unconfirmed)", "Hwaseong Memory"):
         if marker not in bundle:
             raise SystemExit("The hosted fixture labels or cost note are missing.")
     allowed = {"app.html", "login.html", "index.cjs", "live.cjs", ".vc-config.json", "replay.enc"}
