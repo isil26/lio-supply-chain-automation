@@ -69,9 +69,12 @@ def main(argv=None):
         try:
             step()
             print(f"OK   {name}")
-        except (OSError, smtplib.SMTPException, imaplib.IMAP4.error) as exc:
+        except (smtplib.SMTPAuthenticationError, imaplib.IMAP4.error) as exc:
             ok = False
-            print(f"FAIL {name}: {exc.__class__.__name__}. Check the app password and that IMAP is on.")
+            print(f"FAIL {name}: login refused ({exc.__class__.__name__}). Check the app password and that IMAP is on.")
+        except (OSError, smtplib.SMTPException) as exc:
+            ok = False
+            print(f"FAIL {name}: cannot reach the mail server ({exc.__class__.__name__}). Check this machine's network.")
     print("Ready. Remember: the sender must be listed under Mail senders in the portal." if ok else "Not ready.")
     return 0 if ok else 1
 
