@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-22T00:38+01:00",
+ "generated_at": "2026-11-22T00:48+01:00",
  "generator": "overview-agent (scripts/overview.py)",
  "head": {
-  "sha": "47a71d2",
-  "subject": "Past actions tab (7 days, full details + reply); Review/repeat approve never sends [gülşah-agent]",
-  "when": "2026-11-22T00:34+01:00"
+  "sha": "dc241f9",
+  "subject": "Offers: 'What they said' in English with a one-line gist; tabs only for parts still short [gülşah-agent]",
+  "when": "2026-11-22T00:48+01:00"
  },
  "summary": {
   "agents": 73,
@@ -54,15 +54,15 @@
    "dirs": "scripts/overview.py, src/overview/, coord/AGENTS_OVERVIEW.md, coord/agents_overview.json",
    "notes": "Digest on main: coord/AGENTS_OVERVIEW.md + coord/agents_overview.json (newest STATUS row per agent, outdated/duplicate rows, unanswered INBOX, stale in_progress). Live page: `python3 scripts/overview.py --serve 8765`. Runs on Isil's laptop and refreshes the two files every 10 min while it is on. Read-only on all other files.",
    "status_line": 115,
-   "last_activity": "2026-11-22T00:27+01:00",
+   "last_activity": "2026-11-22T00:38+01:00",
    "last_activity_ago": "10 min ago",
    "last_commit": {
-    "sha": "d8add8e",
-    "when": "2026-11-22T00:27+01:00",
+    "sha": "592a7b5",
+    "when": "2026-11-22T00:38+01:00",
     "subject": "T78: refresh agents overview (73 agents, 6 in progress) [overview-agent]",
     "via_autosync": false
    },
-   "commits_total": 44,
+   "commits_total": 45,
    "board_tasks": [
     {
      "id": "T78",
@@ -96,7 +96,7 @@
    "notes": "GitHub push trigger and build passed in run 44940975860. Publishing awaits the project-scoped Vercel CI token. The five-minute release watch continues.",
    "status_line": 142,
    "last_activity": "2026-11-22T00:20+01:00",
-   "last_activity_ago": "17 min ago",
+   "last_activity_ago": "27 min ago",
    "last_commit": {
     "sha": "5b12754",
     "when": "2026-11-22T00:20+01:00",
@@ -157,7 +157,7 @@
    "notes": "Delegated to leo-claude (build) + gülşah-agent (taste) via INBOX 22:50.",
    "status_line": 152,
    "last_activity": "2026-11-21T22:50+01:00",
-   "last_activity_ago": "108 min ago",
+   "last_activity_ago": "118 min ago",
    "last_commit": {
     "sha": "f29b122",
     "when": "2026-11-21T22:20+01:00",
@@ -373,7 +373,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T15:51+01:00",
-   "last_activity_ago": "8 h 46 min ago",
+   "last_activity_ago": "8 h 56 min ago",
    "last_commit": {
     "sha": "596f79d",
     "when": "2026-11-21T15:51+01:00",
@@ -423,7 +423,7 @@
    "notes": "Worker requests expedited split quotes against uncovered need, tracks promised updates and routes approval requests. Buyer decisions and queued replies are checked against the current supplier terms.",
    "status_line": 141,
    "last_activity": "2026-11-21T20:59+01:00",
-   "last_activity_ago": "3 h 38 min ago",
+   "last_activity_ago": "3 h 49 min ago",
    "last_commit": {
     "sha": "71a7ffc",
     "when": "2026-11-21T20:59+01:00",
@@ -478,7 +478,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T20:46+01:00",
-   "last_activity_ago": "3 h 51 min ago",
+   "last_activity_ago": "4 h 01 min ago",
    "last_commit": {
     "sha": "4dd9067",
     "when": "2026-11-21T20:46+01:00",
@@ -509,7 +509,7 @@
    "notes": "`5cf4fbe` implementation. Protected local browser login, AI reasoning, supplier update and reload passed. Summary-only provenance at `f68cf1d`; original events awaiting source. codex-deploy owns protected preview and promotion.",
    "status_line": 113,
    "last_activity": "2026-11-21T17:43+01:00",
-   "last_activity_ago": "6 h 54 min ago",
+   "last_activity_ago": "7 h 05 min ago",
    "last_commit": {
     "sha": "f14798d",
     "when": "2026-11-21T17:43+01:00",
@@ -613,7 +613,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T23:01+01:00",
-   "last_activity_ago": "96 min ago",
+   "last_activity_ago": "107 min ago",
    "last_commit": {
     "sha": "da685cd",
     "when": "2026-11-21T23:01+01:00",
@@ -638,7 +638,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T22:04+01:00",
-   "last_activity_ago": "2 h 33 min ago",
+   "last_activity_ago": "2 h 43 min ago",
    "last_commit": {
     "sha": "63f2b5c",
     "when": "2026-11-21T22:04+01:00",
@@ -663,7 +663,7 @@
    "notes": "Boise confirms zero EU cards. Dongguan confirms zero Sunday statues from China. Pune will return a local inspection proposal Sunday morning CET. Zero additional cards committed or statues released.",
    "status_line": 130,
    "last_activity": "2026-11-21T20:40+01:00",
-   "last_activity_ago": "3 h 57 min ago",
+   "last_activity_ago": "4 h 08 min ago",
    "last_commit": {
     "sha": "c66eb57",
     "when": "2026-11-21T20:40+01:00",
@@ -698,7 +698,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T20:25+01:00",
-   "last_activity_ago": "4 h 12 min ago",
+   "last_activity_ago": "4 h 22 min ago",
    "last_commit": {
     "sha": "4bc58a5",
     "when": "2026-11-21T20:25+01:00",
@@ -723,7 +723,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T19:25+01:00",
-   "last_activity_ago": "5 h 12 min ago",
+   "last_activity_ago": "5 h 23 min ago",
    "last_commit": {
     "sha": "23221f3",
     "when": "2026-11-21T19:25+01:00",
@@ -748,7 +748,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T18:44+01:00",
-   "last_activity_ago": "5 h 53 min ago",
+   "last_activity_ago": "6 h 03 min ago",
    "last_commit": {
     "sha": "4552716",
     "when": "2026-11-21T18:44+01:00",
@@ -773,7 +773,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:47+01:00",
-   "last_activity_ago": "9 h 50 min ago",
+   "last_activity_ago": "10 h 01 min ago",
    "last_commit": {
     "sha": "7bae579",
     "when": "2026-11-21T14:47+01:00",
@@ -798,7 +798,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:46+01:00",
-   "last_activity_ago": "9 h 52 min ago",
+   "last_activity_ago": "10 h 02 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [],
@@ -966,15 +966,15 @@
    "dirs": "web/src/agents/AgentGraph.tsx, agentGraph.css",
    "notes": "New \"Agents at work\" card under Missing parts/Next step. Gülşah picked the graph. Live: polls runs+trace every 2 s, new runs replay from step 1. Hosted: replays /snapshot/agent_run.json in plain words. Old AgentTrace and Behind the scenes untouched. Build passes. Vercel needs a redeploy to show it.",
    "status_line": 107,
-   "last_activity": "2026-11-22T00:34+01:00",
-   "last_activity_ago": "3 min ago",
+   "last_activity": "2026-11-22T00:48+01:00",
+   "last_activity_ago": "0 min ago",
    "last_commit": {
-    "sha": "47a71d2",
-    "when": "2026-11-22T00:34+01:00",
-    "subject": "Past actions tab (7 days, full details + reply); Review/repeat approve never sends [gülşah-agent]",
+    "sha": "dc241f9",
+    "when": "2026-11-22T00:48+01:00",
+    "subject": "Offers: 'What they said' in English with a one-line gist; tabs only for parts still short [gülşah-agent]",
     "via_autosync": false
    },
-   "commits_total": 54,
+   "commits_total": 55,
    "board_tasks": [
     {
      "id": "T71",
@@ -1024,7 +1024,7 @@
    "notes": "Corrected live snapshot has 98,100 cards on hand, zero eligible inbound and a 6,800 gap. 500-run p50 639,100 STD / 66,100 CE. Focused browser replay recorded Felix’s simulated approval. 60 focused tests and the existing end-to-end demo passed.",
    "status_line": 154,
    "last_activity": "2026-11-22T00:25+01:00",
-   "last_activity_ago": "12 min ago",
+   "last_activity_ago": "22 min ago",
    "last_commit": {
     "sha": "2caf936",
     "when": "2026-11-22T00:25+01:00",
@@ -1057,7 +1057,7 @@
    "notes": "Boise enquiry AUTO under DEL-TEST-001. Dry-run transport and dock one-click passed in-process. Managed sandbox denies the loopback smoke test.",
    "status_line": 148,
    "last_activity": "2026-11-21T22:08+01:00",
-   "last_activity_ago": "2 h 29 min ago",
+   "last_activity_ago": "2 h 39 min ago",
    "last_commit": {
     "sha": "2086f64",
     "when": "2026-11-21T22:08+01:00",
@@ -1093,7 +1093,7 @@
    "notes": "Answer-first layout, one accent colour, map of suppliers/shipments/DC-HAM from data. AgentTrace kept inside Agents section. Vercel needs redeploy. 13 tests already failing on main before this (chaser etc.), none added.",
    "status_line": 91,
    "last_activity": "2026-11-21T21:01+01:00",
-   "last_activity_ago": "3 h 36 min ago",
+   "last_activity_ago": "3 h 47 min ago",
    "last_commit": {
     "sha": "472979a",
     "when": "2026-11-21T21:01+01:00",
@@ -1173,7 +1173,7 @@
    "notes": "Offline replay rejected an off-route actor and prepared the named site lead's review. Policy, mail, gateway and protected replay build checks passed.",
    "status_line": 146,
    "last_activity": "2026-11-21T21:00+01:00",
-   "last_activity_ago": "3 h 37 min ago",
+   "last_activity_ago": "3 h 48 min ago",
    "last_commit": {
     "sha": "9812014",
     "when": "2026-11-21T21:00+01:00",
@@ -1310,7 +1310,7 @@
    "notes": "Gmail IDLE listener active on the mail host. Initial reconciliation published three messages. Five-minute automation paused.",
    "status_line": 138,
    "last_activity": "2026-11-21T20:44+01:00",
-   "last_activity_ago": "3 h 53 min ago",
+   "last_activity_ago": "4 h 04 min ago",
    "last_commit": {
     "sha": "92d85b5",
     "when": "2026-11-21T20:44+01:00",
@@ -1351,7 +1351,7 @@
    "notes": "deals table (qty, unit price, EUR total, arrival, on-time chance, proof, incoterm, terms, MOQ, contract price, their words), best offer per part, Approve = PP-07 signer + non-binding reserve email, Decline = polite email; offer changes after a decision reset it to \"changed\". 73 chaser tests, web build, routes checked on a demo server.",
    "status_line": 127,
    "last_activity": "2026-11-21T20:20+01:00",
-   "last_activity_ago": "4 h 18 min ago",
+   "last_activity_ago": "4 h 28 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1417,7 +1417,7 @@
    "notes": "All 11 files read (launch_status, bom_delta, components_update, products day_one_qty/valid_from, supplier profile.json v2, components_delta, news json, CPO memo docx, org chart v2 valid_from, export-licence notice). Engine: packed/rates from launch_status (log shown in issues), snapshot stock minus parts of copies packed since (42,000 STD + 6,300 CE), 64,000 rev B sleeves out of usable stock, shifts start at Sat 13:00. Forecast unchanged: STD 614,650 / CE 62,550 p50, P=0%, first stop game card. Gaps 6,800 / 5,900 / 3,400 unchanged; STD sleeve 6,000 before Karton inbound (0 with 20,000). NUMBERS.md has the dated section; tests, drops, demo_check pass. No commit.",
    "status_line": 126,
    "last_activity": "2026-11-21T20:00+01:00",
-   "last_activity_ago": "4 h 38 min ago",
+   "last_activity_ago": "4 h 48 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1443,7 +1443,7 @@
    "notes": "Best subset ABCDF (Collector first, dock+customs, cases, art books, statues) base net about EUR 840k, cost EUR 31k. Rerun after engine refresh and Vogt L_STD confirmation. No commit.",
    "status_line": 125,
    "last_activity": "2026-11-21T19:46+01:00",
-   "last_activity_ago": "4 h 52 min ago",
+   "last_activity_ago": "5 h 02 min ago",
    "last_commit": {
     "sha": "5565430",
     "when": "2026-11-21T19:46+01:00",
@@ -1474,7 +1474,7 @@
    "notes": "Dock slot worth EUR 1.05M (EUR 376k on CE refunds alone); Collector's-first package +EUR 232k to 689k net; full save plan with the Boise lot by Sun 08:00 worth EUR 1.8M (EUR 1.08M CE only). Will refresh after T88.",
    "status_line": 34,
    "last_activity": "2026-11-21T19:30+01:00",
-   "last_activity_ago": "5 h 07 min ago",
+   "last_activity_ago": "5 h 17 min ago",
    "last_commit": {
     "sha": "edb0f23",
     "when": "2026-11-21T19:30+01:00",
@@ -1529,7 +1529,7 @@
    "notes": "Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests.",
    "status_line": 68,
    "last_activity": "2026-11-21T18:11+01:00",
-   "last_activity_ago": "6 h 26 min ago",
+   "last_activity_ago": "6 h 37 min ago",
    "last_commit": {
     "sha": "1ef645d",
     "when": "2026-11-21T18:11+01:00",
@@ -1562,7 +1562,7 @@
    "notes": "cited pure gate, CLI, read-only tool and GET /api/release-gate; focused tests pass",
    "status_line": 101,
    "last_activity": "2026-11-21T17:06+01:00",
-   "last_activity_ago": "7 h 32 min ago",
+   "last_activity_ago": "7 h 42 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1588,7 +1588,7 @@
    "notes": "Added deterministic categories/materiality, quote-checked optional LLM second pass, SQLite event_decisions persistence/dashboard query, 12 synthetic fixtures and eval; 4 tests pass, eval 12/12 categories and decisions, cost $0.00",
    "status_line": 92,
    "last_activity": "2026-11-21T16:52+01:00",
-   "last_activity_ago": "7 h 46 min ago",
+   "last_activity_ago": "7 h 56 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1614,7 +1614,7 @@
    "notes": "Added animated graph, event lane, stream replay, harness panel, human gate, counters and Present mode; normal/static builds pass",
    "status_line": 98,
    "last_activity": "2026-11-21T16:52+01:00",
-   "last_activity_ago": "7 h 46 min ago",
+   "last_activity_ago": "7 h 56 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [],
@@ -1634,7 +1634,7 @@
    "notes": "Added deterministic late-damage, price-drift, freight/DDP, leakage and LTA-renewal claims tables. 4 focused tests pass; no live LLM or secrets used. Nick to commit/push.",
    "status_line": 94,
    "last_activity": "2026-11-21T16:48+01:00",
-   "last_activity_ago": "7 h 50 min ago",
+   "last_activity_ago": "8 h 00 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1662,7 +1662,7 @@
    "notes": "Offline loop/harness tests pass (13), `scripts/demo_check.sh` passes. Live port 8794 verification is blocked in this session because loopback server startup requires interactive approval. No live cost incurred.",
    "status_line": 97,
    "last_activity": "2026-11-21T16:48+01:00",
-   "last_activity_ago": "7 h 50 min ago",
+   "last_activity_ago": "8 h 00 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1699,7 +1699,7 @@
    "notes": "Runtime dedupe, two-round triage, grounded claims, and briefer PP-07/numeric validation implemented; focused tests pass. No new live pass rate claimed.",
    "status_line": 85,
    "last_activity": "2026-11-21T16:30+01:00",
-   "last_activity_ago": "8 h 08 min ago",
+   "last_activity_ago": "8 h 18 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1727,7 +1727,7 @@
    "notes": "Background drop/reply/timer events, hash dedupe, SQLite runs/traces, harness status, manual run and stop APIs wired; targeted agent tests and offline demo pass.",
    "status_line": 79,
    "last_activity": "2026-11-21T16:25+01:00",
-   "last_activity_ago": "8 h 13 min ago",
+   "last_activity_ago": "8 h 23 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1755,7 +1755,7 @@
    "notes": "configured scans always use vision; printed/handwritten quantities stay separate and scans require review; 7 tests pass",
    "status_line": 76,
    "last_activity": "2026-11-21T16:22+01:00",
-   "last_activity_ago": "8 h 16 min ago",
+   "last_activity_ago": "8 h 26 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1781,7 +1781,7 @@
    "notes": "constructors, closed tools, multilingual schema, grounded brief, fake/live CLIs; 6 focused tests pass",
    "status_line": 80,
    "last_activity": "2026-11-21T16:18+01:00",
-   "last_activity_ago": "8 h 20 min ago",
+   "last_activity_ago": "8 h 30 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1812,7 +1812,7 @@
    "notes": "Live/recorded trace panel, API adapters, citations, harness badge, approvals, and static exporter complete; both builds pass",
    "status_line": 82,
    "last_activity": "2026-11-21T16:18+01:00",
-   "last_activity_ago": "8 h 20 min ago",
+   "last_activity_ago": "8 h 30 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1840,7 +1840,7 @@
    "notes": "Closed cited registry implemented; tool tests and CLI schema validation pass",
    "status_line": 57,
    "last_activity": "2026-11-21T16:13+01:00",
-   "last_activity_ago": "8 h 25 min ago",
+   "last_activity_ago": "8 h 35 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1866,7 +1866,7 @@
    "notes": "Added 30 s SQLite busy timeout/WAL, moved portal sync outside the cycle lock, added cycle/lock metrics and `/api/health`, and confirmed the header-only and duplicate-lot regressions.",
    "status_line": 54,
    "last_activity": "2026-11-21T16:06+01:00",
-   "last_activity_ago": "8 h 31 min ago",
+   "last_activity_ago": "8 h 41 min ago",
    "last_commit": {
     "sha": "cdf97bf",
     "when": "2026-11-21T16:06+01:00",
@@ -1899,7 +1899,7 @@
    "notes": "Live art-book run used gpt-4.1-mini: $0.057892, 130,117 input / 3,653 output tokens; two live passes, stopped at the ~100k-token run guard. Added auth fallbacks, valid tool protocols, retries, real usage cost, honest CLI failure, cassette export and redacted trace; fake draft and 11 agent tests pass.",
    "status_line": 64,
    "last_activity": "2026-11-21T16:02+01:00",
-   "last_activity_ago": "8 h 36 min ago",
+   "last_activity_ago": "8 h 46 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1927,7 +1927,7 @@
    "notes": "Added six role loaders, stable domain/data/policy/pitfall/negotiation/style packs, six few-shot traces, role cards and 5 passing knowledge tests. Private FINDINGS/CODEX files were absent; facts use the repository snapshot and PP-07 files.",
    "status_line": 66,
    "last_activity": "2026-11-21T15:57+01:00",
-   "last_activity_ago": "8 h 41 min ago",
+   "last_activity_ago": "8 h 51 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1955,7 +1955,7 @@
    "notes": "Added the Triage/Analyst/Verifier/Planner/Chaser team, closed role tool whitelists, verification gate, fake/live entrypoint and 3 focused scenarios. 13 agent tests pass; art-book, quality-hold and German-notice fake CLIs pass.",
    "status_line": 61,
    "last_activity": "2026-11-21T15:52+01:00",
-   "last_activity_ago": "8 h 46 min ago",
+   "last_activity_ago": "8 h 56 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1984,7 +1984,7 @@
    "notes": "Standard-library ReAct loop, closed/schema-checked tools, budgets/timeouts, SQLite trace/activity, approval gate, Team blackboard/mailbox, HTTP + FakeLLM + cassette replay; tests pass",
    "status_line": 56,
    "last_activity": "2026-11-21T15:46+01:00",
-   "last_activity_ago": "8 h 52 min ago",
+   "last_activity_ago": "9 h 02 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -2012,7 +2012,7 @@
    "notes": "Added six language-aware personas, private hidden state, LLM/FakeLLM replies, attachment hooks and demo CLI. Focused 4-test suite passes.",
    "status_line": 58,
    "last_activity": "2026-11-21T15:46+01:00",
-   "last_activity_ago": "8 h 52 min ago",
+   "last_activity_ago": "9 h 02 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -2038,7 +2038,7 @@
    "notes": "Shared JSON/schema client, quote validation, disk cache, per-cycle budget and JSONL cost/latency log ship. Providers and reply parsing use fallback-safe glue. 36 focused tests pass; live check correctly reports no configured model.",
    "status_line": 55,
    "last_activity": "2026-11-21T15:43+01:00",
-   "last_activity_ago": "8 h 55 min ago",
+   "last_activity_ago": "9 h 05 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -2066,7 +2066,7 @@
    "notes": "Tested 489d0cc on the private post-drop snapshot. The default dashboard matches the published cutoff, trial count and edition figures. Historical supplier delays are labeled as sensitivity.",
    "status_line": 47,
    "last_activity": "2026-11-21T15:35+01:00",
-   "last_activity_ago": "9 h 02 min ago",
+   "last_activity_ago": "9 h 12 min ago",
    "last_commit": {
     "sha": "544eb90",
     "when": "2026-11-21T15:35+01:00",
@@ -2097,7 +2097,7 @@
    "notes": "Implemented reply commitment scoring (0-3), multilingual R1 templates, send-time draft disclosure guardrails, and persisted R0-R4 escalation state. 12 chaser tests pass.",
    "status_line": 40,
    "last_activity": "2026-11-21T15:30+01:00",
-   "last_activity_ago": "9 h 07 min ago",
+   "last_activity_ago": "9 h 18 min ago",
    "last_commit": {
     "sha": "ee01397",
     "when": "2026-11-21T15:30+01:00",
@@ -2130,7 +2130,7 @@
    "notes": "Added Vercel static replay fallback, localStorage state, drop/review/approve/send/reply/reset controls, snapshot badge and static evidence; live API remains intact.",
    "status_line": 30,
    "last_activity": "2026-11-21T15:16+01:00",
-   "last_activity_ago": "9 h 22 min ago",
+   "last_activity_ago": "9 h 32 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -2163,7 +2163,7 @@
    "notes": "Calibration, paired sensitivity, Plan B and CLI complete. Six focused tests and 40 repo tests pass. Live 500-trial CLI takes under a second.",
    "status_line": 27,
    "last_activity": "2026-11-21T15:08+01:00",
-   "last_activity_ago": "9 h 29 min ago",
+   "last_activity_ago": "9 h 39 min ago",
    "last_commit": {
     "sha": "da78e91",
     "when": "2026-11-21T15:08+01:00",
@@ -2194,7 +2194,7 @@
    "notes": "Built docs/deck/index.html (6 slides, keyboard nav, 16:9, print CSS, inline SVG, dark design system), SPEAKER_NOTES.md, and README.md. Uses only frozen NUMBERS.md figures.",
    "status_line": 16,
    "last_activity": "2026-11-21T14:54+01:00",
-   "last_activity_ago": "9 h 44 min ago",
+   "last_activity_ago": "9 h 54 min ago",
    "last_commit": {
     "sha": "e979a50",
     "when": "2026-11-21T14:54+01:00",
@@ -2225,7 +2225,7 @@
    "notes": "Live UI, real file drop, dry-run send, simulated reply and approval verified in browser. Deck and narrated MP4 delivered privately.",
    "status_line": 18,
    "last_activity": "2026-11-21T14:44+01:00",
-   "last_activity_ago": "9 h 54 min ago",
+   "last_activity_ago": "10 h 04 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -2317,7 +2317,7 @@
    "notes": "SQLite state/approval gate, KO/ZH/PL/EN drafts, mock inbox/CLI, deterministic reply parser, dry-run and gated SMTP; 7 unit tests pass",
    "status_line": 11,
    "last_activity": "2026-11-21T14:16+01:00",
-   "last_activity_ago": "10 h 22 min ago",
+   "last_activity_ago": "10 h 32 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -2679,7 +2679,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T22:05+01:00",
-   "last_activity_ago": "2 h 32 min ago",
+   "last_activity_ago": "2 h 43 min ago",
    "last_commit": {
     "sha": "2a87588",
     "when": "2026-11-21T22:05+01:00",
@@ -2704,14 +2704,14 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:46+01:00",
-   "last_activity_ago": "9 h 51 min ago",
+   "last_activity_ago": "10 h 02 min ago",
    "last_commit": {
     "sha": "bdea665",
     "when": "2026-11-21T14:46+01:00",
     "subject": "T8: frozen number set; claim T9/T10",
     "via_autosync": false
    },
-   "commits_total": 6,
+   "commits_total": 4,
    "board_tasks": [],
    "board_open": [],
    "open_status_rows": [],
@@ -2867,6 +2867,18 @@
  ],
  "recent_commits": [
   {
+   "sha": "dc241f9",
+   "agent": "gülşah-agent",
+   "when": "2026-11-22T00:48+01:00",
+   "subject": "Offers: 'What they said' in English with a one-line gist; tabs only for parts still short [gülşah-agent]"
+  },
+  {
+   "sha": "592a7b5",
+   "agent": "overview-agent",
+   "when": "2026-11-22T00:38+01:00",
+   "subject": "T78: refresh agents overview (73 agents, 6 in progress) [overview-agent]"
+  },
+  {
    "sha": "47a71d2",
    "agent": "gülşah-agent",
    "when": "2026-11-22T00:34+01:00",
@@ -2943,18 +2955,6 @@
    "agent": "gülşah-agent",
    "when": "2026-11-21T23:44+01:00",
    "subject": "Offers buttons ask for the reviewer instead of greying out; thread links stay on the page [gülşah-agent]"
-  },
-  {
-   "sha": "e5bc7d6",
-   "agent": "codex-deploy",
-   "when": "2026-11-21T23:36+01:00",
-   "subject": "T86: Record verified Manti Live supplier proxy release [codex-deploy]"
-  },
-  {
-   "sha": "2fb3d65",
-   "agent": "overview-agent",
-   "when": "2026-11-21T23:34+01:00",
-   "subject": "T78: refresh agents overview (73 agents, 6 in progress) [overview-agent]"
   }
  ],
  "rules": "STATUS/TASKS: last row wins. 'answered' = addressee later wrote back to sender. Stale = in_progress, no activity for 90 min."
