@@ -248,6 +248,39 @@
       ],
       "body_content_type": "text/plain",
       "body": "Hello Soony Launch Team,\n\nWe can confirm 5,000 units of CMP-GAM-010 in shipment NHMU8536079, planned to arrive in Hamburg on 28 November 2026.\n\nThe agreed unit price is INR 1,037 per unit FOB Nhava Sheva. There is no agreed delivered unit price to Hamburg.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:27:54+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<soony-sunday-recovery-pune-weekend-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": null,
+      "in_reply_to": "<010201a1ff86aeab-fdd66e34-42b5-46d9-aee3-9d5966e9fe18-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528819647.18044.5881382759931943000@gmail.com>",
+        "<010201a1ff86aeab-fdd66e34-42b5-46d9-aee3-9d5966e9fe18-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Rohan,\n\nThank you for confirming the 28 November sea shipment. Our Sunday request concerns the separate 5,600 statues already at DC-HAM, GR 5000413063 on PO 4500318727.\n\nYour offer to arrange the local inspection or fund the site team is our first choice. If the ordinary crew cannot cover Sunday in time, could a second inspector or weekend shift start earlier? As a fallback, we would consider a flat EUR 2,800 weekend supplement for additional qualified staff if the extra shift gives Hamburg a materially earlier batch for packing. Please show the time and throughput under your funded arrangement alongside the earlier time, first and cumulative batch sizes, and total incremental charges for the extra shift. Please quote for the inspection work itself, independently of how many pieces pass.\n\nOur incoming findings and request for the controlled finish reference are in the prior email. Can your quality partner provisionally hold the earliest available start at no cost while Quality reviews the inspection method? If so, please give the partner, slot, expiry and case reference. We need individually inspected batches for possible line handoff by Sunday 16:00 CET.\n\nThese are nonbinding terms for a quote. Please wait for separate written instructions before incurring any charges or starting work. Soony Quality will decide release of conforming batches.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:31:05+00:00",
+      "from": "Rohan Deshmukh <rohan.d.pune-diecast@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff9740d5-03f84d3a-5813-4e0f-a059-6cb2ed272af5-000000@eu-west-1.amazonses.com>",
+      "chase_id": null,
+      "in_reply_to": "<soony-sunday-recovery-pune-weekend-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179528819647.18044.5881382759931943000@gmail.com>",
+        "<010201a1ff86aeab-fdd66e34-42b5-46d9-aee3-9d5966e9fe18-000000@eu-west-1.amazonses.com>",
+        "<soony-sunday-recovery-pune-weekend-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nUnderstood; this concerns the separate 5,600-unit lot under PO 4500318727 already at DC-HAM. We are checking urgently with our quality contacts for the earliest weekend slot, including whether a second inspector or additional shift can improve the first and cumulative inspected batches.\n\nAt present I cannot confirm a partner, slot hold, throughput, incremental supplement, inspection cost or case reference. We will also retrieve the PPAP finish reference, lot traceability and a proposed screening instruction for Soony Quality review.\n\nPune is prepared to consider funding third-party sorting or documented site actuals, but any arrangement and cost must be agreed under your separate written instruction. I will revert with our confirmed proposal by tomorrow morning CET.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
     }
   ]
 }

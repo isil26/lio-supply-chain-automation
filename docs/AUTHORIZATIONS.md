@@ -4,6 +4,8 @@ On 21 November the team reported a follow-up conversation with Dr. Maren Vogt. S
 
 PP-07 §2 defines the value limit per PO. Record the actual order and its reference when issued. The dock, monthly category air-freight and quality-release requirements also apply. The team can contact suppliers by email for this recovery.
 
+The team authorizes offering premiums for stock or services that increase expected profit. Compare each written quantity and Hamburg packing-line time with the best available alternative. Deduct every incremental cost, including a replacement purchase, freight, duties, dock fees, sorting and complementary parts as applicable. A premium must leave both positive incremental expected contribution and a positive contribution on the recovered sale. Use the [profit model](PROFIT_PLAN.md), count sunk costs only once and keep the internal break-even price private. Firm orders still require their normal signers.
+
 | Action | Approver per PP-07 / org chart |
 |---|---|
 | Dock slot at Hamburg | Site lead Katrin Jansen (deputy Raj Patel) |

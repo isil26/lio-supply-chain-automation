@@ -4,6 +4,8 @@
 
 On 21 November the team reported that Dr. Maren Vogt will approve launch recovery spending below EUR 2,000,000. Keep this guidance internal when seeking supplier quotes. A specific PO, freight booking, dock slot and quality release each need their own evidence. For the current recovery, external outreach is limited to supplier email.
 
+Premiums may be offered for a verifiable improvement in usable quantity or packing-line arrival time. Compare with the best feasible alternative using the repo profit model (docs/PROFIT_PLAN.md and scripts/profit_model.py). Include the probability of finishing additional copies, any displaced copies, and all incremental costs. Include complementary parts where needed and avoid charging sunk costs twice. Preserve positive expected incremental contribution and positive margin on the recovered units. Keep internal ceilings private. An indicative offer needs a specific quantity, deadline and terms, with a separate approval before booking. An option that recovers zero launch copies carries zero launch premium.
+
 ## PP-07 limits
 - Buyer may approve one purchase order below EUR 50,000.
 - Category Lead may approve below EUR 500,000.
