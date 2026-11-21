@@ -1,0 +1,34 @@
+{
+  "scenario": "art_book",
+  "mode": "live",
+  "model": "gpt-4.1-mini",
+  "cost_usd": 0.057892,
+  "input_tokens": 130117,
+  "output_tokens": 3653,
+  "hallucinated_numbers": 0,
+  "email_sent": false,
+  "delegations": [
+    "analyst",
+    "verifier",
+    "planner",
+    "chaser"
+  ],
+  "summary": {
+    "triage_status": "completed",
+    "analyst_status": "completed",
+    "verifier_status": "completed",
+    "planner_status": "completed",
+    "chaser_status": "completed",
+    "art_book_shortfall": 5900,
+    "required_ce_art_books": 25200,
+    "usable_stock": 19300,
+    "receipt_discrepancy": {
+      "document": "WZ-261116-473",
+      "sap_quantity": 80000,
+      "handwritten_quantity": 8000
+    },
+    "pending_approvals": true,
+    "supplier_email_sent": false
+  },
+  "trace_note": "Full live activity and cassette request/response pairs are stored locally; this export contains no API keys or authorization headers."
+}

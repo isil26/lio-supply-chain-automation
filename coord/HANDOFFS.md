@@ -1,5 +1,14 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T38b — Live multi-agent path (copilot-live)
+
+- Fixed live auth fallback across `SOONY_LLM_KEY`, `SOONY_LLM_API_KEY`, and `OPENAI_API_KEY`; OpenAI/Anthropic tool-call history now preserves parallel call IDs and tool-result protocol, with 30-second timeouts and one retry for 429/5xx.
+- Added gpt-4.1-mini usage-price accounting, trace/cassette secret redaction, and hard `NO LIVE MODEL RAN` CLI failure when the live path errors. The only scripted path is `--fake`.
+- Recorded/replayed the `art_book` live trace with real tool calls. Export: `docs/agent_runs/art_book_live.json` and `docs/agent_runs/README.md`.
+- Art-book live cost: `$0.057892`; 130,117 input and 3,653 output tokens across the final run. Two live passes were used; stopped after the final pass exceeded the ~100k preferred input threshold.
+- Offline validation passes the supplier-language draft and approval state. Observed hallucinated numeric values: 0.
+- Validation: `python3 -m unittest tests.test_agents_runtime tests.test_agents_team tests.test_agents_tools` (11 tests pass); `python3 -m src.agents.team --scenario art_book --fake` passes.
+
 ## T46 — Guard harness and golden evals (copilot-harness)
 
 - Added `src/agents/harness.py` with pure-Python numeric grounding, citation, PP-07 policy, stop/oscillation and supplier-language guards; `evaluate()` returns an aggregate report.

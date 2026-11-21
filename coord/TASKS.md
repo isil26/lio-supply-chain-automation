@@ -52,11 +52,15 @@ More unclaimed work: see coord/OPEN_TASKS.md (T19-T31). Claim by copying the row
 | T43 | Test runs with a real API: scripted scenarios (art-book shortfall, quality hold, game-card short-ship, unseen German notice), run each 3-5 times, record cassettes, measure success rate, tool-call correctness, hallucinated numbers (must be 0), cost and latency; report in docs/AGENT_EVAL.md | open P1 | tests/agent_eval/, docs/AGENT_EVAL.md | T40, API key |
 | T44 | UI: multi-agent trace view (who called which tool and why, hand-offs between agents, approvals waiting) in React + standalone page | open P2 | web/ | T38 trace format |
 | T42 | (taken) Simulated supplier agents | copilot-sim | src/agents/suppliers_sim.py | done P1 | T38 done; deterministic fallback and demo CLI verified |
-| T38b | Make the live agent path real: auth env names, valid OpenAI/Anthropic tool-calling protocol, honest errors (no silent scripted fallback), cost accounting, first successful live run recorded to cassettes + docs/agent_runs/ | copilot-live | src/agents | in_progress P1 | T38, T39, T40 |
+| T38b | Make the live agent path real: auth env names, valid OpenAI/Anthropic tool-calling protocol, honest errors (no silent scripted fallback), cost accounting, first successful live run recorded to cassettes + docs/agent_runs/ | copilot-live | src/agents | done P1 | T38, T39, T40 |
 | T45 | Project knowledge pack per role (domain, data map, policy, pitfalls, negotiation, style, few-shot examples) + role cards docs/AGENT_ROLES.md; loader load_pack(role); no computed numbers in the pack | copilot-know | src/agents/knowledge, docs/AGENT_ROLES.md | done P1 | - |
 | T46 | Guard harness: numeric grounding, citation check, PP-07 policy check, stop/oscillation check, language check, golden eval scenarios + report docs/AGENT_EVAL.md (merges with T43) | copilot-harness | src/agents/harness.py, tests/agent_eval | done P1 | T40 |
 | T47 | Wire pack + harness into prompts/runtime: agents load their pack, every run is evaluated by the harness, violations block proposals and show in UI | open P1 | src/agents | T45, T46, T38b |
 | T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | done | T19-Vercel |
+| T47 | Wire pack + harness into prompts/runtime: agents load their pack, every run is evaluated by the harness, violations block proposals and show in UI | open P1 | src/agents | T45, T46, T38b |
+| T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | in_progress | T19-Vercel |
+| T47 | Wire pack + harness into prompts/runtime: agents load their pack, every run is evaluated by the harness, violations block proposals and show in UI | copilot-wire in_progress P1 | src/agents | T45, T46, T38b |
+| T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | in_progress | T19-Vercel |
 
 Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T50 | (assigned by nick) | codex-overseer | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
