@@ -39,10 +39,20 @@ Then start the app as usual (`python3 -m src.orchestrator --online`). In the con
 - First real send: one supplier, one approved email, check the Gmail "Sent" folder, then wait for the reply to arrive in the inbox.
 - Tests: `python3 -m unittest src.chaser.test_allowlist src.chaser.test_chaser` (needs `data/`, e.g. `cp -R case-data data`). Tests never send real mail.
 
-## Compare suppliers and negotiate (T74)
-`python3 -m src.chaser.mail_agent compare` reads the latest reply in every supplier thread and ranks the suppliers per material:
-- most weight: chance to arrive before the cut-off (history-adjusted with `src/decide/reliability.py` when the store has enough history) times how much of the need it covers;
-- then landed unit price (converted to EUR with the assumed rates printed under the ranking; override with `CHASER_FX_EUR="USD=0.92,CNY=0.13"`);
-- then evidence (none, date, date + quantity, shipping document).
+## Best supplier, split orders, negotiation, reminders, attachments (T74-T77)
+Code: `src/chaser/negotiate.py` (model), `src/chaser/supplier_facts.py` (case-file facts), `src/chaser/followup.py` (reminders, attachments). Control room card: `web/src/suppliers/BestSupplier.tsx` via `GET /api/suppliers/best`; its button calls `POST /api/suppliers/drafts`, which only creates drafts.
 
-For the pick it proposes a target price: the cheapest other on-time quote if lower, otherwise 5% below its own quote. `--save-drafts` stores a polite price-review email (EN/PL/KO/ZH) as a normal draft, so it waits in the control room until a person sends it. The email never names other suppliers, a maximum price or deadline slack (guardrails), and never commits to an order. A price a supplier accepts is still a quote until procurement approves it under PP-07.
+**Adaptive model.** Per material it first reads the situation:
+- *time pressure* (0-1): hours to the cut-off (4 days out = 0) and how little slack the offers leave;
+- *price spread* (0-1): how far apart the offered prices are (25% apart or more = 1).
+It then shifts the weights: time pressure adds weight to on-time chance, delivery buffer, shipping/customs risk and approval status; price spread adds weight to price and payment terms. Mode is reported as time-critical, cost-critical or balanced. Offers under a minimum on-time chance (30%, rising to 70% under full time pressure) are backups only.
+
+Factors (each 0-1, source in brackets): on-time chance (stated ETA, adjusted by `src/decide/reliability.py` PO history when available), quantity covered (reply), price in EUR (reply; FX assumed, `CHASER_FX_EUR`), delivery buffer (p90 ETA vs cut-off), proof (none/date/date+qty/shipping document or attachment), reply speed (message times), track record (PO history), shipping and customs risk (profile.csv incoterm + country outside EU), approval status (profile.csv qualification_status; conditional = PP-07 release), minimum order (components.csv moq), payment terms (profile.csv payment_terms), single-supplier dependence (components.csv primary + master critical flag).
+
+**Split orders.** If no eligible supplier covers the need, the best eligible ones are combined; uncovered units are reported.
+
+**Negotiation levers** per picked supplier: price (anchor = agreed contract price from components.csv if the offer is above it, else the cheapest other on-time offer, else 5-10% depending on price spread), earlier delivery and an early partial shipment (buffer under 24 h), free express (time-critical), smaller minimum order (need below MOQ). EN/PL/KO/ZH, guardrail-checked, saved as drafts.
+
+**Reminders.** `python3 -m src.chaser.mail_agent remind [--save-drafts]`: wait before reminding = hours left / 6, between 2 and 12 h. Two reminders, then the feed says to call.
+
+**Attachments.** Replies' attachments are stored in `messages.parsed.attachments` (name, type, kind: air_waybill / bill_of_lading / packing_list / invoice / delivery_note, text from PDF or text files). Any recognised shipping document counts as the strongest proof. Unreadable files are flagged `needs_review`.

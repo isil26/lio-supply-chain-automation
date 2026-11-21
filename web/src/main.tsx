@@ -13,6 +13,7 @@ import {
 } from "./api";
 import { AgentTrace } from "./agents/AgentTrace";
 import { AgentGraph } from "./agents/AgentGraph";
+import { BestSupplier } from "./suppliers/BestSupplier";
 import { MantiLogo, SupplyMap } from "./SupplyMap";
 import { BehindScenes } from "./BehindScenes";
 import "./styles.css";
@@ -294,6 +295,8 @@ function App() {
       </div>
 
       <AgentGraph onEvidence={setSource}/>
+
+      <BestSupplier/>
 
       {data.network && data.network.suppliers.length > 0 && <section className="card map-card">
         <h3>Supply network</h3>

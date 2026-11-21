@@ -276,6 +276,12 @@ def receive(con, message, *, simulated=False, matched_thread_id=None):
             from .reply_plan import plan_reply
 
             fields = parse_reply(body)
+            try:
+                from .followup import attachment_evidence
+                if attachments := attachment_evidence(message):
+                    fields["attachments"] = attachments
+            except Exception:  # attachment reading must never block a reply
+                pass
             plan = plan_reply(get_state(con, "truth", {}), chase, body,
                               options=get_state(con, "options", []), simulated=simulated)
             plan["id"] = hashlib.sha256(f'reply:{chase["id"]}:{message_id}'.encode()).hexdigest()[:16]
