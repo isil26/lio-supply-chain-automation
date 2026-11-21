@@ -415,3 +415,16 @@ Revision facts were already extracted from OC footers (B at PackRight, C at Kart
 ## T93-Mail-Sync — automatic archive updates (codex-mail-archive)
 
 - The Codex automation checks the team mailbox every five minutes while the host is available. The [sync script](../scripts/sync_supplier_email_archive.py) uses read-only Gmail access and a dedicated checkout. It confirms the GitHub destination is private, appends newly verified messages by Message-ID, and pushes only the archive directory. The operator can run it against the live backend state without `--publish` to check for new mail.
+
+## T81-Supplier-Rescue · 21 November, 20:16 CET
+
+The team reports that Dr. Maren Vogt will approve recovery spending below EUR 2 million. The guidance is in the shared authorization notes and internal agent knowledge. All inquiries went to verified suppliers by email; financial ceilings stayed internal.
+
+| Sunday requirement | Matched supplier result | What can count |
+|---|---|---|
+| 6,800 programmed cards in addition to the air lot | Hwaseong could offer no earlier uplift of the 20,000 balance and no qualified European programming or reallocable stock. Boise ruled out its premium split by 18:30 CET and has no released European stock. A separate Boise partner-programming question was sent at 20:08 CET. | 0 additional cards committed. The 70,100 on hand plus 28,000 supplier-reported flown for 104,900 remaining copies leaves at least 6,800 uncovered even if the entire air lot reaches the line. Hwaseong’s next 20,000 are expected in Hamburg on 24 November. |
+| 3,400 released statues for Collector’s | Dongguan confirmed zero Sunday supply. Pune offered to arrange a 100% sort of receipt 5000413063 (5,600 on hold), or fund the site team, subject to written instruction. It has no existing signed disposition. | 0 additional units released. The sort needs at least 3,400 passes (60.7%). The requested 16:00 CET Sunday line handoff leaves four packing hours. A documented passing batch and Soony’s quality release are required before incrementing stock. |
+
+A supplier-reported departure for AWB 020-48113256 is the only shipment evidence for the 28,000 already in the forecast. There is no confirmed Hamburg handoff. Do not add this lot twice. New supplier stock, local sorting capacity, and a signed quality disposition are distinct events.
+
+Trace the **Pune sorting** request through [thread 153839FA41](../docs/supplier-email-archive/153839FA41.json), **Hwaseong** through [1DBFEC33AB](../docs/supplier-email-archive/1DBFEC33AB.json), **Boise** through [66F6864D51](../docs/supplier-email-archive/66F6864D51.json) and **Dongguan** through [9D6AD72E97](../docs/supplier-email-archive/9D6AD72E97.json). The live team mailbox contains subsequent replies. The targeted Pune and Boise follow-ups have Message-IDs beginning with `soony-sunday-recovery-pune-sort-20261121` and `soony-sunday-recovery-boise-eu-20261121`. Pune received the actual AQL sampling findings and was asked to provide its controlled PPAP finish reference, propose a crew, obtain a provisional hold if free, and submit its inspection proposal through the supplier-quality channel. Its latest answer on the separate sea shipment concerns 28 November.
