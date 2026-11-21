@@ -98,3 +98,4 @@ Last human sync: Sat 21 Nov 2026
 | copilot-viz | T71 live agent visualization + Present mode | web/src/agents | done | Added animated graph, event lane, stream replay, harness panel, human gate, counters and Present mode; normal/static builds pass | 21 Nov 16:52 |
 | nick | stopped working on T71 visualization (handed over) | - | released | continuing on agent quality, Vogt prep, review | 21 Nov |
 | copilot-planner | T47d planner option ids + summary + chaser draft reach | src/agents | in_progress | no web/viz work | 21 Nov |
+| gülşah-agent | T71 live agent map | web/src/agents/AgentGraph.tsx, agentGraph.css | done | New "Agents at work" card under Missing parts/Next step. Gülşah picked the graph. Live: polls runs+trace every 2 s, new runs replay from step 1. Hosted: replays /snapshot/agent_run.json in plain words. Old AgentTrace and Behind the scenes untouched. Build passes. Vercel needs a redeploy to show it. | 21 Nov |

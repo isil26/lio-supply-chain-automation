@@ -1,0 +1,69 @@
+/* Live agent map. Uses the dashboard theme tokens, so it follows light and dark. */
+.agent-graph { --ag-done: #2E9E6B; margin-bottom: 20px; }
+.ag-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.ag-head h3 { margin: 0; font-size: 17px; font-weight: 600; }
+.ag-status { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.ag-status i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.ag-status.on i { background: var(--ag-done); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ag-done) 18%, transparent); animation: ag-blink 1.6s ease-in-out infinite; }
+.ag-body { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; align-items: center; margin-top: 8px; }
+.ag-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.ag-svg text { font-family: inherit; }
+
+.ag-edge { fill: none; stroke-width: 2; transition: stroke .4s; }
+.ag-edge.idle { stroke: var(--line); stroke-dasharray: 4 5; }
+.ag-edge.done { stroke: var(--ag-done); }
+.ag-edge.now { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 7 5; animation: ag-flow .8s linear infinite; }
+.ag-arrowhead.idle { fill: var(--line); }
+.ag-arrowhead.done { fill: var(--ag-done); }
+.ag-arrowhead.now { fill: var(--accent); }
+.ag-packet { fill: var(--accent); }
+
+.ag-shape { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; transition: fill .4s, stroke .4s; }
+.ag-node.file .ag-shape { fill: var(--bg); }
+.ag-node.done .ag-shape { stroke: var(--ag-done); }
+.ag-node.active .ag-shape { fill: var(--accent); stroke: var(--accent); }
+.ag-node.you .ag-shape { stroke: var(--accent); stroke-dasharray: 4 3; }
+.ag-node.you.active .ag-shape { fill: var(--accent-soft); stroke-dasharray: none; }
+.ag-halo { fill: var(--accent-soft); animation: ag-pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.ag-letter { font-size: 15px; font-weight: 600; fill: var(--muted); }
+.ag-node.done .ag-letter { fill: var(--ag-done); }
+.ag-node.active .ag-letter { fill: var(--on-accent); }
+.ag-node.you .ag-letter, .ag-node.you.active .ag-letter { fill: var(--accent); font-size: 14px; }
+.ag-node.file .ag-letter { font-size: 18px; }
+.ag-label { font-size: 13px; font-weight: 600; fill: var(--text); }
+.ag-role { font-size: 11px; fill: var(--muted); }
+.ag-node.active .ag-role { fill: var(--accent); }
+.ag-node.clickable { cursor: pointer; }
+.ag-node.clickable:hover .ag-shape { stroke-width: 2.5; }
+.ag-node { outline: none; }
+.ag-node:focus-visible .ag-shape { stroke: var(--accent); stroke-width: 3; }
+
+.ag-side { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-height: 150px; }
+.ag-kicker { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.ag-text { margin: 0; font-size: 15px; line-height: 1.45; }
+.ag-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ag-chip { border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); padding: 3px 10px; font-size: 12px; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ag-chip:hover { border-color: var(--accent); color: var(--accent); }
+.ag-you { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.ag-you strong { color: var(--accent); }
+.ag-actions { display: flex; gap: 8px; margin-top: auto; }
+.ag-actions:empty { display: none; }
+.ag-btn { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); padding: 6px 12px; font-size: 13px; white-space: nowrap; cursor: pointer; }
+.ag-btn:hover { border-color: var(--muted); }
+.ag-btn:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
+
+.ag-legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 10px 0 0; color: var(--muted); font-size: 12px; align-items: center; }
+.ag-legend i { display: inline-block; width: 18px; height: 2px; vertical-align: middle; margin-right: 6px; }
+.ag-legend i.done { background: var(--ag-done); }
+.ag-legend i.now { background: var(--accent); }
+.ag-legend i.idle { background: var(--line); }
+.ag-check { margin-left: auto; color: var(--ag-done); }
+
+@keyframes ag-flow { to { stroke-dashoffset: -12; } }
+@keyframes ag-pulse { 0%, 100% { opacity: .5; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes ag-blink { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .ag-edge.now, .ag-halo, .ag-status.on i { animation: none; } }
+@media (max-width: 760px) {
+  .ag-body { grid-template-columns: 1fr; }
+  .ag-check { margin-left: 0; }
+}
