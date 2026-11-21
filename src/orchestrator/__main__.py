@@ -217,7 +217,7 @@ def dashboard(con):
     risks = []
     for part in truth["parts"].values():
         flagged = [issue for issue in truth["issues"] if issue["material"] == part["material"] and issue["kind"] in
-                   {"quality_hold", "handwriting", "dock_hold", "short_ship", "tracker", "artwork"}]
+                   {"quality_hold", "handwriting", "dock_hold", "short_ship", "tracker", "artwork", "revision_hold"}]
         first = sum(edition.get("first_stop") == part["material"] for edition in truth["editions"].values())
         if not part["shortfall"] and not first and not flagged:
             continue

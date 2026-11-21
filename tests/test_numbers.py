@@ -16,6 +16,17 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 QUANTILES = ("p10", "p50", "p90")
+# After the 19:25 drop: packed counts from launch_status.xlsx (Saturday 13:00).
+PACKED = {"STD": 554_000, "CE": 53_100}
+# part -> (need, usable stock, inbound counted, gap). Usable stock is net of the copies packed since
+# the stock snapshot; the sleeve is net of the 64,000 rev B lot (ECN-2026-118).
+PARTS = {
+    "CMP-GAM-001": (104_900, 70_100, 28_000, 6_800),
+    "CMP-GAM-008": (18_900, 13_000, 0, 5_900),
+    "CMP-GAM-010": (18_900, 15_500, 0, 3_400),
+    "CMP-GAM-004": (86_000, 80_000, 20_000, 0),
+    "CMP-GAM-003": (86_000, 54_000, 350_000, 0),
+}
 
 
 def snapshot_fingerprint(root):
@@ -94,3 +105,14 @@ class PublishedDefaultForecastTest(unittest.TestCase):
         self.assertCountEqual([item["edition"] for item in entries], ["STD", "CE"])
         actual = {item["edition"]: {key: item[key] for key in metrics} for item in entries}
         self.assertDictEqual(dict(rows), actual, "Dashboard default forecast differs from NUMBERS.md")
+
+        self.assertEqual({item["edition"]: item["packed"] for item in entries}, PACKED,
+                         "Packed counts must come from launch_status.xlsx")
+        risks = {item["id"]: item for item in dashboard["risks"]}
+        for part, (need, usable, inbound, gap) in PARTS.items():
+            with self.subTest(part=part):
+                self.assertEqual(
+                    (risks[part]["required"], risks[part]["onHand"], risks[part]["inbound"], risks[part]["gap"]),
+                    (need, usable, inbound, gap), "Component position differs from NUMBERS.md")
+        sleeve = risks["CMP-GAM-004"]
+        self.assertEqual(max(0, sleeve["required"] - sleeve["onHand"]), 6_000, "Standard sleeve gap before inbound")
