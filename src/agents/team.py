@@ -266,7 +266,8 @@ class AgentTeam(Team):
 
 def build_team(db_path="store/soony.db", llm=None) -> AgentTeam:
     db_path = str(db_path)
-    llm = llm or HTTPAdapter()
+    if llm is None:
+        llm = FakeLLM() if os.getenv("SOONY_AGENT_MODE") == "simulated" else HTTPAdapter()
 
     team_ref = {"team": None}
 

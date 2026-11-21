@@ -4,13 +4,13 @@ import { roles } from "./types";
 import "./agents.css";
 import mockTrace from "./mock.json";
 
-type Props = { onEvidence: (source: Source) => void };
+type Props = { onEvidence: (source: Source) => void; simulated?: boolean };
 
 function money(value: number) {
   return value === 0 ? "—" : `$${value.toFixed(4)}`;
 }
 
-export function AgentTrace({ onEvidence }: Props) {
+export function AgentTrace({ onEvidence, simulated }: Props) {
   const [runs, setRuns] = useState<AgentRun[]>([]);
   const [trace, setTrace] = useState<AgentTraceData>({ steps: [], approvals_pending: [] });
   const [selected, setSelected] = useState("");
@@ -39,7 +39,7 @@ export function AgentTrace({ onEvidence }: Props) {
 
   const currentRun = runs.find((run) => run.id === selected) ?? runs[0];
   const activeRole = trace.steps[trace.steps.length - 1]?.agent ?? "";
-  const statusLabel = hostedReplayBuild || isStaticMode() ? "replay" : currentRun?.status === "running" ? "live" : "offline (deterministic mode)";
+  const statusLabel = hostedReplayBuild || isStaticMode() ? "replay" : simulated ? "simulation" : currentRun?.status === "running" ? "live" : "offline (deterministic mode)";
   const totalCost = useMemo(() => trace.steps.reduce((sum, step) => sum + (step.cost || 0), 0), [trace.steps]);
 
   const run = async () => {

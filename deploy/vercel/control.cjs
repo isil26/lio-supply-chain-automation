@@ -1,6 +1,7 @@
 const { createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } = require('node:crypto');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
+const { liveTarget, forwardLive } = require('./live.cjs');
 
 const COOKIE = '__Host-soony-replay';
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -96,7 +97,11 @@ module.exports = async function control(request, response) {
   const op = operations.get(url.pathname) ?? (url.pathname === '/control' ? url.searchParams.get('op') : null);
   const method = request.method;
 
-  if (method === 'POST' && request.headers.origin !== url.origin) {
+  const upstream = process.env.SOONY_LIVE_UPSTREAM;
+  const target = upstream ? liveTarget(url) : null;
+  const gatewayToken = process.env.SOONY_LIVE_GATEWAY_TOKEN;
+  const trustedGateway = Boolean(target && gatewayToken && equal(request.headers.authorization || '', 'Bearer ' + gatewayToken));
+  if (method === 'POST' && !trustedGateway && request.headers.origin !== url.origin) {
     return respond(response, 403, { error: 'Use the team dashboard to submit this request' });
   }
   if (op === 'login' && method === 'POST') {
@@ -113,10 +118,14 @@ module.exports = async function control(request, response) {
   }
 
   const session = sessionFrom(request, key);
-  if (op === 'home' && method === 'GET') {
-    return session ? respond(response, 200, readFileSync(join(__dirname, 'app.html')), 'text/html; charset=utf-8') : loginPage(response);
+  if (op === 'home' && method === 'GET' && !session && !trustedGateway) {
+    return loginPage(response);
   }
-  if (!session) return respond(response, 401, { error: 'Team login required' });
+  if (!session && !trustedGateway) return respond(response, 401, { error: 'Team login required' });
+  if (target) return forwardLive(request, response, upstream, target, process.env.SOONY_LIVE_UPSTREAM_TOKEN);
+  if (op === 'home' && method === 'GET') {
+    return respond(response, 200, readFileSync(join(__dirname, 'app.html')), 'text/html; charset=utf-8');
+  }
   if (op === 'logout' && method === 'POST') {
     setSession(response, key, null);
     response.setHeader('Location', '/');

@@ -48,11 +48,33 @@ export type Activity = {
   type: "analysis" | "sent" | "warning";
 };
 
+export type ReplyPlan = {
+  id: string;
+  status: "proposed" | "pending" | "approved" | "review";
+  simulated: boolean;
+  nextAction: string;
+  shipmentId?: string;
+  reportedEta?: string;
+  evidence?: string[];
+  editions?: {
+    title: string; before: number; after: number; upperBefore: number; upperAfter: number;
+    pBefore: number; pAfter: number;
+  }[];
+};
+
 export type SupplierMessage = {
+  id?: number;
+  timestamp?: string;
+  transport?: {
+    from?: string; to?: string; subject?: string; messageId?: string; inReplyTo?: string;
+    mode: string;
+    status: "draft" | "attempting" | "smtp_accepted" | "dry_run" | "failed" | "delivery_uncertain" | "received";
+  } | null;
   sender: string;
   side: "in" | "out";
   text: string;
   time: string;
+  parsed?: { reply_plan?: ReplyPlan } | null;
 };
 
 export type SupplierThread = {
@@ -106,6 +128,7 @@ export type DashboardData = {
   risks: Risk[];
   activity: Activity[];
   threads: SupplierThread[];
+  agents?: { enabled: boolean; mode?: string };
   approval: Approval | null;
   options?: Approval[];
   drop: { title: string; detail: string; time: string } | null;
@@ -151,7 +174,8 @@ export interface DashboardApi {
   approveDecision(id: string): Promise<{ ok: boolean; status?: string }>;
   reviewDecision(id: string): Promise<{ ok: boolean; status?: string }>;
   sendThread(id: string): Promise<{ ok: boolean }>;
-  replyThread(id: string, text: string): Promise<{ ok: boolean }>;
+  approveReply(id: number): Promise<{ ok: boolean }>;
+  replyThread(id: string, text?: string): Promise<{ ok: boolean }>;
   sync(): Promise<{ ok: boolean }>;
   getSource(path: string): Promise<string>;
   dismissDrop(): Promise<{ ok: true }>;
@@ -199,7 +223,10 @@ class HttpDashboardApi implements DashboardApi {
   sendThread(id: string) {
     return json<{ ok: boolean }>(`/api/threads/${id}/send`, { method: "POST", body: '{"confirm":true}' });
   }
-  replyThread(id: string, text: string) {
+  approveReply(id: number) {
+    return json<{ ok: boolean }>(`/api/reply-decisions/${id}/approve`, { method: "POST", body: "{}" });
+  }
+  replyThread(id: string, text?: string) {
     return json<{ ok: boolean }>(`/api/threads/${id}/demo-reply`, { method: "POST", body: JSON.stringify({ text }) });
   }
   sync() {
@@ -241,6 +268,7 @@ export class MockDashboardApi implements DashboardApi {
   async approveDecision(id: string) { return { ok: true, status: "approved", approvalId: id } as never; }
   async reviewDecision(id: string) { return { ok: true, status: "review", approvalId: id } as never; }
   async sendThread() { return { ok: true }; }
+  async approveReply() { return { ok: false }; }
   async replyThread() { return { ok: true }; }
   async sync() { return { ok: true }; }
   async getSource() { return "Mock source evidence"; }
@@ -346,7 +374,8 @@ export class StaticDashboardApi implements DashboardApi {
     return { ok: true };
   }
 
-  async replyThread(id: string, text: string) {
+  async approveReply() { return { ok: false }; }
+  async replyThread(id: string, text = "Simulated supplier reply.") {
     await this.ensureLoaded();
     const thread = this.state?.threads.find((item) => item.id === id);
     if (!thread) return { ok: false };

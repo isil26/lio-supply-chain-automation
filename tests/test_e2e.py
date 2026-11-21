@@ -168,8 +168,13 @@ class DemoReplayTest(unittest.TestCase):
 
         with timed("Confirm supplier send and verify dry-run transport"):
             self.assertEqual(approved["sync"]["mailMode"], "dry-run")
+            _, truth = self.request("/api/truth")
+            ready_card_lots = {(item["supplier"], item["material"]) for item in truth["inbound"]
+                               if item["material"] == "CMP-GAM-001" and not item["held"]
+                               and item["earliest"] and item["earliest"] < truth["deadline"]}
             draft = next((row for row in approved["threads"] if row["status"] == "draft"
-                          and row["qty"] == gaps.get(row["material"])), None)
+                          and row["qty"] == gaps.get(row["material"])
+                          and (row["supplier_id"], row["material"]) in ready_card_lots), None)
             self.assertIsNotNone(draft, "No current supplier draft")
             thread_id = draft["id"]
             status, result = self.request(f"/api/threads/{thread_id}/send", {"confirm": True})
@@ -181,6 +186,32 @@ class DemoReplayTest(unittest.TestCase):
             self.assertEqual(thread["status"], "awaiting reply")
             self.assertTrue(any(message["side"] == "out" and message["sender"] == "Supplier Chaser (demo)"
                                 for message in thread["messages"]), "Dry-run message missing from thread")
+
+        with timed("Recalculate a shipment scenario from a supplier reply"):
+            status, received = self.request(f"/api/threads/{thread_id}/demo-reply", {})
+            self.assertEqual((status, received.get("ok")), (200, True))
+            reply = self.dashboard(lambda snapshot, sync: True)
+            thread = next(row for row in reply["threads"] if row["id"] == thread_id)
+            self.assertEqual(thread["status"], "reply to verify")
+            outbound, incoming = thread["messages"][-2:]
+            self.assertEqual(outbound["transport"]["status"], "dry_run")
+            self.assertEqual(incoming["transport"]["mode"], "simulated")
+            self.assertEqual(incoming["transport"]["inReplyTo"], outbound["transport"]["messageId"])
+            plan = incoming["parsed"]["reply_plan"]
+            self.assertTrue(plan["simulated"])
+            self.assertTrue(plan["evidence"])
+            self.assertIn("Escalate", plan["nextAction"])
+            self.assertTrue(any(row["after"] < row["before"] or row["upperAfter"] < row["upperBefore"]
+                                for row in plan["editions"]), plan["editions"])
+            self.assertEqual(reply["readiness"], sent["readiness"])
+            self.assertEqual(plan["status"], "proposed")
+            status, result = self.request(f'/api/reply-decisions/{incoming["id"]}/approve', {})
+            self.assertEqual((status, result["status"]), (200, "approved"))
+            reviewed = self.dashboard(lambda snapshot, sync: True)
+            reviewed_thread = next(row for row in reviewed["threads"] if row["id"] == thread_id)
+            approved = reviewed_thread["messages"][-1]["parsed"]["reply_plan"]
+            self.assertEqual((approved["id"], approved["status"]), (plan["id"], "approved"))
+            self.assertEqual(reviewed["readiness"], sent["readiness"])
 
     @staticmethod
     def risk_state(snapshot):

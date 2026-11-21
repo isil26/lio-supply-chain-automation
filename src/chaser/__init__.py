@@ -10,7 +10,7 @@ import ssl
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from email.policy import default
-from email.utils import make_msgid, parseaddr
+from email.utils import format_datetime, make_msgid, parseaddr
 
 
 
@@ -56,12 +56,16 @@ def schema(con):
        );
        CREATE TABLE IF NOT EXISTS messages (
            id INTEGER PRIMARY KEY, chase_id TEXT REFERENCES chases(id), external_id TEXT UNIQUE,
-           side TEXT NOT NULL, sender TEXT NOT NULL, body TEXT NOT NULL, time TEXT NOT NULL, parsed TEXT
+           side TEXT NOT NULL, sender TEXT NOT NULL, body TEXT NOT NULL, time TEXT NOT NULL,
+           parsed TEXT, transport TEXT
        );
        CREATE TABLE IF NOT EXISTS activity (
            id INTEGER PRIMARY KEY, time TEXT NOT NULL, agent TEXT NOT NULL, action TEXT NOT NULL, type TEXT NOT NULL
        );
     """)
+
+    if "transport" not in {row[1] for row in con.execute("PRAGMA table_info(messages)")}:
+        con.execute("ALTER TABLE messages ADD COLUMN transport TEXT")
 
 
 def activity(con, agent, action, kind="analysis"):
@@ -162,7 +166,14 @@ def send(con, chase_id, demo=False):
             from .allowlist import check_recipient
             check_recipient(chase["address"])
         message["To"], message["Subject"], message["Message-ID"] = chase["address"], chase["subject"], message_id
+        message["Date"] = format_datetime(datetime.now(timezone.utc))
         message.set_content(chase["body"])
+        envelope = {"from": str(message["From"]), "to": chase["address"], "subject": chase["subject"],
+                    "messageId": message_id, "mode": "dry_run" if demo else "smtp", "status": "attempting"}
+        recorded_at = now()
+        con.execute("""INSERT INTO messages(chase_id,external_id,side,sender,body,time,transport)
+                       VALUES(?,?,?,?,?,?,?)""",
+                    (chase_id, message_id, "out", sender, chase["body"], recorded_at, json.dumps(envelope)))
         con.execute("UPDATE chases SET status='sending',message_id=?,due_at=? WHERE id=?",
                     (message_id, (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(timespec="seconds"), chase_id))
     try:
@@ -172,22 +183,35 @@ def send(con, chase_id, demo=False):
             if port == 465:
                 with smtplib.SMTP_SSL(host, port, timeout=20, context=context) as client:
                     authenticate(client)
-                    client.send_message(message)
+                    rejected = client.send_message(message)
+                    if rejected:
+                        raise smtplib.SMTPRecipientsRefused(rejected)
             else:
                 with smtplib.SMTP(host, port, timeout=20) as client:
                     client.starttls(context=context)
                     authenticate(client)
-                    client.send_message(message)
+                    rejected = client.send_message(message)
+                    if rejected:
+                        raise smtplib.SMTPRecipientsRefused(rejected)
     except (OSError, smtplib.SMTPException) as exc:
         # SMTP acceptance can be ambiguous after a disconnect. Keep the message ID for reconciliation.
+        rejected = isinstance(exc, (smtplib.SMTPRecipientsRefused, smtplib.SMTPSenderRefused,
+                                    smtplib.SMTPAuthenticationError, smtplib.SMTPDataError))
+        status = "failed" if rejected else "delivery_uncertain"
         with con:
-            con.execute("UPDATE chases SET status='delivery uncertain' WHERE id=?", (chase_id,))
-            activity(con, "Supplier Chaser", f'{chase["supplier"]}: delivery uncertain. Verify the outbox before retry.', "warning")
-        raise ValueError("SMTP delivery is uncertain. Check the registered sender’s outbox.") from exc
+            con.execute("UPDATE chases SET status=? WHERE id=? AND status='sending'",
+                        ("send failed" if rejected else "delivery uncertain", chase_id))
+            con.execute("UPDATE messages SET transport=? WHERE external_id=?",
+                        (json.dumps(dict(envelope, status=status)), message_id))
+            explanation = "SMTP rejected the message." if rejected else "Delivery uncertain. Verify the outbox before retry."
+            activity(con, "Supplier Chaser", f'{chase["supplier"]}: {explanation}', "warning")
+        raise ValueError(explanation) from exc
     with con:
         con.execute("UPDATE chases SET status='awaiting reply' WHERE id=? AND status='sending'", (chase_id,))
-        con.execute("INSERT OR IGNORE INTO messages(chase_id,external_id,side,sender,body,time) VALUES(?,?,?,?,?,?)",
-                    (chase_id, message_id, "out", "Supplier Chaser"+(" (demo)" if demo else ""), chase["body"], now()))
+        label = "Supplier Chaser (demo)" if demo else sender
+        completed = "dry_run" if demo else "smtp_accepted"
+        con.execute("UPDATE messages SET sender=?, time=?, transport=? WHERE external_id=?",
+                    (label, now(), json.dumps(dict(envelope, status=completed)), message_id))
         activity(con, "Supplier Chaser", f'{chase["supplier"]}: ' + ("sent via demo transport." if demo else "accepted by SMTP. Awaiting reply."), "sent")
 
 
@@ -210,7 +234,7 @@ def parse_reply(body):
     return result
 
 
-def receive(con, message):
+def receive(con, message, *, simulated=False):
     schema(con)
     sender = parseaddr(message.get("From", ""))[1].casefold()
     parent = (message.get("In-Reply-To", "") or "").strip()
@@ -220,6 +244,15 @@ def receive(con, message):
                (message_id=? OR id=?) AND status NOT IN ('draft')""", (sender, parent, ref[1] if ref else "")).fetchone()
     if not chase:
         return False
+    sent = con.execute("SELECT sender,transport FROM messages WHERE external_id=? AND chase_id=? AND side='out'",
+                       (chase["message_id"], chase["id"])).fetchone()
+    if sent:
+        sent_transport = json.loads(sent["transport"] or "{}")
+        dry_run = sent_transport.get("mode") == "dry_run" or sent["sender"].endswith("(demo)")
+        if simulated != dry_run:
+            return False
+    elif simulated:
+        return False
     part = message.get_body(preferencelist=("plain",))
     if not part:
         return False
@@ -227,14 +260,26 @@ def receive(con, message):
     body = "\n".join(line for line in part.get_content().splitlines() if not line.lstrip().startswith(">")).strip()[:12000]
     if not body:
         return False
-    message_id = message.get("Message-ID") or hashlib.sha256(message.as_bytes()).hexdigest()
+    message_id = str(message.get("Message-ID") or hashlib.sha256(message.as_bytes()).hexdigest())
+    envelope = {"from": str(message.get("From") or sender), "to": str(message.get("To") or ""),
+                "subject": str(subject), "messageId": message_id, "inReplyTo": parent,
+                "mode": "simulated" if simulated else "inbox", "status": "received"}
     with con:
-        inserted = con.execute("""INSERT OR IGNORE INTO messages(chase_id,external_id,side,sender,body,time,parsed)
-            VALUES(?,?,?,?,?,?,?)""", (chase["id"], str(message_id), "in", chase["supplier"], body, now(),
-                                     json.dumps(parse_reply(body), ensure_ascii=False))).rowcount
+        inserted = con.execute("""INSERT OR IGNORE INTO messages(chase_id,external_id,side,sender,body,time,transport)
+            VALUES(?,?,?,?,?,?,?)""", (chase["id"], message_id, "in", sender, body, now(),
+                                        json.dumps(envelope))).rowcount
         if inserted:
+            from src.ingest.store import get_state
+            from .reply_plan import plan_reply
+
+            fields = parse_reply(body)
+            plan = plan_reply(get_state(con, "truth", {}), chase, body, simulated=simulated)
+            plan["id"] = hashlib.sha256(f'reply:{chase["id"]}:{message_id}'.encode()).hexdigest()[:16]
+            fields["reply_plan"] = plan
+            con.execute("UPDATE messages SET parsed=? WHERE external_id=?",
+                        (json.dumps(fields, ensure_ascii=False), str(message_id)))
             con.execute("UPDATE chases SET status='reply to verify' WHERE id=?", (chase["id"],))
-            activity(con, "Supplier Chaser", f'{chase["supplier"]}: matched reply. Supplier claims are queued for review.')
+            activity(con, "Supplier Chaser", f'{chase["supplier"]}: matched reply. {fields["reply_plan"]["nextAction"]}')
     return bool(inserted)
 
 
@@ -273,15 +318,46 @@ def expire(con):
     return len(stale)
 
 
-def list_threads(con):
+def list_threads(con, decision_states=None):
     schema(con)
+    decision_states = decision_states or {}
     for row in con.execute("SELECT * FROM chases ORDER BY CASE status WHEN 'reply to verify' THEN 0 WHEN 'draft' THEN 2 ELSE 1 END, qty DESC, supplier"):
         thread = dict(row)
-        thread["messages"] = [dict(msg, parsed=json.loads(msg["parsed"]) if msg["parsed"] else None) for msg in
-                              con.execute("SELECT sender,side,body AS text,time,parsed FROM messages WHERE chase_id=? ORDER BY id", (row["id"],))]
+        thread["messages"] = []
+        dry_run_thread = False
+        for message in con.execute("""SELECT id,sender,side,body AS text,time,parsed,transport
+                                     FROM messages WHERE chase_id=? ORDER BY id""", (row["id"],)):
+            entry = dict(message)
+            entry["parsed"] = json.loads(entry["parsed"]) if entry["parsed"] else None
+            if entry["transport"]:
+                entry["transport"] = json.loads(entry["transport"])
+            elif entry["side"] == "out" and entry["sender"].endswith("(demo)"):
+                entry["transport"] = {"mode": "dry_run", "status": "dry_run"}
+            if entry["side"] == "out":
+                dry_run_thread = (entry["transport"] or {}).get("mode") == "dry_run"
+            elif dry_run_thread and not entry["transport"]:
+                entry["transport"] = {"mode": "simulated", "status": "received"}
+            plan = (entry["parsed"] or {}).get("reply_plan")
+            if plan:
+                plan["status"] = decision_states.get(plan.get("id"), "proposed" if plan.get("editions") else "pending")
+            thread["messages"].append(entry)
         if not thread["messages"] and thread["status"] == "draft":
-            thread["messages"] = [{"sender": "Supplier Chaser · draft", "side": "out", "text": row["body"], "time": ""}]
+            thread["messages"] = [{
+                "sender": "Supplier Chaser", "side": "out", "text": row["body"], "time": "",
+                "transport": {"mode": "draft", "status": "draft", "to": row["address"], "subject": row["subject"]},
+            }]
         yield thread
+
+
+def reply_decision(con, message_id):
+    row = con.execute("SELECT parsed FROM messages WHERE side='in' AND id=?", (message_id,)).fetchone()
+    if row and row["parsed"]:
+        plan = json.loads(row["parsed"]).get("reply_plan")
+        if plan and plan.get("editions"):
+            return dict(plan, request_only=True)
+    return None
+
+
 from .agent import SupplierChaser
 from .llm import DeterministicFakeLLM, LLMClient, LLMReplyParser
 from .models import Issue, ReplyParse
