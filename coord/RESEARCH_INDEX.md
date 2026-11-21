@@ -10,13 +10,14 @@ Rule: if a topic is listed as DONE, read the file instead of researching again. 
 | Frozen numbers for pitch | docs/NUMBERS.md | Single source for deck/demo/video | nick |
 | Forecast sensitivity + supplier lateness calibration | src/truth/sensitivity.py (run `python3 -m src.truth.sensitivity`) | Game card first stop in 88% of trials; calibrated CE median 66,100 differs from NUMBERS.md 62,550 (unresolved, see coord/INBOX.md) | codex-sens |
 
+| Game theory for chaser and expedite decision (cheap talk vs verifiable commitments, R0-R4 escalation ladder, expedite break-even L* = C/(Q*dP)). Author/paper names are from memory, UNVERIFIED, do not put on slides | docs/GAME_THEORY.md | research-gt |
+| Red team: pitch 6 / business case 4 / depth 6 / taste 7, hook 'SAP says fine' is false (SAP hides art book + statue gaps), 15 Q&A, 5 demo failure modes, cut list | docs/REDTEAM.md | redteam |
+
 ## In progress (do not duplicate)
 | Topic | Output file | Owner |
 |---|---|---|
 | Hidden findings hunt: artwork rev B vs C, Incoterms DDP vs EXW, 78k pins without PO, cancellations, stale stock counts, magnets, contract clauses | docs/HIDDEN_FINDINGS.md | codex-hunter |
 | Surprise-drop robustness: unseen formats, encodings, languages, corrupt files | docs/DROP_ROBUSTNESS.md, tests/drops/ | codex-drops |
-| Game theory / mechanism design for chaser and expedite decision | docs/GAME_THEORY.md | research-gt |
-| Red-team: score pitch/deck/demo, 15 hard Q&A, demo failure modes | docs/REDTEAM.md | redteam |
 
 ## Known GAPS (not found publicly or not answerable from files; do not re-search)
 - Dr. Vogt's cost per missing copy / penalty per missed day: NOT in data ("ask me at the booth"). Office hours only.
