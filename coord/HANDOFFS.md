@@ -509,3 +509,7 @@ The replay cap correctly approves the information-only Boise Semi game-card stoc
 - Production checks covered sign-in, anonymous and forged-session denial, protected assets, Update, independent sessions, reset and sign-out. Browser checks exercised practice review and approval, the spending slider and the role illustration. The 20:44 Gmail archive is awaiting a decision about access from the jury site. The preceding verified release is `dpl_8UHQVJW2fBwuPBPuaPoQrhFDJZVv`.
 
 - Murat approved adding the 20:44 Gmail archive to the password-protected jury replay. Current deployment `dpl_APFkWWCbVxG7iYXdFRbeG4ZnRwSD` retains UI `ce36dac`, the verified T98 snapshot above and signed-session asset protection. All 93 messages in 9 threads matched the source bodies and envelope fields. The archive is read-only in both replay phases and is stored in the encrypted payload. The forecast-only deployment above is the rollback target. [Primary Control Room](https://soony-launch-control.vercel.app)
+
+## Manti Live supplier proxy deployment (codex-deploy)
+
+- Production serves the authored proxy from `6961fa1`, deployment `dpl_7dTKgQR7wdPGnWTH5txkBeLQLa2h`. Signed-in GET requests to `/api/deals` and `/api/suppliers/best` returned HTTP 200 on the candidate and production. The active backend reported `2fb3d65`. Team sign-in, forged-session denial and sign-out passed. The previous proxy deployment was `dpl_41XszEYQ7suvxv7MZD6zkDpKXyw6`. [Manti Live](https://soony-manti-live.vercel.app)
