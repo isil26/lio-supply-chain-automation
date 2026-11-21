@@ -14,7 +14,7 @@ from zipfile import ZipFile
 
 from pydantic import BaseModel, ValidationError
 
-from . import models
+from . import drop, models
 
 
 @dataclass(frozen=True)
@@ -23,9 +23,12 @@ class Dataset:
     model: type[BaseModel]
     pattern: str
     aliases: dict[str, tuple[str, ...]]
+    exclude: tuple[str, ...] = ()  # file-name globs that belong to a more specific dataset
+    custom: object = None  # optional reader(source, body, dataset) -> Iterator[Record] for non-tabular formats
 
     def matches(self, path: PurePosixPath) -> bool:
-        return len(path.parts) == self.pattern.count("/") + 1 and path.match(self.pattern)
+        return (len(path.parts) == self.pattern.count("/") + 1 and path.match(self.pattern)
+                and not any(PurePosixPath(path.name).match(item) for item in self.exclude))
 
 
 MATERIAL = ("component", "component_id", "material", "material_number", "matnr", "sku")
@@ -85,16 +88,18 @@ DATASETS = (
         "child_id": ("child", *MATERIAL),
         "qty_per": ("quantity_per", "units_per", "quantity", "qty"),
         "valid_from": ("effective_from", "start_date"), "valid_to": ("effective_to", "end_date"),
-    }),
+    }, exclude=("*delta*", "*update*")),
     Dataset("components", models.Component, "soony/master/components*.csv", {
         "component_id": ("material_id", *MATERIAL), "description": ("name", "material_description"),
         "uom": ("unit", "unit_of_measure"), "critical": ("is_critical",),
         "drawing_rev": ("drawing_revision", "revision"),
-    }),
+    }, exclude=("*delta*", "*update*")),
     Dataset("products", models.Product, "soony/master/products*.csv", {
         "product_id": ("finished_good_id", "material_id", "sku"),
         "name": ("product_name", "description"), "lifecycle": ("status",),
-        "launch_date": ("release_date",), "plan_weekly_units": ("weekly_plan", "weekly_units"),
+        "launch_date": ("release_date",),
+        "plan_weekly_units": ("weekly_plan", "weekly_plan_qty", "weekly_units"),
+        "day_one_qty": ("day_one_units", "day_one_demand"), "valid_from": ("effective_from",),
         "plants": ("plant", "site", "sites"), "std_cost_eur": ("standard_cost_eur",),
     }),
     Dataset("suppliers", models.Supplier, "suppliers/*/profile.csv", {
@@ -120,10 +125,28 @@ DATASETS = (
         "product_id": ("product", "material_id", "sku"), "line": ("packing_line",),
         "units_packed": ("packed_units", "qty_packed", "quantity", "units"),
     }),
+    # 21 Nov 19:25 drop. Delta files are change logs, not master data, so they get their own tables.
+    Dataset("launch_status", models.LaunchStatus, "soony/context/launch_status*.xlsx", {},
+            custom=drop.read_launch_status),
+    Dataset("bom_changes", models.BomChange, "soony/master/bom_delta*.csv", {
+        "change_id": ("ecn", "ecn_id", "change"), "parent_id": ("parent", "product_id"),
+        "child_id": ("child", *MATERIAL), "use_up_old_rev": ("use_up", "use_up_old"),
+    }),
+    Dataset("component_changes", models.ComponentChange, "soony/master/components_update*.csv", {
+        "component_id": ("material_id", *MATERIAL), "field": ("attribute",),
+    }),
+    Dataset("supplier_component_changes", models.SupplierComponentChange,
+            "suppliers/*/components_delta*.csv", {
+        "supplier_id": SUPPLIER, "component_id": ("material_id", *MATERIAL),
+    }),
+    Dataset("news_items", models.NewsItem, "soony/news/*.json", {}, custom=drop.read_news),
 )
 SHIPMENT = next(dataset for dataset in DATASETS if dataset.table == "open_shipments")
+SUPPLIERS = next(dataset for dataset in DATASETS if dataset.table == "suppliers")
 SOURCES = (*DATASETS, Dataset(SHIPMENT.table, SHIPMENT.model,
-                             "soony/logistics/open_shipments*.xlsx", SHIPMENT.aliases))
+                             "soony/logistics/open_shipments*.xlsx", SHIPMENT.aliases),
+           Dataset(SUPPLIERS.table, SUPPLIERS.model, "suppliers/*/profile.json", {},
+                   custom=drop.read_supplier_json))
 
 
 def header_key(value: str) -> str:
@@ -290,6 +313,9 @@ def read_records(
     source: str, body: bytes, dataset: Dataset, supplier_names: dict[str, str]
 ) -> Iterator[Record]:
     path = PurePosixPath(source)
+    if dataset.custom:
+        yield from dataset.custom(source, body, dataset)
+        return
     defaults = {}
     if path.parts[0] == "suppliers":
         folder_id = path.parts[1].split("_", 1)[0]

@@ -194,8 +194,10 @@ class Product(BaseModel):
     lifecycle: Code | None = None
     launch_date: Date | None = None
     plan_weekly_units: Integer | None = None
+    day_one_qty: Integer | None = None
     plants: IdList | None = None
     std_cost_eur: Number | None = None
+    valid_from: Date | None = None
 
 
 class Supplier(BaseModel):
@@ -213,6 +215,10 @@ class Supplier(BaseModel):
     supplier_since: Date | None = None
     status: Code | None = None
     qualification_status: Code | None = None
+    qualification_released_on: Date | None = None
+    qualification_valid_until: Date | None = None
+    qualification_extended_by: str | None = None
+    vendor_no: Integer | None = None
     contact_name: str | None = None
     contact_email: str | None = None
     phone: str | None = None
@@ -250,3 +256,60 @@ class Packout(BaseModel):
     product_id: Identifier
     line: str | None = None
     units_packed: Integer
+
+
+class LaunchStatus(BaseModel):
+    """One edition line (kind=edition) or one note (kind=note) of launch_status.xlsx."""
+    kind: str
+    edition: str | None = None
+    product_id: Identifier | None = None
+    day_one_demand: Integer | None = None
+    packed: Integer | None = None
+    still_to_pack: Integer | None = None
+    rate_per_hour: Integer | None = None
+    line_status: str | None = None
+    note: str | None = None
+    as_of: str | None = None  # ISO local timestamp from workbook properties or title
+
+
+class BomChange(BaseModel):
+    change_id: Identifier
+    parent_id: Identifier
+    child_id: Identifier
+    action: Code | None = None
+    qty_per_old: Number | None = None
+    qty_per_new: Number | None = None
+    rev_old: str | None = None
+    rev_new: str | None = None
+    use_up_old_rev: bool | None = None
+    effective_from: Date | None = None
+    reason: str | None = None
+
+
+class ComponentChange(BaseModel):
+    component_id: Identifier
+    field: Code
+    old: str | None = None
+    new: str | None = None
+    changed_by: str | None = None
+
+
+class SupplierComponentChange(BaseModel):
+    supplier_id: SupplierId
+    component_id: Identifier
+    action: Code | None = None
+    lead_time_days_old: Integer | None = None
+    lead_time_days_new: Integer | None = None
+    share: Number | None = None
+    primary: bool | None = None
+    note: str | None = None
+
+
+class NewsItem(BaseModel):
+    news_id: str
+    published_at: datetime | None = None
+    source_name: str | None = None
+    headline: str
+    summary: str | None = None
+    regions: str | None = None
+    tags: str | None = None

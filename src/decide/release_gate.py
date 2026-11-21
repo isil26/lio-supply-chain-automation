@@ -129,6 +129,11 @@ def load_drop(data_root):
     return drop
 
 
+def _field_citations_all(docs, material, po_lines):
+    return [cite for doc in docs if doc.get("kind") == "confirmation" and doc.get("fields", {}).get("revision")
+            and _revision_applies(doc, material, po_lines) for cite in _field_citations(doc, "revision")]
+
+
 def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr_rows=(), drop=None, as_of=None):
     """Evaluate a readiness result without mutating the store.
 
@@ -152,11 +157,16 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr
         usable = max(0, int(part.get("on_hand", 0)))
         go_quantity = min(required, usable)
         held_quantity = 0
+        hard, partial_go, actions, extra = False, None, [], {}
+        critical_row = next((row for row in drop.get("component_updates", [])
+                             if row.get("component_id") == material and row.get("field") == "critical"
+                             and str(row.get("new")).upper() == "Y"), None)
 
-        def block(level, reason, citations):
-            nonlocal status
+        def block(level, reason, citations, soft=False):
+            nonlocal status, hard
             if level == "HOLD" or (level == "HUMAN" and status == "GO"):
                 status = level
+            hard = hard or not soft
             reasons.append(reason)
             evidence.extend(citations)
 
@@ -181,7 +191,41 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr
             for value in _field_values(doc, "revision"):
                 by_supplier.setdefault(supplier_id, str(value).upper())
             revision_evidence.extend(_field_citations(doc, "revision"))
-        if len(set(by_supplier.values())) > 1:
+        ecns = [row for row in drop.get("bom_delta", []) if row.get("child_id") == material
+                and row.get("action") == "revision"]
+        for ecn in ecns:
+            old, new, cite = str(ecn.get("rev_old")).upper(), str(ecn.get("rev_new")).upper(), ecn["_src"]
+            cite = {**cite, "quote": f'{ecn["change_id"]} {material} rev {old} -> {new}, use_up_old_rev={ecn.get("use_up_old_rev")}: {ecn.get("reason")}'}
+            if str(ecn.get("use_up_old_rev")).upper() == "Y":
+                reasons.append(f'{ecn["change_id"]}: rev {old} may still be packed (use up old revision), '
+                               f'rev {new} follows; no block.')
+                evidence.append(cite)
+                continue
+            old_ids = [sid for sid, rev in by_supplier.items() if rev == old]
+            new_ids = [sid for sid, rev in by_supplier.items() if rev == new]
+            quantities = {sid: _supplier_quantities(material, sid, po_rows, gr_rows) for sid in old_ids + new_ids}
+            name = lambda sid: (suppliers.get(sid) or {}).get("name") or sid
+            old_received = sum(quantities[sid][0] for sid in old_ids)
+            old_open = sum(quantities[sid][1] for sid in old_ids)
+            partial_go = max(0, usable - old_received)
+            held_quantity += old_received
+            owner = {"role": "Category Lead Print & Packaging", "name": "Sofia Marchetti",
+                     "decision": f"re-order / re-print rev {new} and decide what to do with the {old_received:,} "
+                                 f"rev {old} pieces already received (rev {new} is the released revision)"}
+            actions.append(owner)
+            extra.update({"ecn": ecn["change_id"], "do_not_accept_quantity": old_open,
+                          "usable_new_revision_quantity": partial_go, "old_revision_lot_quantity": old_received})
+            who_old = ", ".join(f"{name(sid)} PO(s) open {quantities[sid][1]:,}" for sid in old_ids) or "no supplier found"
+            who_new = ", ".join(f"{name(sid)} rev {new} GO ({quantities[sid][0]:,} delivered, {quantities[sid][1]:,} open)"
+                                for sid in new_ids) or f"no supplier confirmed for rev {new}"
+            block("HOLD", f'{ecn["change_id"]} (effective {ecn.get("effective_from")}): rev {old} -> {new}, '
+                  f'"parts to rev {old} must not be packed". HOLD {old_received:,} rev {old} pieces already received '
+                  f'(not usable); do not accept the {old_open:,} open rev {old} pieces ({who_old}): ask the supplier '
+                  f'to re-print rev {new}. {who_new}. Usable rev {new} quantity = stock {usable:,} - rev {old} lot '
+                  f'{old_received:,} = {partial_go:,}. Decision: {owner["name"]}, {owner["role"]}.',
+                  [cite, *_field_citations_all(docs, material, po_lines)], soft=True)
+        if len(set(by_supplier.values())) > 1 and not any(
+                str(e.get("use_up_old_rev")).upper() != "Y" for e in ecns):
             parts = []
             for supplier_id, revision in sorted(by_supplier.items(), key=lambda kv: kv[1]):
                 delivered, open_quantity = _supplier_quantities(material, supplier_id, po_rows, gr_rows)
@@ -198,10 +242,37 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr
         for rate in part.get("suppliers", []):
             supplier_id = rate.get("supplier_id")
             supplier = suppliers.get(supplier_id) or rate.get("supplier") or {}
+            profile = (drop.get("profiles") or {}).get(supplier_id) or {}
+            qualification = profile.get("qualification") or {}
+            valid_until = str(qualification.get("validUntil") or "")
+            if (str(qualification.get("status", "")).casefold() == "conditional" and valid_until
+                    and valid_until < as_of and not qualification.get("extendedBy")):
+                vacant = str(drop.get("org_category_lead_from") or "9999") > as_of
+                actions.append({"role": "Head of Procurement", "name": "Dr. Maren Vogt",
+                                "decision": f"PP-07 section 6 exception for {profile.get('name') or supplier_id}; "
+                                            "co-signer Daniel Okafor, Supplier Quality Lead"})
+                block("HUMAN", f"{profile.get('name') or supplier_id}: conditional qualification released "
+                      f"{qualification.get('releasedOn')} EXPIRED on {valid_until} and was not extended "
+                      "(extendedBy null); PP-07 section 5: POs placed after expiry are held 'awaiting approval'; "
+                      "an extension needs Supplier Quality Lead and Category Lead in writing, once, max 90 days. "
+                      + ("The Category Lead Collector's Items is vacant for the launch (Arjun Krishnan only from "
+                         f"{drop.get('org_category_lead_from')}), so the exception goes to the Head of Procurement "
+                         "under section 6 (Dr. Maren Vogt) with Daniel Okafor (Supplier Quality Lead) as co-signer."
+                         if vacant else "Category Lead and Supplier Quality Lead must sign the extension."),
+                      [profile.get("source"), rate.get("source"), drop.get("org_source") if vacant else None,
+                       {"file": "soony/context/approval_policy_PP-07.pdf", "page": 1,
+                        "quote": "POs placed after a conditional release has expired are held in status 'awaiting approval'."}])
+                break
             if material == "CMP-GAM-010" and str(supplier.get("qualification_status", "")).casefold() == "conditional":
                 block("HUMAN", "Pune statue supply requires PPAP and written Supplier Quality plus Category Lead release; the Category Lead is vacant, so route the exception to Head of Procurement.",
                       [supplier.get("source"), rate.get("source"), *part.get("evidence", [])])
                 break
+
+        if material in ("CMP-MAG-005", "CMP-GAM-007") and drop:
+            reasons.append("Rare-earth export control (2026-11-21): PackRight holds magnets for the November boxes "
+                           "(launch boxes OK); CMP-GAM-007 deliveries after 2026-12-01 move out 6 weeks (lead time "
+                           "63 -> 105 d). Post-launch risk, not a pack-out stopper.")
+            extra["post_launch_risk"] = "magnet deliveries after 2026-12-01 +6 weeks (63 -> 105 d); alternatives sampled within 10 d"
 
         incoterm_issues = [issue for issue in truth.get("issues", [])
                            if issue.get("material") == material and issue.get("kind") == "confirmation"
@@ -210,8 +281,20 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr
             reasons.append("ERP and supplier confirmation use different Incoterms; flag for commercial review, but this does not block packing.")
             evidence.extend(source for issue in incoterm_issues for source in issue.get("evidence", []))
 
+        if critical_row and status == "HOLD":
+            reasons.append(f'{material} is a CRITICAL part (components_update row {critical_row["_src"]["row"]}, '
+                           f'{critical_row.get("changed_by")}): the quality hold stays until released.')
+            evidence.append({**critical_row["_src"], "quote": f'{material} critical {critical_row.get("old")} -> '
+                             f'{critical_row.get("new")} by {critical_row.get("changed_by")}'})
+            memo = drop.get("memo") or {"file": MEMO_FILE, "quote": MEMO_QUOTE}
+            evidence.append(memo)
+            extra["required_authority"] = {"role": "Quality & Compliance Manager", "name": "Clara Weiss",
+                                           "for": "HOLD to GO", "citation": memo}
+            actions.append({"role": "Quality & Compliance Manager", "name": "Clara Weiss",
+                            "decision": "last word on releasing the held lot (HOLD to GO)"})
+            reasons.append("Required authority for HOLD to GO: Quality & Compliance (Clara Weiss), not the pack-out plan.")
         if status != "GO":
-            go_quantity = 0
+            go_quantity = partial_go if (partial_go is not None and not hard) else 0
         citations = []
         for source in evidence:
             if not source:
@@ -225,20 +308,29 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr
             "required_quantity": required, "reasons": list(dict.fromkeys(reasons)),
             "evidence": citations,
             "required_human_action": (
-                {"role": "Marketing / Engineering / Supplier Quality and Category Lead", "deadline": truth.get("deadline")}
-                if status == "HUMAN" else None
+                {"role": " / ".join(dict.fromkeys(a["role"] for a in actions))
+                 or "Marketing / Engineering / Supplier Quality and Category Lead",
+                 "deadline": truth.get("deadline"), "decisions": actions}
+                if status == "HUMAN" or actions else None
             ),
+            **extra,
         }
 
     editions = {}
     for edition_id, edition in truth.get("editions", {}).items():
         packable = int(edition.get("remaining", 0))
+        limiting = {}
         for material, usage in ((material, part.get("unit_usage", {}).get(edition_id, 0))
                                 for material, part in truth.get("parts", {}).items()):
             if usage:
-                packable = min(packable, results[material]["go_quantity"] // int(usage))
-        editions[edition_id] = {"edition": edition.get("edition", edition_id),
-                                "units_with_go_parts": max(0, packable)}
+                units = results[material]["go_quantity"] // int(usage)
+                limiting[material] = units
+                packable = min(packable, units)
+        packable = max(0, packable)
+        editions[edition_id] = {"edition": edition.get("edition", edition_id), "units_with_go_parts": packable,
+                                "remaining": int(edition.get("remaining", 0)),
+                                "limited_by": sorted(m for m, units in limiting.items() if units <= packable)
+                                if packable < int(edition.get("remaining", 0)) else []}
     return {"parts": results, "editions": editions, "deadline": truth.get("deadline")}
 
 
@@ -246,7 +338,7 @@ def release_gate(con, data_root=None):
     root = Path(data_root) if data_root else ROOT / "data"
     truth = readiness(con, root)
     return evaluate(truth, documents(con), rows(con, "component"), rows(con, "supplier"),
-                    rows(con, "po"), rows(con, "receipt"))
+                    rows(con, "po"), rows(con, "receipt"), drop=load_drop(root))
 
 
 def main(argv=None):

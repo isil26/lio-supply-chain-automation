@@ -22,6 +22,8 @@ ERP = {
     "po": "purchase_orders", "receipt": "goods_receipts", "stock": "stock", "shipment": "open_shipments",
     "packout": "packout_log", "bom": "bom", "component": "components", "supplier": "suppliers",
     "supply": "supplier_components", "route": "routes", "product": "products",
+    "launch_status": "launch_status", "bom_change": "bom_changes", "component_change": "component_changes",
+    "supply_change": "supplier_component_changes", "news": "news_items",
 }
 
 # A required field is marked with *. Other fields preserve unknown values as null.
