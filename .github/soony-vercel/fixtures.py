@@ -23,7 +23,7 @@ def stage(source, fixture_dir):
         shutil.copyfile(fixture_dir / fictional, suppliers / original)
     replace(
         suppliers / "Offers.tsx",
-        '{example ? "Example with sample replies, not live prices. " : ""}Every offer the suppliers sent, with price and timing. You decide; the mail agent tells the supplier.',
+        '{example ? `What the 6 suppliers answered by email${data.as_of ? ` (${data.as_of})` : ""}.` : "What the suppliers answered by email."}',
         '{example ? "Fictional offers for this example. Decisions stay in this browser." : "Offers from the latest supplier replies. The mail agent sends your decision."}',
     )
     replace(
