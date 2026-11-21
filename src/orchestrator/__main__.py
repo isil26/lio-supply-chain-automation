@@ -762,7 +762,19 @@ def handler(loop):
                         deadline = (get_state(con, "truth", {}) or {}).get("deadline")
                         if deadline:
                             supplier_deals.sync(con, deadline)
-                        return self.out(supplier_deals.list_deals(con))
+                        listing = supplier_deals.list_deals(con)
+                        # Per part, what is still short after counted inbound: the offers tabs only show parts we must buy.
+                        parts = (get_state(con, "truth", {}) or {}).get("parts", {})
+                        listing["gaps"] = {m: parts[m].get("shortfall", 0) for m in {d["material"] for d in listing["deals"]} if m in parts}
+                        return self.out(listing)
+                    english = re.fullmatch(r"/api/deals/([a-f0-9]{12,16})/english", path)
+                    if english:  # gülşah-agent: supplier email in English + one-line gist (src/chaser/translate.py)
+                        from src.chaser import deals as supplier_deals, translate
+                        supplier_deals.schema(con)
+                        try:
+                            return self.out(translate.english(con, english[1]))
+                        except KeyError:
+                            return self.out({"error": "Unknown offer. Refresh the page."}, 404)
                     if path == "/api/mail/held":  # IMPORTANT 6 mail-agent: binding emails waiting for one click
                         from src.chaser import autosend as mail_auto
                         return self.out({"held": mail_auto.held(con)})
