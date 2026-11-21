@@ -181,11 +181,13 @@ def choose(con, truth, data_root=None):
                             "quantity": qty, "held": True, "mode": "road", "supplier": rate["supplier_id"]}
                 scenario = dict(truth, inbound=[*truth["inbound"], proposed])
                 affected = [pid for pid in truth["editions"] if part["unit_usage"].get(pid)]
-                recovery["expedite"] = score_expedite([
+                edition = affected[0] if len(affected) == 1 else None
+                recovery["expedite"] = dict(score_expedite([
                     {"label": "Wait", "cost_eur": 0},
                     {"label": "Express offer", "cost_eur": known_cost,
                      "changes": {"release_shipments": [shipment_id]}},
-                ], None, copies, truth=scenario, edition=affected[0] if len(affected) == 1 else None)
+                ], None, copies, truth=scenario, edition=edition),
+                    readiness_scope=truth["editions"][edition]["edition"] if edition else "all editions")
 
     for issue in truth["issues"]:
         if issue["kind"] == "quality_hold" and truth["parts"].get(issue["material"], {}).get("shortfall"):

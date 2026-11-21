@@ -80,6 +80,18 @@ export type Approval = {
   deadline: string;
   evidence?: string[];
   status?: string;
+  supplier_timing?: { eta_p50: string; eta_p90: string; p_on_time: number; basis: string; sample_count: number } | null;
+  expedite?: {
+    status: string;
+    q_missing: number;
+    readiness_scope: string;
+    thresholds: { break_even_loss_eur: number | null }[];
+    sensitivity: {
+      probability_gains: number[];
+      break_even_loss_eur: (number | null)[];
+      grid: { loss_per_copy_eur: number; net_benefit_eur: number[] }[];
+    }[];
+  };
 };
 
 export type DashboardData = {
@@ -93,6 +105,7 @@ export type DashboardData = {
   drop: { title: string; detail: string; time: string } | null;
   sync?: { error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string };
   documentReviews?: SourceReview[];
+  dataHealth?: { filesSeen: number; filesParsed: number; needsReview: number; errors: number; lastSyncAgeSeconds: number | null };
   model?: string;
   dataQuality?: { documents?: number; extractionErrors?: number; [key: string]: unknown };
 };

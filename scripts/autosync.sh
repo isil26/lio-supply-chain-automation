@@ -20,11 +20,25 @@ while true; do
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>" && echo "$ts committed $files files"
     fi
   fi
-  if git pull --rebase --autostash -q origin main 2>/dev/null; then
+  if ! git pull --rebase --autostash -q origin main >/dev/null 2>&1; then
+    # coord/*.md are append-only logs: on conflict keep both sides and continue (up to 20 rounds)
+    n=0
+    while [ -n "$(git diff --name-only --diff-filter=U)" ] && [ $n -lt 20 ]; do
+      n=$((n+1))
+      other=$(git diff --name-only --diff-filter=U | grep -v '^coord/.*\.md$')
+      if [ -n "$other" ]; then echo "$ts CONFLICT outside coord/: $other"; git rebase --abort 2>/dev/null; break; fi
+      for f in $(git diff --name-only --diff-filter=U); do
+        sed -i '' -e '/^<<<<<<< /d' -e '/^=======$/d' -e '/^>>>>>>> /d' -e '/^||||||| /d' "$f"; git add "$f"
+      done
+      GIT_EDITOR=true git -c user.name=nick -c user.email="federspiel.nick@gmail.com" rebase --continue >/dev/null 2>&1
+    done
+    git stash list | grep -q autostash && git stash drop -q 2>/dev/null
+  fi
+  if git status -sb | head -1 | grep -q "no branch"; then
+    echo "$ts rebase still in progress, resolve by hand"
+  else
     git push -q origin main 2>&1 | tail -1
     echo "$ts in sync at $(git rev-parse --short HEAD)"
-  else
-    echo "$ts CONFLICT during rebase, aborted; resolve by hand (git status)"; git rebase --abort 2>/dev/null
   fi
   sleep "$INTERVAL"
 done

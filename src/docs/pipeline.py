@@ -11,6 +11,8 @@ from collections import Counter
 from contextlib import closing
 from pathlib import Path
 
+from src.ingest.store import FILE_KINDS, key
+
 from .extract import PROVIDER_ERRORS, bind_note_filename, extract_file
 from .media import LocalOCR, provider_cache_key
 from .parsers import classify
@@ -24,14 +26,17 @@ EXTENSIONS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"
 
 
 def source_paths(data):
-    paths = set()
+    paths = {path for path in data.rglob("*") if path.suffix.lower() == ".eml"}
     for supplier in (data / "suppliers").glob("SUP-*"):
         for bucket in ("order_confirmations", "contracts", "notices"):
             paths.update((supplier / bucket).rglob("*"))
     for subdir in ("soony/receiving/DC-HAM", "soony/context", "soony/logistics"):
         paths.update((data / subdir).rglob("*"))
     return sorted(path for path in paths if path.is_file()
-                  and not path.name.startswith(("~$", ".")) and path.resolve().is_relative_to(data))
+                  and not any(part.startswith(("~$", ".")) for part in path.relative_to(data).parts)
+                  and path.resolve().is_relative_to(data)
+                  and not (path.suffix.lower() in {".csv", ".tsv", ".txt"}
+                           and any(key(path.stem).startswith(prefix) for prefix in FILE_KINDS)))
 
 
 def bind_source(value, source):
@@ -100,7 +105,7 @@ def extract_cached(path, source, manifest_hash, db, ocr, vision, translator):
                    "activity": activity}
         if supported and not methods:
             payload["error"] = "Document has no readable pages"
-        if supported and kind == "confirmation" and re.match(r"OA\d{8}", path.stem, re.I) and not fields.get("items"):
+        if path.suffix.lower() == ".pdf" and kind == "confirmation" and re.match(r"OA\d{8}", path.stem, re.I) and not fields.get("items"):
             payload["error"] = "Order confirmation has no readable item rows"
         serialize(payload)
         doc.update(payload)

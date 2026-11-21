@@ -11,6 +11,7 @@
 <body><main>
 <header><div><p>Soony · Procurement</p><h1>Launch Control Room</h1></div><div class="right"><strong id="launch">Grand Heist 6</strong><div class="muted mono" id="site">DC-HAM</div></div></header>
 <div class="strip"><span id="sync-status" role="status">Building launch snapshot…</span><button id="sync">Refresh inputs</button></div>
+<p id="data-health" class="muted mono" style="margin:0 0 12px" hidden></p>
 <details id="source-reviews" class="sheet" hidden><summary id="review-summary"></summary><ul id="review-list"></ul></details>
 <p id="feedback" class="toast" role="status"></p>
 <section class="summary" aria-label="Launch readiness" id="summary"></section>
@@ -25,6 +26,7 @@
 <script>
 const number = new Intl.NumberFormat("en-GB");
 const date = new Intl.DateTimeFormat("en-GB", {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Europe/Berlin"});
+const euro = new Intl.NumberFormat("en-IE",{style:"currency",currency:"EUR",maximumFractionDigits:2});
 const $ = id => document.getElementById(id);
 const node = (tag,value,className) => {
   const element = document.createElement(tag);
@@ -129,8 +131,29 @@ function drawOptions(){
   const reviewed=item.status==="review" || item.review_requested;
   $("options").append(listSelect("Decision",state.options.map(o=>({id:o.id,name:o.title})),item.id,id=>{optionId=id;drawOptions();}));
   $("options").append(node("h3",item.title),node("p",item.recommendation),
-    label(blocked?"Blocked":item.price===null?"Quote pending":new Intl.NumberFormat("en-IE",{style:"currency",currency:item.currency,maximumFractionDigits:2}).format(item.price),"price"),
+    label(blocked?"Blocked":item.price===null?"Quote pending":euro.format(item.price),"price"),
     label(item.priceLabel ?? item.price_label ?? "Cost estimate"),label(item.impact),label(item.risk),label(item.threshold));
+  const timing=item.supplier_timing;
+  if(timing){
+    $("options").append(label(`${timing.basis} · ${Math.round(timing.p_on_time*100)}% estimated arrival by final shift end · p50 ${date.format(new Date(timing.eta_p50))} · p90 ${date.format(new Date(timing.eta_p90))} CET · ${timing.sample_count} historical PO lines`));
+  }
+  const expedite=item.expedite, grid=expedite?.sensitivity[0];
+  if(grid){
+    const breakdown=node("details");
+    const threshold=expedite.thresholds[0]?.break_even_loss_eur;
+    breakdown.append(node("summary",`Expedite break-even · ${expedite.status}`),
+      label(`${format(expedite.q_missing)} exposed copies · Materials estimate, freight and dock costs pending`),
+      label(threshold==null?`No break-even at the modeled probability gain for ${expedite.readiness_scope}.`:
+        `${euro.format(threshold)} per missing copy at the modeled probability gain for ${expedite.readiness_scope}.`));
+    const table=node("table"), head=table.createTHead(), body=table.createTBody();
+    head.insertRow().append(node("th","Assumed on-time gain"),...grid.probability_gains.map(gain=>node("th",`+${Math.round(gain*100)} pp`)));
+    body.insertRow().append(node("th","Break-even per copy"),...grid.break_even_loss_eur.map(value=>node("td",value==null?"—":euro.format(value))));
+    for(const row of grid.grid){
+      body.insertRow().append(node("th",`Net at ${euro.format(row.loss_per_copy_eur)}/copy`),...row.net_benefit_eur.map(value=>node("td",euro.format(value))));
+    }
+    breakdown.append(table);
+    $("options").append(breakdown);
+  }
   const actions=node("div",undefined,"actions");
   const approve=button(item.status==="approved"?"Approved":"Approve next step",()=>action("/api/decisions/"+item.id+"/approve",{},"Approval recorded."),true);
   const review=button(reviewed?"Review requested":"Request review",()=>action("/api/decisions/"+item.id+"/review",{},blocked?"Review requested. Release remains blocked.":"Review requested."));
@@ -182,6 +205,13 @@ async function refresh(){
     const response=await fetch("/api/dashboard");
     const live=await response.json();
     if(!response.ok) { $("sync-status").textContent=live.sync?.error ?? live.error; return; }
+    const health=live.dataHealth;
+    $("data-health").hidden=!health;
+    if(health){
+      const age=health.lastSyncAgeSeconds;
+      const freshness=age==null?"Sync pending":age<60?"Synced <1 min ago":`Synced ${Math.floor(age/60)} min ago`;
+      $("data-health").textContent=`Data health · ${health.filesSeen} seen · ${health.filesParsed} parsed · ${health.needsReview} need review · ${health.errors} errors · ${freshness}`;
+    }
     const signature=JSON.stringify([live.launch,live.readiness,live.risks,live.options,live.threads,live.activity,live.drop,live.sync?.pendingDrop,live.sync?.error,live.sync?.warnings,live.documentReviews]);
     if(signature===lastState) return;
     state=live;

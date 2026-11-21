@@ -107,6 +107,13 @@ function App() {
   if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
   const approval = data.approval;
+  const timing = approval?.supplier_timing;
+  const expedite = approval?.expedite;
+  const grid = expedite?.sensitivity[0];
+  const health = data.dataHealth;
+  const age = health?.lastSyncAgeSeconds;
+  const etaDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Berlin" });
+  const euros = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
   const sourceReviews = [...(data.sync?.warnings ?? []), ...(data.documentReviews ?? [])];
   const pendingDrop = (data.sync?.pendingDrop ?? 0) > 0;
   const riskEvidence = (risk: Risk) => risk.sources?.[0] ?? (risk.evidence[0] ? { quote: risk.evidence[0] } : null);
@@ -202,9 +209,10 @@ function App() {
       </header>
 
       {data.sync?.error && <div className="error-banner" role="alert">{data.sync.error}</div>}
-      {sourceReviews.length > 0 && <details className="error-banner">
+      {health && <p className="data-health">Data health · {health.filesSeen} seen · {health.filesParsed} parsed · {health.needsReview} need review · {health.errors} errors · {age == null ? "Sync pending" : age < 60 ? "Synced <1 min ago" : `Synced ${Math.floor(age / 60)} min ago`}</p>}
+      {sourceReviews.length > 0 && <details className="error-banner source-reviews">
         <summary>{sourceReviews.length} sources need review · {sourceReviews[0].file.split("/").pop()}</summary>
-        <ul>{sourceReviews.map(({ file, reason }) => <li key={file}>{file} · {reason}</li>)}</ul>
+        <ul>{sourceReviews.map(({ file, reason }) => <li key={`${file}:${reason}`}>{file} · {reason}</li>)}</ul>
       </details>}
       {error && <div className="error-banner">{error}<button onClick={() => setError("")}>×</button></div>}
       {dropVisible && data.drop && <div className="drop-banner">
@@ -297,6 +305,18 @@ function App() {
               <div className="approval-price"><small>Estimated cost</small>{approval.price == null ? <strong>Pending</strong> : <strong>€{approval.price.toLocaleString("en-US")}</strong>}</div>
             </div>
             <div className="decision-meta"><div><span>Impact</span><strong>{approval.impact}</strong></div><div><span>Residual risk</span><strong>{approval.risk}</strong></div><div><span>Authorization</span><strong>{approval.threshold}</strong></div></div>
+            {timing && <p className="decision-analysis">{timing.basis} · {Math.round(timing.p_on_time * 100)}% estimated arrival by the final shift end · p50 {etaDate.format(new Date(timing.eta_p50))} · p90 {etaDate.format(new Date(timing.eta_p90))} CET · {timing.sample_count} historical PO lines</p>}
+            {expedite && grid && <details className="decision-analysis">
+              <summary>Expedite break-even · {expedite.status}</summary>
+              <p>{formatNumber(expedite.q_missing)} exposed copies · Materials estimate, freight and dock costs pending</p>
+              <p>{expedite.thresholds[0]?.break_even_loss_eur == null
+                ? `No break-even at the modeled probability gain for ${expedite.readiness_scope}.`
+                : `${euros.format(expedite.thresholds[0].break_even_loss_eur)} per missing copy at the modeled probability gain for ${expedite.readiness_scope}.`}</p>
+              <table><thead><tr><th>Assumed on-time gain</th>{grid.probability_gains.map(gain => <th key={gain}>+{Math.round(gain * 100)} pp</th>)}</tr></thead>
+                <tbody><tr><th>Break-even per copy</th>{grid.break_even_loss_eur.map((value, i) => <td key={i}>{value == null ? "—" : euros.format(value)}</td>)}</tr>
+                  {grid.grid.map(row => <tr key={row.loss_per_copy_eur}><th>Net at {euros.format(row.loss_per_copy_eur)}/copy</th>{row.net_benefit_eur.map((value, i) => <td key={i}>{euros.format(value)}</td>)}</tr>)}</tbody>
+              </table>
+            </details>}
             <div className="decision-actions">
               <span>{approval.status ? `Status: ${approval.status}` : "Buyer approval required"}</span>
               {!hostedReplayBuild && <>

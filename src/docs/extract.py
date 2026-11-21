@@ -160,7 +160,7 @@ def extract_file(path, source, kind, ocr, vision=None, translator=None, activity
         if body is not None:
             text = body.get_content(errors="replace").strip()
             if text:
-                facts.add("body", text, None, text)
+                facts.add("body", text, None, text[:450])
         return facts, 1, {"email"}, warnings
     if path.suffix.lower() in {".txt", ".md"}:
         text = decode_csv(path.read_bytes())
