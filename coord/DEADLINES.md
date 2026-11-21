@@ -29,8 +29,12 @@
 | 15 Dec | Hwaseong LTA renewal must be signed (expires 31 Dec) | after launch |
 | about Fri 4 Dec ("end of next week") | CPO wants second-source proposals for every single-source part | after launch |
 
-## What was actually missed (honest)
-- The Karton offset rush cutoff (Sat 09:00): passed before we had read the notice.
-- Several Hwaseong damages claims (windows already expired).
-- Time between portal drops: we were 11 files behind until 19:25. A rotating watcher (T50) was assigned but nobody confirmed running it.
+## What had already passed BEFORE the challenge started (Sat 13:00): not ours
+- Karton offset rush-order cutoff, Sat 09:00 (the notice is dated 9 Nov).
+- Hwaseong damages claims whose 12-month windows had expired (about USD 101,412 across 27 lines).
+- Pune's conditional release, expired 30 Oct.
+These are part of the situation Soony handed us, not things we missed.
+
+## What was actually ours
+- Syncing the portal: we were 11 files behind until 19:25 (a rotating watcher, T50, was assigned but nobody confirmed running it). Fixed: run `python3 bridge/sync.py` or let the orchestrator poll.
 Nothing about the hackathon submission is missed.
