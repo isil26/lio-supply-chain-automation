@@ -214,6 +214,9 @@ class SupplierChaser:
         if not draft_result.ok:
             raise ValueError("draft failed send guardrail: " + "; ".join(draft_result.errors))
 
+        if mode == "smtp":
+            from .mailenv import load_team_mail_env
+            load_team_mail_env()
         sender = os.environ.get("CHASER_SENDER")
         if not sender:
             raise RuntimeError("CHASER_SENDER is required")

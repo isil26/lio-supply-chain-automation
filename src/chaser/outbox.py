@@ -34,6 +34,8 @@ class MockOutbox:
 
 class SMTPOutbox:
     def send(self, *, thread_id: str, sender: str, recipient: str, subject: str, body: str) -> dict:
+        from .mailenv import load_team_mail_env
+        load_team_mail_env()
         host = os.environ.get("CHASER_SMTP_HOST")
         port = int(os.environ.get("CHASER_SMTP_PORT", "587"))
         username = os.environ.get("CHASER_SMTP_USERNAME")
