@@ -29,6 +29,7 @@ from src.decide.actions import action_queue, mark_action, recovery_reviews, sour
 from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
+from src.orchestrator import action_approvals
 from src.orchestrator.numbers import numbers_report
 from src.truth import LOCAL, readiness
 from src.agents.loop import AutonomyLoop
@@ -284,8 +285,11 @@ def dashboard(con, *, include_action_history=False):
         "mailHistory": mail_history.view(clock),
         "supplierActions": supplier_actions,
         "recoveryApprovals": recovery_reviews(con, truth, actions, supplier_actions) if live else [],
-        "actions": action_queue(con, truth, actions, queue_reviews, snapshot.get("actionProposals", []),
-                                missed, include_history=include_action_history),
+        "actions": action_approvals.project(
+            con, action_queue(con, truth, actions, queue_reviews, snapshot.get("actionProposals", []),
+                              missed, include_history=include_action_history),
+            include_history=include_action_history,
+        ),
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": snapshot.get("drop"),
         "sync": snapshot.get("sync"), "dataHealth": health,
@@ -544,6 +548,10 @@ class Loop:
                                         **({"portal": {**previous.get("portal", {}), **self.portal_state,
                                                        "snapshot": root.parent.name[:12] if self.portal and manifest else None}}
                                            if self.portal else {})})
+            if not getattr(self.args, "once", True) and not sync_error and not rejected:
+                queue = dashboard(con, include_action_history=True)["actions"]
+                action_approvals.register(con, queue, automatic=not self.args.demo and
+                                          mail_ready and os.getenv("CHASER_REAL_SMTP") == "1")
             self.initialized = True
             self.health["lastCycleTime"] = now()
             self.health["durationMs"] = round((time.monotonic() - started) * 1000)
@@ -841,9 +849,11 @@ def handler(loop):
                     return self.out({"error": "New evidence is being processed. Refresh before approving."}, 409)
                 if supplier and body.get("confirm") is not True:
                     return self.out({"error": "Review and confirm the supplier draft before sending."}, 409)
-                delivery = action_delivery.on_approve(
-                    con, action, by.strip(), demo=loop.args.demo or sync.get("mailMode") != "live")
+                delivery = action_approvals.approve(
+                    con, action, by.strip(), note, demo=loop.args.demo or sync.get("mailMode") != "live")
                 status = delivery["status"]
+                if delivery.get("waitingFor"):
+                    return self.out({"ok": True, "action": action, "waitingFor": delivery["waitingFor"]}, 202)
             else:
                 updated = "dismissed" if verb == "dismiss" else "done"
                 if status in {"dismissed", "done"} and status != updated:
@@ -852,6 +862,7 @@ def handler(loop):
                     if action.get("delivery"):
                         action_delivery.mark(con, action_id, updated, note)
                     mark_action(con, action_id, updated, by.strip(), note)
+                    action_approvals.close(con, action_id, updated)
                 status = updated
             updated = dashboard(con, include_action_history=True)
             action = next((item for item in updated["actions"] if item["id"] == action_id), dict(action, status=status))

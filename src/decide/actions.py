@@ -242,6 +242,10 @@ def _option_proposals(truth, options, reviews, other):
                          review.get("dueAt") or truth["deadline"], review["detail"], evidence,
                          approver=review["approver"], costEur=review.get("price"), priority=review["priority"],
                          material=option.get("material"), optionId=option.get("id"))
+        if review["priority"] in (0, 3):
+            item["approvalKind"] = "dock_slot"
+        elif review["priority"] == 4:
+            item["approvalKind"] = "quality_exception"
         yield _with_forecast(item, option)
     covered = {item["id"] for item in reviews}
     has_packplan = any(item["source"] == "packplan" for item in other)
@@ -264,6 +268,9 @@ def _option_proposals(truth, options, reviews, other):
                               option.get("evidence", []), approver=option.get("threshold") or owner,
                               costEur=option.get("price"), material=material, optionId=option["id"],
                               priority=12 if kind != "priority" else 18)
+        approval_kind = {"inbound": "dock_slot", "quality": "quality_exception", "ppap_release": "supplier_release"}
+        if kind in approval_kind:
+            candidate["approvalKind"] = approval_kind[kind]
         if kind in {"offer_revision_review", "air", "alternate"} and not option.get("approval_block"):
             candidate["supplierCandidate"] = option.get("supplier_id")
             candidate["qty"] = int(truth["parts"].get(material, {}).get("shortfall") or 0)
@@ -282,6 +289,7 @@ def _option_proposals(truth, options, reviews, other):
                             f"{lot['reference']} ({lot['quantity']:,.0f} game cards). Confirm slot expiry "
                             "and costs with DC-HAM before booking.",
                             [*lot["evidence"], {"file": POLICY}], priority=0, material=lot["material"],
+                            approvalKind="dock_slot",
                             approver="Katrin Jansen, DC-HAM site lead (deputy Raj Patel)")
     for event in truth.get("issues", []):
         if event["kind"] != "short_ship" or event.get("material") != "CMP-GAM-001":
