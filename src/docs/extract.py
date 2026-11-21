@@ -162,6 +162,12 @@ def extract_file(path, source, kind, ocr, vision=None, translator=None, activity
             if text:
                 facts.add("body", text, None, text[:450])
         return facts, 1, {"email"}, warnings
+    if path.suffix.lower() == ".docx":
+        text = docx_text(path)
+        if text.strip():
+            PARSERS[kind](facts, text, 1, 1.0) if kind in PARSERS else None
+            methods.add("docx_text")
+        return facts, 1, methods, warnings
     if path.suffix.lower() in {".txt", ".md"}:
         text = decode_csv(path.read_bytes())
         if text.strip():
@@ -224,6 +230,23 @@ def extract_file(path, source, kind, ocr, vision=None, translator=None, activity
         if kind == "receiving":
             finalize_receiving(facts)
         return facts, len(pages), methods, warnings
+
+
+def docx_text(path):
+    """Paragraph text of a .docx (one line per paragraph, list items included)."""
+    import re as _re
+    from xml.etree import ElementTree as ET
+    from zipfile import ZipFile
+    with ZipFile(path) as archive:
+        root = ET.fromstring(archive.read("word/document.xml"))
+    lines = []
+    ns = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    for paragraph in root.iter(ns + "p"):
+        text = "".join(node.text or "" for node in paragraph.iter(ns + "t"))
+        text = _re.sub(r"\s+", " ", text).strip()
+        if text:
+            lines.append(text)
+    return "\n".join(lines)
 
 
 def add_cropped_quantities(facts, ocr, image, lines, page, activity):

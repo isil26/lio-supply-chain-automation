@@ -28,8 +28,8 @@ from .schema import Facts
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = 2
-PARSER_REVISIONS = {"notice": 3, "price_list": 2, "receiving": 4, "context": 1}
-EXTENSIONS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp", ".eml", ".txt", ".md"}
+PARSER_REVISIONS = {"notice": 4, "price_list": 2, "receiving": 4, "context": 2}
+EXTENSIONS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp", ".eml", ".txt", ".md", ".docx"}
 
 
 def source_paths(data):
@@ -203,7 +203,7 @@ def run_pipeline(data, state, output, *, vision=None, translator=None):
                 elif row["kind"] == "confirmation" and not ({"items", "shipped", "balance", "dock_hold"} & fields.keys()):
                     row["review_reasons"].append("unparsed confirmation")
                 elif row["kind"] == "notice" and not (
-                    {"downtime", "available_offer", "capacity", "effective_at", "rush_cutoff",
+                    {"export_licence", "downtime", "available_offer", "capacity", "effective_at", "rush_cutoff",
                      "road_hours", "maximum_quantity", "offer_valid_hours"} & fields.keys()
                 ):
                     row["review_reasons"].append("notice has no verified operational fields")
@@ -214,7 +214,7 @@ def run_pipeline(data, state, output, *, vision=None, translator=None):
                     or any(key(item.get("sheet", "")) in SHEET_KINDS for item in fields.get("rows", []))
                 ):
                     row["review_reasons"].append("unrecognized workbook layout")
-                elif row["kind"] == "context" and not ({"policy_clause", "org_role"} & fields.keys()):
+                elif row["kind"] == "context" and not ({"policy_clause", "org_role", "priority_rule", "memo_line"} & fields.keys()):
                     row["review_reasons"].append("unrecognized document layout")
                 elif row["kind"] in {"contract", "inspection", "workbook"} and not fields:
                     row["review_reasons"].append("unrecognized document layout")

@@ -145,8 +145,26 @@ OFFER_SUPERSESSION = re.compile(
 )
 
 
+def export_licence(facts, flat, page, confidence):
+    """Rare-earth export-licence notice (PackRight, 2026-11-21)."""
+    if not re.search(r"export licen[cs]e|licensing rules", flat, re.I):
+        return
+    delay = re.search(r"delivery after (\d{4}-\d\d-\d\d)\s+move out by (\d+) weeks", flat, re.I)
+    held = re.search(r"We hold (?:magnets|stock) for the boxes already confirmed for (\w+)", flat, re.I)
+    part = re.search(r"\b(RM-[A-Z0-9-]+)\b", flat)
+    box = re.search(r"\b(PR-[A-Z]{2}-\d+)\b", flat)
+    if delay:
+        facts.add("export_licence", {
+            "affected_item": box[1] if box else None, "magnet": part[1] if part else None,
+            "deliveries_after": delay[1], "delay_weeks": int(delay[2]),
+            "held_for": held[1] if held else None,
+            "alternatives_sample_days": int(re.search(r"within (\d+) days", flat)[1]) if re.search(r"within (\d+) days", flat) else None,
+        }, page, delay[0], confidence)
+
+
 def notice(facts, raw, page, confidence):
     flat = " ".join(raw.split())
+    export_licence(facts, flat, page, confidence)
     for match in OFFER_HEADING.finditer(raw):
         offer_id, revision = (value.upper() for value in match.groups())
         facts.add("offer_revision", {"offer_id": offer_id, "revision": revision}, page, match[0], confidence)
@@ -238,6 +256,33 @@ def inspection(facts, raw, page, confidence):
     search(facts, "sample_defects", r"(\d+) of \d+ [^.]+? with\b", flat, page, confidence, int)
 
 
+MEMO_RULES = (
+    ("priority", r"Collector.s Edition first[^.]*\.(?:[^.]*game cards[^.]*\.)?", {"first_edition": "CE"}),
+    ("release_authority", r"Quality (?:&|and) Compliance has the last word[^.]*\.", {"last_word": "Quality & Compliance"}),
+    ("escalation", r"(?:Air freight|rush orders)[^.]*reach me the same hour[^.]*\.", {"to": "CPO", "within": "same hour"}),
+    ("second_source", r"second source for every part[^.]*\.", {"after_launch": True}),
+)
+
+
+def memo(facts, raw, page, confidence):
+    """CPO launch memo: keep each rule as a cited fact. Only fires on memo-style text."""
+    if not re.search(r"^\s*Memo:", raw, re.M | re.I):
+        return
+    flat = " ".join(raw.split())
+    sender = re.search(r"From:\s*(.+?)(?:,\s*CPO| To:)", flat)
+    for name, pattern, value in MEMO_RULES:
+        match = re.search(pattern, flat, re.I)
+        if match:
+            if name == "priority":
+                value = dict(value, includes_game_cards=bool(re.search(r"includes game cards", flat, re.I)))
+            facts.add("priority_rule", dict(value, rule=name, text=match[0].strip(),
+                                            **({"author": sender[1].strip()} if sender else {})),
+                      page, match[0].strip(), confidence)
+    for line in (line.strip() for line in raw.splitlines()):
+        if line:
+            facts.add("memo_line", line, page, line, confidence)
+
+
 def context(facts, raw, page, confidence):
     lines = [line for line in raw.splitlines() if line.strip()]
     for names, roles in zip(lines, lines[1:]):
@@ -247,7 +292,12 @@ def context(facts, raw, page, confidence):
             continue
         for name, role in zip(names_in_row, roles_in_row):
             if re.fullmatch(r"Head of Procurement|Supplier Quality Lead|Category Lead .+", role):
-                facts.add("org_role", {"role": role, "name": name}, page, f"{names}\n{roles}", confidence)
+                value = {"role": role, "name": name}
+                start = re.search(r"\(from (\d{4}-\d\d-\d\d)\)", name)
+                if start:  # v2 org chart: the seat is filled only from that date
+                    value["valid_from"] = start[1]
+                facts.add("org_role", value, page, f"{names}\n{roles}", confidence)
+    memo(facts, raw, page, confidence)
     stripped = "\n".join(line.strip() for line in raw.splitlines())
     stripped = re.sub(r"^Soony · PP-07 Approval policy · .*Page \d+\s*$", "", stripped, flags=re.M)
     search(facts, "policy_clause", r"^\d\. [^\n]+\n[\s\S]*?(?=^\d\. |\Z)", stripped, page, confidence)
