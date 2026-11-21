@@ -33,6 +33,19 @@ LANGUAGE = {
 }
 
 
+# T67: ask the shipper for customs documents so an air lot can be cleared before it lands.
+DOCUMENTS = {
+    "en": ("Customs documents for {ref}",
+           "Hello {name},\n\nShipment {ref} ({units:,} units of {part}) is critical for our Hamburg launch cut-off ({deadline} CET). So that customs can be cleared before it lands, please send the commercial invoice, packing list and air waybill for {ref} today, and confirm the flight number and expected arrival time. This is a request for information only.\n\nSoony launch team"),
+    "pl": ("Dokumenty celne dla {ref}",
+           "Dzień dobry,\n\nPrzesyłka {ref} ({units:,} szt. części {part}) jest kluczowa dla terminu w Hamburgu ({deadline} CET). Aby odprawa celna nastąpiła przed przylotem, prosimy jeszcze dziś przesłać fakturę handlową, listę pakunkową i lotniczy list przewozowy dla {ref} oraz potwierdzić numer lotu i przewidywaną godzinę przylotu. Jest to wyłącznie zapytanie.\n\nZespół Soony"),
+    "ko": ("{ref} 통관 서류 요청",
+           "{name}님, 안녕하세요.\n\n운송 건 {ref}(부품 {part} {units:,}개)는 함부르크 출시 마감({deadline} CET)에 꼭 필요한 물량입니다. 도착 전에 통관을 마칠 수 있도록 오늘 중으로 {ref}의 상업송장, 포장명세서 및 항공화물운송장을 보내 주시고, 항공편 번호와 예상 도착 시간을 확인해 주시기 바랍니다. 이 메일은 정보 요청이며 발주가 아닙니다.\n\nSoony 출시 담당팀"),
+    "zh": ("{ref} 清关文件",
+           "{name}，您好。\n\n货运 {ref}（{units:,} 件 {part}）对我们的汉堡上市截止时间（{deadline} CET）至关重要。为在到达前完成清关，请于今天发送 {ref} 的商业发票、装箱单和航空运单，并确认航班号和预计到达时间。本邮件仅为信息确认，并非订单。\n\nSoony 上市团队"),
+}
+
+
 def schema(con):
     con.executescript("""
        CREATE TABLE IF NOT EXISTS chases (
@@ -55,7 +68,7 @@ def activity(con, agent, action, kind="analysis"):
     con.execute("INSERT INTO activity(time,agent,action,type) VALUES(?,?,?,?)", (now(), agent, action, kind))
 
 
-def draft(con, truth):
+def draft(con, truth, options=None):
     schema(con)
     due = datetime.fromisoformat(truth["deadline"]).strftime("%d %b %H:%M")
     created = 0
@@ -86,6 +99,43 @@ def draft(con, truth):
                 if result.rowcount:
                     activity(con, "Supplier Chaser", f'{supplier["name"]}: prepared {language} follow-up for {part["material"]} ({quantity:,} units).')
                     created += 1
+    return created + draft_documents(con, truth, options or ())
+
+
+def draft_documents(con, truth, options):
+    """Draft a customs-documents request to the shipper of each expedited air lot (T67).
+
+    The thread quantity is the component gap, matching the send endpoint's staleness check;
+    the shipment's own units appear in the body.
+    """
+    due = datetime.fromisoformat(truth["deadline"]).strftime("%d %b %H:%M")
+    profiles = {row["supplier_id"]: row for row in rows(con, "suppliers")}
+    inbound = {item["id"]: item for item in truth["inbound"]}
+    created = 0
+    with con:
+        for option in options:
+            item = inbound.get(option.get("shipment_id"))
+            if option.get("kind") != "inbound" or not item or item["mode"] != "air":
+                continue
+            supplier = profiles.get(item.get("supplier"), {})
+            gap = truth["parts"].get(item["material"], {}).get("shortfall", 0)
+            if not supplier.get("contact_email") or not gap:
+                continue
+            shipment = item.get("reference") or item["id"]
+            ref = hashlib.sha256(f'{truth["deadline"]}:{item["supplier"]}:{item["id"]}:documents'.encode()).hexdigest()[:10].upper()
+            language = supplier.get("preferred_language", "en")
+            subject, template = DOCUMENTS.get(language, DOCUMENTS["en"])
+            body = template.format(name=supplier["contact_name"] or supplier["name"], ref=shipment,
+                                   units=int(item["quantity"]), part=item["material"], deadline=due)
+            result = con.execute("""INSERT INTO chases
+                (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET qty=excluded.qty,body=excluded.body
+                WHERE chases.status='draft' AND chases.qty != excluded.qty""",
+                (ref, item["supplier"], supplier["name"], supplier["contact_email"], language,
+                 f"[SOONY-{ref}] {subject.format(ref=shipment)}", "draft", item["material"], gap, body, truth["deadline"]))
+            if result.rowcount:
+                activity(con, "Supplier Chaser", f'{supplier["name"]}: prepared {language} customs-documents request for {shipment}.')
+                created += 1
     return created
 
 

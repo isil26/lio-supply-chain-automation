@@ -271,7 +271,7 @@ class Loop:
                 for option in options:
                     if option.get("approval_block"):
                         option["evaluated_at"] = now()
-                draft_count = chaser.draft(con, truth)
+                draft_count = chaser.draft(con, truth, options)
                 with con:
                     save_state(con, "truth", truth)
                     save_state(con, "options", options)

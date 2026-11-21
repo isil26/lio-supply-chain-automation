@@ -99,5 +99,50 @@ class InboundOptionTests(unittest.TestCase):
         self.assertEqual(run(truth), [])
 
 
+class CustomsDocumentsDraftTests(unittest.TestCase):
+    def setUp(self):
+        import sqlite3
+        from src import chaser
+        self.chaser = chaser
+        self.con = sqlite3.connect(":memory:")
+        self.con.row_factory = sqlite3.Row
+        self.con.execute("CREATE TABLE suppliers (supplier_id, name, contact_name, contact_email, preferred_language)")
+        self.con.execute("INSERT INTO suppliers VALUES ('SUP-1', 'Hwaseong Memory', 'Seo-yeon Kim', "
+                         "'sy.kim@suppliers.juliansibbing.de', 'ko')")
+        chaser.schema(self.con)
+        self.truth = fixture()
+        self.options = run(self.truth)
+
+    def tearDown(self):
+        self.con.close()
+
+    def chases(self):
+        return [dict(row) for row in self.con.execute("SELECT * FROM chases")]
+
+    def test_drafts_one_korean_request_for_the_air_lot(self):
+        self.assertEqual(self.chaser.draft_documents(self.con, self.truth, self.options), 1)
+        [chase] = self.chases()
+        self.assertEqual((chase["status"], chase["language"], chase["qty"]), ("draft", "ko", 8))
+        self.assertEqual(chase["address"], "sy.kim@suppliers.juliansibbing.de")
+        self.assertIn("020-1", chase["subject"])
+        self.assertIn("상업송장", chase["body"])
+        self.assertIn("8개", chase["body"])
+
+    def test_redrafting_is_idempotent(self):
+        self.chaser.draft_documents(self.con, self.truth, self.options)
+        self.assertEqual(self.chaser.draft_documents(self.con, self.truth, self.options), 0)
+        self.assertEqual(len(self.chases()), 1)
+
+    def test_skips_other_options_and_non_air_lots(self):
+        self.assertEqual(self.chaser.draft_documents(self.con, self.truth, [{"kind": "air", "shipment_id": "AIR"}]), 0)
+        self.truth["inbound"][0]["mode"] = "sea"
+        self.assertEqual(self.chaser.draft_documents(self.con, self.truth, self.options), 0)
+
+    def test_real_send_stays_on_the_supplier_allowlist(self):
+        self.chaser.draft_documents(self.con, self.truth, self.options)
+        from src.chaser.allowlist import check_recipient
+        self.assertEqual(check_recipient(self.chases()[0]["address"]), "sy.kim@suppliers.juliansibbing.de")
+
+
 if __name__ == "__main__":
     unittest.main()
