@@ -12,7 +12,7 @@
 | T8 | Pitch deck, speaker notes, PDF export guide | copilot-deck | docs/deck | done | Built 6-slide HTML deck, 3-minute notes, and PDF export README in docs/deck. |
 
 | T9 | Visible LLM step, escalation case (Pune/Category Lead), numbers script | codex-truth | src/truth, src/docs, src/decide, src/orchestrator | done | docs/WIN_PLAN.md |
-| T10 | One live-API React UI hero screen | copilot-ui | web | done | Live HTTP client, hero dashboard, evidence modal, and mobile/dark-light UI complete; build passes |
+| T10 | Static replay + live-API React UI hero screen | copilot-ui | web | in_progress | Live HTTP client complete; adding Vercel static snapshots, local state, reset and static evidence mode |
 | T7 | Show blocked releases in the standalone demo | murat-agent | src/orchestrator/control-room.html | done | T9 approval API |
 | T11 | Supplier lag calibration, readiness sensitivity and counterfactual CLI | codex-sens | src/truth/sensitivity.py, src/truth/test_sensitivity.py | in_progress | T1, T3 |
 | T11 | Supplier lag calibration, readiness sensitivity and counterfactual CLI | codex-sens | src/truth/sensitivity.py, src/truth/test_sensitivity.py | in_progress | T1, T3 |
