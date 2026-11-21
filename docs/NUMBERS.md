@@ -1,16 +1,28 @@
 # NUMBERS.md — the single frozen number set (deck, demo, video must use ONLY these)
-Generated 21 Nov 2026 from `python3 -m src.orchestrator --once` on merged main (a2027e7) and cross-checked against raw CSVs. Re-run and update after every data drop. If a number here changes, change deck + video.
+The dashboard, deck, and pitch use the default readiness model. These figures are from the complete post-drop snapshot. When publishing a new snapshot, refresh its fingerprint and forecast together, then update the deck and video.
 
 ## Launch
-- Deadline: Sun 22 Nov 2026 20:00 (Europe/Berlin), DC-HAM. Demand 640,000 STD + 72,000 CE.
+- Forecast snapshot: `2026-11-21_1436` (post-drop).
+- Forecast input SHA-256: `12779acaf1251c18d55b3a084f906a3cee40c995cbd88ec524c4abfc8296d3e5`.
+- Launch cutoff: `2026-11-22T20:00:00+01:00` (20:00 CET at DC-HAM). Demand 640,000 STD + 72,000 CE.
 - Packed (packout_log, = launch plan): STD 512,000 (80%), CE 46,800 (65%). Remaining: STD 128,000, CE 25,200.
 
-## Forecast (Monte Carlo, 500 runs, 30-min shift buckets, CE first)
+## Forecast (default model, 500 runs, 30-minute slots, CE first)
+
 | Edition | Target | Expected packed (p10 / p50 / p90) | P(reach target) | First stop |
 |---|---|---|---|---|
 | STD | 640,000 | 614,650 / 614,650 / 626,650 | 0% | Game card 128 GB |
 | CE | 72,000 | 62,550 / 62,550 / 64,350 | 0% | Game card 128 GB |
-Say: "scenario frequency under stated assumptions", not a prediction. Gaps vs target at p50: STD about 25,350, CE about 9,450.
+
+The default forecast uses triangular handling delays by transport mode. P(reach target) is the share of simulations that meet the target. At the median, STD is 25,350 copies short and CE is 9,450 short.
+
+## Historical supplier delay sensitivity
+
+On the same snapshot and cutoff, `python3 -m src.truth.sensitivity` uses historical purchase-order delays. The CE median in that scenario is **66,100**. Zero of 500 trials reach the 72,000 CE target. Label this result as a sensitivity scenario when presenting it alongside the dashboard forecast.
+
+## Forecast drift check
+
+Run `DEMO_DATA_DIR=/path/to/2026-11-21_1436/soony-data python3 -m unittest discover -s tests -p test_numbers.py` from the repo root. The test runs the offline dashboard on the published snapshot and compares the launch cutoff and each edition’s target, P10, P50, P90, and target probability. The fingerprint hashes sorted relative POSIX paths as `path<TAB>file-sha256<LF>` lines, excluding hidden files and directories.
 
 ## Component gaps (remaining need vs usable stock + inbound that can reach DC-HAM before 20:00)
 | Part | Need | SAP stock | Usable stock | Inbound counted | Gap | Reason |
