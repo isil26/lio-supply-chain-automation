@@ -41,6 +41,7 @@ export function ArrivalTimeline({ timeline }: { timeline: Timeline }) {
 
   return <section className="card timeline-card" aria-label="Arrival timeline">
     <h3>The race to 20:00</h3>
+    {!inWindow.length && <p className="tl-headline"><strong>No {(later[0]?.label ?? later[0]?.material ?? "parts").replace(/\s*[–-]\s*Grand Heist 6/i, "")} can reach Hamburg before the trucks leave.</strong> Everything still open arrives after launch.</p>}
     {inWindow.map((lot) => {
       const d = describe(lot);
       const late = d.typical > cutoff;

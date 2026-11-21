@@ -16,10 +16,22 @@ Safety that stays on:
   - the same text is never sent twice to the same address automatically;
   - emails are information requests; purchase commitments still follow PP-07.
 Turn it off with CHASER_AUTO_SEND=0.
+
+Send modes (IMPORTANT.md section 3 and 6, decided 21 Nov 20:50):
+  AUTO       information-only request (status questions, reminders, documents, quotes,
+             answers to replies). Sent without a click.
+  ONE-CLICK  binding wording (accepting a price or offer, an order, a reservation on our
+             terms). Sent only after a named person clicked: Approve on the offers table
+             (deals.decided_by), an approved action (action_sends.approved_by), or
+             approve() below (POST /api/mail/<id>/approve). Without a click the draft is
+             held as 'awaiting click' and logged once.
+Every send is logged with its mode, e.g. "AUTO (information request)" or
+"ONE-CLICK approved by Felix".
 """
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from functools import partial
 
@@ -63,6 +75,101 @@ def duplicate_body(con, address, body):
           AND coalesce(json_extract(m.transport, '$.mode'), '') <> 'dry_run'
         LIMIT 1
     """, (address, body)).fetchone() is not None
+
+
+# Wording that asks the supplier to act on a commitment from us. Our information-only
+# templates say "this is not an order", so plain words like "order" are not enough.
+BINDING = [re.compile(p, re.I) for p in (
+    r"\bplease reserve\b", r"\bwe would like to go ahead\b", r"\bgo ahead with (?:the|your|this) (?:offer|order)\b",
+    r"\bwe (?:hereby )?accept\b", r"\baccept your (?:offer|quote|price)\b", r"\bwe (?:hereby )?order\b",
+    r"\bconfirm (?:the|our) (?:order|purchase)\b", r"\bplease (?:ship|proceed with (?:the|our) order)\b",
+    r"\bwe confirm (?:exw|pickup|the price)\b",
+    r"prosimy o rezerwacj", r"\bakceptujemy\b", r"\bzamawiamy\b", r"chcemy kontynuowa",
+    r"확보해 주시기", r"진행하고자", r"수락합니다", r"주문합니다",
+    r"预留", r"我们接受", r"希望推进", r"我们订购",
+)]
+HELD = "awaiting click"
+
+
+def binding(body):
+    """Return the binding phrase found in an email body, or None for an information request."""
+    for pattern in BINDING:
+        if match := pattern.search(body or ""):
+            return match.group(0)
+    return None
+
+
+def _approvals_schema(con):
+    con.execute("""CREATE TABLE IF NOT EXISTS send_approvals (
+        chase_id TEXT PRIMARY KEY, approved_by TEXT NOT NULL, approved_at TEXT NOT NULL, prior_status TEXT)""")
+
+
+def approver(con, chase_id):
+    """Who clicked for this email, if anyone: offers table, approved action or a held-mail click."""
+    _approvals_schema(con)
+    queries = ("SELECT approved_by FROM send_approvals WHERE chase_id=?",
+               "SELECT decided_by FROM deals WHERE email_id=? AND decided_by IS NOT NULL",
+               "SELECT approved_by FROM action_sends WHERE chase_id=? AND status <> 'dismissed'")
+    for sql in queries:
+        try:
+            row = con.execute(sql, (chase_id,)).fetchone()
+        except Exception:  # table not created yet in this database
+            continue
+        if row and row[0]:
+            return row[0]
+    return None
+
+
+def mode(con, chase_id, body):
+    """{'mode': 'AUTO'|'ONE-CLICK', 'approved_by': name or None, 'phrase': binding phrase or None}."""
+    who = approver(con, chase_id)
+    phrase = binding(body)
+    if who or phrase:
+        return {"mode": "ONE-CLICK", "approved_by": who, "phrase": phrase}
+    return {"mode": "AUTO", "approved_by": None, "phrase": None}
+
+
+def label(info):
+    if info["mode"] == "AUTO":
+        return "AUTO (information request)"
+    return f"ONE-CLICK approved by {info['approved_by']}" if info["approved_by"] else "ONE-CLICK needed"
+
+
+def held(con):
+    """Emails waiting for a click, newest first."""
+    _approvals_schema(con)
+    rows = con.execute(f"SELECT id, supplier, address, subject, body, material FROM chases WHERE status='{HELD}' ORDER BY rowid DESC").fetchall()
+    return [{"id": r[0], "supplier": r[1], "address": r[2], "subject": r[3], "body": r[4], "material": r[5],
+             "reason": binding(r[4])} for r in rows]
+
+
+def approve(con, chase_id, by):
+    """One click on a held email: record who approved it and put it back in the send queue."""
+    if not by or not str(by).strip():
+        raise ValueError("a named approver is required")
+    _approvals_schema(con)
+    row = con.execute("SELECT status FROM chases WHERE id=?", (chase_id,)).fetchone()
+    if not row:
+        raise KeyError(chase_id)
+    prior = con.execute("SELECT prior_status FROM send_approvals WHERE chase_id=?", (chase_id,)).fetchone()
+    restore = (prior[0] if prior and prior[0] else "draft") if row[0] == HELD else row[0]
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with con:
+        con.execute("""INSERT INTO send_approvals(chase_id, approved_by, approved_at, prior_status) VALUES(?,?,?,?)
+                       ON CONFLICT(chase_id) DO UPDATE SET approved_by=excluded.approved_by, approved_at=excluded.approved_at""",
+                    (chase_id, str(by).strip(), stamp, restore))
+        con.execute("UPDATE chases SET status=? WHERE id=? AND status=?", (restore, chase_id, HELD))
+    return {"id": chase_id, "approved_by": str(by).strip(), "status": restore}
+
+
+def _hold(con, chase_id, status, supplier, phrase):
+    _approvals_schema(con)
+    with con:
+        con.execute("""INSERT INTO send_approvals(chase_id, approved_by, approved_at, prior_status) VALUES(?, '', '', ?)
+                       ON CONFLICT(chase_id) DO UPDATE SET prior_status=excluded.prior_status""", (chase_id, status))
+        con.execute("UPDATE chases SET status=? WHERE id=? AND status=?", (HELD, chase_id, status))
+        from . import activity as _activity
+        _activity(con, "Mail Agent", f"{supplier}: ONE-CLICK needed before sending (binding wording: \"{phrase}\").", "warning")
 
 
 def run(con, *, send=None, now=None, prepare=True):
@@ -135,6 +242,11 @@ def run(con, *, send=None, now=None, prepare=True):
                 con.execute("UPDATE chases SET status='duplicate' WHERE id=? AND status=?", (chase_id, status))
             results.append({"id": chase_id, "supplier": supplier, "result": "duplicate"})
             continue
+        info = mode(con, chase_id, body)
+        if info["mode"] == "ONE-CLICK" and not info["approved_by"]:
+            _hold(con, chase_id, status, supplier, info["phrase"])
+            results.append({"id": chase_id, "supplier": supplier, "result": "held", "mode": "ONE-CLICK"})
+            continue
         check = Guardrails().validate_draft(body)
         if not check.ok:
             activity(con, "Mail Agent", f"{supplier}: not sent automatically ({'; '.join(check.errors)}).", "warning")
@@ -148,6 +260,6 @@ def run(con, *, send=None, now=None, prepare=True):
             continue
         if minutes:
             busy.add(case)
-        activity(con, "Mail Agent", f"{supplier}: sent automatically.", "sent")
-        results.append({"id": chase_id, "supplier": supplier, "result": "sent"})
+        activity(con, "Mail Agent", f"{supplier}: sent, {label(info)}.", "sent")
+        results.append({"id": chase_id, "supplier": supplier, "result": "sent", "mode": info["mode"]})
     return results

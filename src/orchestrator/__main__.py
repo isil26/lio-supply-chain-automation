@@ -138,10 +138,12 @@ def network(con, site_id, short_materials):
     supply = {}
     for supplier, material in con.execute("SELECT supplier_id, component_id FROM supplier_components"):
         supply.setdefault(supplier, set()).add(material)
-    suppliers = [{"id": sid, "name": name, "city": city, "country": country, "lat": lat, "lon": lon,
-                  "atRisk": bool(supply.get(sid, set()) & short_materials)}
-                 for sid, name, city, country, lat, lon in con.execute(
-                     "SELECT supplier_id, name, city, country, lat, lon FROM suppliers WHERE lat IS NOT NULL AND lon IS NOT NULL")]
+    # One point per supplier: a re-sent profile (e.g. a data drop) can leave several rows; the last one wins.
+    suppliers = list({sid: {"id": sid, "name": name, "city": city, "country": country, "lat": lat, "lon": lon,
+                            "atRisk": bool(supply.get(sid, set()) & short_materials)}
+                      for sid, name, city, country, lat, lon in con.execute(
+                          "SELECT supplier_id, name, city, country, lat, lon FROM suppliers "
+                          "WHERE lat IS NOT NULL AND lon IS NOT NULL ORDER BY rowid")}.values())
     shipments = []
     for sid, supplier, mode, status, lat, lon, eta, materials in con.execute(
             "SELECT shipment_id, supplier_id, mode, status, last_lat, last_lon, eta, material_ids FROM open_shipments "
@@ -634,6 +636,9 @@ def handler(loop):
                         if deadline:
                             supplier_deals.sync(con, deadline)
                         return self.out(supplier_deals.list_deals(con))
+                    if path == "/api/mail/held":  # IMPORTANT 6 mail-agent: binding emails waiting for one click
+                        from src.chaser import autosend as mail_auto
+                        return self.out({"held": mail_auto.held(con)})
                     if path == "/api/suppliers/best":  # T77 mail-agent: read-only ranking
                         return self.out(supplier_report(con, save=False))
                     if path == "/api/documents":
@@ -711,6 +716,15 @@ def handler(loop):
                         except ValueError as exc:
                             return self.out({"error": str(exc)}, 409)
                         return self.out({"ok": True, "deal": row})
+                    held = re.fullmatch(r"/api/mail/([A-Za-z0-9_-]{1,64})/approve", path)
+                    if held:  # IMPORTANT 6 mail-agent: one click on a binding email; the next mail cycle sends it
+                        from src.chaser import autosend as mail_auto
+                        try:
+                            return self.out({"ok": True, **mail_auto.approve(con, held[1], str(body.get("by") or "")[:80])})
+                        except KeyError:
+                            return self.out({"error": "Unknown email."}, 404)
+                        except ValueError as exc:
+                            return self.out({"error": str(exc)}, 400)
                     if path == "/api/suppliers/drafts":  # T77 mail-agent: create drafts only, never sends
                         return self.out(supplier_report(con, save=True, kind=body.get("kind", "all")))
                     match = re.fullmatch(r"/api/decisions/([a-f0-9]+)/(approve|review)", path)
