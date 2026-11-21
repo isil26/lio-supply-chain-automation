@@ -71,7 +71,7 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T48 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T57 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T29 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
-| T53 | Authenticated replay of the verified art-book agent recording | codex-hosted | web/src/BehindScenes.tsx, hosted agent panels, deploy/vercel replay packaging and checks | review | murat-agent recording; codex-deploy preview and promotion |
+| T53 | Authenticated replay of the verified art-book agent recording | codex-hosted | web/src/BehindScenes.tsx, hosted agent panels, deploy/vercel replay packaging and checks | review | Summary live on dffa6bb; detailed events await the originating recording |
 | T56 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T25 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T31 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
@@ -104,4 +104,5 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T76 | mail-agent: reminder drafts for silent suppliers + read reply attachments (packing list, AWB, invoice) as evidence | mail-agent (gülşah-agent) | src/chaser/followup.py, src/chaser/__init__.py (receive: attachments only) | done | T26 |
 | T77 | Best-supplier card in the control room: GET /api/suppliers/best, POST /api/suppliers/drafts, React card | mail-agent (gülşah-agent) | src/orchestrator/__main__.py (2 routes), web/src/suppliers/ | done | T75 |
 | T53-Trace | Verify original art-book trace provenance and publish a safe handoff | murat-agent | docs/agent_runs/provenance, own coordination notes | awaiting original source | T38b |
+| T78 | Overview agent: auto-generated per-agent digest (task, state, last activity, last commit, open INBOX, stale/duplicate rows) -> coord/AGENTS_OVERVIEW.md + coord/agents_overview.json, live dashboard | overview-agent | scripts/overview.py, src/overview/, coord/AGENTS_OVERVIEW.md, coord/agents_overview.json | in_progress | coord/* |
 | T78 | mail-agent: send supplier emails automatically in live mode (no per-email approval, Gülşah) | mail-agent (gülşah-agent) | src/chaser/autosend.py | done | T75-T77 |
