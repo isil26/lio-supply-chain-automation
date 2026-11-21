@@ -91,10 +91,13 @@ export type DashboardData = {
   approval: Approval | null;
   options?: Approval[];
   drop: { title: string; detail: string; time: string } | null;
-  sync?: { pendingDrop?: number; lastSync?: string; detail?: string; mode?: string };
+  sync?: { error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string };
+  documentReviews?: SourceReview[];
   model?: string;
   dataQuality?: { documents?: number; extractionErrors?: number; [key: string]: unknown };
 };
+
+type SourceReview = { file: string; reason: string };
 
 export interface DashboardApi {
   getDashboard(): Promise<DashboardData>;

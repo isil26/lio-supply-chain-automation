@@ -20,7 +20,7 @@ from .schema import Facts
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = 2
 PARSER_REVISIONS = {"notice": 2, "price_list": 2, "receiving": 4, "context": 1}
-EXTENSIONS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"}
+EXTENSIONS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp", ".eml", ".txt", ".md"}
 
 
 def source_paths(data):
@@ -30,7 +30,7 @@ def source_paths(data):
             paths.update((supplier / bucket).rglob("*"))
     for subdir in ("soony/receiving/DC-HAM", "soony/context", "soony/logistics"):
         paths.update((data / subdir).rglob("*"))
-    return sorted(path for path in paths if path.suffix.lower() in EXTENSIONS and path.is_file()
+    return sorted(path for path in paths if path.is_file()
                   and not path.name.startswith(("~$", ".")) and path.resolve().is_relative_to(data))
 
 
@@ -89,15 +89,18 @@ def extract_cached(path, source, manifest_hash, db, ocr, vision, translator):
             return doc, True
 
         activity = []
-        fields, pages, methods, warnings = extract_file(path, source, kind, ocr, vision, translator, activity)
+        supported = path.suffix.lower() in EXTENSIONS
+        fields, pages, methods, warnings = (
+            extract_file(path, source, kind, ocr, vision, translator, activity) if supported else ({}, 0, (), [])
+        )
         if digest(path) != sha:
             doc["error"] = "File changed during extraction. Retry after bridge sync."
             return doc, False
         payload = {"fields": fields, "pages": pages, "methods": sorted(methods), "warnings": warnings,
                    "activity": activity}
-        if not methods:
+        if supported and not methods:
             payload["error"] = "Document has no readable pages"
-        if kind == "confirmation" and re.match(r"OA\d{8}", path.stem, re.I) and not fields.get("items"):
+        if supported and kind == "confirmation" and re.match(r"OA\d{8}", path.stem, re.I) and not fields.get("items"):
             payload["error"] = "Order confirmation has no readable item rows"
         serialize(payload)
         doc.update(payload)
@@ -164,6 +167,24 @@ def run_pipeline(data, state, output, *, vision=None, translator=None):
                 erp.apply_verified_crops(row)
                 row["mismatches"] = erp.flags(row)
                 row["review_reasons"] = []
+                suffix = Path(row["source"]).suffix.lower()
+                fields = row["fields"]
+                if suffix not in EXTENSIONS:
+                    row["review_reasons"].append("unsupported document format")
+                elif suffix == ".eml":
+                    row["review_reasons"].append("verify email and any attachments before using them")
+                elif row["kind"] == "confirmation" and not ({"items", "shipped", "balance", "dock_hold"} & fields.keys()):
+                    row["review_reasons"].append("unparsed confirmation")
+                elif row["kind"] == "notice" and not (
+                    {"downtime", "available_offer", "capacity", "effective_at", "rush_cutoff",
+                     "road_hours", "maximum_quantity", "offer_valid_hours"} & fields.keys()
+                ):
+                    row["review_reasons"].append("notice has no verified operational fields")
+                elif row["kind"] == "price_list" and not fields.get("price_items"):
+                    row["review_reasons"].append("unparsed price list")
+                elif row["kind"] in {"contract", "inspection", "context", "workbook"} and not fields:
+                    row["review_reasons"].append("unrecognized document layout")
+                row["review_reasons"].extend(row["warnings"])
                 if row["kind"] == "receiving":
                     if not row["fields"].get("items"):
                         row["review_reasons"].append("missing_item_quantities")

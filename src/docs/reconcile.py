@@ -1,8 +1,11 @@
 """Compare extracted facts with independent ERP evidence on every run."""
 
 import csv
+import io
 import re
 from collections import defaultdict
+
+from src.ingest.readers import decode_csv
 
 from .extract import finalize_receiving, record
 from .schema import Facts, decimal_number, evidence, iso_date
@@ -33,7 +36,7 @@ def table_rows(data, pattern, names, manifest):
         source = path.relative_to(data).as_posix()
         if not path.resolve().is_relative_to(data) or (manifest is not None and source not in manifest):
             continue
-        with path.open(encoding="utf-8-sig", newline="") as stream:
+        with io.StringIO(decode_csv(path.read_bytes()), newline="") as stream:
             sample = stream.readline()
             stream.seek(0)
             delimiter = ";" if sample.count(";") > sample.count(",") else ","

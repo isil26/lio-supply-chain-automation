@@ -11,6 +11,7 @@
 <body><main>
 <header><div><p>Soony · Procurement</p><h1>Launch Control Room</h1></div><div class="right"><strong id="launch">Grand Heist 6</strong><div class="muted mono" id="site">DC-HAM</div></div></header>
 <div class="strip"><span id="sync-status" role="status">Building launch snapshot…</span><button id="sync">Refresh inputs</button></div>
+<details id="source-reviews" class="sheet" hidden><summary id="review-summary"></summary><ul id="review-list"></ul></details>
 <p id="feedback" class="toast" role="status"></p>
 <section class="summary" aria-label="Launch readiness" id="summary"></section>
 <div class="grid">
@@ -181,7 +182,7 @@ async function refresh(){
     const response=await fetch("/api/dashboard");
     const live=await response.json();
     if(!response.ok) { $("sync-status").textContent=live.sync?.error ?? live.error; return; }
-    const signature=JSON.stringify([live.launch,live.readiness,live.risks,live.options,live.threads,live.activity,live.drop,live.sync?.pendingDrop,live.sync?.error]);
+    const signature=JSON.stringify([live.launch,live.readiness,live.risks,live.options,live.threads,live.activity,live.drop,live.sync?.pendingDrop,live.sync?.error,live.sync?.warnings,live.documentReviews]);
     if(signature===lastState) return;
     state=live;
     lastState=signature;
@@ -191,6 +192,12 @@ async function refresh(){
     const title=state.sync?.error ?? drop?.title ?? "Launch snapshot";
     const detail=state.sync?.error?"":drop?.detail;
     $("sync-status").replaceChildren(node("b",title),document.createTextNode(detail ?? ""));
+    const reviews=[...(state.sync?.warnings ?? []),...(state.documentReviews ?? [])];
+    $("source-reviews").hidden=!reviews.length;
+    if(reviews.length){
+      $("review-summary").textContent=`${reviews.length} sources need review · ${reviews[0].file.split("/").pop()}`;
+      $("review-list").replaceChildren(...reviews.map(item=>node("li",`${item.file} · ${item.reason}`)));
+    }
     $("sync").textContent=state.sync?.pendingDrop ? "Replay supplier drop" : "Refresh inputs";
     if(lastDrop && lastDrop!==drop?.id) $("feedback").textContent="Supplier inputs, gaps and decision options updated.";
     lastDrop=drop?.id;

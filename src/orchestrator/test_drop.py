@@ -52,7 +52,7 @@ class DropSummaryTest(unittest.TestCase):
                     orchestrator.save_state(writer, "drop", {"title": name})
                     orchestrator.save_state(writer, "sync", {"pendingDrop": pending})
 
-            def publish_during_render(*_):
+            def publish_during_render(*_, **_kwargs):
                 publish("Updated", 0)
                 return []
 

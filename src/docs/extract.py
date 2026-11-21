@@ -5,7 +5,11 @@ import re
 import subprocess
 import tempfile
 from datetime import datetime, timezone
+from email import policy
+from email.parser import BytesParser
 from pathlib import Path
+
+from src.ingest.readers import decode_csv
 
 from .media import checked_vision, pdf_text, render_page
 from .parsers import PARSERS, workbook
@@ -145,6 +149,29 @@ def extract_file(path, source, kind, ocr, vision=None, translator=None, activity
     facts = Facts(source)
     activity = [] if activity is None else activity
     warnings, methods = [], set()
+    if path.suffix.lower() == ".eml":
+        with path.open("rb") as stream:
+            message = BytesParser(policy=policy.default).parse(stream)
+        for header in ("From", "To", "Date", "Subject", "Message-ID"):
+            if header in message:
+                raw = str(message[header])
+                facts.add(header.lower().replace("-", "_"), raw, None, raw)
+        body = message.get_body(preferencelist=("plain", "html"))
+        if body is not None:
+            text = body.get_content(errors="replace").strip()
+            if text:
+                facts.add("body", text, None, text)
+        return facts, 1, {"email"}, warnings
+    if path.suffix.lower() in {".txt", ".md"}:
+        text = decode_csv(path.read_bytes())
+        if text.strip():
+            parser = PARSERS.get(kind)
+            if parser:
+                parser(facts, text, 1, 1.0)
+            if kind == "context":
+                facts.add("body", text, 1, text)
+            methods.add("text")
+        return facts, 1, methods, warnings
     if path.suffix.lower() == ".xlsx":
         workbook(facts, path)
         methods.add("workbook")

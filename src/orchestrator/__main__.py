@@ -11,7 +11,7 @@ import sys
 import threading
 import time
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timezone
 from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -65,12 +65,12 @@ def cite_text(source):
     return path + location
 
 
-def dashboard_activity(con, blocked, clock):
+def dashboard_activity(con, blocked, clock, *, docs=None, reviews=()):
     general = [dict(row, id=str(row["id"]), tool=None, input_ref=None, output_ref=None, status=None, citation=None)
                for row in con.execute("SELECT * FROM activity ORDER BY id DESC LIMIT 15")]
     traced = []
     pages = {}
-    for doc in documents(con):
+    for doc in documents(con) if docs is None else docs:
         for index, event in enumerate(doc.get("activity", [])):
             item = dict(event, id=f'doc:{doc["source"]}:{index}',
                         type="warning" if event["status"] in {"error", "rejected"} else "analysis")
@@ -101,7 +101,13 @@ def dashboard_activity(con, blocked, clock):
                            validations[0] if validations else None)
             proof.extend(event for event in (read, call, outcome) if event)
     shown = {event["id"] for event in proof}
-    recent = [*escalation, *proof, *general, *sorted((event for event in traced if event["id"] not in shown),
+    review_activity = [
+        {"id": f'doc:{review["file"]}:review', "agent": "Document Agent", "tool": "document_review",
+         "type": "warning", "status": "needs_review", "action": f'Needs review · {review["file"]} · {review["reason"]}',
+         "input_ref": review["file"], "output_ref": None, "citation": {"file": review["file"]}, "time": ""}
+        for review in reviews[-5:]
+    ]
+    recent = [*escalation, *proof, *review_activity, *general, *sorted((event for event in traced if event["id"] not in shown),
                                                   key=lambda event: event["time"], reverse=True)]
     return [dict(event, time=clock(event["time"])) for event in recent]
 
@@ -144,6 +150,20 @@ def dashboard(con):
     def clock(value):
         return datetime.fromisoformat(value).astimezone(LOCAL).strftime("%H:%M CET") if value else ""
 
+    docs = list(documents(con))
+    reviews = [{"file": doc["source"], "reason": doc["error"] or ", ".join(doc["review_reasons"])}
+               for doc in docs if doc.get("error") or doc.get("review_reasons")]
+    sync = snapshot.get("sync") or {}
+    parsed = {doc["source"] for doc in docs if doc.get("methods") and not doc.get("error")}
+    parsed.update(row[0] for row in con.execute("SELECT DISTINCT source FROM records"))
+    if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ingest_files'").fetchone():
+        parsed.update(row[0] for row in con.execute("SELECT source FROM ingest_files WHERE row_count > 0"))
+    errors = {doc["source"] for doc in docs if doc.get("error")} | {item["source"] for item in sync.get("events", [])}
+    last_sync = datetime.fromisoformat(sync["time"]) if sync.get("time") else None
+    health = {"filesSeen": sync.get("filesSeen", 0), "filesParsed": len(parsed),
+              "needsReview": len({review["file"] for review in [*reviews, *sync.get("warnings", [])]}),
+              "errors": len(errors) + int(sync.get("failed", False)),
+              "lastSyncAgeSeconds": max(0, int((datetime.now(timezone.utc) - last_sync).total_seconds())) if last_sync else None}
     return {
         "launch": {"name": truth["name"].strip(" -–•"), "deadline": truth["deadline"], "location": truth["site"]},
         "readiness": [{"edition": "CE" if pid.endswith("-CE") else "STD", "percent": round(row["packed"] / row["target"] * 100, 1),
@@ -151,13 +171,13 @@ def dashboard(con):
                        "p10": row["p10"], "p90": row["p90"], "firstStop": truth["parts"].get(row["first_stop"], {}).get("label"),
                        "status": "At risk" if row["probability"] < .8 else "On track", "tone": "red" if row["probability"] < .3 else "amber"}
                       for pid, row in truth["editions"].items()],
-        "risks": risks, "activity": dashboard_activity(con, blocked, clock),
+        "risks": risks, "activity": dashboard_activity(con, blocked, clock, docs=docs, reviews=reviews), "documentReviews": reviews,
         "threads": [{**thread, "initials": "".join(word[0] for word in thread["supplier"].split()[:2]),
                      "messages": [dict(msg, time=clock(msg["time"])) for msg in thread["messages"]]}
                     for thread in chaser.list_threads(con)],
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": snapshot.get("drop"),
-        "sync": snapshot.get("sync"),
+        "sync": snapshot.get("sync"), "dataHealth": health,
         "model": truth["model"], "dataQuality": truth["data_quality"],
     }
 
@@ -223,6 +243,7 @@ class Loop:
             before = get_state(con, "truth")
             events = ingest(con, self.root, ROOT / "bridge" / "state.json" if self.args.online else None)
             successful = [event for event in events if event["action"] != "error"]
+            checks = get_state(con, "sourceChecks")
             with con:
                 if successful:
                     save_state(con, "pendingEvents", [*get_state(con, "pendingEvents", []), *successful])
@@ -265,9 +286,20 @@ class Loop:
                 except (OSError, chaser.imaplib.IMAP4.error) as exc:
                     sync_error = (sync_error + " " if sync_error else "") + f"Inbox polling failed ({exc.__class__.__name__})."
             chaser.expire(con)
+            failed = sync_error is not None
+            rejected = checks["rejections"]
+            if rejected:
+                summary = "Source rejected: " + ", ".join(f'{event["source"]} ({event["detail"]["error"]})' for event in rejected)
+                sync_error = f"{sync_error} {summary}" if sync_error else summary
+            warnings = [{"file": source, "reason": reasons[0] + (f" (+{len(reasons) - 1} more)" if len(reasons) > 1 else "")}
+                        for source, reasons in checks["warnings"].items()]
             with con:
-                save_state(con, "sync", {"time": now(), "error": sync_error, "mode": "replay" if self.args.demo else "portal" if self.args.online else "local",
-                                        "pendingDrop": len(self.drop_files), "mailMode": "dry-run" if self.args.demo or os.getenv("CHASER_REAL_SMTP") != "1" else "live", "events": [item for item in events if item["action"] == "error"]})
+                previous = get_state(con, "sync", {})
+                save_state(con, "sync", {"time": previous.get("time") if failed or rejected else now(), "error": sync_error,
+                                        "failed": failed, "filesSeen": checks["filesSeen"],
+                                        "mode": "replay" if self.args.demo else "portal" if self.args.online else "local",
+                                        "pendingDrop": len(self.drop_files), "mailMode": "dry-run" if self.args.demo or os.getenv("CHASER_REAL_SMTP") != "1" else "live",
+                                        "events": rejected, "warnings": warnings})
             self.initialized = True
             return len(successful)
 
@@ -284,8 +316,8 @@ class Loop:
             except Exception as exc:
                 print(f"Pipeline: {exc}", file=sys.stderr, flush=True)
                 with closing(connect(self.database)) as con, con:
-                    save_state(con, "sync", {"time": now(), "error": str(exc), "mode": "replay" if self.args.demo else "local",
-                                            "pendingDrop": len(self.drop_files)})
+                    previous = get_state(con, "sync", {})
+                    save_state(con, "sync", {**previous, "error": str(exc), "failed": True, "pendingDrop": len(self.drop_files)})
             self.trigger.wait(self.args.interval)
             self.trigger.clear()
 

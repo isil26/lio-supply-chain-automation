@@ -332,6 +332,6 @@ def read_records(
         warnings = []
         for field, raw_value in values.items():
             parsed = getattr(record, field, None)
-            if isinstance(parsed, date) and isinstance(raw_value, str) and ambiguous_slash_date(raw_value):
+            if not month_first and isinstance(parsed, date) and isinstance(raw_value, str) and ambiguous_slash_date(raw_value):
                 warnings.append(f"{location}, {field}: ambiguous slash date {raw_value}; interpreted as {parsed.isoformat()}")
         yield Record(record, sheet, row, tuple(warnings))

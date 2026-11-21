@@ -11,6 +11,7 @@ from pathlib import Path
 from zipfile import BadZipFile
 
 from .run import ingest as ingest_erp, load_manifest
+from .readers import decode_csv
 
 from openpyxl import load_workbook
 from pydantic import BaseModel, ValidationError, create_model
@@ -147,13 +148,7 @@ def normalize(kind, raw):
 
 
 def csv_rows(body):
-    for encoding in ("utf-8-sig", "utf-16", "cp1252", "latin1"):
-        try:
-            decoded = body.decode(encoding)
-            if "\x00" not in decoded:
-                break
-        except UnicodeError:
-            continue
+    decoded = decode_csv(body)
     lines = decoded.splitlines()
     if not lines:
         return
@@ -211,6 +206,8 @@ def parse(source, body):
             normalized.append((sheet, num, kind, normalize(kind, raw)))
         except (ValidationError, ValueError) as exc:
             raise ValueError(f"{sheet or 'CSV'} row {num}: {exc}") from exc
+    if path.suffix.lower() in {".csv", ".tsv", ".txt"} and not normalized:
+        raise ValueError("CSV has no data rows")
     return normalized
 
 
@@ -232,6 +229,7 @@ def ingest(con, root, state=None):
     erp_sources = {row[0] for row in con.execute("SELECT source FROM ingest_files")}
     manifest = load_manifest(state)
     events = []
+    rejections = []
     with con:
         con.execute("BEGIN IMMEDIATE")
         previous = dict(con.execute("SELECT source,sha FROM files"))
@@ -262,6 +260,7 @@ def ingest(con, root, state=None):
                 last = con.execute("SELECT action,detail FROM changes WHERE source=? ORDER BY id DESC LIMIT 1", (source,)).fetchone()
                 if not last or last["action"] != "error" or json.loads(last["detail"]) != detail:
                     events.append(change(con, source, "error", detail))
+                rejections.append({"source": source, "action": "error", "detail": detail})
                 continue
             before = {(row["sheet"], row["row_no"]): json.loads(row["payload"]) for row in
                       con.execute("SELECT sheet,row_no,payload FROM records WHERE source=?", (source,))}
@@ -285,6 +284,7 @@ def ingest(con, root, state=None):
             count = con.execute("SELECT COUNT(*) FROM records WHERE source=?", (source,)).fetchone()[0]
             con.execute("DELETE FROM files WHERE source=?", (source,))
             events.append(change(con, source, "removed", {"rows_removed": count}))
+        save_state(con, "sourceChecks", {"filesSeen": len(present), "warnings": report["warnings"], "rejections": rejections})
     return events
 
 

@@ -208,7 +208,7 @@ def ingest(data: Path, state: Path, database: Path) -> dict:
         manifest = load_manifest(state)
         inputs = load_inputs(data, manifest)
         create_schema(db)
-        prior = db.execute("SELECT bridge_manifest, last_summary FROM ingest_state WHERE id = 1").fetchone()
+        prior = db.execute("SELECT bridge_manifest, summary FROM ingest_state WHERE id = 1").fetchone()
         previous_manifest = json.loads(prior[0]) if prior and prior[0] is not None else None
         previous_files = {
             source: (table, digest, count) for source, table, digest, count

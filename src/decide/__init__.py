@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from src.docs import documents
 from src.ingest.store import now, rows
 from src.truth import field_sources, simulate, value
+from .expedite import choose as score_expedite
+from .reliability import SupplierReliability
 
 POLICY = "soony/context/approval_policy_PP-07.pdf"
 ORG = "soony/context/org_chart_procurement.pdf"
@@ -95,11 +97,23 @@ def choose(con, truth, data_root=None):
     launch_end = datetime.fromisoformat(truth["deadline"])
     shifts = [(datetime.fromisoformat(start), datetime.fromisoformat(end)) for start, end in truth["shifts"]]
     start = shifts[0][0] if shifts else launch_end
+    last_slot = min(shifts[-1][1], launch_end) if shifts else launch_end
+    reliability = SupplierReliability(con, before=start)
     buyer_lead = "Dr. Maren Vogt"
     decision_menu = []
     products = {row["product_id"]: row for row in rows(con, "product")}
     notes = data_root / ONBOARDING if data_root else None
     onboarding = notes.read_text(encoding="utf-8") if notes and notes.is_file() else ""
+
+    def timing(supplier, arrival, basis):
+        if not supplier or not arrival:
+            return None
+        eta = reliability.discounted_eta(supplier, arrival, deadline=last_slot)
+        profile = reliability.profile(supplier)
+        return {"eta_p50": eta.eta_p50.isoformat(), "eta_p90": eta.eta_p90.isoformat(),
+                "p_on_time": eta.p_on_time, "deadline": last_slot.isoformat(), "basis": basis,
+                "method": profile["method"], "sample_count": profile["prior_sample_count"],
+                "evidence": profile["evidence"][:5]}
 
     def option(kind, title, recommendation, price, threshold, impact, risk, evidence, **extra):
         item = {"kind": kind, "title": title, "recommendation": recommendation, "price": price, "currency": "EUR",
@@ -146,8 +160,9 @@ def choose(con, truth, data_root=None):
             price_owner = next((name for name, limit in po_limits if known_cost < limit), "CPO and CFO jointly")
             if not po_limits:
                 price_owner = "Confirm PO approver under PP-07"
-            gain = estimate(part["material"], qty, start + timedelta(hours=handling), "road")
-            option("partial", f'Secure {part["label"].split(" Grand Heist")[0].lower()} stock',
+            arrival = start + timedelta(hours=handling)
+            gain = estimate(part["material"], qty, arrival, "road")
+            recovery = option("partial", f'Secure {part["label"].split(" Grand Heist")[0].lower()} stock',
                    f'Request a hold and a written delivered quote for {qty:,} finished units from {rate["supplier"].get("name", "the supplier")}. Prepare a separate PO decision after the dock slot and total cost are confirmed.',
                    known_cost, f"{price_owner} by total PO value + DC-HAM site lead dock release",
                    f'{qty:,} units. {handling} h loading + driving, before receiving. ' +
@@ -158,6 +173,19 @@ def choose(con, truth, data_root=None):
                    latest_action=latest.isoformat(), request_only=True, price_label="Materials estimate",
                    full_lot_price=full_lot_cost, full_lot_units=full_lot_units, modeled_impact=gain, material=part["material"],
                    supplier_id=rate["supplier_id"])
+            recovery["supplier_timing"] = timing(rate["supplier_id"], arrival, "Express offer if authorized at first shift")
+            if qty > 0 and not part["embedded_in"]:
+                copies = waiting_exposure(dict(part, shortfall=qty), truth["editions"], products)["units"]
+                shipment_id = f'proposed:{recovery["id"]}'
+                proposed = {"id": shipment_id, "earliest": arrival.isoformat(), "material": part["material"],
+                            "quantity": qty, "held": True, "mode": "road", "supplier": rate["supplier_id"]}
+                scenario = dict(truth, inbound=[*truth["inbound"], proposed])
+                affected = [pid for pid in truth["editions"] if part["unit_usage"].get(pid)]
+                recovery["expedite"] = score_expedite([
+                    {"label": "Wait", "cost_eur": 0},
+                    {"label": "Express offer", "cost_eur": known_cost,
+                     "changes": {"release_shipments": [shipment_id]}},
+                ], None, copies, truth=scenario, edition=affected[0] if len(affected) == 1 else None)
 
     for issue in truth["issues"]:
         if issue["kind"] == "quality_hold" and truth["parts"].get(issue["material"], {}).get("shortfall"):
@@ -179,13 +207,14 @@ def choose(con, truth, data_root=None):
             sea = min((row for row in stock_candidates if row["earliest"]), key=lambda row: row["earliest"], default=None)
             if sea:
                 air = [r["transit_days"] for r in lanes if r["mode"] == "air" and r["transit_days"] is not None]
-                option("air", f'Quote an air split for {part["label"].split(" – ")[0].lower()}',
+                air_quote = option("air", f'Quote an air split for {part["label"].split(" – ")[0].lower()}',
                        f'Ask for {part["shortfall"]:,} released units at origin and a door-to-door quote. Keep booked ocean stock where it is until a feasible split is confirmed.',
                        None, f"Category Lead within €{air_limit:,} cumulative monthly category spend, otherwise CPO + dock release" if air_limit else "Confirm the air-freight approver under PP-07",
                        f'Air linehaul floor {min(air):g} days plus clearance and truck. Earliest confirmed sea lane: {sea["earliest"][:10]}.'
                        if air else f'Earliest confirmed sea lane: {sea["earliest"][:10]}.',
                        "Loaded containers and held stock require release. Confirm a signed price and revised arrival before booking.",
                        [*evidence, *sea["evidence"]], request_only=True, material=part["material"], supplier_id=sea["supplier"])
+                air_quote["supplier_timing"] = timing(sea["supplier"], sea["earliest"], "Booked ocean lane")
         alternatives = [rate for rate in part["suppliers"] if rate["primary"] in (0, False, "N") and rate["supplier"].get("status") == "active"]
         for rate in alternatives:
             supplier = rate["supplier"]

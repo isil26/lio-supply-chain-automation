@@ -107,6 +107,7 @@ function App() {
   if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
   const approval = data.approval;
+  const sourceReviews = [...(data.sync?.warnings ?? []), ...(data.documentReviews ?? [])];
   const pendingDrop = (data.sync?.pendingDrop ?? 0) > 0;
   const riskEvidence = (risk: Risk) => risk.sources?.[0] ?? (risk.evidence[0] ? { quote: risk.evidence[0] } : null);
 
@@ -200,6 +201,11 @@ function App() {
         {hostedReplayBuild && <form method="post" action="/logout"><button className="review-button" type="submit">Sign out</button></form>}
       </header>
 
+      {data.sync?.error && <div className="error-banner" role="alert">{data.sync.error}</div>}
+      {sourceReviews.length > 0 && <details className="error-banner">
+        <summary>{sourceReviews.length} sources need review · {sourceReviews[0].file.split("/").pop()}</summary>
+        <ul>{sourceReviews.map(({ file, reason }) => <li key={file}>{file} · {reason}</li>)}</ul>
+      </details>}
       {error && <div className="error-banner">{error}<button onClick={() => setError("")}>×</button></div>}
       {dropVisible && data.drop && <div className="drop-banner">
         <div className="drop-icon"><Icon name="arrow"/></div>
