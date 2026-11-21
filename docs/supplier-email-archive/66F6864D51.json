@@ -77,6 +77,78 @@
       "references": [],
       "body_content_type": "text/plain",
       "body": "Hello,\n\nThank you for your reply.\n\nWe understand the full quantity is not possible in time. Could you tell us how many units you could ship before 22 Nov 20:00 CET as a part shipment, and the earliest date for the rest? To arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight.\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:04:27+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a1ff7ee064-65894889-1c03-4cd3-b360-846df4e8c261-000000@eu-west-1.amazonses.com>",
+      "chase_id": "D0169679EB",
+      "in_reply_to": "<179528766555.12942.10376291555397434884@gmail.com>",
+      "references": [
+        "<179528766555.12942.10376291555397434884@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nNo quantity from PO 4500318769 can be shipped and reach Europe before 22 November at 20:00 CET. The complete 36,000-unit lot is packed and on hold at our Boise dock pending Soony’s written EXW confirmation or nomination of your forwarder.\n\nOnce we receive that authorization, we can release the requested split or the full lot for pickup; the next available air service reaches Frankfurt approximately two days after release. I will need Logistics to provide the pickup address, carton/pallet count, and gross weight for the 6,800-unit split and remaining balance.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:06:09+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179528796971.16948.10278044985179374302@gmail.com>",
+      "chase_id": "6FF1B2D813",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nTo arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight. To complete our planning, could you also confirm: the quantity you can supply, the delivery date to Hamburg, the delivered unit price? Could you send the packing list or the shipping/booking reference once available?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:08:45+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a1ff82cf80-8d0eca27-8fab-44d4-bbbd-45024887909a-000000@eu-west-1.amazonses.com>",
+      "chase_id": "6FF1B2D813",
+      "in_reply_to": "<179528796971.16948.10278044985179374302@gmail.com>",
+      "references": [
+        "<179528796971.16948.10278044985179374302@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThe available quantity is 36,000 CMP-GAM-001 cards under PO 4500318769. They are packed and ready for release at our Boise dock once Soony confirms EXW Boise in writing or nominates its forwarder; I’ll need Logistics to provide the pickup appointment time, full pickup address, pallet/carton count, gross weight, and packing list.\n\nThe booked air waybill reference is 020-48113304, ORD to FRA. Following release, Frankfurt arrival is expected about two days later; Logistics and the carrier would need to confirm the final delivery timing into Hamburg.\n\nThe confirmed product price is USD 10.93 per unit. Under Sales Agreement PC-0011-2023 §4.1, terms are EXW Boise, with freight, insurance, and duties for Soony’s account, so there is no delivered unit price I can confirm at this point.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:08:57+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "[SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<soony-sunday-recovery-boise-eu-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": "66F6864D51",
+      "in_reply_to": "<010201a1ff7b9335-3f871c7f-db9d-4b2f-8a48-a7f434c48adc-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<soony-sunday-recovery-boise-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff7b9335-3f871c7f-db9d-4b2f-8a48-a7f434c48adc-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Megan,\n\nThank you for checking premium transport. We have one separate question about manufacturing already qualified in Europe. Do you or a partner already approved by Soony for this exact GH6 card have compatible blank 128 GB media in Europe, licensed GH6 programming and verification capacity, and authority to release finished CMP-GAM-001 locally? Could any already programmed, traceable service stock held by an authorized European partner be reallocated?\n\nIf such a route exists, please give the site, approved scope, quantity actually available, programming and test throughput, earliest split handoffs at DC-HAM, and delivered quote. We can use a partial tranche; our last useful line-handoff target is 18:30 CET on 22 November. If there is no approved European route, a clear zero closes this enquiry. Please send only the commercial and qualification details. This is not an instruction to produce, move goods or incur charges.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:09:55+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179528819557.18044.16283804452710627425@gmail.com>",
+      "chase_id": "300E2ABF53",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nTo arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight. To complete our planning, could you also confirm: the quantity you can supply, the delivery date to Hamburg?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
     }
   ]
 }

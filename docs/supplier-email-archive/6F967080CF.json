@@ -130,6 +130,24 @@
       ],
       "body_content_type": "text/plain",
       "body": "Dzień dobry,\n\nmożemy bezpłatnie wstępnie odłożyć 5 900 sztuk z gotowego zapasu i nie rozpoczniemy wysyłki bez formalnego zamówienia Soony. Cena 2,10 EUR za sztukę oraz dostępność pozostają zgodne z naszą poranną ofertą, ważną 24 godziny od jej wysłania; sprawdzę dokładną godzinę jej wygaśnięcia i potwierdzę ją osobno.\n\nGotowe artbooki możemy załadować w ciągu 4 godzin od otrzymania zamówienia, a podczas postoju produkcyjnego wysyłki z magazynu są nadal możliwe. Najwcześniejsze okna załadunku i niedzielnego rozładunku muszę potwierdzić z Warta Trans; nie mogę ich jeszcze zagwarantować.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:11:13+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "[SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<soony-karton-5900-existing-po-window-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": null,
+      "in_reply_to": "<010201a1ff724fdd-4eafc58e-1511-4a37-b66e-2467c710830a-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179527692796.61223.10451353623898573343@gmail.com>",
+        "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>",
+        "<soony-karton-5900-free-hold-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff724fdd-4eafc58e-1511-4a37-b66e-2467c710830a-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry Pani Agnieszko,\n\ndziękujemy za możliwość bezpłatnego odłożenia 5 900 gotowych artbooków CMP-GAM-008. Sprawdzamy z kupcem formę dokumentu potrzebnego do wysyłki. W naszym systemie zamówienie 4500318775 ma otwartą pozycję 00010 na 24 500 takich artbooków po 2,10 EUR DAP Hamburg na grudzień. Czy ta pozycja jest również otwarta w Państwa systemie? Czy można zaliczyć na nią 5 900 sztuk z odłożonej partii jako dostawę częściową, z zachowaniem pozostałych 18 600 na później, bez zwiększenia łącznej liczby zamówionych sztuk?\n\nProsimy o wskazanie, czy do takiej zmiany potrzebny jest podpisany aneks lub odrębne zamówienie. Jeśli Warta Trans ma już konkretne okno, prosimy o jego datę i godzinę CET, termin przekazania dokumentu przez kupca i najwcześniejszą dostawę do DC-HAM. Interesuje nas wyłącznie partia artbooków. Jeżeli przewoźnik przejął już jakąkolwiek ich ilość, prosimy o rzeczywistą ilość, godzinę odbioru i numer listu przewozowego.\n\nTo pytanie o możliwość zmiany terminu. Obecne zamówienie i terminy pozostają w mocy. Prosimy poczekać z wysyłką i kosztami na właściwy dokument od uprawnionego kupca Soony.\n\nPozdrawiamy\nZespół Soony\n"
     }
   ]
 }
