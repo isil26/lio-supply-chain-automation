@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team sign-in | Soony Launch Control Room</title>
+<style>
+  :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #0b1020; color: #eef1fa; }
+  body { display: grid; min-height: 100vh; place-items: center; margin: 0; }
+  main { box-sizing: border-box; width: min(90vw, 420px); padding: 2rem; border: 1px solid #374463; border-radius: 16px; background: #151d32; }
+  p { color: #b4bed7; margin-top: .25rem; }
+  h1 { font-size: 1.75rem; line-height: 1.15; margin: .25rem 0 .6rem; }
+  form { display: grid; gap: .65rem; margin-top: 1.5rem; }
+  input, button { font: inherit; border-radius: 7px; padding: .65rem .75rem; }
+  input { width: 100%; box-sizing: border-box; border: 1px solid #657398; background: #0b1020; color: inherit; }
+  button { border: 0; background: #b7f7d9; color: #122822; font-weight: 700; cursor: pointer; }
+  :focus-visible { outline: 2px solid #92ddff; outline-offset: 3px; }
+  [role="alert"] { margin: .75rem 0 0; color: #ffb5b5; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Soony Launch Control Room</h1>
+  <p>Enter the team password to open the private supplier-drop replay.</p>
+  <!-- LOGIN_ERROR -->
+  <form method="post" action="/login">
+    <label for="password">Team password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
+    <button type="submit">Sign in</button>
+  </form>
+</main>
+</body>
+</html>

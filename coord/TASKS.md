@@ -25,4 +25,4 @@
 | T16 | Chaser: reply commitment scoring, R1 templates, validate_draft guardrail, R0-R4 ladder | copilot-chaser | src/chaser | in_progress | docs/GAME_THEORY.md |
 | T17 | Expedite option chooser with break-even L* (no default for L) | codex-decide | src/decide/expedite.py | in_progress | T15 |
 | T18 | Pitch + deck rewrite: true hook (SAP hides art book + statue gaps), cuts per docs/REDTEAM.md | nick | docs/PITCH_3MIN.md, docs/deck | in_progress | docs/REDTEAM.md |
-
+| T19-Vercel | Team-authenticated Vercel dashboard and supplier-drop replay | codex-hosted | deploy/vercel, narrow hosted-mode changes in web | done | T7, T9, T10 |

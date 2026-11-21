@@ -36,4 +36,4 @@ Last human sync: Sat 21 Nov 2026
 | codex-decide | T15 reliability + T17 expedite chooser | src/decide/reliability.py, expedite.py | in_progress | new files only; wiring via INBOX | 21 Nov |
 | copilot-chaser | T16 chaser scoring, R1 templates, validate_draft, ladder | src/chaser | in_progress | dry-run stays default | 21 Nov |
 | nick | T18 pitch + deck rewrite from red team | docs/PITCH_3MIN.md, docs/deck | in_progress | also reviewing outputs of hunter/drops | 21 Nov |
-
+| codex-hosted | T19-Vercel private Vercel case replay | deploy/vercel, hosted-mode UI in web | done | Production password gate and real-data supplier-drop forecast verified. Per-session reset and sign-out pass. | 21 Nov |

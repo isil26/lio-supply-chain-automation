@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import mockData from "./mock/dashboard.json";
 
 export type Source = {
@@ -90,7 +91,7 @@ export type DashboardData = {
   approval: Approval | null;
   options?: Approval[];
   drop: { title: string; detail: string; time: string } | null;
-  sync?: { pendingDrop?: number; lastSync?: string; detail?: string };
+  sync?: { pendingDrop?: number; lastSync?: string; detail?: string; mode?: string };
   model?: string;
   dataQuality?: { documents?: number; extractionErrors?: number; [key: string]: unknown };
 };
@@ -108,12 +109,19 @@ export interface DashboardApi {
   getMeta(): Promise<{ exported?: string; mode?: string }>;
 }
 
+export const hostedReplayBuild = import.meta.env.VITE_SOONY_HOSTED_REPLAY === "1";
+
+export function resetHostedReplay() {
+  return json<{ ok: boolean }>("/api/replay/reset", { method: "POST", body: "{}" });
+}
+
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
   if (!response.ok) {
+    if (hostedReplayBuild && response.status === 401) window.location.replace("/");
     let message = `${response.status} ${response.statusText}`;
     try {
       const body = await response.json();
@@ -174,7 +182,7 @@ export class MockDashboardApi implements DashboardApi {
   async getMeta() { return { mode: "static mock snapshot" }; }
 }
 
-const STATIC_STORAGE_KEY = "soony-static-replay-v1";
+const STATIC_STORAGE_KEY = "soony-static-sample-v2";
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -185,35 +193,21 @@ export class StaticDashboardApi implements DashboardApi {
   private after: DashboardData | null = null;
   private state: DashboardData | null = null;
 
-  private async loadJson(path: string): Promise<DashboardData> {
-    const response = await fetch(path, { cache: "no-store" });
-    if (!response.ok) throw new Error(`Static snapshot unavailable: ${path}`);
-    return response.json() as Promise<DashboardData>;
-  }
-
   private async ensureLoaded() {
     if (this.state) return;
-    try {
-      this.before = await this.loadJson("/snapshot/before.json");
-    } catch {
-      this.before = clone(mockData) as DashboardData;
-    }
+    this.before = clone(mockData) as DashboardData;
     this.normalize(this.before);
-    try {
-      this.after = await this.loadJson("/snapshot/after.json");
-    } catch {
-      this.after = clone(mockData) as DashboardData;
-      this.after.launch = clone(this.before.launch);
-      this.after.drop = {
-        title: "Staged data drop",
-        detail: "Mock snapshot: staged supplier and receiving evidence is ready.",
-        time: "now",
-      };
-      this.after.activity = [
-        { id: "static-drop", agent: "Orchestrator", action: "Applied staged data drop", time: "now", type: "warning" },
-        ...this.after.activity,
-      ];
-    }
+    this.after = clone(this.before);
+    this.after.drop = {
+      title: "Staged data drop",
+      detail: "Sample replay: staged supplier and receiving evidence is ready.",
+      time: "now",
+    };
+    this.after.activity = [
+      { id: "static-drop", agent: "Orchestrator", action: "Applied staged data drop", time: "now", type: "warning" },
+      ...this.after.activity,
+    ];
+
     this.normalize(this.after);
 
     const saved = window.localStorage.getItem(STATIC_STORAGE_KEY);
@@ -227,16 +221,16 @@ export class StaticDashboardApi implements DashboardApi {
     this.state ??= clone(this.before);
   }
 
-  private persist() {
-    if (this.state) window.localStorage.setItem(STATIC_STORAGE_KEY, JSON.stringify(this.state));
-  }
-
   private normalize(data: DashboardData) {
     if (data.approval && !data.approval.id) data.approval.id = "static-plan-b";
     data.threads.forEach((thread, index) => {
       if (index === 0 && /awaiting reply/i.test(thread.status ?? "")) thread.status = "draft";
       if (!thread.status) thread.status = index === 0 ? "draft" : "awaiting reply";
     });
+  }
+
+  private persist() {
+    if (this.state) window.localStorage.setItem(STATIC_STORAGE_KEY, JSON.stringify(this.state));
   }
 
   async getDashboard(): Promise<DashboardData> {
@@ -314,49 +308,22 @@ export class StaticDashboardApi implements DashboardApi {
   }
 
   async getMeta() {
-    try {
-      const response = await fetch("/snapshot/meta.json", { cache: "no-store" });
-      if (response.ok) return response.json() as Promise<{ exported?: string; mode?: string }>;
-    } catch {}
-    return { mode: "Static replay snapshot", exported: "frozen mock" };
+    return { mode: "Static sample replay" };
   }
 }
 
 const search = new URLSearchParams(window.location.search);
 const forcedMock = search.get("mock") === "1";
-const viteEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-const forcedStatic = search.get("static") === "1" || viteEnv?.VITE_STATIC === "1";
-const staticApi = new StaticDashboardApi();
-const httpApi = new HttpDashboardApi();
-let staticMode = forcedStatic || forcedMock;
+const forcedStatic = search.get("static") === "1" || import.meta.env.VITE_STATIC === "1";
+
 export function isStaticMode() {
-  return staticMode;
+  return !hostedReplayBuild && (forcedStatic || forcedMock);
 }
 
-class HybridDashboardApi implements DashboardApi {
-  private get active(): DashboardApi {
-    return staticMode ? staticApi : httpApi;
-  }
-  async getDashboard() {
-    if (staticMode) return staticApi.getDashboard();
-    try {
-      return await httpApi.getDashboard();
-    } catch {
-      staticMode = true;
-      return staticApi.getDashboard();
-    }
-  }
-  approveDecision(id: string) { return this.active.approveDecision(id); }
-  reviewDecision(id: string) { return this.active.reviewDecision(id); }
-  sendThread(id: string) { return this.active.sendThread(id); }
-  replyThread(id: string, text: string) { return this.active.replyThread(id, text); }
-  sync() { return this.active.sync(); }
-  getSource(path: string) { return this.active.getSource(path); }
-  dismissDrop() { return this.active.dismissDrop(); }
-  resetDemo() { return staticApi.resetDemo(); }
-  getMeta() { return staticMode ? staticApi.getMeta() : httpApi.getMeta(); }
-}
-
-export const dashboardApi: DashboardApi = forcedMock
-  ? new MockDashboardApi()
-  : new HybridDashboardApi();
+export const dashboardApi: DashboardApi = hostedReplayBuild
+  ? new HttpDashboardApi()
+  : forcedMock
+    ? new MockDashboardApi()
+    : forcedStatic
+      ? new StaticDashboardApi()
+      : new HttpDashboardApi();

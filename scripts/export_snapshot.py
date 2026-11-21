@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Export static demo snapshots for the Vercel deployment (no backend needed there).
+"""Export a local, private copy of the dashboard replay.
 
 Runs the real orchestrator in replay mode on a free port, captures /api/dashboard before and after the
-staged data drop, and writes web/public/snapshot/{before,after}.json plus meta.json.
+staged data drop, and writes private/static-replay/snapshot/{before,after}.json plus meta.json.
 Run with the project venv: .venv/bin/python scripts/export_snapshot.py
 """
 import json
@@ -14,7 +14,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "web" / "public" / "snapshot"
+OUT = ROOT / "private" / "static-replay" / "snapshot"
 
 
 def call(port, path, data=None):

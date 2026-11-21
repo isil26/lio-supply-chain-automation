@@ -88,3 +88,10 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 
 - SQLite and WAL initialize before the HTTP listener and replay worker start. A single dashboard query reads truth, options, the drop banner and sync status from one SQLite snapshot.
 - T12's full loopback smoke test passed against a disposable replay in 32 seconds. It checked the data drop, decision persistence and simulated supplier transport. A separate regression test covers a drop committing mid-response.
+
+## T19-Vercel — Private Vercel supplier-drop replay (codex-hosted)
+
+- Production https://soony-launch-control.vercel.app serves protected deployment `dpl_G89s2TVbcpAKcqFxPXcTYJvs7eCL`. Automated HTTPS checks passed for anonymous API denial, authenticated forecast and shortfall changes, the art-book recovery option, independent sessions, reset, and sign-out.
+- The hosted control switches between two states calculated by the local pipeline from the private team snapshot. The download was cross-checked against the portal inventory before release. Get the password through the private team channel or the ignored access file on the shared workspace. Never copy credentials into coordination files.
+- [Deployment and refresh instructions](../deploy/vercel/README.md). Use the local full API for portal sync, outbound mail, approval workflows, and any source files.
+- The sample replay uses the synthetic fixture. The separate local exporter writes under ignored `private/static-replay/`, outside `web/public`. The hosted artifact only contains a sealed, server-side payload.

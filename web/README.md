@@ -19,4 +19,4 @@ npm run build
 npm run preview
 ```
 
-The UI currently loads mock data from `src/mock/dashboard.json`. `src/api.ts` defines the `DashboardApi` contract and a mock implementation that can later be replaced by HTTP/WebSocket-backed calls.
+The UI reads `/api/dashboard`. During development Vite proxies `/api` to the orchestrator at `http://127.0.0.1:8787`. Add `?mock=1` for the prototype fixture or `?static=1` to exercise the sample replay controls. The [team Vercel replay](../deploy/vercel/README.md) uses the same UI with case-backed forecasts and a password gate.

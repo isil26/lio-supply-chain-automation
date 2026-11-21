@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import {
   dashboardApi,
   isStaticMode,
+  hostedReplayBuild,
+  resetHostedReplay,
   type DashboardData,
   type Risk,
   type Source,
@@ -53,7 +55,7 @@ function EvidenceModal({ source, onClose }: { source: Source; onClose: () => voi
   const file = source.source_file ?? source.file ?? "";
   const [raw, setRaw] = useState("");
   useEffect(() => {
-    if (!file || isStaticMode()) return;
+    if (!file || hostedReplayBuild || isStaticMode()) return;
     dashboardApi.getSource(file).then(setRaw).catch(() => setRaw(""));
   }, [file]);
   return <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -61,7 +63,7 @@ function EvidenceModal({ source, onClose }: { source: Source; onClose: () => voi
       <header><div><p className="section-label">SOURCE EVIDENCE</p><h2>{file}</h2></div><button onClick={onClose} aria-label="Close">×</button></header>
       <div className="evidence-location">{source.page ? `Page ${source.page}` : source.row ? `Row ${source.row}` : "Source location"}{source.confidence != null ? ` · ${Math.round(source.confidence * 100)}% confidence` : ""}</div>
       {source.quote && <blockquote>{source.quote}</blockquote>}
-      {!isStaticMode() && raw ? <a className="source-link" href={`/api/source/${file.split("/").map(encodeURIComponent).join("/")}`} target="_blank" rel="noreferrer">Open original source <Icon name="arrow"/></a> : null}
+      {!hostedReplayBuild && !isStaticMode() && raw ? <a className="source-link" href={`/api/source/${file.split("/").map(encodeURIComponent).join("/")}`} target="_blank" rel="noreferrer">Open original source <Icon name="arrow"/></a> : null}
     </section>
   </div>;
 }
@@ -92,6 +94,7 @@ function App() {
   useEffect(() => {
     void refresh();
     void dashboardApi.getMeta().then(setMeta).catch(() => setMeta({}));
+    if (hostedReplayBuild) return;
     const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, []);
@@ -104,6 +107,7 @@ function App() {
   if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
   const approval = data.approval;
+  const pendingDrop = (data.sync?.pendingDrop ?? 0) > 0;
   const riskEvidence = (risk: Risk) => risk.sources?.[0] ?? (risk.evidence[0] ? { quote: risk.evidence[0] } : null);
 
   const approve = async (review = false) => {
@@ -159,10 +163,12 @@ function App() {
     }
   };
 
-  const runSync = async () => {
+  const runSync = async (reset = false) => {
     setSyncBusy(true);
     try {
-      await dashboardApi.sync();
+      if (reset) await resetHostedReplay();
+      else await dashboardApi.sync();
+      setDropVisible(true);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync could not start");
@@ -185,20 +191,21 @@ function App() {
 
     <section className="workspace">
       <header className="topbar">
-        <div><p className="eyebrow">SOONY OPERATIONS / GLOBAL LAUNCH</p><h1>Launch Control Room</h1></div>
+        <div><p className="eyebrow">{hostedReplayBuild ? "TEAM REPLAY · SOONY CASE DATA" : "SOONY OPERATIONS / GLOBAL LAUNCH"}</p><h1>Launch Control Room</h1></div>
         {isStaticMode() && <button className="static-badge" onClick={() => void resetDemo()} title="Reset demo">
-          Static replay snapshot · {meta.exported ?? "frozen"}
+          Sample replay · {meta.exported ?? "frozen"}
         </button>}
         {isStaticMode() && <button className="reset-demo" onClick={() => void resetDemo()}>Reset demo</button>}
         <div className="launch-status"><span className="live-dot"/><div><strong>{data.launch.name}</strong><small>{data.launch.location} · 22 NOV · 20:00 CET</small></div></div>
+        {hostedReplayBuild && <form method="post" action="/logout"><button className="review-button" type="submit">Sign out</button></form>}
       </header>
 
       {error && <div className="error-banner">{error}<button onClick={() => setError("")}>×</button></div>}
       {dropVisible && data.drop && <div className="drop-banner">
         <div className="drop-icon"><Icon name="arrow"/></div>
         <div><strong>{data.drop.title}</strong><span>{data.drop.detail}</span></div>
-        <button className="sync-button" onClick={() => void runSync()} disabled={syncBusy}>{syncBusy ? "Syncing…" : isStaticMode() ? "Release data drop" : "Process drop"}</button>
-        <button onClick={() => { setDropVisible(false); void dashboardApi.dismissDrop(); }} aria-label="Dismiss data drop">×</button>
+        <button className="sync-button" onClick={() => void runSync(hostedReplayBuild && !pendingDrop)} disabled={syncBusy}>{syncBusy ? "Syncing…" : hostedReplayBuild && !pendingDrop ? "Reset replay" : isStaticMode() ? "Release data drop" : "Process drop"}</button>
+        {!hostedReplayBuild && <button onClick={() => { setDropVisible(false); void dashboardApi.dismissDrop(); }} aria-label="Dismiss data drop">×</button>}
       </div>}
 
       <div className="clock-strip">
@@ -243,7 +250,7 @@ function App() {
         </section>
 
         <section className="panel activity-panel">
-          <div className="panel-heading"><div><p className="section-label">AGENT NETWORK</p><h2>Live activity</h2></div><span className="running"><i/> Running</span></div>
+          <div className="panel-heading"><div><p className="section-label">AGENT NETWORK</p><h2>{hostedReplayBuild ? "Replay activity" : "Live activity"}</h2></div>{!hostedReplayBuild && <span className="running"><i/> Running</span>}</div>
           <div className="activity-list">
             {data.activity.slice(0, 8).map((item) => <article className="activity-row" key={item.id}>
               <span className={`activity-mark ${item.type}`}>{item.type === "sent" ? "→" : item.type === "warning" ? "!" : "◆"}</span>
@@ -269,8 +276,8 @@ function App() {
               </div>
               <div className="thread-actions">
                 <span className={`workflow-state ${selectedThread.status.split(" ").join("-")}`}>{selectedThread.status === "draft" ? "Draft" : selectedThread.status === "awaiting reply" ? "Sent" : selectedThread.status}</span>
-                {selectedThread.status === "draft" && <button className="approve-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : "Approve & send"}<Icon name="arrow"/></button>}
-                {(selectedThread.status === "awaiting reply" || selectedThread.status === "sent") && <button className="review-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Demo reply"}</button>}
+                {!hostedReplayBuild && selectedThread.status === "draft" && <button className="approve-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : "Approve & send"}<Icon name="arrow"/></button>}
+                {!hostedReplayBuild && (selectedThread.status === "awaiting reply" || selectedThread.status === "sent") && <button className="review-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Demo reply"}</button>}
               </div>
             </div>}
           </div>
@@ -286,8 +293,10 @@ function App() {
             <div className="decision-meta"><div><span>Impact</span><strong>{approval.impact}</strong></div><div><span>Residual risk</span><strong>{approval.risk}</strong></div><div><span>Authorization</span><strong>{approval.threshold}</strong></div></div>
             <div className="decision-actions">
               <span>{approval.status ? `Status: ${approval.status}` : "Buyer approval required"}</span>
-              <button className="review-button" onClick={() => void approve(true)} disabled={decisionBusy}>Request review</button>
-              <button className="approve-button" onClick={() => void approve(false)} disabled={decisionBusy || approval.status === "approved"}>{approval.status === "approved" ? <><Icon name="check"/> Approved</> : <>Approve <Icon name="arrow"/></>}</button>
+              {!hostedReplayBuild && <>
+                <button className="review-button" onClick={() => void approve(true)} disabled={decisionBusy}>Request review</button>
+                <button className="approve-button" onClick={() => void approve(false)} disabled={decisionBusy || approval.status === "approved"}>{approval.status === "approved" ? <><Icon name="check"/> Approved</> : <>Approve <Icon name="arrow"/></>}</button>
+              </>}
             </div>
           </> : <div className="empty-approval">Live options will appear after the next readiness evaluation.</div>}
         </section>
