@@ -1,0 +1,12 @@
+{
+  "id": "art_book_shortfall",
+  "event": "art book booking error and 5900 unit shortfall",
+  "expected_rules": ["numeric_grounding", "citation_check", "policy_check", "stop_check", "language_check"],
+  "supplier": "SUP-0028",
+  "synthetic": {
+    "text": "The cited usable art-book shortfall is 5,900 units.",
+    "trace": [{"tool": "search_documents", "result": "{\"value\":{\"shortfall\":5900},\"citations\":[{\"file\":\"WZ-261116-473.png\",\"page\":1,\"quote\":\"handwritten 8 000\"}]}", "cost": 0}],
+    "claims": [{"text": "The cited usable art-book shortfall is 5,900 units.", "file": "WZ-261116-473.png", "quote": "handwritten 8 000"}],
+    "drafts": [{"supplier": "SUP-0028", "text": "Proszę potwierdzić ilość i numer partii PO-4500318768."}]
+  }
+}

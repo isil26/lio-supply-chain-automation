@@ -1,0 +1,10 @@
+{
+  "id": "unseen_german_notice",
+  "event": "unseen German notice",
+  "expected_rules": ["policy_check", "citation_check", "stop_check"],
+  "supplier": "SUP-0011",
+  "synthetic": {
+    "actions": [{"action": "request_review", "status": "approved",
+                 "approver": "Human reviewer", "text": "Unknown German notice requires review"}]
+  }
+}

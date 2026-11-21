@@ -1,0 +1,10 @@
+{
+  "id": "game_card_short_ship",
+  "event": "game-card short shipment and documented recovery",
+  "expected_rules": ["numeric_grounding", "citation_check", "stop_check"],
+  "synthetic": {
+    "text": "Assumption: the game-card recovery quantity remains an explicit planning assumption.",
+    "claims": [{"text": "The game-card air shipment is documented.", "file": "open_shipments.csv", "quote": "SHP-2026-04311"}],
+    "trace": [{"tool": "search_documents", "result": "{\"citations\":[{\"file\":\"open_shipments.csv\",\"page\":null,\"quote\":\"SHP-2026-04311\"}]}", "cost": 0}]
+  }
+}

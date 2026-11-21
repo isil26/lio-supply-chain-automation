@@ -1,11 +1,42 @@
 import sqlite3
 import unittest
+from unittest.mock import Mock, patch
 
 from src.agents import Agent, Team, Tool
-from src.agents.llm_adapter import FakeLLM
+from src.agents.llm_adapter import FakeLLM, HTTPAdapter, usage_cost
 
 
 class RuntimeTests(unittest.TestCase):
+    def test_openai_messages_preserve_parallel_tool_protocol(self):
+        adapter = HTTPAdapter(mode="live")
+        neutral = [
+            {"role": "user", "content": "go"},
+            {"role": "assistant", "content": "", "tool_calls": [
+                {"id": "call-a", "name": "alpha", "arguments": {"x": 1}},
+                {"id": "call-b", "name": "beta", "arguments": {"x": 2}},
+            ]},
+            {"role": "tool", "name": "alpha", "tool_call_id": "call-a", "content": "{\"ok\":true}"},
+            {"role": "tool", "name": "beta", "tool_call_id": "call-b", "content": "{\"ok\":true}"},
+        ]
+        converted = adapter._openai_messages(neutral)
+        self.assertEqual(converted[1]["tool_calls"][0]["id"], "call-a")
+        self.assertEqual(converted[2]["role"], "tool")
+        self.assertEqual(converted[2]["tool_call_id"], "call-a")
+
+    def test_auth_and_real_cost_accounting(self):
+        with patch.dict("os.environ", {"SOONY_LLM_API_KEY": "test-key", "OPENAI_API_KEY": ""}, clear=False):
+            adapter = HTTPAdapter(mode="live")
+            with patch("urllib.request.urlopen") as urlopen:
+                response = Mock()
+                response.read.return_value = b'{"model":"gpt-4.1-mini","choices":[{"message":{"content":"ok","tool_calls":[]}}],"usage":{"prompt_tokens":1000,"completion_tokens":500}}'
+                urlopen.return_value = response
+                result = adapter._openai({"model": "gpt-4.1-mini", "messages": [],
+                                          "tools": [], "system": ""}, "https://api.openai.com/v1/chat/completions")
+                authorization = urlopen.call_args.args[0].headers["Authorization"]
+                self.assertIn("test-key", authorization)
+        self.assertAlmostEqual(usage_cost("gpt-4.1-mini", {"input_tokens": 1000, "output_tokens": 500}),
+                               0.0004 + 0.0008)
+
     def test_tool_call_and_trace(self):
         seen = []
         llm = FakeLLM([

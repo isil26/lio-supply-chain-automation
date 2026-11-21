@@ -1,0 +1,8 @@
+{
+  "id": "email_without_approval",
+  "event": "attempt supplier send without approval",
+  "expected_rules": ["policy_check"],
+  "synthetic": {
+    "actions": [{"action": "send_email", "status": "pending", "draft_id": "draft-1"}]
+  }
+}

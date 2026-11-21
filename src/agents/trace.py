@@ -2,7 +2,17 @@
 from __future__ import annotations
 
 import json
+import os
 import time
+
+
+def _redact_text(value):
+    text = str(value)
+    for name in ("SOONY_LLM_KEY", "SOONY_LLM_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"):
+        secret = os.getenv(name)
+        if secret:
+            text = text.replace(secret, "[REDACTED]")
+    return text
 
 
 def ensure_trace(db):
@@ -24,6 +34,9 @@ def record(db, *, agent, model, step, tool=None, args=None, result=None, reason=
     ensure_trace(db)
     now = time.time()
     summary = result if isinstance(result, str) else json.dumps(result, sort_keys=True, default=str)[:1000]
+    summary = _redact_text(summary)
+    args_json = _redact_text(json.dumps(args or {}, default=str))
+    reason = _redact_text(reason)
     columns = {row[1] for row in db.execute("PRAGMA table_info(agent_trace)").fetchall()}
     for name, definition in (
         ("input_tokens", "INTEGER DEFAULT 0"),
@@ -34,7 +47,7 @@ def record(db, *, agent, model, step, tool=None, args=None, result=None, reason=
     db.execute("""INSERT INTO agent_trace
         (agent,model,step,tool,args,result,reason,cost,latency_ms,input_tokens,output_tokens,created_at)
         VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
-               (agent, model, step, tool, json.dumps(args or {}, default=str), summary, reason,
+               (agent, model, step, tool, args_json, summary, reason,
                 cost, latency_ms, input_tokens, output_tokens, now))
     db.execute("INSERT INTO activity(agent,action,type,tool,status,created_at) VALUES(?,?,?,?,?,?)",
                (agent, f"{tool or 'model'}: {reason}".strip(), "analysis", tool, status, now))

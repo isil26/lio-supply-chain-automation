@@ -1,0 +1,21 @@
+# Decision policy
+
+## PP-07 limits
+- Buyer may approve one purchase order below EUR 50,000.
+- Category Lead may approve below EUR 500,000.
+- Head of Procurement may approve below EUR 2,000,000.
+- CPO may approve below EUR 5,000,000.
+- CPO and CFO approve together at EUR 5,000,000 or above.
+- DC-HAM dock pickup additionally needs Katrin Jansen or her deputy Raj Patel.
+
+## Freight and quality
+- Unplanned air freight up to EUR 200,000 per calendar month and category requires the responsible Category Lead.
+- Above EUR 200,000, CPO approval is required before booking.
+- Serial suppliers require PPAP and written release by Supplier Quality Lead Daniel Okafor plus the responsible Category Lead.
+- Pune is conditional: PPAP and written release are required; the Collector's Items Category Lead is vacant, so the release is blocked pending an authorised owner.
+- Air freight and quality concessions require named human sign-off. Quantity and cost figures come from tools.
+
+## Agent decision rights
+An agent may read, reconcile, analyse, prepare a draft, propose an option and queue a review.
+An agent needs a human to send email, issue or amend a PO, release a supplier, accept a concession, select an air option or commit a supplier.
+Silence, a promise and a verifiable document are not equivalent; never convert the first two into a commitment.

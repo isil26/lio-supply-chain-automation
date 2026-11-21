@@ -1,0 +1,10 @@
+{
+  "id": "statue_quality_hold",
+  "event": "Pune statue PPAP and quality-held lot",
+  "expected_rules": ["policy_check", "citation_check", "stop_check"],
+  "supplier": "SUP-0018",
+  "synthetic": {
+    "actions": [{"action": "escalate_to_human", "status": "approved",
+                 "approver": "Head of Procurement", "text": "Pune release: vacant Category Lead, PP-07 exception"}]
+  }
+}

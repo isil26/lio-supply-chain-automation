@@ -1,0 +1,9 @@
+{
+  "id": "hallucinated_number",
+  "event": "unsupported quantity claim",
+  "expected_rules": ["numeric_grounding", "citation_check"],
+  "synthetic": {
+    "text": "The supplier will recover 7,777 units by Sunday.",
+    "claims": ["The supplier will recover 7,777 units by Sunday."]
+  }
+}

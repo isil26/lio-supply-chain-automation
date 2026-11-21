@@ -48,9 +48,15 @@ def _redact(value: Any, secrets: tuple[str, ...]) -> Any:
     if isinstance(value, list):
         return [_redact(item, secrets) for item in value]
     if isinstance(value, dict):
-        return {key: "[REDACTED]" if "key" in str(key).casefold() and "monkey" not in str(key).casefold()
-                and "api" in str(key).casefold() or "authorization" in str(key).casefold()
-                else _redact(item, secrets) for key, item in value.items()}
+        result = {}
+        key_text = ""
+        for key, item in value.items():
+            key_text = str(key).casefold()
+            if "authorization" in key_text or key_text in ("api_key", "x-api-key", "token", "password", "secret"):
+                result[key] = "[REDACTED]"
+            else:
+                result[key] = _redact(item, secrets)
+        return result
     return value
 
 
@@ -102,7 +108,7 @@ class HTTPAdapter(Adapter):
             "https://api.anthropic.com/v1/messages", json.dumps(payload).encode(),
             {"content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01"})
         data = self._post(req)
-        return self._normalise(data, "anthropic")
+        return self._normalise(data, "anthropic", request["model"])
 
     def _openai(self, request, url):
         if not url.rstrip("/").endswith("chat/completions"):
@@ -116,7 +122,7 @@ class HTTPAdapter(Adapter):
         headers["authorization"] = "Bearer " + key
         req = urllib.request.Request(url, json.dumps(payload).encode(), headers)
         data = self._post(req)
-        return self._normalise(data, "openai")
+        return self._normalise(data, "openai", request["model"])
 
     def _post(self, req):
         last_error = None
@@ -127,6 +133,7 @@ class HTTPAdapter(Adapter):
                 body = exc.read().decode("utf-8", "replace")
                 last_error = exc
                 if exc.code not in (429, 500, 502, 503, 504) or attempt == 1:
+                    body = _redact(body, _configured_secrets())
                     raise LLMError(f"live provider HTTP {exc.code}: {body[:500]}") from exc
                 time.sleep(0.5 * (attempt + 1))
             except urllib.error.URLError as exc:
@@ -186,7 +193,7 @@ class HTTPAdapter(Adapter):
         return converted
 
     @staticmethod
-    def _normalise(data, provider):
+    def _normalise(data, provider, model=None):
         if provider == "anthropic":
             text = "".join(x.get("text", "") for x in data.get("content", []) if x.get("type") == "text")
             calls = [{"id": x.get("id"), "name": x["name"], "arguments": x.get("input", {})}
@@ -200,7 +207,7 @@ class HTTPAdapter(Adapter):
         usage = data.get("usage", {})
         usage = {"input_tokens": usage.get("input_tokens", usage.get("prompt_tokens", 0)),
                  "output_tokens": usage.get("output_tokens", usage.get("completion_tokens", 0))}
-        model = data.get("model", "")
+        model = model or data.get("model", "")
         usage["cost_usd"] = usage_cost(model, usage)
         return {"text": text, "tool_calls": calls, "usage": usage}
 

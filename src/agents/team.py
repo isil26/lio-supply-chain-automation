@@ -114,6 +114,19 @@ class AgentTeam(Team):
         results = {}
         results["triage"] = triage_result
 
+        if triage_result.get("status") in {"error", "timeout", "budget_exceeded"}:
+            results["live_failed"] = {
+                "reason": triage_result.get("reason", "live triage model failed"),
+            }
+            results["verified"] = self._verification_summary(event_lower)
+            results["trace"] = activity(self.db, 100)
+            results["pending_approvals"] = [
+                dict(row) for row in self.db.execute(
+                    "SELECT * FROM agent_approvals WHERE status='pending' ORDER BY id"
+                ).fetchall()
+            ]
+            return results
+
         # Fixed, honest fallback: no LLM response means deterministic specialist order.
         if not self.db.execute(
             "SELECT 1 FROM agent_mailbox WHERE recipient != 'triage' LIMIT 1"
@@ -320,6 +333,29 @@ def main(argv=None) -> int:
 
     result = team.run_event(f"{args.scenario} data-drop event")
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+    if args.fake:
+        return 0
+
+    errors = []
+    if result.get("live_failed"):
+        errors.append(str(result["live_failed"]["reason"]))
+    for name, value in result.items():
+        if isinstance(value, dict) and value.get("status") in {"error", "timeout", "budget_exceeded"}:
+            errors.append(f"{name}: {value.get('reason', value['status'])}")
+    if errors:
+        print("NO LIVE MODEL RAN", file=os.sys.stderr)
+        print("; ".join(errors), file=os.sys.stderr)
+        return 1
+
+    try:
+        row = team.db.execute(
+            "SELECT COALESCE(SUM(cost),0), COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0) FROM agent_trace"
+        ).fetchone()
+        cost, input_tokens, output_tokens = float(row[0]), int(row[1]), int(row[2])
+        print(f"LIVE RUN: cost=${cost:.6f} input_tokens={input_tokens} output_tokens={output_tokens}",
+              file=os.sys.stderr)
+    except Exception as exc:
+        print(f"LIVE RUN accounting unavailable: {exc}", file=os.sys.stderr)
     return 0
 
 
