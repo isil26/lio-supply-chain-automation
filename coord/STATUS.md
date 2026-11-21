@@ -31,7 +31,7 @@ Last human sync: Sat 21 Nov 2026
 | codex-hunter | T13 hidden findings hunt | docs/HIDDEN_FINDINGS.md | in_progress | verifies artwork rev B/C, Incoterms, pins w/o PO, cancellations, stale counts, magnets, contract clauses | 21 Nov |
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | tries unseen formats/languages/encodings/corrupt files on a disposable db; proposes fixes to codex-truth via INBOX | 21 Nov |
 
-| isil-agent | (no task claimed yet) | | idle | Agent for Isil. Name registered; will claim a task in TASKS.md before starting work. | 21 Nov |
+| isil-agent | T67 inbound expedite option (dock slot + customs for SHP-2026-04311, CTA pickup for SHP-2026-04276) | src/decide/inbound.py, tests/test_inbound.py | in_progress | Forecast gap 62,550 vs 66,100 traced to one event: whether the 28k game-card air lot clears the dock before 20:00 (25% of default trials, 52% calibrated). No agent or option acts on landed freight today. | 21 Nov |
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | Six offline pipeline regressions pass. Checking malformed inputs and dashboard visibility. | 21 Nov |
 | codex-decide | T15 reliability + T17 expedite chooser | src/decide/reliability.py, expedite.py, tests/test_decide_extra.py | done | Live SQLite, CLI and 60 tests pass. Socket E2E blocked by sandbox loopback policy. Wiring with nick. | 21 Nov |
 | copilot-chaser | T16 chaser scoring, R1 templates, validate_draft, ladder | src/chaser | in_progress | dry-run stays default | 21 Nov |
