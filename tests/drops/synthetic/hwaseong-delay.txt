@@ -1,0 +1,4 @@
+SYNTHETIC REPLAY FIXTURE — Hwaseong Memory — ICN-DRILL-113256
+Carrier delay for AWB 020-48113256 / SHP-2026-04311. Revised FRA ETA 2026-11-23.
+The 28,000 game cards in the air lot miss the Sunday Hamburg pack-out.
+This update concerns the air lot alone. The balance under the same PO is unchanged.
