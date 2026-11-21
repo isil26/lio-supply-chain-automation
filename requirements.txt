@@ -4,3 +4,4 @@ pypdf>=5,<8
 pypdfium2>=4,<6
 Pillow>=10,<13
 jsonschema>=4,<5
+tzdata>=2024.1; sys_platform == "win32"

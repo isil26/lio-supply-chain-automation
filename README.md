@@ -15,6 +15,15 @@ python3 -m pip install -r requirements.txt
 python3 -m src.orchestrator --data case-data
 ```
 
+On Windows (PowerShell), install Tesseract with `winget install UB-Mannheim.TesseractOCR` and add `C:\Program Files\Tesseract-OCR` to `PATH`. Without Tesseract the app still runs but misses handwritten receipt corrections such as the art-book booking error. Then:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m src.orchestrator --data case-data
+```
+
 Open **http://127.0.0.1:8787/live**. Initial OCR may take a couple of minutes. The separate React prototype can be built with `npm --prefix web ci` and `npm --prefix web run build`. The shared store is `store/soony.db` and the service resumes from it. For a one-time JSON snapshot, run `python3 -m src.orchestrator --once --data case-data`.
 
 - **Portal polling** requires the private team token in `.soony_token` or `SOONY_TOKEN`. Run `python3 -m src.orchestrator --online` to sync every 45 seconds and ingest by SHA-256. Use `python3 bridge/sync.py` for a manual download.

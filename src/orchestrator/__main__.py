@@ -590,6 +590,10 @@ def handler(loop):
 
 
 def main():
+    # Windows consoles default to a legacy code page; supplier names and notices need UTF-8.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", type=Path, default=DB)
     parser.add_argument("--data", type=Path, default=ROOT / "data")
