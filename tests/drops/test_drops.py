@@ -106,7 +106,8 @@ def offline_environment():
     clean = {key: value for key, value in os.environ.items()
              if not key.startswith(("CHASER_", "SOONY_IMAP_", "SOONY_LLM_"))
              and key not in {"SOONY_TOKEN", "SOONY_LOCAL_MODEL", "SOONY_VISION_MODEL"}}
-    return patch.dict(os.environ, {**clean, "SOONY_LLM_PROVIDER": "none", "CHASER_REAL_SMTP": "0"}, clear=True)
+    return patch.dict(os.environ, {**clean, "SOONY_LLM_PROVIDER": "none", "CHASER_REAL_SMTP": "0",
+                                   "CHASER_NO_TEAM_MAIL": "1"}, clear=True)
 
 
 class DropTests(unittest.TestCase):
