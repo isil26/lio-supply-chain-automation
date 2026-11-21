@@ -207,7 +207,10 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr
             name = lambda sid: (suppliers.get(sid) or {}).get("name") or sid
             old_received = sum(quantities[sid][0] for sid in old_ids)
             old_open = sum(quantities[sid][1] for sid in old_ids)
-            partial_go = max(0, usable - old_received)
+            # The truth engine already nets the old-revision lot out of usable stock.
+            netted = int((part.get("revision_hold") or {}).get("quantity") or 0) >= old_received > 0
+            gross = usable + (old_received if netted else 0)
+            partial_go = usable if netted else max(0, usable - old_received)
             held_quantity += old_received
             owner = {"role": "Category Lead Print & Packaging", "name": "Sofia Marchetti",
                      "decision": f"re-order / re-print rev {new} and decide what to do with the {old_received:,} "
@@ -221,7 +224,7 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr
             block("HOLD", f'{ecn["change_id"]} (effective {ecn.get("effective_from")}): rev {old} -> {new}, '
                   f'"parts to rev {old} must not be packed". HOLD {old_received:,} rev {old} pieces already received '
                   f'(not usable); do not accept the {old_open:,} open rev {old} pieces ({who_old}): ask the supplier '
-                  f'to re-print rev {new}. {who_new}. Usable rev {new} quantity = stock {usable:,} - rev {old} lot '
+                  f'to re-print rev {new}. {who_new}. Usable rev {new} quantity = stock {gross:,} - rev {old} lot '
                   f'{old_received:,} = {partial_go:,}. Decision: {owner["name"]}, {owner["role"]}.',
                   [cite, *_field_citations_all(docs, material, po_lines)], soft=True)
         if len(set(by_supplier.values())) > 1 and not any(
