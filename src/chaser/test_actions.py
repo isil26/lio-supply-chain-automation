@@ -9,6 +9,7 @@ from .supplier_loop import CARD
 
 SUPPLIER = {"id": "chase-boise", "kind": "supplier", "title": "Ask Boise for the missing cases", "supplierId": "SUP-9",
             "material": "CMP-X", "qty": 500, "deadline": "22 Nov 18:00", "copiesStd": 10,
+            "evidence": ["Boise reply 21 Nov"],
             "draft": {"to": "boise@suppliers.juliansibbing.de", "subject": "Cases", "body": "Hello,\n\nCan you confirm 500 cases? Request for information only."}}
 INTERNAL = {"id": "dock", "kind": "internal", "title": "Book the Hamburg dock slot", "person": "Katrin Jansen",
             "deadline": "Sun 10:00", "copiesStd": 21216, "copiesCe": 3133, "costEur": 5000, "approver": "Katrin Jansen",
@@ -75,7 +76,8 @@ class ActionSendTest(unittest.TestCase):
     def test_t81_recovery_review_shape(self):
         review = {"id": "opt-dock", "status": "awaiting_approval", "title": "Arrange a provisional Hamburg dock slot",
                   "owner": "Katrin Jansen", "approver": "Katrin Jansen, DC-HAM site lead", "detail": "Ask DC-HAM for a window.",
-                  "dueAt": "2026-11-22T09:00:00+01:00", "price": 1200.0}
+                  "dueAt": "2026-11-22T09:00:00+01:00", "price": 1200.0,
+                  "evidence": [{"text": "AWB 020-48113256", "source": "case-data"}]}
         row = actions.on_approve(db(), review, "Katrin Jansen", demo=True)
         self.assertEqual((row["kind"], row["status"], row["person"]), ("internal", "prepared", "Katrin Jansen"))
         for text in ("Ask DC-HAM for a window.", "2026-11-22T09:00", "EUR 1,200"):
@@ -111,6 +113,13 @@ class ActionSendTest(unittest.TestCase):
                                  decision={"mode": "ESCALATE", "escalateTo": "Jonas Lindqvist (CPO)", "sla": "same hour"})
         self.assertEqual((row["status"], row["recipient"], row["sla"]), ("escalated", "Jonas Lindqvist (CPO)", "same hour"))
         self.assertEqual(con.execute("SELECT count(*) FROM messages").fetchone()[0], 0)
+
+    def test_t93_engine_is_consulted(self):
+        con = db()
+        row = actions.on_approve(con, INTERNAL, None, demo=True)          # automatic run, no click
+        self.assertEqual((row["mode"], row["status"], row["approver"]), ("ONE-CLICK", "awaiting approval", "Katrin Jansen"))
+        row = actions.on_approve(con, dict(INTERNAL, evidence=[]), "Isil", demo=True)  # still awaiting -> re-evaluated
+        self.assertEqual((row["mode"], row["status"]), ("NEVER", "blocked"))   # engine: no evidence, never
 
 
 if __name__ == "__main__":

@@ -192,16 +192,39 @@ BINDING = re.compile(r"\b(?:we accept|accepted|purchase order|we (?:hereby )?ord
                      r"zamawiamy|akceptujemy|발주합니다|确认订购)\b", re.I)
 
 
+def engine_input(action):
+    """Translate a T81/T83 action into the T93 engine's vocabulary (kind, value_eur, evidence ...)."""
+    from src.decide import approvals
+    kind = str(_get(action, "kind", "channel", default="internal"))
+    if kind not in approvals.KINDS:
+        body = ((_get(action, "draft", default={}) or {}).get("body") or "")
+        binding = bool(action.get("binding")) or bool(BINDING.search(body))
+        if kind == "supplier" or _get(action, "supplierId", "supplier_id"):
+            kind = "hold_and_quote" if binding else "supplier_info_request"
+        elif re.search(r"dock[- ]slot", str(_get(action, "title", "what", default="")), re.I):
+            kind = "dock_slot"
+        else:
+            kind = "internal_message"
+    return {**action, "kind": kind, "value_eur": _get(action, "value_eur", "costEur", "cost_eur", "price"),
+            "evidence": _get(action, "evidence", default=[]) or []}
+
+
 def _engine_decision(action):
-    """Ask the T93 approval engine (src/decide/approvals.py) when it exists; None if it does not."""
+    """Ask the T93 approval engine (src/decide/approvals.py); None if it is not there."""
     try:
         from src.decide import approvals
     except ImportError:
         return None
-    try:
-        return approvals.evaluate(action)
-    except TypeError:  # signature not settled yet; fall back to ONE-CLICK rather than guess
-        return None
+    verdict = approvals.evaluate(engine_input(action))
+    name = lambda p: p.get("name") if isinstance(p, dict) else p  # noqa: E731
+    out = {"mode": verdict.get("mode"), "approver": name(verdict.get("approver")), "reason": verdict.get("reason", ""),
+           "sla": f'{verdict["sla_minutes"]} min' if verdict.get("sla_minutes") else None,
+           "escalateTo": name(verdict.get("approver")) if verdict.get("mode") == "ESCALATE" else None}
+    if verdict.get("delegation_id"):
+        # The engine only returns AUTO for a delegation confirmed in writing.
+        out["delegation"] = {"id": verdict["delegation_id"], "from": out["approver"],
+                             "confirmed": verdict.get("mode") == "AUTO"}
+    return out
 
 
 def gate(action, approved_by=None, decision=None):
