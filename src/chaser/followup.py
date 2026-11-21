@@ -365,7 +365,7 @@ def answer_replies(con, *, save=False, now=None):
         root = _root(row)
         content = unquoted(row["reply"])
         state = states.get(row["id"])
-        if not state or state["replyId"] != row["source_id"] or state["plan"]:
+        if not state or state["replyId"] != row["source_id"] or state["plan"] or state["buyerDecided"]:
             continue
         attachments = json.loads(row["reply_fields"] or "{}").get("attachments", [])
         if root in handoffs or _late_freight(content, row["deadline"]) or is_late_offer(content, row["deadline"], attachments):

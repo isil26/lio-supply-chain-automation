@@ -126,6 +126,13 @@ def contexts(con, thread_id=None, *, simulated=False):
         WHERE m.side='in' AND {scope}
           AND m.chase_id IN (SELECT id FROM chases {where})
         ORDER BY julianday(coalesce(json_extract(m.transport,'$.authoredAt'),m.time)),m.id""", args)
+    # A buyer response owns this revision. Routine counters and generic answers for
+    # the same evidence must yield to it, even if they were queued earlier.
+    decided = set()
+    if not simulated and con.execute("SELECT 1 FROM sqlite_master WHERE name='deal_decision_history'").fetchone():
+        decided = {row[0] for row in con.execute("""SELECT m.id FROM deals d JOIN messages m
+                    ON m.external_id=d.source_message AND m.chase_id=d.thread_id
+                    WHERE d.status IN ('approved','declined')""")}
     states = {}
     for thread, mid, external, body, at, deadline in replies:
         root = roots[thread]
@@ -140,7 +147,7 @@ def contexts(con, thread_id=None, *, simulated=False):
                 plan["checkAt"] = min(due, received + timedelta(hours=wait_hours(received, due))).isoformat()
             except (ValueError, TypeError):
                 pass
-        states[root] = dict(replyId=mid, messageId=external, plan=plan, root=root, sourceThread=thread)
+        states[root] = dict(replyId=mid, messageId=external, plan=plan, root=root, sourceThread=thread, buyerDecided=mid in decided)
     return {key: states[root] for key, root in roots.items() if root in states}
 
 
@@ -157,6 +164,8 @@ def check_draft(con, chase, *, simulated=False):
         raise ValueError("The supplier has already answered this reminder.")
     if chase["based_on_reply_id"] is not None and chase["based_on_reply_id"] != state["replyId"]:
         raise ValueError("A newer supplier reply replaced this draft.")
+    if state["buyerDecided"]:
+        raise ValueError("The buyer already decided this offer. Use the recorded response.")
     if state["plan"]:
         raise ValueError(state["plan"]["nextAction"])
 

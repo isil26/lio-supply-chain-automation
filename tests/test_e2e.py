@@ -94,11 +94,13 @@ class DemoReplayTest(unittest.TestCase):
         self._exercise_replay()
 
     def _start_replay(self, workspace):
-        data = Path(os.environ.get("DEMO_DATA_DIR", ROOT / "data")).resolve()
+        default_data = ROOT / "data" if (ROOT / "data").is_dir() else ROOT / "case-data"
+        data = Path(os.environ.get("DEMO_DATA_DIR", default_data)).resolve()
         self.assertTrue(data.is_dir(), "Local portal mirror missing. Restore it or set DEMO_DATA_DIR.")
         self.timeout = float(os.environ.get("DEMO_TIMEOUT_SECONDS", "240"))
         self.assertTrue(0 < self.timeout < float("inf"), "DEMO_TIMEOUT_SECONDS must be positive and finite")
-        shutil.copytree(ROOT / "src", workspace / "src", ignore=shutil.ignore_patterns("__pycache__"))
+        for folder in ("src", "bridge", "config"):
+            shutil.copytree(ROOT / folder, workspace / folder, ignore=shutil.ignore_patterns("__pycache__"))
         for relative in ("store/docs_cache.sqlite3", "runtime/tessdata"):
             source = ROOT / relative
             if source.exists():

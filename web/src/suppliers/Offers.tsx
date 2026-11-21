@@ -57,6 +57,7 @@ export function Offers() {
   // and keep Approve / Decline in this browser only (nothing is sent).
   const example = hostedReplayBuild || isStaticMode();
   const [data, setData] = useState<Data | null>(example ? exampleData() : null);
+  const [reviewer, setReviewer] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [tab, setTab] = useState<string | null>(null);
@@ -88,7 +89,7 @@ export function Offers() {
     }
     setBusy(deal.id + action);
     try {
-      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ by: "Control room", revision: deal.revision }) });
+      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ by: reviewer.trim(), revision: deal.revision }) });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         setNote(error.error ?? "The offer could not be updated. Review the latest terms.");
@@ -129,6 +130,9 @@ export function Offers() {
         })}
       </div>}
 
+      {!example && data.deals.some(d => d.material === current && d.eligible && (d.status === "pending" || d.status === "changed")) &&
+        <label>Reviewed by <input value={reviewer} maxLength={80} autoComplete="name" onChange={event => setReviewer(event.target.value)} /></label>}
+
       {tabNote && <p className="offers-tabnote">{tabNote}</p>}
 
       {best.length > 0 && <div className="offers-best">
@@ -166,8 +170,8 @@ export function Offers() {
                   <p className="offers-status">{!example && d.status === "approved" ? "Reservation approved" : STATUS[d.status]}{d.decided_by && d.status !== "pending" && d.status !== "changed" ? ` (${d.decided_by})` : ""}</p>
                   {!example && (!!d.eligible || d.offer_state === "approval_required") && <p className="muted small-text">{d.order_quantity?.toLocaleString("en-US")} units · {eur(d.total_eur)} · {d.offer_kind === "freight" ? "Booking authorization" : "PO signer"} {d.signer}{d.expires_at ? ` · Expires ${when(d.expires_at)}` : ""}</p>}
                   {d.eligible && (d.status === "pending" || d.status === "changed") ? <div className="offers-actions">
-                    <button className="primary-button" disabled={busy !== null} onClick={() => void decide(d, "approve")}>{busy === d.id + "approve" ? "…" : example ? "Approve" : "Request reservation"}</button>
-                    <button className="ghost-button" disabled={busy !== null} onClick={() => void decide(d, "decline")}>{busy === d.id + "decline" ? "…" : "Decline"}</button>
+                    <button className="primary-button" disabled={busy !== null || (!example && !reviewer.trim())} onClick={() => void decide(d, "approve")}>{busy === d.id + "approve" ? "…" : example ? "Approve" : "Request reservation"}</button>
+                    <button className="ghost-button" disabled={busy !== null || (!example && !reviewer.trim())} onClick={() => void decide(d, "decline")}>{busy === d.id + "decline" ? "…" : "Decline"}</button>
                   </div> : null}
                   {!d.eligible && <p className="muted small-text">{d.review_reason ?? "No eligible offer for this delivery window."}</p>}
                   {!example && !!d.history?.length && <details><summary>Decision history ({d.history.length})</summary>
