@@ -129,6 +129,7 @@ class Agent:
 class Team:
     def __init__(self, agents, db_path=":memory:"):
         self.agents = {agent.name: agent for agent in agents}
+        self.db_path = db_path
         self.db = sqlite3.connect(db_path)
         self.db.row_factory = sqlite3.Row
         ensure_trace(self.db)
@@ -141,6 +142,11 @@ class Team:
     def delegate(self, sender, agent, task):
         if agent not in self.agents:
             raise ValueError(f"unknown agent: {agent}")
+        if self.db.execute(
+            "SELECT 1 FROM agent_mailbox WHERE sender=? AND recipient=? LIMIT 1",
+            (sender, agent),
+        ).fetchone():
+            return {"status": "skipped", "reason": "specialist already delegated once"}
         self.db.execute("INSERT INTO agent_mailbox(sender,recipient,task,status,ts) VALUES(?,?,?,?,?)",
                         (sender, agent, task, "running", time.time()))
         self.db.commit()
