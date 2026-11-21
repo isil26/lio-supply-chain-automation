@@ -145,7 +145,8 @@ def receipt_comparisons(booked, scanned):
 def readiness(con, data_root):
     tab = {table: list(rows(con, table)) for table in (
         "launch", "product", "shift", "site", "packout", "bom", "stock", "receipt", "shipment", "route",
-        "po", "component", "supplier", "supply", "plan_part", "plan_inbound")}
+        "po", "component", "supplier", "supply", "plan_part", "plan_inbound",
+        "launch_status", "bom_change", "component_change", "supply_change")}
     if not tab["launch"]:
         raise ValueError("No launch editions found. Check the workbook and sync status.")
     products = {row["product_id"]: row for row in tab["product"]}
@@ -168,6 +169,10 @@ def readiness(con, data_root):
     deadline = datetime.combine(day(launch_date), time.fromisoformat(launch_time[1]), LOCAL) if launch_time else max(end for _, end in plan_shifts)
     shifts = sorted((start, min(end, deadline)) for start, end in plan_shifts if start < deadline)
     shift_start = shifts[0][0] if shifts else deadline
+    status_rows = {row["product_id"]: row for row in tab["launch_status"] if row["kind"] == "edition" and row.get("packed") is not None}
+    status_times = [datetime.fromisoformat(row["as_of"]).replace(tzinfo=LOCAL) for row in status_rows.values()
+                    if row.get("as_of") and re.match(r"\d{4}-\d\d-\d\dT", row["as_of"])]
+    status_time = max(status_times, default=None)
     site = next((site["site_id"] for site in tab["site"] if site["site_id"] in notes), None)
     site = site or max({row["site"] for row in tab["packout"]}, key=lambda ref: sum(row["site"] == ref for row in tab["packout"]), default=None)
     issues = []
@@ -176,6 +181,7 @@ def readiness(con, data_root):
         issues.append(dict(title=title, material=material, evidence=evidence, severity=severity, kind=kind, **details))
 
     editions = {}
+    consumed = {}
     for row in tab["launch"]:
         pid = row["product_id"]
         packout = [record for record in tab["packout"] if record["product_id"] == pid and record["site"] == site]
@@ -184,9 +190,34 @@ def readiness(con, data_root):
             issue(f'{row["edition"]} pack-out log totals {packed:,} against workbook {row["packed"]}', None,
                   [row["source"], *[record["source"] for record in packout[-2:]]])
         packed = packed if packout else row["packed"] or 0
+        rate, packed_source, log_packed = row["rate_per_hour"], "packout_log", packed
+        status = status_rows.get(pid)
+        log_day = max((record["date"] for record in packout), default="0001-01-01")
+        if status and status_time and (status_time.date().isoformat() > log_day or not packout):
+            # The latest dated source wins. Show both when the pack-out log disagrees.
+            if status["packed"] != log_packed:
+                issue(f'{row["edition"]} packed: launch status ({status["as_of"][:16].replace("T", " ")}) says {status["packed"]:,}, '
+                      f'pack-out log (to {log_day}) totals {log_packed:,}. Using the later launch status; '
+                      f'{status["packed"] - log_packed:,} copies were packed since the log.', None,
+                      [status["source"], *[record["source"] for record in packout[-1:]]], "watch", "packed_conflict",
+                      packed_status=status["packed"], packed_log=log_packed)
+            if status.get("day_one_demand") not in (None, row["day_one_demand"]):
+                issue(f'{row["edition"]} day-one demand: launch status {status["day_one_demand"]:,} vs launch plan {row["day_one_demand"]:,}',
+                      None, [status["source"], row["source"]], "watch", "demand_conflict")
+            packed, packed_source = status["packed"], "launch_status"
+            rate = status.get("rate_per_hour") or rate
+            consumed[pid] = max(0, status["packed"] - log_packed)
         editions[pid] = {"edition": row["edition"], "target": row["day_one_demand"], "packed": packed,
-                         "remaining": max(0, row["day_one_demand"] - packed), "rate": row["rate_per_hour"],
-                         "hours": row["hours_available"], "evidence": [row["source"], *[record["source"] for record in packout]]}
+                         "remaining": max(0, row["day_one_demand"] - packed), "rate": rate,
+                         "hours": row["hours_available"], "packed_source": packed_source, "packed_log": log_packed,
+                         "packed_since_log": consumed.get(pid, 0),
+                         "evidence": [row["source"], *([status["source"]] if packed_source == "launch_status" else []),
+                                      *[record["source"] for record in packout]]}
+    if status_time:
+        # Pack-out capacity that is already gone cannot be used again.
+        shifts = [(max(start, status_time), end) for start, end in shifts if end > status_time]
+        for edition in editions.values():
+            edition["hours"] = round(sum((end - start).total_seconds() for start, end in shifts) / 3600, 1)
 
     needs = defaultdict(dict)
     bom_sources = defaultdict(list)
@@ -202,6 +233,11 @@ def readiness(con, data_root):
                 continue
             needs[row["parent_id"]][row["child_id"]] = row["qty_per"]
             bom_sources[row["child_id"]].append(row["source"])
+    ecns = [row for row in tab["bom_change"] if (row["effective_from"] or "0001") <= launch_date]
+    for row in ecns:
+        if (row["action"] or "") in {"quantity", "qty", "qty_change"} and row["qty_per_new"] is not None \
+                and row["parent_id"] in needs and row["child_id"] in needs[row["parent_id"]]:
+            needs[row["parent_id"]][row["child_id"]] = row["qty_per_new"]
     independent = {pid: {part: quantity for part, quantity in recipe.items() if part not in embedded}
                    for pid, recipe in needs.items()}
     if any(not independent.get(pid) for pid in editions):
@@ -222,6 +258,24 @@ def readiness(con, data_root):
             batches[row["batch"]] = row
         available[row["material_id"]] += row["quantity"]
     original = dict(available)
+    stock_adjustments = defaultdict(list)
+    if status_time and snapshot != "0001-01-01" and status_time.date().isoformat() > snapshot:
+        # The stock snapshot predates the copies packed since. Their parts are already consumed.
+        for pid, units in consumed.items():
+            for part, amount in needs[pid].items():
+                if units and part not in embedded:
+                    available[part] -= units * amount
+                    stock_adjustments[part].append({"edition": editions[pid]["edition"], "units": units * amount,
+                                                    "copies": units, "source": status_rows[pid]["source"]})
+        for part in stock_adjustments:
+            total = sum(item["units"] for item in stock_adjustments[part])
+            stock_sources[part].extend(item["source"] for item in stock_adjustments[part])
+            if part in {"CMP-GAM-001", "CMP-GAM-004", "CMP-GAM-008", "CMP-GAM-010", "CMP-GAM-003"}:
+                continue
+        issue(f'Stock snapshot {snapshot} predates the copies packed since ({sum(consumed.values()):,}); parts consumed '
+              f'were deducted from usable stock for {len(stock_adjustments)} components', None,
+              [status_rows[pid]["source"] for pid in consumed][:1], "watch", "stock_consumption",
+              deductions={part: sum(item["units"] for item in items) for part, items in stock_adjustments.items()})
     site_receipts = [row for row in tab["receipt"] if row["plant"] == site]
     receipt_by_id = {row["gr_number"]: row for row in site_receipts}
     receipts = defaultdict(list)
