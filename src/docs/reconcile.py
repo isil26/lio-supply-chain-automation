@@ -4,7 +4,7 @@ import csv
 import re
 from collections import defaultdict
 
-from .extract import finalize_receiving
+from .extract import finalize_receiving, record
 from .schema import Facts, decimal_number, evidence, iso_date
 
 PO_FIELDS = {
@@ -100,7 +100,7 @@ class ERP:
         """Promote OCR digits only when distinct PO and GR evidence corroborate the reading."""
         fields = doc["fields"]
         candidates = fields.get("handwriting_candidate", [])
-        if not candidates or fields.get("handwritten_correction"):
+        if not candidates:
             return
         po, note = first(fields, "po"), first(fields, "delivery_note")
         if not po or not note or note.get("locator") == "filename":
@@ -109,23 +109,35 @@ class ERP:
         receipts = self.receipts.get(note["value"], [])
         facts = Facts(doc["source"])
         facts.update(fields)
+        resolved = {entry["value"]["material"] for entry in facts.get("items", [])
+                    if "handwritten_quantity" in entry["value"]}
         for candidate in candidates:
             printed = candidate.get("printed_evidence")
-            if not printed:
-                continue
             item = candidate["value"]
+            if item["material"] in resolved:
+                continue
             matches = [row for row in receipts if value(row, "po") == po_number
                        and value(row, "material") == item["material"]]
             if len(matches) != 1:
                 continue
             receipt = matches[0]
             order = self.orders.get(po_number, {}).get(value(receipt, "line"))
+            booked = value(receipt, "quantity")
             if (not order or value(order, "material") != item["material"] or
                     value(order, "quantity") != item["handwritten_quantity"] or
-                    value(receipt, "quantity") != item.get("printed_quantity")):
+                    booked is None or booked <= item["handwritten_quantity"] or
+                    (printed and booked != item.get("printed_quantity"))):
                 continue
             facts["items"] = [entry for entry in facts.get("items", []) if entry != printed]
             facts["items"].append(dict(candidate, corroboration=[order["quantity"], receipt["quantity"]]))
+            resolved.add(item["material"])
+            activity = doc.setdefault("activity", [])
+            crop = next((event for event in activity if event["tool"] == "ocr_crop"
+                         and event["citation"].get("quote") == candidate["quote"]
+                         and event["citation"]["page"] == candidate["page"]), None)
+            record(activity, doc["source"], candidate["page"], "erp_corroboration", "accepted",
+                   "Matched the handwritten quantity to its PO line and SAP receipt",
+                   "handwritten_quantity", candidate["quote"], crop["time"] if crop else None)
         finalize_receiving(facts)
         doc["fields"] = facts
 

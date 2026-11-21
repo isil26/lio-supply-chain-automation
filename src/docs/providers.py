@@ -32,14 +32,19 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def _complete(model, instruction, content):
-    url = os.getenv("SOONY_LOCAL_URL", "http://127.0.0.1:11434/v1/chat/completions")
+DEFAULT_URL = "http://127.0.0.1:11434/v1/chat/completions"
+
+
+def _complete(model, instruction, content, *, url=None):
+    url = url or os.getenv("SOONY_LOCAL_URL", DEFAULT_URL)
     location = urllib.parse.urlsplit(url)
     host = location.hostname
-    if location.scheme not in {"http", "https"} or not host or location.username or (
-        host != "localhost" and not ipaddress.ip_address(host).is_loopback
-    ):
-        raise ValueError("SOONY_LOCAL_URL must be a loopback HTTP URL")
+    try:
+        local = host == "localhost" or ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        local = False
+    if location.scheme not in {"http", "https"} or not local or location.username is not None:
+        raise ValueError("The model endpoint must be a loopback HTTP URL")
     payload = {
         "model": model,
         "temperature": 0,
@@ -71,14 +76,11 @@ _EVIDENCE = (
 )
 
 _VISION_INSTRUCTIONS = (
-    'Read this procurement document image. Return JSON {"text": "page transcription", "facts": {...}}. '
-    f"{_EVIDENCE} For a delivery note extract delivery_note, po, document_date, received_date, "
-    'damage, and items. Each items value is an object with material, optional line, printed_quantity '
-    'and handwritten_quantity. Use integer piece quantities. Keep the two quantities distinct. '
-    'Only supply handwritten_quantity when a handwritten correction clearly belongs to that item. '
-    'Leave quantity out if you only see a struck-out number with an unreadable replacement. '
-    'Include the material and handwritten digits in the quote if both occur. '
-    'For other documents focus on complete verbatim transcription, including tables.'
+    'Read the delivery note image. Return JSON {"facts": {"items": [...]}}. '
+    f'{_EVIDENCE} Each items value is {{"material": "part identifier", "handwritten_quantity": integer}}. '
+    'Only return a quantity when a legible handwritten replacement clearly belongs to that item. '
+    'Quote just the handwritten digits, including their original separators. A printed number or a '
+    'handwritten signature is not a correction. Return an empty items list if there is no correction.'
 )
 
 _TRANSLATION_INSTRUCTIONS = (
@@ -92,9 +94,10 @@ _TRANSLATION_INSTRUCTIONS = (
 
 
 class LocalVisionClient:
-    def __init__(self, model):
+    def __init__(self, model, url=None):
         self.model = model
-        self.cache_key = f"local-vision:{model}"
+        self.url = url
+        self.cache_key = f"local-vision:{model}:{url or DEFAULT_URL}"
 
     def extract(self, image, *, kind):
         mime = mimetypes.guess_type(image.name)[0] or "image/png"
@@ -106,23 +109,34 @@ class LocalVisionClient:
                 {"type": "text", "text": f"Document category: {kind}."},
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}},
             ],
+            **({"url": self.url} if self.url else {}),
         )
 
 
 class LocalTranslationClient:
-    def __init__(self, model):
+    def __init__(self, model, url=None):
         self.model = model
-        self.cache_key = f"local-translation:{model}"
+        self.url = url
+        self.cache_key = f"local-translation:{model}:{url or DEFAULT_URL}"
 
     def extract(self, text, *, kind):
-        result = _complete(self.model, _TRANSLATION_INSTRUCTIONS, f"Document category: {kind}.\n\n{text}")
+        result = _complete(
+            self.model, _TRANSLATION_INSTRUCTIONS, f"Document category: {kind}.\n\n{text}",
+            **({"url": self.url} if self.url else {}),
+        )
         return result["facts"]
 
 
 def configured_clients():
-    text_model = os.getenv("SOONY_LOCAL_MODEL")
-    vision_model = os.getenv("SOONY_VISION_MODEL")
+    provider = os.getenv("SOONY_LLM_PROVIDER", "ollama").strip().lower()
+    if provider == "none":
+        return None, None
+    if provider != "ollama":
+        raise ValueError("SOONY_LLM_PROVIDER must be ollama or none")
+    url = os.getenv("SOONY_LLM_URL") or os.getenv("SOONY_LOCAL_URL") or DEFAULT_URL
+    text_model = os.getenv("SOONY_LLM_MODEL") or os.getenv("SOONY_LOCAL_MODEL")
+    vision_model = os.getenv("SOONY_LLM_VISION_MODEL") or os.getenv("SOONY_VISION_MODEL")
     return (
-        LocalVisionClient(vision_model) if vision_model else None,
-        LocalTranslationClient(text_model) if text_model else None,
+        LocalVisionClient(vision_model, url) if vision_model else None,
+        LocalTranslationClient(text_model, url) if text_model else None,
     )

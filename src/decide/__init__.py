@@ -11,6 +11,7 @@ from src.truth import field_sources, simulate, value
 
 POLICY = "soony/context/approval_policy_PP-07.pdf"
 ORG = "soony/context/org_chart_procurement.pdf"
+ONBOARDING = "soony/context/onboarding_notes.md"
 
 
 def policy_details(docs):
@@ -27,7 +28,65 @@ def policy_details(docs):
     return limits, int(air_limit[1].replace(",", "")) if air_limit else None, [item["citation"] for item in clauses]
 
 
-def choose(con, truth):
+def waiting_exposure(part, editions, products):
+    units_left = part["shortfall"]
+    copies, euros, evidence = 0, 0, []
+    for pid in sorted(editions, key=lambda pid: not pid.endswith("-CE")):
+        usage = part["unit_usage"].get(pid)
+        if not usage or not units_left:
+            continue
+        affected = min(editions[pid]["remaining"], math.ceil(units_left / usage))
+        units_left = max(0, units_left - affected * usage)
+        product = products.get(pid, {})
+        cost = product.get("std_cost_eur")
+        copies += affected
+        if cost is None:
+            euros = None
+        elif euros is not None:
+            euros += affected * cost
+        evidence.extend([*editions[pid]["evidence"][:1], *([product["source"]] if product else [])])
+    return {"units": copies, "amount_eur": round(euros, 2) if euros is not None else None,
+            "basis": "Component-constrained launch copies at finished-goods standard cost", "evidence": evidence}
+
+
+def ppap_block(docs, supplier, part, onboarding):
+    if (supplier.get("qualification_status") or "").casefold() != "conditional":
+        return None
+    contract = next((doc for doc in docs if doc["kind"] == "contract"
+                     and doc.get("supplier_id") == supplier["supplier_id"]
+                     and any(field["value"].get("material") == part for field in doc["fields"].get("annex", []))
+                     and any("PPAP" in field["value"] and "written release" in field["value"]
+                             for field in doc["fields"].get("qualification", []))), None)
+    if not contract:
+        return None
+    sections = {entry["value"].splitlines()[0]: entry["citation"] for doc in docs if doc["source"] == POLICY
+                for entry in doc["fields"].get("policy_clause", [])}
+    release = sections.get("5. New suppliers")
+    exception = sections.get("6. Exceptions")
+    roles = {entry["value"]["role"]: entry for doc in docs if doc["source"] == ORG
+             for entry in doc["fields"].get("org_role", [])}
+    category_role = f'Category Lead {supplier["category"]}'
+    category, quality, head = (roles.get(role) for role in (category_role, "Supplier Quality Lead", "Head of Procurement"))
+    vacancy = category and category["value"]["name"].casefold() in {"tbd", "vacant", "open"}
+    # The chart provides the current roster. Onboarding corroborates the vacancy where applicable.
+    note = next(({"file": ONBOARDING, "row": number, "quote": line.lstrip("- ")}
+                 for number, line in enumerate(onboarding.splitlines(), 1)
+                 if supplier["category"].casefold() in line.casefold() and "position is open" in line.casefold()), None)
+    if not (release and exception and quality and head and vacancy):
+        return None
+    head_name, quality_name = head["value"]["name"], quality["value"]["name"]
+    return {
+        "reason": f"The {category_role} position is vacant. Serial release remains blocked pending successful PPAP and written approval.",
+        "required_signers": [{"role": quality["value"]["role"], "name": quality_name},
+                             {"role": category_role, "name": None}],
+        "policy_clause": release,
+        "exception": {"role": head["value"]["role"], "name": head_name, "policy_clause": exception},
+        "evidence": [release, exception, quality["citation"], category["citation"], head["citation"],
+                     *([note] if note else []), *field_sources(contract, "qualification")],
+    }
+
+
+def choose(con, truth, data_root=None):
     docs = list(documents(con))
     po_limits, air_limit, clauses = policy_details(docs)
     org_source = {"file": ORG, "page": 1}
@@ -36,6 +95,9 @@ def choose(con, truth):
     start = shifts[0][0] if shifts else launch_end
     buyer_lead = "Dr. Maren Vogt"
     decision_menu = []
+    products = {row["product_id"]: row for row in rows(con, "product")}
+    notes = data_root / ONBOARDING if data_root else None
+    onboarding = notes.read_text(encoding="utf-8") if notes and notes.is_file() else ""
 
     def option(kind, title, recommendation, price, threshold, impact, risk, evidence, **extra):
         item = {"kind": kind, "title": title, "recommendation": recommendation, "price": price, "currency": "EUR",
@@ -124,6 +186,23 @@ def choose(con, truth):
                        [*evidence, *sea["evidence"]], request_only=True, material=part["material"], supplier_id=sea["supplier"])
         alternatives = [rate for rate in part["suppliers"] if rate["primary"] in (0, False, "N") and rate["supplier"].get("status") == "active"]
         for rate in alternatives:
+            supplier = rate["supplier"]
+            block = ppap_block(docs, supplier, part["material"], onboarding)
+            if block:
+                waiting = waiting_exposure(part, truth["editions"], products)
+                head, quality = block["exception"]["name"], block["required_signers"][0]["name"]
+                amount = waiting["amount_eur"]
+                exposure = f' (€{amount:,.0f} at finished-goods standard cost)' if amount is not None else ""
+                option("ppap_release", f'{supplier["name"]} PPAP release blocked',
+                       f'Route to {head}, Head of Procurement, for a documented PP-07 §6 exception. '
+                       f'Obtain successful PPAP and written Supplier Quality release from {quality}.',
+                       None, "PP-07 §5 requires written release by Supplier Quality and the responsible Category Lead.",
+                       f'Up to {waiting["units"]:,} launch copies exposed while the component gap persists{exposure}.',
+                       f'{block["reason"]} The financial cost of a missed launch copy is pending confirmation.',
+                       [*block["evidence"], supplier["source"], *part["evidence"], *waiting["evidence"]],
+                       owner=head, approval_block=block, cost_of_waiting=waiting, price_label="Release decision",
+                       material=part["material"], supplier_id=rate["supplier_id"])
+                continue
             qty = max(part["shortfall"], math.ceil(rate["moq"] or 0))
             unit_price = rate["unit_price"]
             quote = f'{qty:,} units at {rate["currency"]} {unit_price:g} per unit' if unit_price is not None else f'{qty:,} units, price pending'
@@ -150,6 +229,9 @@ def choose(con, truth):
 def authorize(con, decision, action):
     if action not in {"approve", "review"}:
         raise ValueError("Unknown decision action")
+    blocked = decision.get("approval_block")
+    if blocked and action == "approve":
+        raise PermissionError(blocked["reason"])
     with con:
         con.execute("""CREATE TABLE IF NOT EXISTS decisions (
           id TEXT PRIMARY KEY, status TEXT NOT NULL, decided_at TEXT NOT NULL, payload TEXT NOT NULL
@@ -161,7 +243,7 @@ def authorize(con, decision, action):
         status = "approved" if action == "approve" else "review"
         con.execute("INSERT OR REPLACE INTO decisions VALUES(?,?,?,?)",
                     (decision["id"], status, now(), json.dumps(decision, ensure_ascii=False)))
-    return status
+    return "blocked" if blocked else status
 
 
 def decisions(con):

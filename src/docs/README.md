@@ -19,15 +19,15 @@ The CLI reads the synced data mirror and publishes `store/docs.jsonl`. It report
 
 ## Model providers
 
-Set `SOONY_VISION_MODEL` to an image-capable model served by a local OpenAI-compatible chat endpoint. Set `SOONY_LOCAL_MODEL` to a local text model to add English translations and structured facts for Korean, Chinese, Polish and English documents. The endpoint defaults to Ollama at `http://127.0.0.1:11434/v1/chat/completions`. Set `SOONY_LOCAL_URL` for another loopback endpoint. Source text and images stay local with these adapters.
+Set `SOONY_LLM_VISION_MODEL` to an image-capable model and `SOONY_LLM_MODEL` to a text model for Korean, Chinese, Polish and English notices. The default provider is Ollama at `http://127.0.0.1:11434/v1/chat/completions`. Set `SOONY_LLM_URL` for another loopback chat endpoint or `SOONY_LLM_PROVIDER=none` for deterministic extraction only. Each model can be configured independently. The adapters also accept the legacy `SOONY_VISION_MODEL`, `SOONY_LOCAL_MODEL` and `SOONY_LOCAL_URL` settings.
 
-Call `run_pipeline(data, state, output, vision=..., translator=...)` from `src.docs.pipeline` to use other provider implementations. The `VisionClient.extract(image, *, kind)` method returns optional page `text` and a `facts` object. `TranslationClient.extract(text, *, kind)` returns a `facts` object directly. Each facts object maps field names to lists of `{value, quote, confidence}`. Providers supply original-language quotes. The pipeline binds those quotes to the page and source path and verifies text translations against the transcription. Implement `cache_key` on each provider and change it when its extraction behavior changes.
+Call `run_pipeline(data, state, output, vision=..., translator=...)` from `src.docs.pipeline` to plug in a client. `VisionClient.extract(image, *, kind)` returns a `facts` object under the `facts` key and `TranslationClient.extract(text, *, kind)` returns the object directly. Each field is a list of `{value, quote, confidence}`. A receiving vision candidate uses the `items` field with a value containing `material` and integer `handwritten_quantity`. Its quote must match the independent OCR digits from that item's quantity cell. A notice quote must match its page's OCR or PDF text layer. Quotes retain the source language and punctuation. Implement `cache_key` on each provider and change it when its extraction behavior changes.
 
-The local OCR path works independently of model configuration. Its handwriting fallback searches below the printed quantity cell, reads the crop at multiple thresholds, and checks whether the PO quantity and SAP receipt independently corroborate the candidate and printed value. Other handwritten corrections should be checked with the vision provider or on the original scan.
+The local OCR path searches below the printed quantity cell and reads the crop at multiple thresholds. In the deterministic path, the OCR note number, PO, material, PO quantity and SAP over-receipt must support the count. A legible printed quantity must also agree with SAP.
 
 ## Output contract
 
-Each JSONL row represents one source and carries `source`, `sha`, `kind`, `supplier_id`, `pages`, `methods`, `warnings`, `error`, `fields`, `mismatches` and `review_reasons`. Paths are relative to the data root. A field name maps to a list of evidence records.
+Each JSONL row represents one source and carries `source`, `sha`, `kind`, `supplier_id`, `pages`, `methods`, `warnings`, `error`, `fields`, `mismatches`, `review_reasons` and `activity`. Paths are relative to the data root. A field name maps to a list of evidence records. The dashboard activity exposes source reads, model calls and quote validation outcomes with their original execution times, including on cached runs.
 
 ```json
 {

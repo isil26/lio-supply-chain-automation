@@ -5,14 +5,16 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
 
 from src.docs import documents, load_table, read_jsonl
-from src.docs.extract import merge_translation
+from src.docs.extract import extract_file, merge_translation
 from src.docs.parsers import contract, notice, order, receipt_text, workbook
 from src.docs.pipeline import digest, run_pipeline
-from src.docs.providers import LocalVisionClient
+from src.docs.providers import LocalVisionClient, configured_clients
 from src.docs.schema import Facts
 
 
@@ -115,13 +117,8 @@ class FakeVision:
         self.calls += 1
         suffix = image.read_bytes()
         count = 8000 if suffix == b"scan-a" else 9000
-        return {"facts": {
-            "delivery_note": [{"value": "WZ-261116-999", "quote": "Nr: WZ-261116-999"}],
-            "po": [{"value": "4500000001", "quote": "Zamówienie: 4500000001"}],
-            "items": [{"value": {"material": "CMP-TST-004", "printed_quantity": 80000,
-                                 "handwritten_quantity": count},
-                       "quote": f"CMP-TST-004 80.000\n{count:,}", "confidence": .91}],
-        }}
+        return {"facts": {"items": [{"value": {"material": "CMP-TST-004", "handwritten_quantity": count},
+                                     "quote": f"{count:,}".replace(",", " "), "confidence": .91}]}}
 
 
 class PipelineTests(unittest.TestCase):
@@ -151,7 +148,13 @@ class PipelineTests(unittest.TestCase):
         self.state.write_text(json.dumps({path.relative_to(self.data).as_posix(): digest(path) for path in paths}))
 
     def run_docs(self):
-        return run_pipeline(self.data, self.state, self.output, vision=self.client)
+        raw = "Nr: WZ-261116-999\nZamowienie: 4500000001\nCMP-TST-004 | Art book 80.000 PCS"
+        count = 8000 if not self.scan.exists() or self.scan.read_bytes() == b"scan-a" else 9000
+        with patch("src.docs.media.LocalOCR.read", return_value=(raw, [object()])), patch(
+            "src.docs.media.LocalOCR.missing_quantities", return_value={}
+        ), patch("src.docs.media.LocalOCR.handwritten_quantities",
+                 return_value={"CMP-TST-004": (count, f"{count:,}".replace(",", " "))}):
+            return run_pipeline(self.data, self.state, self.output, vision=self.client)
 
     def test_cache_update_removal_erp_changes_and_sqlite_loader(self):
         self.assertEqual(self.run_docs()["cache_hits"], 0)
@@ -159,6 +162,10 @@ class PipelineTests(unittest.TestCase):
         field, = doc["fields"]["handwritten_quantity"]
         mismatch, = doc["mismatches"]
         self.assertEqual(field["value"], 8000)
+        self.assertEqual(field["method"], "llm_vision")
+        self.assertEqual([(e["tool"], e["status"]) for e in doc["activity"]],
+                         [("ocr", "succeeded"), ("ocr_crop", "succeeded"), ("llm_vision", "succeeded"),
+                          ("quote_validation", "accepted")])
         self.assertEqual((mismatch["code"], mismatch["erp"]["value"], mismatch["erp"]["row"]),
                          ("goods_receipt_mismatch", 80000, 2))
         content = self.output.read_bytes()
@@ -172,6 +179,9 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(self.run_docs()["cache_hits"], 2)
         for row in read_jsonl(self.output):
             self.assertEqual(row["fields"]["delivery_note"][0]["source_file"], row["source"])
+            for event in row["activity"]:
+                self.assertEqual(event["citation"]["file"], row["source"])
+                self.assertTrue(event["input_ref"].startswith(row["source"] + "#"))
         self.write_state(self.scan)
         self.assertTrue(twin.exists())
         self.assertEqual(self.run_docs()["documents"], 1)
@@ -187,7 +197,7 @@ class PipelineTests(unittest.TestCase):
         self.assertNotEqual(doc["bridge_sha"], doc["sha"])
         self.assertEqual(self.client.calls, 2)
 
-        with sqlite3.connect(":memory:") as db:
+        with closing(sqlite3.connect(":memory:")) as db:
             self.assertEqual(load_table(db, self.output), 1)
             loaded, = documents(db)
             self.assertEqual(loaded["fields"]["handwritten_quantity"][0]["citation"]["file"], doc["source"])
@@ -202,16 +212,54 @@ class PipelineTests(unittest.TestCase):
 
     def test_failed_provider_falls_back_and_retries(self):
         with patch.object(self.client, "extract", side_effect=OSError("simulated failure")) as provider:
-            with patch("src.docs.media.LocalOCR.read", return_value=(
-                "No: DN-261116-999\nPO: 4500000001\nCMP-TST-004 | Art book 8,000 PCS", ()
-            )):
-                for _ in range(2):
-                    stats = self.run_docs()
-                    self.assertEqual((stats["warnings"], stats["errors"], stats["cache_hits"]), (1, 0, 0))
+            for _ in range(2):
+                stats = self.run_docs()
+                self.assertEqual((stats["warnings"], stats["errors"], stats["cache_hits"]), (1, 0, 0))
         self.assertEqual(provider.call_count, 2)
         doc, = read_jsonl(self.output)
         self.assertEqual(doc["methods"], ["ocr"])
         self.assertEqual(doc["fields"]["items"][0]["value"]["quantity"], 8000)
+        self.assertIn(("llm_vision", "error"), [(e["tool"], e["status"]) for e in doc["activity"]])
+
+    def test_model_transcription_cannot_validate_its_own_quote(self):
+        self.po.write_text(self.po.read_text().replace(",8000", ",7000"))
+        payload = {"text": "CMP-TST-004 9 000", "facts": {"items": [
+            {"value": {"material": "CMP-TST-004", "handwritten_quantity": 9000}, "quote": "9 000"},
+            {"value": {"material": "CMP-TST-005", "handwritten_quantity": 8000}, "quote": "8 000"},
+            {"value": {"material": "CMP-TST-004", "handwritten_quantity": 8000}, "quote": "8,000"},
+        ]}}
+        with patch.object(self.client, "extract", return_value=payload):
+            self.run_docs()
+        doc, = read_jsonl(self.output)
+        self.assertNotIn("handwritten_quantity", doc["fields"])
+        self.assertEqual(doc["fields"]["items"][0]["value"]["quantity"], 80000)
+        self.assertEqual([event["status"] for event in doc["activity"] if event["tool"] == "quote_validation"],
+                         ["rejected", "rejected", "rejected"])
+
+    def test_notice_extraction_checks_polish_korean_and_chinese_against_source(self):
+        for raw in ("Wysyłki wstrzymane do poniedziałku.", "월요일까지 배송 중단.", "暂停发货至周一。"):
+            with self.subTest(raw=raw), patch("src.docs.extract.pdf_text", return_value=[raw]):
+                provider = unittest.mock.Mock()
+                provider.extract.return_value = {"impact": [
+                    {"value": "Shipping paused until Monday", "quote": raw},
+                    {"value": "Forged replacement", "quote": "This text was never on the page."},
+                ]}
+                activity = []
+                facts, _, methods, _ = extract_file(Path("notice.pdf"), "notice.pdf", "notice", None,
+                                                    translator=provider, activity=activity)
+                self.assertEqual([field["value"] for field in facts["impact"]], ["Shipping paused until Monday"])
+                self.assertEqual(methods, {"pdf_text", "llm_text"})
+                self.assertEqual([e["status"] for e in activity], ["succeeded", "succeeded", "accepted", "rejected"])
+                self.assertEqual(activity[2]["citation"]["quote"], raw)
+
+    def test_llm_environment_can_select_models_and_disable_the_provider(self):
+        config = {"SOONY_LLM_MODEL": "text", "SOONY_LLM_VISION_MODEL": "vision",
+                  "SOONY_LLM_URL": "http://127.0.0.1:8100/v1/chat/completions"}
+        with patch.dict("os.environ", config, clear=True):
+            vision, text = configured_clients()
+            self.assertEqual((vision.model, text.model, text.url), ("vision", "text", config["SOONY_LLM_URL"]))
+        with patch.dict("os.environ", dict(config, SOONY_LLM_PROVIDER="none"), clear=True):
+            self.assertEqual(configured_clients(), (None, None))
 
     def test_loopback_adapter_passes_the_image_to_completion(self):
         with patch("src.docs.providers._complete", return_value={"text": "OCR from model"}) as completion:
@@ -220,6 +268,16 @@ class PipelineTests(unittest.TestCase):
         model, _, request = completion.call_args.args
         self.assertEqual(model, "image-model")
         self.assertEqual(request[1]["image_url"]["url"], "data:image/jpeg;base64,c2Nhbi1h")
+
+    def test_loopback_adapter_decodes_the_ollama_chat_response(self):
+        response = {"choices": [{"message": {"content": '{"facts":{"items":[]}}'}}]}
+        with patch("src.docs.providers.urllib.request.build_opener") as build:
+            build.return_value.open.return_value = BytesIO(json.dumps(response).encode())
+            self.assertEqual(LocalVisionClient("image-model").extract(self.scan, kind="receiving"),
+                             {"facts": {"items": []}})
+        request, = build.return_value.open.call_args.args
+        self.assertEqual(request.full_url, "http://127.0.0.1:11434/v1/chat/completions")
+        self.assertEqual(json.loads(request.data)["model"], "image-model")
 
     def test_local_crop_requires_corroboration_and_is_rechecked_from_cache(self):
         raw = ("No: WZ-261116-999\nPO: 4500000001\n"
@@ -239,6 +297,18 @@ class PipelineTests(unittest.TestCase):
         doc, = read_jsonl(self.output)
         self.assertNotIn("handwritten_correction", doc["fields"])
         self.assertIn("unverified_handwriting", doc["review_reasons"])
+
+    def test_local_crop_with_unreadable_printed_digits_accepts_a_linked_over_receipt(self):
+        raw = "Nr: WZ-261116-999\nZamowienie: 4500000001\nCMP-TST-004 | Art book unreadable PCS"
+        with patch("src.docs.media.LocalOCR.read", return_value=(raw, [object()])), patch(
+            "src.docs.media.LocalOCR.missing_quantities", return_value={}
+        ), patch("src.docs.media.LocalOCR.handwritten_quantities", return_value={"CMP-TST-004": (8000, "8 000")}):
+            run_pipeline(self.data, self.state, self.output)
+        doc, = read_jsonl(self.output)
+        item, = doc["fields"]["items"]
+        self.assertEqual(item["value"]["quantity"], 8000)
+        self.assertNotIn("printed_quantity", item["value"])
+        self.assertEqual(doc["activity"][-1]["tool"], "erp_corroboration")
 
 
 if __name__ == "__main__":

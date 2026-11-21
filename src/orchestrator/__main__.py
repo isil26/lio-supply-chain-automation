@@ -21,6 +21,7 @@ from src import chaser
 from src.decide import authorize, choose, decisions
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
+from src.orchestrator.numbers import numbers_report
 from src.truth import LOCAL, readiness
 
 DIST = ROOT / "web" / "dist"
@@ -64,13 +65,57 @@ def cite_text(source):
     return path + location
 
 
+def dashboard_activity(con, blocked, clock):
+    general = [dict(row, id=str(row["id"]), tool=None, input_ref=None, output_ref=None, status=None, citation=None)
+               for row in con.execute("SELECT * FROM activity ORDER BY id DESC LIMIT 15")]
+    traced = []
+    pages = {}
+    for doc in documents(con):
+        for index, event in enumerate(doc.get("activity", [])):
+            item = dict(event, id=f'doc:{doc["source"]}:{index}',
+                        type="warning" if event["status"] in {"error", "rejected"} else "analysis")
+            traced.append(item)
+            if doc["kind"] in {"notice", "receiving"}:
+                pages.setdefault(event["input_ref"], []).append(item)
+    escalation = []
+    for action in blocked:
+        block = action["approval_block"]
+        escalation.append({
+            "id": f'approval:{action["id"]}', "agent": "Decision Copilot", "tool": "ppap_policy",
+            "input_ref": action["supplier_id"], "output_ref": f'options/{action["id"]}', "status": "blocked",
+            "citation": block["policy_clause"], "type": "warning", "time": action.get("evaluated_at"),
+            "action": f'{action["title"]}. {action["recommendation"]} {action["impact"]}',
+        })
+    # Surface one evidence chain per model tool so a single verbose page cannot crowd out the other.
+    proof = []
+    for tool in ("llm_vision", "llm_text"):
+        chains = [events for events in pages.values() if any(event["tool"] == tool for event in events)]
+        if chains:
+            chain = max(chains, key=lambda events: (any(event["status"] == "accepted" for event in events),
+                                                     events[-1]["time"]))
+            read_tools = {"ocr_crop"} if tool == "llm_vision" else {"ocr", "pdf_text"}
+            read = next((event for event in chain if event["tool"] in read_tools), None)
+            call = next(event for event in chain if event["tool"] == tool)
+            validations = [event for event in chain if event["tool"] == "quote_validation"]
+            outcome = next((event for event in validations if event["status"] == "accepted"),
+                           validations[0] if validations else None)
+            proof.extend(event for event in (read, call, outcome) if event)
+    shown = {event["id"] for event in proof}
+    recent = [*escalation, *proof, *general, *sorted((event for event in traced if event["id"] not in shown),
+                                                  key=lambda event: event["time"], reverse=True)]
+    return [dict(event, time=clock(event["time"])) for event in recent]
+
+
 def dashboard(con):
     truth = get_state(con, "truth")
     if not truth:
         return None
     chosen = get_state(con, "options", [])
     states = decisions(con)
-    actions = [dict(option, status=states.get(option["id"], "pending")) for option in chosen]
+    actions = [dict(option, status="blocked", review_requested=states.get(option["id"]) == "review")
+               if option.get("approval_block") else dict(option, status=states.get(option["id"], "pending"))
+               for option in chosen]
+    blocked = [option for option in actions if option["status"] == "blocked"]
     approval = actions[0] if actions else None
     risks = []
     for part in truth["parts"].values():
@@ -102,12 +147,11 @@ def dashboard(con):
                        "p10": row["p10"], "p90": row["p90"], "firstStop": truth["parts"].get(row["first_stop"], {}).get("label"),
                        "status": "At risk" if row["probability"] < .8 else "On track", "tone": "red" if row["probability"] < .3 else "amber"}
                       for pid, row in truth["editions"].items()],
-        "risks": risks, "activity": [dict(row, id=str(row["id"]), time=clock(row["time"])) for row in
-                                    con.execute("SELECT * FROM activity ORDER BY id DESC LIMIT 15")],
+        "risks": risks, "activity": dashboard_activity(con, blocked, clock),
         "threads": [{**thread, "initials": "".join(word[0] for word in thread["supplier"].split()[:2]),
                      "messages": [dict(msg, time=clock(msg["time"])) for msg in thread["messages"]]}
                     for thread in chaser.list_threads(con)],
-        "approval": approval, "options": actions,
+        "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": get_state(con, "drop"),
         "sync": get_state(con, "sync"),
         "model": truth["model"], "dataQuality": truth["data_quality"],
@@ -186,7 +230,10 @@ class Loop:
                 with con:
                     save_state(con, "pendingRecompute", True)
                 truth = readiness(con, self.root)
-                options = choose(con, truth)
+                options = choose(con, truth, self.root)
+                for option in options:
+                    if option.get("approval_block"):
+                        option["evaluated_at"] = now()
                 draft_count = chaser.draft(con, truth)
                 with con:
                     save_state(con, "truth", truth)
@@ -304,9 +351,14 @@ def handler(loop):
                         decision = next((item for item in get_state(con, "options", []) if item["id"] == match[1]), None)
                         if not decision:
                             return self.out({"error": "Decision changed. Refresh before approving."}, 409)
-                        status = authorize(con, decision, match[2])
+                        try:
+                            status = authorize(con, decision, match[2])
+                        except PermissionError as exc:
+                            return self.out({"error": str(exc), "status": "blocked"}, 409)
                         with con:
-                            chaser.activity(con, "Procurement", f'{decision["title"]}: {status}. Purchasing remains subject to its approval chain.')
+                            message = ("Review requested. Release remains blocked." if status == "blocked"
+                                       else f"{status}. Purchasing remains subject to its approval chain.")
+                            chaser.activity(con, "Procurement", f'{decision["title"]}: {message}')
                         return self.out({"ok": True, "approvalId": match[1], "status": status})
                     match = re.fullmatch(r"/api/threads/([A-F0-9]+)/(send|demo-reply)", path)
                     if match and match[2] == "send":
@@ -359,12 +411,24 @@ def main():
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--online", action="store_true", help="poll the private portal")
     modes.add_argument("--demo", action="store_true", help="isolate and replay previously downloaded documents")
+    modes.add_argument("--numbers", action="store_true", help="print the evaluated store snapshot as the deck's Markdown tables")
     parser.add_argument("--once", action="store_true", help="evaluate once and print the result")
     args = parser.parse_args()
     if args.interval <= 0:
         parser.error("--interval must be positive")
     if args.online and args.data.resolve() != (ROOT / "data").resolve():
         parser.error("online bridge sync requires the default data directory")
+    if args.numbers:
+        if args.once:
+            parser.error("refresh with --once, then run --numbers")
+        try:
+            with closing(sqlite3.connect(args.db.resolve().as_uri() + "?mode=ro", uri=True)) as con:
+                con.row_factory = sqlite3.Row
+                con.execute("BEGIN")
+                print(numbers_report(con))
+        except (ValueError, sqlite3.Error) as exc:
+            parser.exit(1, f"Cannot read launch numbers: {exc}\n")
+        return
     loop = Loop(args)
     if args.once:
         loop.cycle(sync=True)

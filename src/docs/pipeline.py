@@ -19,7 +19,7 @@ from .schema import Facts
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = 2
-PARSER_REVISIONS = {"notice": 1, "price_list": 1, "receiving": 1}
+PARSER_REVISIONS = {"notice": 2, "price_list": 2, "receiving": 4, "context": 1}
 EXTENSIONS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"}
 
 
@@ -41,6 +41,14 @@ def bind_source(value, source):
     if isinstance(value, list):
         return [bind_source(item, source) for item in value]
     return value
+
+
+def bind_activity(payload, source):
+    for event in payload.get("activity", []):
+        event["citation"]["file"] = source
+        for key in ("input_ref", "output_ref"):
+            if event[key]:
+                event[key] = source + event[key][event[key].index("#page="):]
 
 
 def serialize(value):
@@ -68,21 +76,25 @@ def extract_cached(path, source, manifest_hash, db, ocr, vision, translator):
         doc["sha"] = sha
         if manifest_hash and manifest_hash != actual:
             doc["bridge_sha"] = manifest_hash
-        options = [VERSION, kind, path.suffix.lower(), provider_cache_key(vision),
-                   provider_cache_key(translator), bool(ocr.tesseract), ocr.tessflags]
+        options = [VERSION, kind, path.suffix.lower(), provider_cache_key(vision if kind == "receiving" else None),
+                   provider_cache_key(translator if kind in {"notice", "contract", "price_list"} else None),
+                   bool(ocr.tesseract), ocr.tessflags]
         if kind in PARSER_REVISIONS:
             options.append(PARSER_REVISIONS[kind])
         options = serialize(options)
         cached = db.execute("SELECT payload FROM extraction WHERE sha=? AND options=?", (sha, options)).fetchone()
         if cached:
             doc.update(bind_source(json.loads(cached[0]), source))
+            bind_activity(doc, source)
             return doc, True
 
-        fields, pages, methods, warnings = extract_file(path, source, kind, ocr, vision, translator)
+        activity = []
+        fields, pages, methods, warnings = extract_file(path, source, kind, ocr, vision, translator, activity)
         if digest(path) != sha:
             doc["error"] = "File changed during extraction. Retry after bridge sync."
             return doc, False
-        payload = {"fields": fields, "pages": pages, "methods": sorted(methods), "warnings": warnings}
+        payload = {"fields": fields, "pages": pages, "methods": sorted(methods), "warnings": warnings,
+                   "activity": activity}
         if not methods:
             payload["error"] = "Document has no readable pages"
         if kind == "confirmation" and re.match(r"OA\d{8}", path.stem, re.I) and not fields.get("items"):

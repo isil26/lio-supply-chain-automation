@@ -43,12 +43,10 @@ def render_page(path, page, work):
     return output
 
 
-def quantity_tokens(words, width):
+def quantity_words(words, width):
     """Read grouped digits in the quantity slot of a six-column receiving form."""
-    tokens = [word["text"].strip("|") for word in words
-              if .59 <= int(word["left"]) / width <= .68 and float(word["conf"]) >= 55]
-    raw = " ".join(tokens).strip()
-    return raw if quantity(raw) is not None else ""
+    return [word for word in words if .59 <= int(word["left"]) / width <= .68
+            and float(word["conf"]) >= 55 and quantity(word["text"].strip("|")) is not None]
 
 
 class LocalOCR:
@@ -159,7 +157,7 @@ class LocalOCR:
         return readings
 
     def missing_quantities(self, path, lines, materials):
-        """Recover printed digits when the same receiving-form row lost its unit in OCR."""
+        """Read quantities from the form's numeric column, away from description digits."""
         if not self.tesseract or not materials:
             return {}
         try:
@@ -178,30 +176,52 @@ class LocalOCR:
                     continue
                 if not any(.23 <= int(word["left"]) / image.width <= .32 for word in line):
                     continue
-                reading = quantity_tokens(line, image.width)
+                words = quantity_words(line, image.width)
+                reading = " ".join(word["text"].strip("|") for word in words)
+                if quantity(reading) is None:
+                    reading = ""
+                unit = next((word for word in line if word["text"].strip("|").lower()
+                             in {"pcs", "pc", "szt", "ea", "stk"}), None)
+                # When a vertical rule is read as a digit, the numeric word protrudes
+                # above the row. Anchor the tighter crop on the unit's baseline.
+                if unit and any(int(word["height"]) > 1.65 * int(unit["height"]) for word in words):
+                    top, height = int(unit["top"]), int(unit["height"])
+                    bounds = (round(image.width * .598), max(0, top - height // 2),
+                              round(image.width * .705), min(image.height, top + height * 1.5))
+                    patch = ImageOps.autocontrast(ImageOps.grayscale(image.crop(tuple(map(int, bounds)))))
+                    patch = patch.resize((patch.width * 2, patch.height * 2))
+                    narrow = self.read_digits(patch)
+                    if narrow:
+                        reading = narrow
                 if not reading:
                     top, height = int(code["top"]), int(code["height"])
                     bounds = (round(image.width * .597), max(0, top - height),
                               round(image.width * .687), min(image.height, top + 2.3 * height))
                     patch = ImageOps.autocontrast(ImageOps.grayscale(image.crop(tuple(map(int, bounds)))))
-                    crop = self.work / "printed-digits.png"
-                    readings = []
-                    for threshold in (150, 195):
-                        binary = patch.point(lambda pixel: 0 if pixel < threshold else 255)
-                        ImageOps.expand(binary, border=12, fill=255).save(crop)
-                        try:
-                            raw = command([self.tesseract, str(crop), "stdout", "--psm", "7",
-                                           "-c", "tessedit_char_whitelist=0123456789., "], timeout=15).strip()
-                        except (OSError, RuntimeError, subprocess.SubprocessError):
-                            continue
-                        count = quantity(raw)
-                        if count is not None and len(str(count)) >= 3:
-                            readings.append((count, raw))
-                    if len(readings) == 2 and readings[0][0] == readings[1][0]:
-                        reading = readings[0][1]
+                    reading = self.read_digits(patch)
                 if reading:
                     results[material] = (quantity(reading), reading)
         return results
+
+    def read_digits(self, patch):
+        from PIL import ImageOps
+
+        crop = self.work / "printed-digits.png"
+        readings = []
+        for threshold in (150, 195):
+            binary = patch.point(lambda pixel: 0 if pixel < threshold else 255)
+            ImageOps.expand(binary, border=12, fill=255).save(crop)
+            try:
+                raw = command([self.tesseract, str(crop), "stdout", "--psm", "7",
+                               "-c", "tessedit_char_whitelist=0123456789., "], timeout=15).strip()
+            except (OSError, RuntimeError, subprocess.SubprocessError):
+                continue
+            count = quantity(raw)
+            if count is not None and len(str(count)) >= 3:
+                readings.append((count, raw))
+        if len(readings) == 2 and readings[0][0] == readings[1][0]:
+            return readings[0][1]
+        return ""
 
 
 def provider_cache_key(client):

@@ -181,7 +181,7 @@ PRINTED_CORRECTION = re.compile(
     rf"(?P<printed>{QUANTITY})[^\n]*?\b(?:handwritten|corrected(?: to)?)\s*[:=]?\s*(?P<corrected>{QUANTITY})",
     re.I,
 )
-PO_LABEL = r"(?:purchasing order|purchase order|\bPO(?:\s*no\.?)?|Zamówienie|采\s*购\s*订\s*单|採\s*購\s*訂\s*單|발주(?:\s*번호)?)"
+PO_LABEL = r"(?:purchasing order|purchase order|\bPO(?:\s*no\.?)?|Zam[oó]wienie|采\s*购\s*订\s*单|採\s*購\s*訂\s*單|발주(?:\s*번호)?)"
 
 
 def receipt_text(facts, raw, page, confidence):
@@ -219,7 +219,17 @@ def inspection(facts, raw, page, confidence):
 
 
 def context(facts, raw, page, confidence):
+    lines = [line for line in raw.splitlines() if line.strip()]
+    for names, roles in zip(lines, lines[1:]):
+        names_in_row = re.split(r"\s{2,}", names.strip())
+        roles_in_row = re.split(r"\s{2,}", roles.strip())
+        if len(names_in_row) != len(roles_in_row):
+            continue
+        for name, role in zip(names_in_row, roles_in_row):
+            if re.fullmatch(r"Head of Procurement|Supplier Quality Lead|Category Lead .+", role):
+                facts.add("org_role", {"role": role, "name": name}, page, f"{names}\n{roles}", confidence)
     stripped = "\n".join(line.strip() for line in raw.splitlines())
+    stripped = re.sub(r"^Soony · PP-07 Approval policy · .*Page \d+\s*$", "", stripped, flags=re.M)
     search(facts, "policy_clause", r"^\d\. [^\n]+\n[\s\S]*?(?=^\d\. |\Z)", stripped, page, confidence)
 
 

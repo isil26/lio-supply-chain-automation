@@ -11,5 +11,5 @@
 | T8 | Submission: README, deck outline, demo script, business case | Codex | docs/ | done | - |
 | T8 | Pitch deck, speaker notes, PDF export guide | copilot-deck | docs/deck | done | Built 6-slide HTML deck, 3-minute notes, and PDF export README in docs/deck. |
 
-| T9 | Visible LLM step, escalation case (Pune/Category Lead), numbers script | Codex #3 | src/truth, src/docs, src/decide, src/orchestrator | in_progress | docs/WIN_PLAN.md |
+| T9 | Visible LLM step, escalation case (Pune/Category Lead), numbers script | codex-truth | src/truth, src/docs, src/decide, src/orchestrator | in_progress | docs/WIN_PLAN.md |
 | T10 | One live-API React UI hero screen | copilot-ui | web | done | Live HTTP client, hero dashboard, evidence modal, and mobile/dark-light UI complete; build passes |

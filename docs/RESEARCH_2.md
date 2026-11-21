@@ -1,0 +1,67 @@
+# RESEARCH_2 — second-pass research (agent: research, 21 Nov 2026)
+Confidence tags: [V] page opened and read this session; [S] search snippet only; [A] my judgement. Numbers for our demo still come only from docs/NUMBERS.md.
+
+## 1. Lio in depth
+Facts [V] from lio.ai, lio.ai/product/multi-agent-system, lio.ai/customers, lio.ai/security, TechCrunch (2026-03-05), Dealroom summary of the a16z podcast (Oct 2026):
+- Positioning: "World's first multi-agent system for direct and indirect Procurement"; "virtual procurement department"; agents "execute your operative work end to end (including all edge cases)" "from matching to chasing to exception handling"; "hundreds of specialized agents"; shared memory and context across agents; channels = ERP, email, Teams, phone, voice, supplier portals. An "intelligence layer on top of existing systems" that syncs back to SAP/Oracle.
+- Versus incumbents: Keil names legacy vendors (SAP Ariba, Oracle), BPOs and consultancies as competitors (TechCrunch). Site line: "Dashboards show the data, buyers still pull it." Podcast thesis: ~80% of the real work happens outside systems of record, so incumbents are "confined to that record" (Dealroom paraphrase). Zip is never mentioned; Coupa appears once, as a spend-dashboard example.
+- Human in the loop: "No enterprise starts with fully autonomous negotiation agents"; autonomy for routine work, humans for high-risk, high-budget approvals. Agent taxonomy from the podcast: retrieval, process, policy, principal agents.
+- Customers named: tesa, BASF Coatings, Novonesis, Schaeffler, Bilfinger. Claims: 175+ enterprises, 75% of a manufacturer's outsourced ops automated in 6 months (TechCrunch), "weeks to minutes". All self-reported.
+- Security: ISO 27001, GDPR, Azure, RBAC, audit logs. SOC 2 only "aligned with". No eval methodology is published anywhere I could read.
+- Not found: a blog (lio.ai/blog is 404), engineering job themes (careers list loads dynamically), an order-confirmation or expediting case study. Procurement Magazine and Surventis pages returned 403, so I could not read them.
+- Team size conflict: YC says 80, careers says 135. I did not use it.
+
+What Lio engineers will likely value [A, inferred from their own claims]: (1) "edge cases included", so show a messy case solved, not the happy path; (2) the layer-on-ERP story, so show the ERP value next to the corrected value; (3) a visible policy/approval agent (PP-07 limits, vacant Category Lead escalation) since they sell exactly this; (4) shared state across agents; (5) evidence for accuracy, since they publish none, which is where we can beat them.
+Language to borrow: "edge cases included", "agents execute, humans approve", "the 80% outside the system of record".
+
+## 2. Five papers we can use (each opened and checked)
+1. **Ye, Hijazi, Van Hentenryck, "Conformal Predictive Distributions for Contextual Order Fulfillment Optimization", arXiv:2610.38046 (27 Oct 2026, preprint) [V].** On >5M orders, conformal predictive systems raise late-delivery detection from 3.8% to 79.4%. Feeding the distribution into a stochastic cost optimiser cut total cost 7.1%. Apply: say our ready-by estimate is a full distribution plus a cost decision (air or not), and that our P(on time) comes from scenario sampling, which this paper backs up. This is the closest thing I found to "expedite under uncertainty". Earlier version: arXiv:2505.17340 (May 2025) [V].
+2. **Faulkner et al., "Uncertainty-Aware Delivery Delay Duration Prediction via Multi-Task Deep Learning", arXiv:2602.20271 (Feb 2026) [V].** Predicting delay duration beats single-step regression by 41-64% on 10M+ shipments, MAE 0.67-0.91 days. Apply: one slide line, "we forecast the delay, not the promised date", which is exactly why tracker dates are replaced by realistic ETAs.
+3. **AlMahri, Xu, Brintrup, "Automating Supply Chain Disruption Monitoring via an Agentic AI Approach", arXiv:2601.09680 (Jan 2026) [V].** Seven LLM agents plus deterministic tools, F1 0.962-0.991 on 30 synthetic automotive scenarios, 3.83 min and $0.084 per disruption. Apply: this is our architecture (LLM reads, tools compute) with peer-style evidence. Steal the metric: report extraction precision/recall and time/cost per drop. Caveat: synthetic scenarios.
+4. **Liang & Xu, "When LLM Agents Negotiate: Private Information and Dynamic Bargaining in Supply Chains", arXiv:2608.07538 (29 Jul 2026) [V].** 9,840 negotiations: 98.9% agreement, 95.4% of first-best surplus, but delay cost 21-34% of surplus and weak models accepted irrational contracts 19.2% of the time. Apply: a defensible reason for the approval gate and PP-07 limits, plus "delay is the cost", which supports acting 48 hours early.
+5. **Xu & Zhu, "Parallelism or Concession? Concurrency-Aware Procurement Negotiation for Agentic Commerce", arXiv:2610.06017 (5 Oct 2026) [V].** Under a hard deadline, how many parallel supplier threads to run and what price cap to set is a deterministic optimisation. Apply: justification for chasing several suppliers in parallel (art book overrun, alternate source) with a cap, rather than one at a time.
+
+Extras. Droste et al., sui-1, arXiv:2601.08472 [V]: citation-grounded output, but it is summarisation, not extraction. Ki et al., "Linguistic Nepotism", arXiv:2509.13930 (ICML 2026 Spotlight per arXiv page) [V]: models over-cite English sources, so for PL/KO/ZH documents we must verify the quote against the source span, not trust model-chosen citations. That is our quote-validation story. Gap: I found no paper that cleanly covers multilingual extraction with citations, and none that covers expediting as such. Say so if asked. AgenticPay, arXiv:2602.06008 [V]: best model scores 42.3/100 on a negotiation benchmark, a fair argument for "agents draft, humans approve".
+
+## 3. Hackathon judge patterns
+- START Hack 2026 (St. Gallen) winner "Runtime Terrors" (Belimo case). A juror said judges looked at "completeness, usability and storytelling", and the team won on an intuitive UI, showing which stakeholders are involved per case, and a coherent narrative [V, UniSG, partly summarised]. An old START Hack Devpost lists innovativeness, business potential, UI/UX at 20% each [S, undated, weak].
+- A July 2026 judge's field notes (single author, anecdotal) [V]: whether the demo ran end to end was the largest differentiator. Strong teams open with "a tool that does X for Y". Narrow and well built beats ambitious. Admitting a limitation raised scores. Slide polish, framework and credentials did not matter. Judges ask: who is it for, what did you build this weekend, what breaks first at scale. A judge should be able to repeat a one-line identity an hour later.
+- Enterprise rubrics (Lyzr: architecture 25%, relevance 15%, UX 10%, demo 10%) and AngelHack advice score trace logs and operational readiness [S]. This supports showing the activity feed with tool calls.
+- I found no public START Munich 2026 judge feedback or Lio-specific rubric. Do not invent one.
+
+## 4. Business case anchors
+- Air vs sea: Drewry's Airfreight-vs-Maritime Price Multiplier fell to about 6.6x in Aug 2026 [S, Drewry index page snippet]. ExFreight (Apr 2026, vendor) says air is 8-16x per kg versus ocean, and 2026 China-US indicative rates are air standard $4.50-7.50/kg, express $7-12/kg, ocean LCL $0.30-0.80/kg [V]. Use "roughly 6-16x per kg, 4-8x faster" with a vendor flag. Our own number is better: the art-book option is EUR 12,390 against a EUR 50k buyer limit.
+- Expedite premium is mostly avoidable: Sentra's worked example (36 expedites, EUR/USD 180k premium, 30 avoidable) is labelled "illustrative only" by its author [V]. Do not cite as data. McKinsey "up to 50% of expedites preventable" is secondhand via Wiss (already in WIN_PLAN). I could not read the LeanDNA survey page (403), so use it only as "vendor survey [S]".
+- Stockout cost: the 8.3% average out-of-stock rate and ~30% substitute-elsewhere figure circulate in vendor blogs [S]; no electronics-specific loss figure found. The strongest public analogue is the PS5 launch: Ampere estimated >5M units forgone versus actual 4.5M sold-in over Oct-Dec 2020 [S, via press snippets]. For games, I found no public figure for retailer penalties or day-one physical share. Ask Dr. Vogt, do not guess.
+- Willingness to pay (public anchors, weak): Zip median about $80-88k/yr, range $27-215k (Vendr/SoftwareConnect snippets [S]; Vendr page 403 for me). Coupa commonly $50-500k+/yr, Ariba median about $73k (Dupple, Getmonetizely [S]). Lio publishes no price. Our EUR 12k per-launch pilot is therefore a small land fee against a EUR 1.5-2.4M cost-of-goods exposure, and is consistent with a 50-100k/yr tier. Present it as a hypothesis [A].
+- Sharper line: "A single prevented air lot for 5,900 art books costs EUR 12.4k; the unmanaged gap is EUR 0.87M of Collector's Editions at cost." Pair it with ONE flagged survey stat.
+
+## 5a. Ten changes ranked by expected lift
+1. Open with one sentence: "Soony's SAP says Collector's Editions are fine; they are 5,900 art books and 3,400 statues short, found by reading PDFs and scans." One-line identity (judge notes).
+2. Make the demo path complete with zero detours: drop, update, draft, approve, parse, priced decision. Cut everything else.
+3. Show a side-by-side evidence view for the handwritten correction (scan crop, extracted quote, validation tick). Proves "not just OCR".
+4. Name the limitation on stage: "the magnet line and the dock-held card lot are unconfirmed; we flag, not guess." Honest uncertainty scored higher.
+5. Show the activity feed as the trace: tool called, input, output, source. Enterprise rubrics reward traces.
+6. Drop a file the audience picks, or a second unseen one, to prove nothing is hardcoded.
+7. Show the PP-07 escalation, including the vacant Category Lead route. This is Lio's own language (policy agent).
+8. Put the Lio framing on slide 2: "the exception layer where the ERP is wrong, not a replacement for it."
+9. Put a number from Soony on the business slide. If Vogt gives nothing, say "unknown, here is the break-even" and show it.
+10. Rehearse a 20-second answer for each question below, plus a recorded 60-second fallback screen capture.
+
+## 5b. Ten brutal Lio-engineer questions
+1. **Why is this not a script?** Facts come from LLM or OCR reads with quote validation; the numbers come from MRP and simulation tools; the agent decides which tool to call and what to draft. Show a new file changing the output.
+2. **What is the extraction accuracy?** Claim only what we measured: 282 documents, 0 errors, false alarms 12 to 3 after the fix. Admit there is no labelled ground truth beyond the checked cases, and name the eight scans routed to human review.
+3. **How do you stop a wrong number going out?** Every send passes the approval gate, defaults to dry-run, and the cited quote must match the source span (this is the Linguistic Nepotism risk).
+4. **Your Monte Carlo is 0% on-target and p10=p50. Is that real?** Those are scenario frequencies under stated assumptions, the p10=p50 reflects a hard stop at the game-card gap, and users can override assumptions. Do not call it a prediction.
+5. **Where are the agents? Is it one pipeline?** Name the agents: ingest, doc reader, truth/MRP, chaser, decision. Each has its own tools and shared state (SQLite), and the replay shows them handing off.
+6. **What happens at 10,000 POs or a different ERP?** Honest: built for one site and one launch; the typed schema is ERP-agnostic; scale work is queueing and per-supplier state. Say what breaks first (OCR throughput).
+7. **Why would Soony pay when Lio or SAP exists?** We sit on top of them: they handle the routine 95%; we handle the launch-critical exception where the ERP is wrong. Evidence: ERP showed no art-book gap.
+8. **What if the supplier lies or replies messily?** The reply parser extracts fields with confidence; low-confidence replies stay open and escalate to a human, never auto-update commitments.
+9. **How did you verify the art-book finding?** Cross-checked the raw CSVs: GR 5000413065 booked 80,000 versus 8,000 ordered, plus the handwritten correction on the delivery note. Show the file and page.
+10. **What did you not verify?** The lid magnet BOM line, whether the 350k cases can be collected today, the dock-held lot status, and any price except the art-book option. Saying this unprompted is the best answer.
+
+## Source list
+Lio: https://www.lio.ai , https://www.lio.ai/product/multi-agent-system , https://www.lio.ai/customers , https://www.lio.ai/security , https://techcrunch.com/2026/03/05/lio-ai-series-a-a16z-30m-raise-automate-enterprise-procurement/ , https://dealroom.co/news/talk-OTQ-lFsq7zA-procurements-invisible-80-why-lios-ai-agents-own-the-end-to-end-job/
+arXiv: 2610.38046, 2505.17340, 2602.20271, 2601.09680, 2608.07538, 2610.06017, 2601.08472, 2509.13930, 2602.06008 (all at https://arxiv.org/abs/<id>)
+Hackathons: https://www.unisg.ch/en/newsdetail/news/the-team-runtime-terrors-wins-start-hack-2026/ , https://dev.to/kurbaitaev/what-judges-actually-score-notes-from-a-year-of-hackathon-judging-3p4l
+Costs: https://www.exfreight.com/air-freight-vs-ocean-freight-how-to-choose-the-right-shipping-mode/ , https://www.sentra.app/articles/expedited-freight , https://www.drewry.co.uk/airfreight-index , https://www.bloomberg.com/news/articles/2020-11-18/sony-microsoft-consoles-struggle-after-thin-launch-day-supply , https://dupple.com/learn/best-procurement-software , https://softwareconnect.com/reviews/zip-procurement/

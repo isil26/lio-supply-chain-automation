@@ -111,6 +111,37 @@ def simulate(editions, needs, stock, inbound, shifts, mode="ce_first", trials=MO
     }
 
 
+def receipt_comparisons(booked, scanned):
+    """Pair explicit PO lines, then reconcile identical quantities before inferring a mismatch."""
+    unmatched = list(booked)
+    unresolved = []
+    for entry in scanned:
+        line = entry["value"].get("line")
+        matches = [row for row in unmatched if line is not None and line == row["po_line"]]
+        if len(matches) == 1:
+            unmatched.remove(matches[0])
+            yield matches[0], entry
+        else:
+            unresolved.append(entry)
+
+    ambiguous = []
+    for entry in unresolved:
+        if entry["value"].get("line") is not None:
+            continue
+        qty = entry["value"].get("quantity")
+        matched = next((row for row in unmatched if qty == row["qty_received"]), None)
+        if matched:
+            unmatched.remove(matched)
+            yield matched, entry
+        else:
+            ambiguous.append(entry)
+    if len(ambiguous) == len(unmatched) == 1:
+        yield unmatched[0], ambiguous[0]
+    elif ambiguous and unmatched:
+        # The scan has no line IDs. Compare the remaining rows as a group in the caller.
+        yield unmatched, ambiguous
+
+
 def readiness(con, data_root):
     tab = {table: list(rows(con, table)) for table in (
         "launch", "product", "shift", "site", "packout", "bom", "stock", "receipt", "shipment", "route",
@@ -186,8 +217,12 @@ def readiness(con, data_root):
         if row["batch"]:
             batches[row["batch"]] = row
     original = dict(available)
-    receipts = {row["delivery_note"].upper(): row for row in tab["receipt"] if row["delivery_note"] and row["plant"] == site}
-    receipt_by_id = {row["gr_number"]: row for row in tab["receipt"] if row["plant"] == site}
+    site_receipts = [row for row in tab["receipt"] if row["plant"] == site]
+    receipt_by_id = {row["gr_number"]: row for row in site_receipts}
+    receipts = defaultdict(list)
+    for row in site_receipts:
+        if row["delivery_note"]:
+            receipts[row["delivery_note"].upper()].append(row)
     suppliers = {row["supplier_id"]: row for row in tab["supplier"]}
     qualified = defaultdict(list)
     for row in tab["supply"]:
@@ -220,41 +255,58 @@ def readiness(con, data_root):
                 issue(f'{int(batch["quantity"]):,} units recorded in SAP but placed on quality hold', part,
                       evidence, "critical", "quality_hold", quantity=int(batch["quantity"]), supplier=erp["supplier_id"] if erp else None)
         if doc["kind"] == "receiving":
-            note = value(doc, "delivery_note")
-            receipt = receipts.get(note)
+            note, po = value(doc, "delivery_note"), value(doc, "po")
             cited = field_sources(doc, "delivery_note")
-            items = [item["value"] for item in doc["fields"].get("items", []) if isinstance(item["value"], dict)]
-            if receipt and cited:
-                material = receipt["material_id"]
-                gr = receipt["gr_number"]
-                corrected = value(doc, "handwritten_quantity")
-                if corrected is not None and gr in batches and gr not in adjusted_receipts:
-                    batch = batches[gr]
-                    if batch["quantity"] == receipt["qty_received"] and 0 < corrected < batch["quantity"]:
-                        available[material] -= batch["quantity"] - corrected
+            booked = defaultdict(list)
+            for receipt in receipts.get((note or "").upper(), []):
+                if po is None or receipt["po_number"] == po:
+                    booked[receipt["material_id"]].append(receipt)
+            scanned = defaultdict(list)
+            for entry in doc["fields"].get("items", []):
+                item = entry["value"]
+                if isinstance(item, dict) and type(item.get("quantity")) in {int, float}:
+                    material = item.get("material")
+                    scanned[aliases.get(material, material)].append(entry)
+            for material, bookings in booked.items():
+                for receipt, entry in receipt_comparisons(bookings, scanned[material]):
+                    if isinstance(receipt, list):
+                        issue(f"{note}: scan and SAP quantities could not be matched across multiple PO lines.",
+                              material, [*cited, *[row["citation"] for row in entry],
+                                         *[row["source"] for row in receipt]], "watch", "receipt")
+                        continue
+                    item = entry["value"]
+                    qty = item["quantity"]
+                    corrected = item.get("handwritten_quantity")
+                    gr, erp_qty = receipt["gr_number"], receipt["qty_received"]
+                    batch = batches.get(gr)
+                    if (corrected == qty and batch and gr not in adjusted_receipts
+                            and batch["quantity"] == erp_qty and 0 < corrected < erp_qty):
+                        available[material] -= erp_qty - corrected
                         adjusted_receipts.add(gr)
-                        evidence = [batch["source"], receipt["source"], *field_sources(doc, "handwritten_quantity")]
+                        evidence = [batch["source"], receipt["source"], entry["citation"]]
                         stock_sources[material].extend(evidence[1:])
-                        issue(f'{note}: SAP booked {batch["quantity"]:,.0f}, handwritten correction reads {corrected:,.0f}',
-                              material, evidence, "critical", "handwriting", quantity=batch["quantity"] - corrected,
+                        issue(f'{note}: SAP booked {erp_qty:,.0f}, handwritten correction reads {corrected:,.0f}',
+                              material, evidence, "critical", "handwriting", quantity=erp_qty - corrected,
                               supplier=receipt["supplier_id"])
-                item = next((item for item in items if aliases.get(item.get("material"), item.get("material")) == material), None)
-                if item and type(item.get("quantity")) in {int, float} and item["quantity"] != receipt["qty_received"]:
-                    issue(f'{note} scan shows {item["quantity"]:,.0f} vs SAP receipt {receipt["qty_received"]:,.0f}. Verify OCR and actual count.',
-                          material, [*cited, *field_sources(doc, "items"), receipt["source"]], "watch", "receipt")
-                if value(doc, "damage") and receipt["gr_number"] in batches and receipt["gr_number"] not in adjusted_receipts:
-                    batch = batches[receipt["gr_number"]]
-                    available[material] -= batch["quantity"]
-                    adjusted_receipts.add(receipt["gr_number"])
-                    evidence = [receipt["source"], batch["source"], *field_sources(doc, "damage")]
-                    stock_sources[material].extend(evidence[2:])
-                    issue(f'{note} has damage recorded against an on-hand lot. Quarantined pending count.',
-                          material, evidence, "high", "receipt")
+                    elif qty != erp_qty:
+                        issue(f'{note} scan shows {qty:,.0f} vs SAP receipt {erp_qty:,.0f}. Verify OCR and actual count.',
+                              material, [*cited, entry["citation"], receipt["source"]], "watch", "receipt")
+                if value(doc, "damage") and len(bookings) == 1:
+                    receipt = bookings[0]
+                    gr = receipt["gr_number"]
+                    if gr in batches and gr not in adjusted_receipts:
+                        batch = batches[gr]
+                        available[material] -= batch["quantity"]
+                        adjusted_receipts.add(gr)
+                        evidence = [receipt["source"], batch["source"], *field_sources(doc, "damage")]
+                        stock_sources[material].extend(evidence[2:])
+                        issue(f'{note} has damage recorded against an on-hand lot. Quarantined pending count.',
+                              material, evidence, "high", "receipt")
         if doc["kind"] == "notice":
             translation = field_sources(doc, "translation_en")
             if translation:
                 translations.append({"source": doc["source"], "fields": doc["fields"]})
-                issue("Supplier notice changes available rush capacity", None, [*translation, *field_sources(doc, "effective_at")],
+                issue("Supplier notice extracted for review", None, [*translation, *field_sources(doc, "effective_at")],
                       "high", "notice")
         if doc["kind"] != "confirmation":
             continue
@@ -274,17 +326,20 @@ def readiness(con, data_root):
             if not erp or erp["status"] not in {"open", "awaiting_approval", "released", "confirmed"}:
                 continue
             material = aliases.get(item.get("material"), item.get("material")) or erp["material_id"]
-            differences = []
+            differences, changed_fields = [], []
             for field, confirmed in (("quantity", item.get("quantity")), ("promised_date", item.get("promised_date")),
                                      ("unit_price", item.get("unit_price")), ("material_id", material)):
                 if confirmed is not None and erp[field] is not None and confirmed != erp[field]:
                     differences.append(f'{field} {erp[field]} vs {confirmed}')
+                    changed_fields.append(field)
             incoterm = value(doc, "incoterm")
             if incoterm and erp.get("incoterm") and incoterm != erp["incoterm"]:
                 differences.append(f'terms {erp["incoterm"]} vs {incoterm}')
+                changed_fields.append("incoterm")
             if differences:
                 issue(f'PO {po} line {erp["po_line"]}: ' + ", ".join(differences), material,
-                      [erp["source"], entry["citation"], *field_sources(doc, "incoterm")], "high", "confirmation")
+                      [erp["source"], entry["citation"], *field_sources(doc, "incoterm")], "high", "confirmation",
+                      po=po, po_line=erp["po_line"], changed_fields=changed_fields)
 
     # Post-snapshot SAP postings are incremental, provided the same receipt was not already represented by a batch.
     for receipt in receipt_by_id.values():
