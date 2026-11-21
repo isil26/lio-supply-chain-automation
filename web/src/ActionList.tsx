@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Approval, DashboardData, DecisionEffect, Source } from "./api";
+import type { Approval, DashboardData, DecisionEffect, MailPreview, MailView, Source } from "./api";
 
 type Review = NonNullable<DashboardData["recoveryApprovals"]>[number];
 type Mode = Approval["approvalMode"];
@@ -17,6 +17,7 @@ type Props = {
   onAutoLimit?: (limitEur: number) => void;
   practiceNote?: string;
   onOpenThread?: (threadId: string) => void;
+  onPreview?: (id: string) => Promise<MailPreview | null>;
 };
 
 // Slider stops for the auto-approve limit (EUR); 0 = off.
@@ -47,12 +48,23 @@ function consequence(option: Approval | undefined) {
   return `This records the team's approval. ${option.owner ? `${option.owner} acts on it next.` : ""}${cost}`;
 }
 const sensitive = (option: Approval | undefined) => !!option && ((option.price ?? 0) > 0 || !!option.supplier_id || (option.approvalMode?.mode ?? "").toUpperCase() !== "AUTO");
-const readName = () => { try { return localStorage.getItem("soony-reviewer") ?? ""; } catch { return ""; } };
-const saveName = (name: string) => { try { localStorage.setItem("soony-reviewer", name); } catch { /* private mode */ } };
+// Who is approving: the signed-in user once the login exists ("soony-user"), until then the name given in Offers.
+const currentUser = () => { try { return localStorage.getItem("soony-user") || localStorage.getItem("soony-reviewer") || undefined; } catch { return undefined; } };
+
+function Email({ mail, label }: { mail: MailView; label: string }) {
+  const [full, setFull] = useState(false);
+  if (!mail.body) return null;
+  return <div className="ac-email">
+    <p className="ac-email-head">{label}</p>
+    <dl><dt>To</dt><dd>{mail.to ?? "supplier"}</dd>{mail.subject && <><dt>Subject</dt><dd>{mail.subject}</dd></>}</dl>
+    <pre className={full ? "" : "clamp"}>{mail.body}</pre>
+    <button className="link-button" onClick={() => setFull(!full)}>{full ? "Show less" : "Show the whole email"}</button>
+  </div>;
+}
 
 const STATUS: Record<string, string> = { approved: "Approved", review: "Under review", blocked: "Blocked", sent: "Sent", replied: "Replied", done: "Done" };
 
-export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit, practiceNote, onOpenThread }: Props) {
+export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit, practiceNote, onOpenThread, onPreview }: Props) {
   const shortName = (name?: string | null) => name ? name.replace(/^((?:Dr\.|Prof\.)\s+)?.*\s(\S+)$/, (_, title = "", last) => `${title}${last}`) : "";
   const nearest = STOPS.reduce((best, stop, i) => Math.abs(stop - autoLimit) < Math.abs(STOPS[best] - autoLimit) ? i : best, 0);
   const [stop, setStop] = useState(nearest);
@@ -60,7 +72,12 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
   const [showAll, setShowAll] = useState(false);
   const [open, setOpen] = useState<string>("");
   const [confirming, setConfirming] = useState<string>("");
-  const [name, setName] = useState(readName);
+  const [preview, setPreview] = useState<MailPreview | null | "loading">(null);
+  const ask = (id: string) => {
+    if (confirming === id) { setConfirming(""); return; }
+    setConfirming(id); setPreview(onPreview ? "loading" : null);
+    onPreview?.(id).then(setPreview).catch(() => setPreview(null));
+  };
   const byId = new Map((reviews ?? []).map((review) => [review.id, review]));
 
   const cards = options.map((option) => {
@@ -139,17 +156,24 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
           <div className="ac-buttons">
             {decided ? <span className={`ac-status ${automatic ? "auto" : ""}`}>{decisionLabel}</span>
               : !readOnly && card.option && card.mode?.mode !== "NEVER" && <button className="primary-button small" disabled={busy}
-                  onClick={() => sensitive(card.option) ? setConfirming(confirming === card.id ? "" : card.id) : onDecide(card.id, false, name || undefined)}>Approve</button>}
+                  onClick={() => sensitive(card.option) || onPreview ? ask(card.id) : onDecide(card.id, false, currentUser())}>Approve</button>}
             {!decided && !readOnly && card.option && <button className="ghost-button small" disabled={busy} onClick={() => onDecide(card.id, true)}>Review</button>}
             <button className="link-button" onClick={() => setOpen(open === card.id ? "" : card.id)} aria-expanded={open === card.id}>{open === card.id ? "Less" : "Why"}</button>
           </div>
           {confirming === card.id && !decided && <div className="ac-confirm" role="alertdialog" aria-label={`Confirm: ${card.title}`}>
             <strong>Are you sure?</strong>
-            <p>{consequence(card.option)}</p>
-            <label>Approved by <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" maxLength={80}/></label>
+            {preview === "loading" ? <p className="muted">Loading the email this sends…</p>
+              : preview ? <>
+                <p>{preview.note}</p>
+                {preview.mode !== "none" && <Email mail={preview} label={preview.mode === "send" ? "This email goes out when you approve" : "The ongoing email with the supplier"}/>}
+                <p className="muted">{preview.mode === "send"
+                  ? `It asks for a hold and a quote; it is not an order.${card.option?.threshold ? ` Before any PO: ${card.option.threshold}` : ""}`
+                  : consequence(card.option)}</p>
+              </> : <p>{consequence(card.option)}</p>}
             <div className="ac-confirm-buttons">
-              <button className="primary-button small" disabled={busy || !name.trim()} autoFocus
-                onClick={() => { saveName(name.trim()); setConfirming(""); onDecide(card.id, false, name.trim()); }}>Yes, approve</button>
+              <button className="primary-button small" disabled={busy || preview === "loading"} autoFocus
+                onClick={() => { setConfirming(""); onDecide(card.id, false, currentUser()); }}>
+                {preview && preview !== "loading" && preview.mode === "send" ? "Yes, approve and send" : "Yes, approve"}</button>
               <button className="ghost-button small" onClick={() => setConfirming("")}>Cancel</button>
             </div>
           </div>}
@@ -160,6 +184,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
               : card.status === "review" ? "Sent back for review. Nothing was sent or ordered."
               : "Approved earlier. The click recorded the team's go-ahead; it did not email anyone or place an order."])
               .map((line, i) => <li key={i}>{line}</li>)}</ul>
+            {card.effect?.email && <Email mail={card.effect.email} label={card.effect.email.status === "ongoing" ? "The ongoing email with the supplier" : "The email that went out"}/>}
             {card.effect?.threadId && onOpenThread && <button className="link-button" onClick={() => onOpenThread(card.effect!.threadId!)}>Open the email conversation</button>}
           </div>}
           {open === card.id && <div className="ac-why">

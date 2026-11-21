@@ -69,21 +69,35 @@ def _delivery_lines(delivery):
     return [delivery.get("note") or f"Status: {status}."], False
 
 
-def describe(con, option, status, by=None, queue=None, *, auto=None):
+def describe(con, option, status, by=None, queue=None, *, auto=None, delivery=None, mail=None):
     """Build the effect for one option decision. `queue` = current T81 actions (with delivery)."""
     at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     who = f" by {by}" if by else ""
     if status == "review":
         return {"at": at, "by": by, "sent": False, "threadId": None,
                 "lines": [f"Sent back for review{who} at {_clock(at)}. Nothing was sent or ordered."]}
-    head = auto or f"Approved{who} at {_clock(at)}."
+    head = auto or f"Approved by {by or 'the team'} at {_clock(at)}."
     lines, sent, thread_id = [head], False, None
     supplier_id, material = option.get("supplier_id"), option.get("material")
     follow = next((a for a in (queue or []) if a.get("optionId") == option.get("id")), None)
-    if follow and follow.get("delivery"):
+    email = None
+    if delivery:  # this click sent (or tried to send) the supplier email
+        more, sent = _delivery_lines(delivery)
+        if delivery.get("status") == "sent" and "Dry run" in (delivery.get("note") or ""):
+            more = [more[0].replace("Email sent", "Email sent (demo, nothing left the building)")]
+        lines += more
+        email = {"to": delivery.get("recipient"), "subject": delivery.get("subject"), "body": delivery.get("body"),
+                 "status": delivery.get("status")}
+        thread_id = delivery.get("chase_id")
+        if sent:
+            lines.append("It asks for a hold and a quote; it is not an order. "
+                         f"Before any PO: {option.get('threshold') or option.get('owner') or 'its approver signs'}.")
+    elif follow and follow.get("delivery"):
         more, sent = _delivery_lines(follow["delivery"])
         lines += more
-    thread = _latest_thread(con, supplier_id, material)
+    elif mail and mail.get("mode") == "conversation" and mail.get("body"):
+        email = {"to": mail.get("to"), "subject": mail.get("subject"), "body": mail.get("body"), "status": "ongoing"}
+    thread = None if thread_id else _latest_thread(con, supplier_id, material)
     name = _supplier_name(con, supplier_id) or "the supplier"
     if thread:
         thread_id = thread["id"] if hasattr(thread, "keys") else thread[0]
@@ -100,13 +114,13 @@ def describe(con, option, status, by=None, queue=None, *, auto=None):
                          f"Still needed: {option.get('threshold') or option.get('owner') or 'its approver'}.")
         else:
             lines.append(f"No email or order was sent by this click. Next: {option.get('owner') or 'the owner'} acts on it.")
-    if follow and not follow.get("delivery") and follow.get("status") == "pending":
+    if follow and not delivery and not follow.get("delivery") and follow.get("status") == "pending":
         lines.append(f"Follow-up in Actions: “{follow.get('title')}”.")
-    return {"at": at, "by": by, "sent": sent, "lines": lines, "threadId": thread_id}
+    return {"at": at, "by": by, "sent": sent, "lines": lines, "threadId": thread_id, "email": email}
 
 
-def record(con, option, status, by=None, queue=None, *, auto=None):
-    effect = describe(con, option, status, by, queue, auto=auto)
+def record(con, option, status, by=None, queue=None, *, auto=None, delivery=None, mail=None):
+    effect = describe(con, option, status, by, queue, auto=auto, delivery=delivery, mail=mail)
     effects = get_state(con, KEY, {}) or {}
     effects[option["id"]] = effect
     with con:

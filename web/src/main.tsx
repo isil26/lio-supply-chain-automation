@@ -351,6 +351,7 @@ function App() {
           reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
           onDecide={(id, review, by) => void decide(id, review, by)} onEvidence={setSource} onOpenThread={selectThread}
+          onPreview={dashboardApi.previewDecision ? (id) => dashboardApi.previewDecision!(id) : undefined}
           autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []} autoBy={data.autoApprove?.setBy}
           onAutoLimit={isStaticMode() ? undefined : (limit) => void setAutoApprove(limit).then(refresh).catch((err) => setError(err instanceof Error ? err.message : "Auto-approve could not be set"))}/>;
         // Practice mode: same rules as the live slider (routine, priced, not human-only), applied in this browser.
