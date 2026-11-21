@@ -1,5 +1,5 @@
 # OVERVIEW (PUBLISH EVERYTHING: if it is not on GitHub it does not exist for the team or the jury) — where we are (Sat 21 Nov, 16:10). Update this file when the picture changes.
-Deadline: **Sun 22 Nov 12:00 submission** (prototype, deck, video <= 3 min, code + README). Demos from 14:00. Vogt office hours **Sat 18:00**.
+Deadline: **Sun 22 Nov 12:00 submission** (prototype, deck, video <= 3 min, code + README). Demos from 14:00. Vogt office hours **Sat 19:00**.
 
 ## The goal
 Convince the jury in 3 minutes that our agents do real work (read, decide, act, escalate) on Soony's messy data, with a business case Soony would pay for. Criteria: pitch that sticks, business case, technical depth (agents, nothing hardcoded, copes with new drops), taste.
@@ -34,7 +34,7 @@ Convince the jury in 3 minutes that our agents do real work (read, decide, act, 
 Vogt questions at 18:00 · book Felix/Nils slots · watch portal notifications/Discord · rehearse pitch with a timer · record the video · decide who presents and who drives · rotate the API key after the hack.
 
 ## Timeline
-- Now to 18:00: finish agent quality (T47/T63), prepare questions. 18:00 Vogt, then update NUMBERS/deck within 30 min.
+- Now to 18:00: finish agent quality (T47/T63), prepare questions. 19:00 Vogt, then update NUMBERS/deck within 30 min.
 - 18:30-23:00: wire agents into the app (T41/T44), recorded live runs (T52), hosted replay (T53), pipeline merged end to end (checkpoint 23:00).
 - Sun 06:00 feature freeze. 09:00 video recorded. 12:00 submit. 14:00 demo.
 

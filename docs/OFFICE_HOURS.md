@@ -18,4 +18,4 @@ Optional if time: Can Marketing approve sleeve revision B? Which pre-orders get 
 | 4 | | | pack-out priority |
 | 5 | | price = ? | business case |
 
-After the slot: update docs/NUMBERS.md (mark source: "Dr. Vogt, office hours, Sat 18:00"), docs/PITCH_3MIN.md and the deck, replace the [ASK DR. VOGT] placeholders, then commit and push. Tell the team in coord/INBOX.md.
+After the slot: update docs/NUMBERS.md (mark source: "Dr. Vogt, office hours, Sat 19:00"), docs/PITCH_3MIN.md and the deck, replace the [ASK DR. VOGT] placeholders, then commit and push. Tell the team in coord/INBOX.md.
