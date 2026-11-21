@@ -101,3 +101,32 @@ class AnswerRepliesTest(unittest.TestCase):
         self.assertEqual(kinds, ["document"])
         body, kinds = answer_body("en", "Quantity: 3,400 pcs, ETA 2026-11-22 08:00, EUR 2.10 per unit, AWB 020-12345678", DEADLINE)
         self.assertEqual(kinds, ["noted"])
+
+    def test_local_quality_sort_suppresses_freight_replies_only_on_that_chain(self):
+        self.thread("AAA", "SUP-0018", "CMP-GAM-010", "en", "Packing details are pending.")
+        draft, = answer_replies(self.con, save=True)
+        self.con.execute("UPDATE messages SET transport=? WHERE external_id='AAAo'",
+                         ('{"mode":"smtp","status":"smtp_accepted"}',))
+        self.con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time,transport) VALUES(?,?,?,?,?,?,?)",
+                         ("AAA", "quality", "in", "AAA@suppliers.juliansibbing.de",
+                          "We can arrange a 100% visual sort at DC-HAM. Please send the acceptance standard or reference photographs.",
+                          "2026-11-21T10:00:00+00:00",
+                          '{"mode":"inbox","inReplyTo":"another-sent-mailbox","subject":"Re: [SOONY-AAA] Launch stock"}'))
+        self.thread("BBB", "SUP-0018", "CMP-GAM-010", "en",
+                    "Shipment NHMU8536079 is planned to arrive in Hamburg on 28 November 2026.")
+        self.con.execute("UPDATE chases SET subject='Re: [SOONY-AAA] Launch stock' WHERE id='BBB'")
+        self.thread("CCC", "SUP-0018", "CMP-GAM-010", "en", "We have separate released stock. Could you confirm the request?")
+        self.assertEqual([item["thread_id"] for item in answer_replies(self.con, save=True)], ["CCC"])
+        status = self.con.execute("SELECT status FROM chases WHERE id=?", (draft["draft_id"],)).fetchone()[0]
+        self.assertEqual(status, "superseded draft")
+        self.assertEqual(answer_replies(self.con, save=True), [])
+        self.assertEqual(self.con.execute("SELECT count(*) FROM activity WHERE action LIKE '%Supplier Quality owns%'").fetchone()[0], 1)
+
+    def test_replies_with_unchanged_shipping_evidence_do_not_repeat_the_same_question(self):
+        self.thread("AAA", "SUP-0018", "CMP-GAM-010", "en",
+                    "We are checking the package details for NHMU8536079.")
+        self.assertEqual(len(answer_replies(self.con, save=True)), 1)
+        self.con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES(?,?,?,?,?,?)",
+                         ("AAA", "duplicate-facts", "in", "supplier", "For NHMU8536079, package details are still being checked.",
+                          "2026-11-21T10:00:00+00:00"))
+        self.assertEqual(answer_replies(self.con, save=True), [])
