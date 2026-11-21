@@ -126,3 +126,5 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 
 | T93-Mail-Archive | Publish verified Supplier Chaser email chains for team agents | codex-mail-archive | docs/supplier-email-archive/, own coordination notes | done | T80-Mac-Mail |
 | T81-Supplier-Changes | Recompute on matched delivery changes, retire stale reviews, and chase permitted recovery options | murat-agent | src/truth shipment reconciliation, scoped chaser and orchestrator, existing Manti actions | done P0 | T79-Supplier-Loop, T81-Drop-1925, T90 |
+
+| T93-Mail-Sync | Keep the verified GitHub email archive updated | codex-mail-archive | scripts/sync_supplier_email_archive.py, docs/supplier-email-archive/, own coordination notes | done | T93-Mail-Archive |
