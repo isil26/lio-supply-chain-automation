@@ -103,7 +103,6 @@ export function Offers() {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [tab, setTab] = useState<string | null>(null);
-  const [showCovered, setShowCovered] = useState(false);
 
   async function load() {
     try {
@@ -156,11 +155,11 @@ export function Offers() {
   }
 
   if (!data) return null;
-  // Only parts still short after counted stock and inbound get a tab; the rest are listed as covered (Gülşah, 22 Nov).
+  // Every part from the case keeps its tab; short parts come first, covered ones are marked "covered" (Gülşah, 22 Nov).
   const allMaterials = [...new Set(data.deals.map((d) => d.material))];
   const short = (m: string) => !data.gaps || !(m in data.gaps) || (data.gaps[m] ?? 0) > 0;
   const covered = allMaterials.filter((m) => !short(m));
-  const materials = showCovered ? allMaterials : allMaterials.filter(short);
+  const materials = [...allMaterials.filter(short), ...covered];
   const current = tab && materials.includes(tab) ? tab : materials[0];
   const rows = data.deals.filter((d) => d.material === current);
   const best = data.best.filter((d) => d.material === current);
@@ -182,9 +181,8 @@ export function Offers() {
           </button>;
         })}
       </div>}
-      {covered.length > 0 && <p className="offers-covered muted">
-        We need to buy {allMaterials.filter(short).length === 1 ? "1 part" : `${allMaterials.filter(short).length} parts`}. Not short, nothing to buy: {covered.map(product).join(", ")} (stock plus deliveries already on the way cover them).{" "}
-        <button className="link-button" onClick={() => setShowCovered(!showCovered)}>{showCovered ? "Hide their offers" : "Show their offers anyway"}</button>
+      {current && covered.includes(current) && <p className="offers-covered muted">
+        {product(current)}: not short right now. Stock plus deliveries already on the way cover it, so nothing needs buying. The offers stay here in case a delivery slips.
       </p>}
 
       {!example && data.deals.some(d => d.material === current && d.eligible && (d.status === "pending" || d.status === "changed")) &&
