@@ -39,3 +39,19 @@ SQLite defaults to `store/chaser.sqlite` and contains threads, messages, replies
 Replies also receive a verifiable commitment score: `none` (0), `date_only` (1), `date_and_quantity` (2), or `document_or_booking_reference` (3). The parser returns `what_to_ask_next`, and the escalation ladder persists R0-R4 state and timestamps in SQLite.
 
 Use `tone="r1_document"` to draft a firm multilingual request for per-lot quantities and a packing list or booking reference. `validate_draft()` blocks binding commitments and disclosures of deadline slack, walkaway alternatives, maximum premium or cost per missing copy. The send path rechecks the stored draft before any outbound attempt.
+
+## Action send path (T83)
+
+`src/chaser/action_send.py` sends Action Queue actions (contract in `coord/DECISIONS.md`). Supplier actions become normal chases in the supplier's language and go out through `send()` with the allowlist, draft guardrails, cooldown and duplicate-text checks; internal actions (dock slot, pickup, exception, Marketing question) are stored as prepared messages with the facts and the EUR case and are never sent by the system.
+
+```python
+from src.chaser import action_send as A
+A.prepare(con, action)                      # store; supplier actions also get a chase
+A.approve(con, action["id"], "Paul Winter") # must match action["approver"]
+A.send_supplier(con, action["id"])          # {"result": "sent|blocked|cooldown|duplicate|failed"}
+A.mark_handed_over(con, id, "Gülşah")       # internal: a person delivered it
+A.link_replies(con)                         # sent -> replied when the supplier answers
+A.mark_done(con, id, by="Gülşah")
+```
+
+Status: `prepared`, `sent`, `replied`, `done`. Binding actions (purchase, PO, air freight, concession, exception, or `binding: true`) are refused without a recorded PP-07 approver. Tests: `python3 -m unittest src.chaser.test_action_send`.
