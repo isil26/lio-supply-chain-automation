@@ -24,6 +24,18 @@ def db(rows):
 
 
 class AutoSendTest(unittest.TestCase):
+    def test_no_cap_but_no_duplicate_text(self):
+        con = db([(c, f"{c.lower()}@suppliers.juliansibbing.de", "Please confirm quantity.") for c in "ABCDEFGH"])
+        con.execute("INSERT INTO chases(id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)"
+                    " VALUES('Z','S','Sup Z','z@suppliers.juliansibbing.de','en','s','awaiting reply','M',1,'Same text',?)", (DEADLINE,))
+        con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES('Z','z','out','us','Same text','2026-11-20T00:00:00+00:00')")
+        con.execute("INSERT INTO chases(id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)"
+                    " VALUES('Y','S','Sup Y','z@suppliers.juliansibbing.de','en','s','draft','M',1,'Same text',?)", (DEADLINE,))
+        sent = []
+        results = autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
+        self.assertEqual(len(sent), 8)
+        self.assertIn({"id": "Y", "supplier": "Sup Y", "result": "duplicate"}, results)
+
     def test_only_live_mode(self):
         with mock.patch.dict(os.environ, {"CHASER_REAL_SMTP": "1"}, clear=True):
             self.assertTrue(autosend.enabled())
