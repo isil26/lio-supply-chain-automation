@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Approval, DashboardData, Source } from "./api";
+import type { Approval, DashboardData, DecisionEffect, Source } from "./api";
 
 type Review = NonNullable<DashboardData["recoveryApprovals"]>[number];
 type Mode = Approval["approvalMode"];
@@ -9,7 +9,7 @@ type Props = {
   costOf: (productId: string) => number | null;
   busy: boolean;
   readOnly: boolean;
-  onDecide: (id: string, review: boolean) => void;
+  onDecide: (id: string, review: boolean, by?: string) => void;
   onEvidence: (source: Source) => void;
   autoLimit: number;
   autoIds: string[];
@@ -39,6 +39,17 @@ function badge(mode: Mode) {
   return { cls: "", text: "", hint: mode?.reason };
 }
 
+// "Are you sure?" text: what this click will and will not do (Gülşah, 21 Nov).
+function consequence(option: Approval | undefined) {
+  if (!option) return "";
+  const cost = option.price ? ` Cost on the card: ${euro(option.price)}.` : "";
+  if (option.request_only) return `This records the team's go-ahead. It does not email anyone or place an order by itself. Still needed: ${option.threshold || option.owner}.${cost}`;
+  return `This records the team's approval. ${option.owner ? `${option.owner} acts on it next.` : ""}${cost}`;
+}
+const sensitive = (option: Approval | undefined) => !!option && ((option.price ?? 0) > 0 || !!option.supplier_id || (option.approvalMode?.mode ?? "").toUpperCase() !== "AUTO");
+const readName = () => { try { return localStorage.getItem("soony-reviewer") ?? ""; } catch { return ""; } };
+const saveName = (name: string) => { try { localStorage.setItem("soony-reviewer", name); } catch { /* private mode */ } };
+
 const STATUS: Record<string, string> = { approved: "Approved", review: "Under review", blocked: "Blocked", sent: "Sent", replied: "Replied", done: "Done" };
 
 export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit, practiceNote, onOpenThread }: Props) {
@@ -48,6 +59,8 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
   useEffect(() => setStop(nearest), [nearest]);
   const [showAll, setShowAll] = useState(false);
   const [open, setOpen] = useState<string>("");
+  const [confirming, setConfirming] = useState<string>("");
+  const [name, setName] = useState(readName);
   const byId = new Map((reviews ?? []).map((review) => [review.id, review]));
 
   const cards = options.map((option) => {
@@ -69,6 +82,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
       threadId: review?.threadId ?? null,
       thread: review?.threadId ? `?thread=${encodeURIComponent(review.threadId)}${review.replyId == null ? "" : `#message-${review.replyId}`}` : null,
       status: option.status ?? "pending",
+      effect: option.effect ?? null as DecisionEffect | null,
     };
   });
   // Live reviews that are not one of the options (e.g. receiving checks) join the same list, without an approve button.
@@ -82,6 +96,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
       threadId: review.threadId ?? null,
       thread: review.threadId ? `?thread=${encodeURIComponent(review.threadId)}${review.replyId == null ? "" : `#message-${review.replyId}`}` : null,
       status: "pending",
+      effect: null,
     });
   }
   cards.sort((a, b) => (b.gain ?? 0) - (a.gain ?? 0) || b.copies - a.copies
@@ -123,10 +138,30 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
           </div>
           <div className="ac-buttons">
             {decided ? <span className={`ac-status ${automatic ? "auto" : ""}`}>{decisionLabel}</span>
-              : !readOnly && card.option && card.mode?.mode !== "NEVER" && <button className="primary-button small" disabled={busy} onClick={() => onDecide(card.id, false)}>Approve</button>}
+              : !readOnly && card.option && card.mode?.mode !== "NEVER" && <button className="primary-button small" disabled={busy}
+                  onClick={() => sensitive(card.option) ? setConfirming(confirming === card.id ? "" : card.id) : onDecide(card.id, false, name || undefined)}>Approve</button>}
             {!decided && !readOnly && card.option && <button className="ghost-button small" disabled={busy} onClick={() => onDecide(card.id, true)}>Review</button>}
             <button className="link-button" onClick={() => setOpen(open === card.id ? "" : card.id)} aria-expanded={open === card.id}>{open === card.id ? "Less" : "Why"}</button>
           </div>
+          {confirming === card.id && !decided && <div className="ac-confirm" role="alertdialog" aria-label={`Confirm: ${card.title}`}>
+            <strong>Are you sure?</strong>
+            <p>{consequence(card.option)}</p>
+            <label>Approved by <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" maxLength={80}/></label>
+            <div className="ac-confirm-buttons">
+              <button className="primary-button small" disabled={busy || !name.trim()} autoFocus
+                onClick={() => { saveName(name.trim()); setConfirming(""); onDecide(card.id, false, name.trim()); }}>Yes, approve</button>
+              <button className="ghost-button small" onClick={() => setConfirming("")}>Cancel</button>
+            </div>
+          </div>}
+          {decided && <div className="ac-effect" aria-live="polite">
+            <p className="ac-effect-head">What happened</p>
+            <ul>{(card.effect?.lines ?? [automatic
+              ? "Approved automatically under a written delegation. Nothing was ordered by this step."
+              : card.status === "review" ? "Sent back for review. Nothing was sent or ordered."
+              : "Approved earlier. The click recorded the team's go-ahead; it did not email anyone or place an order."])
+              .map((line, i) => <li key={i}>{line}</li>)}</ul>
+            {card.effect?.threadId && onOpenThread && <button className="link-button" onClick={() => onOpenThread(card.effect!.threadId!)}>Open the email conversation</button>}
+          </div>}
           {open === card.id && <div className="ac-why">
             <p>{card.why}</p>
             {b.hint && <p className="muted">{b.hint}</p>}

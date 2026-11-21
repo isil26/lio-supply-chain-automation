@@ -175,11 +175,11 @@ function App() {
   const pendingDrop = (data.sync?.pendingDrop ?? 0) > 0;
   const riskEvidence = (risk: Risk) => risk.sources?.[0] ?? (risk.evidence[0] ? { quote: risk.evidence[0] } : null);
 
-  const decide = async (id: string, review: boolean) => {
+  const decide = async (id: string, review: boolean, by?: string) => {
     setDecisionBusy(true);
     try {
       if (review) await dashboardApi.reviewDecision(id);
-      else await dashboardApi.approveDecision(id);
+      else await dashboardApi.approveDecision(id, by);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Decision could not be updated");
@@ -350,7 +350,7 @@ function App() {
         if (!hostedReplayBuild) return <ActionList options={listed}
           reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
-          onDecide={(id, review) => void decide(id, review)} onEvidence={setSource} onOpenThread={selectThread}
+          onDecide={(id, review, by) => void decide(id, review, by)} onEvidence={setSource} onOpenThread={selectThread}
           autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []} autoBy={data.autoApprove?.setBy}
           onAutoLimit={isStaticMode() ? undefined : (limit) => void setAutoApprove(limit).then(refresh).catch((err) => setError(err instanceof Error ? err.message : "Auto-approve could not be set"))}/>;
         // Practice mode: same rules as the live slider (routine, priced, not human-only), applied in this browser.
@@ -360,7 +360,8 @@ function App() {
         };
         const autoIds = listed.filter((option) => (option.status ?? "pending") === "pending" && !practice.decisions[option.id]
           && routine(option) && practice.limit > 0 && option.price != null && option.price <= practice.limit).map((option) => option.id);
-        const options = listed.map((option) => practice.decisions[option.id] ? { ...option, status: practice.decisions[option.id] }
+        const practiceEffect = { at: "", sent: false, lines: ["Practice mode: only your screen changed. Nothing was sent or bought."] };
+        const options = listed.map((option) => practice.decisions[option.id] ? { ...option, status: practice.decisions[option.id], effect: practiceEffect }
           : autoIds.includes(option.id) ? { ...option, status: "approved" } : option);
         return <ActionList options={options} reviews={data.recoveryApprovals} busy={false} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}

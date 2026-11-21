@@ -125,6 +125,8 @@ export type SupplierAction = {
   transport?: { mode: string; status: string; messageId: string; time: string };
 };
 
+export type DecisionEffect = { at: string; by?: string | null; sent: boolean; lines: string[]; threadId?: string | null };
+
 export type Approval = {
   id: string;
   modeled_impact?: Record<string, { medianDelta?: number; expectedDelta?: number }>;
@@ -142,6 +144,10 @@ export type Approval = {
   deadline: string;
   evidence?: string[];
   status?: string;
+  /** What an Approve click actually did (src/orchestrator/decision_effects.py). */
+  effect?: DecisionEffect | null;
+  supplier_id?: string | null;
+  request_only?: boolean;
   supplier_timing?: { eta_p50: string; eta_p90: string; p_on_time: number; basis: string; sample_count: number } | null;
   expedite?: {
     status: string;
@@ -233,7 +239,7 @@ export type AgentTraceData = {
 
 export interface DashboardApi {
   getDashboard(): Promise<DashboardData>;
-  approveDecision(id: string): Promise<{ ok: boolean; status?: string }>;
+  approveDecision(id: string, by?: string): Promise<{ ok: boolean; status?: string; effect?: DecisionEffect }>;
   reviewDecision(id: string): Promise<{ ok: boolean; status?: string }>;
   sendThread(id: string): Promise<{ ok: boolean }>;
   approveReply(id: number): Promise<{ ok: boolean }>;
@@ -276,8 +282,8 @@ class HttpDashboardApi implements DashboardApi {
   async getDashboard() {
     return json<DashboardData>("/api/dashboard", { cache: "no-store" });
   }
-  approveDecision(id: string) {
-    return json<{ ok: boolean; status?: string }>(`/api/decisions/${id}/approve`, { method: "POST", body: "{}" });
+  approveDecision(id: string, by?: string) {
+    return json<{ ok: boolean; status?: string; effect?: DecisionEffect }>(`/api/decisions/${id}/approve`, { method: "POST", body: JSON.stringify(by ? { by } : {}) });
   }
   reviewDecision(id: string) {
     return json<{ ok: boolean; status?: string }>(`/api/decisions/${id}/review`, { method: "POST", body: "{}" });
