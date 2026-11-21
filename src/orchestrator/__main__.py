@@ -159,6 +159,15 @@ def std_costs(con):
     return {pid: cost for pid, cost in con.execute("SELECT product_id, std_cost_eur FROM products") if cost is not None}
 
 
+def customer_inputs():
+    """Numbers the customer told us in interviews (config/customer_inputs.json), e.g. cost of a missed copy."""
+    path = ROOT / "config" / "customer_inputs.json"
+    try:
+        return json.loads(path.read_text()) if path.is_file() else {}
+    except (OSError, ValueError):
+        return {}
+
+
 def inbound_timeline(truth):
     """Inbound lots of the part that stops packing first, with the modelled handling delay, for the arrival timeline."""
     binding = {row.get("first_stop") for row in truth["editions"].values()} - {None}
@@ -245,13 +254,15 @@ def dashboard(con):
               "errors": len(errors) + int(sync.get("failed", False)),
               "lastSyncAgeSeconds": max(0, int((datetime.now(timezone.utc) - last_sync).total_seconds())) if last_sync else None}
     costs = std_costs(con)
+    missed = customer_inputs().get("missed_copy_cost_eur", {})
     return {
         "launch": {"name": truth["name"].strip(" -–•"), "deadline": truth["deadline"], "location": truth["site"]},
         "readiness": [{"edition": "CE" if pid.endswith("-CE") else "STD", "percent": round(row["packed"] / row["target"] * 100, 1),
                        "packed": row["packed"], "target": row["target"], "probability": row["probability"], "p50": row["p50"],
                        "p10": row["p10"], "p90": row["p90"], "firstStop": truth["parts"].get(row["first_stop"], {}).get("label"),
                        "status": "At risk" if row["probability"] < .8 else "On track", "tone": "red" if row["probability"] < .3 else "amber",
-                       "productId": pid, "stdCostEur": costs.get(pid)}
+                       "productId": pid, "stdCostEur": costs.get(pid),
+                       "missCostEur": (missed.get(pid) or {}).get("value"), "missCostConfirmed": (missed.get(pid) or {}).get("confirmed")}
                       for pid, row in truth["editions"].items()],
         "inboundTimeline": inbound_timeline(truth),
         "risks": risks, "activity": dashboard_activity(con, blocked, clock, docs=docs, reviews=reviews), "documentReviews": reviews,

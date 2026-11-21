@@ -1,0 +1,7 @@
+{
+  "_source": "Dr. Maren Vogt, Head of Procurement, office hours Sat 21 Nov 2026 19:00 (docs/OFFICE_HOURS.md, answer 1). CE: Soony receives EUR 120 of the 199.99 retail and must refund it. STD: EUR 32 as stated; the CPO memo (drop 19:25) says a late Standard copy is still sold, so STD is marked unconfirmed.",
+  "missed_copy_cost_eur": {
+    "FG-GH6-CE": {"value": 120, "confirmed": true},
+    "FG-GH6-STD": {"value": 32, "confirmed": false}
+  }
+}
