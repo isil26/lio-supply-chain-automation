@@ -126,7 +126,11 @@ export type SupplierAction = {
 };
 
 export type MailView = { to?: string | null; subject?: string | null; body?: string | null; status?: string };
-export type DecisionEffect = { at: string; by?: string | null; sent: boolean; lines: string[]; threadId?: string | null; email?: MailView | null };
+export type DecisionEffect = { at: string; by?: string | null; sent: boolean; lines: string[]; threadId?: string | null; email?: MailView | null;
+  reply?: { from: string; body: string; at: string } | null };
+/** A decision of the last days, kept with its details (src/orchestrator/decision_effects.past). */
+export type PastDecision = { id: string; status: string; decidedAt: string; title: string; owner?: string | null; kind?: string;
+  recommendation?: string | null; impact?: string | null; price?: number | null; evidence?: Source[]; effect?: DecisionEffect | null };
 /** The email an Approve click causes (GET /api/decisions/<id>/preview, src/chaser/option_mail.py). */
 export type MailPreview = MailView & { mode: "send" | "internal" | "conversation" | "none"; supplier?: string; recipientName?: string; note: string; sentAt?: string | null };
 
@@ -149,6 +153,7 @@ export type Approval = {
   status?: string;
   /** What an Approve click actually did (src/orchestrator/decision_effects.py). */
   effect?: DecisionEffect | null;
+  decidedAt?: string | null;
   supplier_id?: string | null;
   request_only?: boolean;
   supplier_timing?: { eta_p50: string; eta_p90: string; p_on_time: number; basis: string; sample_count: number } | null;
@@ -178,6 +183,7 @@ export type DashboardData = {
   activity: Activity[];
   threads: SupplierThread[];
   supplierActions?: SupplierAction[];
+  pastDecisions?: PastDecision[];
   recoveryApprovals?: {
     id: string; title: string; approver: string; detail: string; dueAt?: string | null;
     status: "awaiting_approval"; policy: string; price?: number | null; priceLabel?: string;

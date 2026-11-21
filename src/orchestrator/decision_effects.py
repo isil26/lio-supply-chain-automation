@@ -126,11 +126,62 @@ def record(con, option, status, by=None, queue=None, *, auto=None, delivery=None
 OLD_LINES = ("This click records", "No email or order was sent", "It asks for a hold and a quote")
 
 
-def attach(con, options):
-    effects = get_state(con, KEY, {}) or {}
+def _clean(effects):
     for effect in effects.values():  # wording from before 22 Nov 00:30: the approver is the decision-maker
         effect["lines"] = [line for line in effect.get("lines", []) if not line.startswith(OLD_LINES)]
+    return effects
+
+
+def _decided(con):
+    if not _table(con, "decisions"):
+        return {}
+    return {row[0]: (row[1], row[2], row[3]) for row in con.execute("SELECT id,status,decided_at,payload FROM decisions")}
+
+
+def _reply(con, thread_id):
+    """Newest answer in the thread the decision's message went to (supplier or colleague)."""
+    if not (thread_id and _table(con, "messages")):
+        return None
+    row = con.execute("SELECT sender, body, time FROM messages WHERE chase_id=? AND side='in' ORDER BY time DESC LIMIT 1",
+                      (thread_id,)).fetchone()
+    return {"from": row[0], "body": row[1], "at": row[2]} if row else None
+
+
+def attach(con, options):
+    effects = _clean(get_state(con, KEY, {}) or {})
+    decided = _decided(con)
     for option in options:
+        if option.get("id") in decided and option.get("status") not in (None, "pending"):
+            option["decidedAt"] = decided[option["id"]][1]
         if option.get("id") in effects and option.get("status") not in (None, "pending"):
-            option["effect"] = effects[option["id"]]
+            option["effect"] = dict(effects[option["id"]], reply=_reply(con, effects[option["id"]].get("threadId")))
     return options
+
+
+def past(con, days=7):
+    """Approved / sent-back decisions of the last `days` days, with their full details, newest first.
+
+    Built from the decisions table (full decision payload), so a decision stays listed even after a new
+    data drop replaced the option on the open list.
+    """
+    import json
+    from datetime import timedelta
+    effects = _clean(get_state(con, KEY, {}) or {})
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    out = []
+    for decision_id, (status, decided_at, payload) in _decided(con).items():
+        try:
+            when = datetime.fromisoformat(str(decided_at).replace("Z", "+00:00"))
+            when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if when < since:
+            continue
+        item = json.loads(payload or "{}")
+        effect = effects.get(decision_id)
+        out.append({"id": decision_id, "status": status, "decidedAt": when.isoformat(timespec="seconds"),
+                    "title": item.get("title"), "owner": item.get("owner"), "kind": item.get("kind"),
+                    "recommendation": item.get("recommendation"), "impact": item.get("impact"), "price": item.get("price"),
+                    "evidence": [e for e in item.get("evidence", []) if isinstance(e, dict)][:3],
+                    "effect": dict(effect, reply=_reply(con, effect.get("threadId"))) if effect else None})
+    return sorted(out, key=lambda row: row["decidedAt"], reverse=True)
