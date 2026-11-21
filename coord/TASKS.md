@@ -87,3 +87,6 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T47c | Harness calibration + debug citation/numeric failures in replay; one live run per scenario under $0.30 | copilot-fix3 | src/agents | done P1 | T47b |
 | T68 | Host the persistent Python backend, add a protected Vercel live path and deploy current main automatically | murat-agent | deploy/backend, Vercel live preview configuration, scoped API and UI glue | in_progress | T19-Redeploy, T41 |
 | T69 | Turn a matched supplier reply into a cited forecast scenario and reviewable next step | murat-agent | src/chaser reply extraction, src/orchestrator, web supplier threads | in_progress | T26, T67 |
+| T67 | Event taxonomy + materiality triage (ignore/watch/act/escalate with reasons, 12 labelled synthetic events, eval) | copilot-triage | src/agents/triage_policy.py | in_progress P1 | T47c |
+| T69 | Money on the table: cited damages, price drift, freight terms, leakage | copilot-claims | src/decide/claims.py, docs/CLAIMS.md | in_progress P1 | HIDDEN_FINDINGS |
+| T41b | Fix empty agent trace endpoint, German-notice scenario citation, runs list fields | copilot-loop2 | src/agents, /api/agents routes | in_progress P1 | T41 |
