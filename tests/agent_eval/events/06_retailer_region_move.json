@@ -1,0 +1,1 @@
+{"synthetic":true,"id":"synthetic-region-request","title":"Retailer requests region move","text":"A retailer requests moving 5,000 Collector's Editions to another region after allocation approval, pending customer requirements.","changed_files":["synthetic/region_request.txt"],"expected_category":"customer_request","expected_decision":"watch"}

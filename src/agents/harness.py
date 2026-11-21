@@ -175,6 +175,8 @@ def citation_check(claims: Any, trace: Any, db_path: str | Path | None = None) -
             claim_text = str(claim)
             wanted_file = None
             wanted_quote = None
+        if not claim_text.strip():
+            continue
         matched = False
         matched_source = None
         for source in evidence:

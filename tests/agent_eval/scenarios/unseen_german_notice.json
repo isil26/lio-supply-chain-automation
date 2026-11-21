@@ -4,6 +4,19 @@
   "expected_rules": ["policy_check", "citation_check", "stop_check"],
   "supplier": "SUP-0011",
   "synthetic": {
+    "text": "The unknown German notice requires human review; no launch fact or forecast change is asserted.",
+    "claims": [],
+    "trace": [
+      {
+        "agent": "chaser",
+        "tool": "request_review",
+        "args": {"file": "tests/fixtures/unseen_german_notice.txt"},
+        "result": {"file": "tests/fixtures/unseen_german_notice.txt", "reason": "unknown format requiring human review"},
+        "reason": "request review without guessing",
+        "cost": 0,
+        "latency_ms": 0
+      }
+    ],
     "actions": [{"action": "request_review", "status": "approved",
                  "approver": "Human reviewer", "text": "Unknown German notice requires review"}]
   }

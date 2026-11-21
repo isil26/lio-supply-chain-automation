@@ -1,0 +1,1 @@
+{"synthetic":true,"id":"synthetic-customs-hold","title":"Customs hold","text":"The game-card air lot SHP-2026-04311 is on customs hold in Frankfurt and needs pre-clearance before a Sunday ship date.","changed_files":["synthetic/customs_hold.txt"],"expected_category":"logistics","expected_decision":"act"}

@@ -1,0 +1,1 @@
+{"synthetic":true,"id":"synthetic-newsletter","title":"Irrelevant newsletter","text":"An irrelevant monthly packaging newsletter contains no Soony launch, supplier, shipment or quantity information.","changed_files":["synthetic/newsletter.txt"],"expected_category":"noise","expected_decision":"ignore"}

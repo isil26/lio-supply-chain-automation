@@ -153,6 +153,9 @@ export type AgentRun = {
   event: string;
   status: string;
   cost: number;
+  step_count?: number;
+  input_tokens?: number;
+  output_tokens?: number;
   started?: string;
   finished?: string;
   harness: { ok: boolean; violations: { rule: string; detail: string }[] };
@@ -166,6 +169,8 @@ export type AgentTraceStep = {
   reason: string;
   cost: number;
   latency: number;
+  input_tokens?: number;
+  output_tokens?: number;
   citations?: Source[];
   status: string;
 };

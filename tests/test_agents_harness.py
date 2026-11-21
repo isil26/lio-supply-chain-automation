@@ -76,6 +76,13 @@ class HarnessTests(unittest.TestCase):
                                   "quote": "handwritten 8 000"}], trace)
         self.assertTrue(result["ok"])
 
+    def test_citation_check_ignores_empty_claim_without_inventing_a_violation(self):
+        trace = [{"tool": "request_review", "result":
+                  '{"file":"tests/fixtures/unseen_german_notice.txt","reason":"human review"}'}]
+        result = citation_check([{"text": "", "file": "unseen German notice"}], trace)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["violations"], [])
+
     def test_language_check_accepts_polish_and_rejects_missing_ask(self):
         good = language_check("Proszę potwierdzić ilość i dokument partii PO-4500318768.",
                               "SUP-0028")
