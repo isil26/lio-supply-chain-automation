@@ -146,3 +146,5 @@ Last human sync: Sat 21 Nov 2026
 | murat-agent | T94-Queue | Action Queue approval integration | done | Offline replay rejected an off-route actor and prepared the named site lead's review. Policy, mail, gateway and protected replay build checks passed. | 21 Nov |
 | sonnet-ui | T95-UI-next | private/ui-next (gitignored) | review | Local-first action-first UI on :8800 (python3 private/ui-next/server.py), dry-run only, not pushed. | 21 Nov |
 | codex-e2e | T12 replay delegation regression | tests/test_e2e.py | done | Boise enquiry AUTO under DEL-TEST-001. Dry-run transport and dock one-click passed in-process. Managed sandbox denies the loopback smoke test. | 21 Nov |
+
+| codex-card-replay | T98-Card-Replay | truth receipt/shipment reconciliation, regression and focused demo | in_progress | Owns game-card double count and one-case replay. Reviewed open PRs and notified Murat. | 21 Nov |
