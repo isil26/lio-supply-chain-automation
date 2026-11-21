@@ -7,6 +7,7 @@ Project: START Hack Munich 2026, Lio challenge "Keep the Line Running". We build
 2. Read `FINDINGS.md` (data discoveries; VERIFIED vs AGENT-reported) and `CODEX_TASKS.md` (task specs T1-T8). These two files contain hackathon data details. Get them from the team's private channel and put them in `private/`.
 3. Read `coord/RESEARCH_INDEX.md` before ANY research (what is done, in progress, and known gaps) and `coord/DECISIONS.md` (architecture and contracts you must respect).
 4. **Claim your task** in `coord/TASKS.md` (set owner + status `in_progress`) and add a line to `coord/STATUS.md` BEFORE writing code. Only touch the directories you own.
+5. **Gülşah's agents** (`gülşah-agent`, `mail-agent`, and any agent working for Gülşah): read `coord/INBOX.md` (newest entries at the bottom) before starting any task and again right before every push, so you don't duplicate work another agent has claimed or finished. If someone already does it, build on theirs or ask them in INBOX instead.
 
 Humans are on the team too: see `coord/TEAM.md` (roles, branches, checkpoints). Run `scripts/status.sh` for a one-screen view.
 
