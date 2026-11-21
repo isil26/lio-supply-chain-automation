@@ -1,0 +1,76 @@
+name: Soony protected Vercel release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/soony-vercel.yml'
+      - '.github/soony-vercel/**'
+      - 'web/**'
+      - 'bridge/**'
+      - 'src/chaser/**'
+      - 'src/agents/**'
+      - 'src/decide/**'
+      - 'src/docs/**'
+      - 'src/ingest/**'
+      - 'src/orchestrator/**'
+      - 'src/truth/**'
+      - 'config/**'
+      - 'deploy/vercel/**'
+      - 'docs/agent_runs/**'
+      - 'case-data/**'
+      - 'requirements.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: soony-protected-vercel-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Check deployment credentials
+        id: credentials
+        env:
+          SOONY_VERCEL_CI_TOKEN: ${{ secrets.SOONY_VERCEL_CI_TOKEN }}
+          SOONY_REPLAY_KEY: ${{ secrets.SOONY_REPLAY_KEY }}
+        run: |
+          if [[ -n "$SOONY_VERCEL_CI_TOKEN" && -n "$SOONY_REPLAY_KEY" ]]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo '::notice::Build-only verification. Publishing requires SOONY_VERCEL_CI_TOKEN and SOONY_REPLAY_KEY.'
+          fi
+      - name: Install replay dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Build approved encrypted replay
+        env:
+          PUBLISH: ${{ steps.credentials.outputs.ready }}
+          SOONY_REPLAY_KEY: ${{ secrets.SOONY_REPLAY_KEY }}
+        run: bash .github/soony-vercel/build.sh "$RUNNER_TEMP/soony-release"
+      - name: Install release and browser tooling
+        if: steps.credentials.outputs.ready == 'true'
+        run: |
+          npm install --global vercel@66.6.0
+          python -m pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Verify candidate and promote
+        if: steps.credentials.outputs.ready == 'true'
+        env:
+          SOONY_VERCEL_CI_TOKEN: ${{ secrets.SOONY_VERCEL_CI_TOKEN }}
+        run: bash .github/soony-vercel/publish.sh "$RUNNER_TEMP/soony-release"

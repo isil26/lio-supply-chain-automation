@@ -1,0 +1,90 @@
+{
+  "materials": [
+    {
+      "material": "Packaging inserts",
+      "need": 2000,
+      "why": "The example deadline is approaching.",
+      "pick": "Example Supplier A",
+      "context": {
+        "mode": "time-critical",
+        "time_pressure": 0.65,
+        "price_spread_pct": 39,
+        "on_time_floor": 0.6,
+        "hours_left": 36
+      },
+      "weights": {
+        "on_time": 0.65,
+        "cover": 0.35
+      },
+      "plan": {
+        "allocation": [
+          {
+            "supplier": "Example Supplier A",
+            "units": 1400,
+            "expected_on_time_units": 1260
+          },
+          {
+            "supplier": "Example Supplier B",
+            "units": 600,
+            "expected_on_time_units": 390
+          }
+        ],
+        "uncovered": 350,
+        "split": true
+      },
+      "ranking": [
+        {
+          "supplier": "Example Supplier A",
+          "score": 88,
+          "eligible": true,
+          "reasons": [
+            "Highest chance of arriving on time."
+          ],
+          "factors": {
+            "on_time": 0.9,
+            "cover": 0.8
+          }
+        },
+        {
+          "supplier": "Example Supplier B",
+          "score": 72,
+          "eligible": true,
+          "reasons": [
+            "Covers part of the gap."
+          ],
+          "factors": {
+            "on_time": 0.65,
+            "cover": 0.35
+          }
+        },
+        {
+          "supplier": "Example Supplier C",
+          "score": 46,
+          "eligible": false,
+          "reasons": [
+            "The quoted delivery date misses the example deadline."
+          ],
+          "factors": {
+            "on_time": 0.4,
+            "cover": 1
+          }
+        }
+      ],
+      "negotiations": [
+        {
+          "supplier": "Example Supplier B",
+          "asks": [
+            {
+              "lever": "partial",
+              "units": 400
+            }
+          ],
+          "draft_id": "example-draft-b",
+          "body": "Could you send the first 400 inserts in the morning delivery?",
+          "saved": false
+        }
+      ]
+    }
+  ],
+  "reminders": []
+}
