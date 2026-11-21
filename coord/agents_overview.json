@@ -2,9 +2,9 @@
  "generated_at": "2026-11-21T18:19+01:00",
  "generator": "overview-agent (scripts/overview.py)",
  "head": {
-  "sha": "efe6718",
-  "subject": "T79: Verify supplier-loop replay and protected handoff [murat-agent]",
-  "when": "2026-11-21T18:17+01:00"
+  "sha": "568fade",
+  "subject": "T78: reused task IDs no longer mark an agent's own row outdated; refresh [overview-agent]",
+  "when": "2026-11-21T18:19+01:00"
  },
  "summary": {
   "agents": 60,
@@ -48,22 +48,55 @@
  },
  "agents": [
   {
+   "name": "overview-agent",
+   "kind": "agent",
+   "current_task": "T78 team overview digest",
+   "state": "in_progress",
+   "dirs": "scripts/overview.py, src/overview/, coord/AGENTS_OVERVIEW.md, coord/agents_overview.json",
+   "notes": "Digest on main: coord/AGENTS_OVERVIEW.md + coord/agents_overview.json (newest STATUS row per agent, outdated/duplicate rows, unanswered INBOX, stale in_progress). Live page: `python3 scripts/overview.py --serve 8765`. Runs on Isil's laptop and refreshes the two files every 10 min while it is on. Read-only on all other files.",
+   "status_line": 115,
+   "last_activity": "2026-11-21T18:19+01:00",
+   "last_activity_ago": "0 min ago",
+   "last_commit": {
+    "sha": "568fade",
+    "when": "2026-11-21T18:19+01:00",
+    "subject": "T78: reused task IDs no longer mark an agent's own row outdated; refresh [overview-agent]",
+    "via_autosync": false
+   },
+   "commits_total": 10,
+   "board_tasks": [],
+   "board_open": [],
+   "open_status_rows": [
+    {
+     "line": 115,
+     "task": "T78 team overview digest",
+     "state": "in_progress"
+    }
+   ],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "1 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
    "name": "isil-agent",
    "kind": "agent",
    "current_task": "T50 portal watcher (T54, T56, T67 done)",
    "state": "in_progress",
    "dirs": "scripts/watch_portal.py",
-   "notes": "Building a 10-minute portal sync that posts drops and the forecast change to INBOX. Needs the team token on Isil's machine to run live.",
+   "notes": "`python scripts/watch_portal.py` runs on Isil's machine: every 10 min sync vs case-data, one INBOX line per drop with STD/CE p50 and gap changes. Tested with a simulated drop. Waiting for the team token on this machine to go live.",
    "status_line": 34,
-   "last_activity": "2026-11-21T18:16+01:00",
-   "last_activity_ago": "3 min ago",
+   "last_activity": "2026-11-21T18:18+01:00",
+   "last_activity_ago": "0 min ago",
    "last_commit": {
-    "sha": "976ea0c",
-    "when": "2026-11-21T18:16+01:00",
-    "subject": "coord: isil-agent takes over T50 portal watcher [isil-agent]",
+    "sha": "eb73897",
+    "when": "2026-11-21T18:18+01:00",
+    "subject": "T50: Portal watcher posts drops and forecast changes to INBOX [isil-agent]",
     "via_autosync": false
    },
-   "commits_total": 8,
+   "commits_total": 9,
    "board_tasks": [
     {
      "id": "T54",
@@ -92,44 +125,11 @@
     }
    ],
    "blockers": [
-    "Needs the team token on Isil's machine to run live."
+    "Waiting for the team token on this machine to go live."
    ],
    "inbox_open_to": [],
    "inbox_open_from": [],
    "flags": []
-  },
-  {
-   "name": "overview-agent",
-   "kind": "agent",
-   "current_task": "T78 team overview digest",
-   "state": "in_progress",
-   "dirs": "scripts/overview.py, src/overview/, coord/AGENTS_OVERVIEW.md, coord/agents_overview.json",
-   "notes": "Digest on main: coord/AGENTS_OVERVIEW.md + coord/agents_overview.json (newest STATUS row per agent, outdated/duplicate rows, unanswered INBOX, stale in_progress). Live page: `python3 scripts/overview.py --serve 8765`. Runs on Isil's laptop and refreshes the two files every 10 min while it is on. Read-only on all other files.",
-   "status_line": 115,
-   "last_activity": "2026-11-21T18:16+01:00",
-   "last_activity_ago": "2 min ago",
-   "last_commit": {
-    "sha": "84ddcae",
-    "when": "2026-11-21T18:16+01:00",
-    "subject": "T78: refresh agents overview (60 agents, 5 in progress) [overview-agent]",
-    "via_autosync": false
-   },
-   "commits_total": 9,
-   "board_tasks": [],
-   "board_open": [],
-   "open_status_rows": [
-    {
-     "line": 115,
-     "task": "T78 team overview digest",
-     "state": "in_progress"
-    }
-   ],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "1 older STATUS row(s) superseded by newer ones"
-   ]
   },
   {
    "name": "codex-deploy",
@@ -182,7 +182,7 @@
    "notes": "Tracking input freshness, hosted/local behavior and research handoffs.",
    "status_line": 42,
    "last_activity": "2026-11-21T15:42+01:00",
-   "last_activity_ago": "2 h 36 min ago",
+   "last_activity_ago": "2 h 37 min ago",
    "last_commit": {
     "sha": "826a043",
     "when": "2026-11-21T15:42+01:00",
@@ -457,7 +457,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:47+01:00",
-   "last_activity_ago": "3 h 31 min ago",
+   "last_activity_ago": "3 h 32 min ago",
    "last_commit": {
     "sha": "7bae579",
     "when": "2026-11-21T14:47+01:00",
@@ -711,7 +711,7 @@
    "notes": "Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests.",
    "status_line": 68,
    "last_activity": "2026-11-21T18:11+01:00",
-   "last_activity_ago": "7 min ago",
+   "last_activity_ago": "8 min ago",
    "last_commit": {
     "sha": "1ef645d",
     "when": "2026-11-21T18:11+01:00",
@@ -2029,7 +2029,7 @@
    "notes": "continuing on agent quality, Vogt prep, review",
    "status_line": 99,
    "last_activity": "2026-11-21T18:08+01:00",
-   "last_activity_ago": "10 min ago",
+   "last_activity_ago": "11 min ago",
    "last_commit": {
     "sha": "e8538fc",
     "when": "2026-11-21T18:08+01:00",
@@ -2324,10 +2324,22 @@
   },
   {
    "kind": "autosync",
-   "text": "39 of the last 200 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership."
+   "text": "39 of the last 202 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership."
   }
  ],
  "recent_commits": [
+  {
+   "sha": "568fade",
+   "agent": "overview-agent",
+   "when": "2026-11-21T18:19+01:00",
+   "subject": "T78: reused task IDs no longer mark an agent's own row outdated; refresh [overview-agent]"
+  },
+  {
+   "sha": "eb73897",
+   "agent": "isil-agent",
+   "when": "2026-11-21T18:18+01:00",
+   "subject": "T50: Portal watcher posts drops and forecast changes to INBOX [isil-agent]"
+  },
   {
    "sha": "efe6718",
    "agent": "murat-agent",
@@ -2405,18 +2417,6 @@
    "agent": "isil-agent",
    "when": "2026-11-21T18:02+01:00",
    "subject": "T54/T56: Secrets check, fresh Windows run and portability fixes [isil-agent]"
-  },
-  {
-   "sha": "bbc3a86",
-   "agent": "murat-agent",
-   "when": "2026-11-21T17:57+01:00",
-   "subject": "T79: Claim scoped supplier decision loop [murat-agent]"
-  },
-  {
-   "sha": "60a9118",
-   "agent": "gülşah-agent",
-   "when": "2026-11-21T17:56+01:00",
-   "subject": "T78: 30-min wait only while the supplier hasn't replied [gülşah-agent]"
   }
  ],
  "rules": "STATUS/TASKS: last row wins. 'answered' = addressee later wrote back to sender. Stale = in_progress, no activity for 90 min."

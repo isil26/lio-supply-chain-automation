@@ -1,21 +1,21 @@
 # AGENTS OVERVIEW — generated 2026-11-21T18:19+01:00 by overview-agent. Do not edit; run `python scripts/overview.py`.
-Machine-readable: `coord/agents_overview.json`. Head: `efe6718` T79: Verify supplier-loop replay and protected handoff [murat-agent]
+Machine-readable: `coord/agents_overview.json`. Head: `568fade` T78: reused task IDs no longer mark an agent's own row outdated; refresh [overview-agent]
 
 **60 agents**: 42 done, 7 in progress, 5 unknown, 2 review, 2 outdated, 1 assigned, 1 released. 13 INBOX requests look unanswered. Hand-written project picture: `coord/OVERVIEW.md` (nick).
 
 | Agent | State | Current task | Last activity | Last commit | Attention |
 |---|---|---|---|---|---|
-| isil-agent | in_progress | T50 portal watcher (T54, T56, T67 done) | 3 min ago | `976ea0c` coord: isil-agent takes over T50 portal watcher [i | blocker |
-| overview-agent | in_progress | T78 team overview digest | 2 min ago | `84ddcae` T78: refresh agents overview (60 agents, 5 in prog |  |
+| overview-agent | in_progress | T78 team overview digest | 0 min ago | `568fade` T78: reused task IDs no longer mark an agent's own |  |
+| isil-agent | in_progress | T50 portal watcher (T54, T56, T67 done) | 0 min ago | `eb73897` T50: Portal watcher posts drops and forecast chang | blocker |
 | codex-deploy | in_progress | T19-Redeploy production dashboard | 9 min ago | `4b45c92` T79: Report and verify one-shot replay build fix [ |  |
-| codex-overseer | in_progress | Coordinate local product work with teammates | 2 h 36 min ago | `826a043` T32: Verify cancellation and stock replay fixes [c | 1 open request(s) to it, stale? |
+| codex-overseer | in_progress | Coordinate local product work with teammates | 2 h 37 min ago | `826a043` T32: Verify cancellation and stock replay fixes [c | 1 open request(s) to it, stale? |
 | codex-methods | in_progress | Product research and evaluations | unknown | - |  |
 | copilot-pack | in_progress | T73 pack-out optimizer + numbered allocation | unknown | - |  |
 | copilot-gate2 | in_progress | T72b artwork revision extraction -> gate HUMAN on sleeve | unknown | - |  |
 | codex-access | assigned | T31 (assigned by nick) | 2 h 27 min ago | `596f79d` data: Add the verified team case snapshot [codex-a | 1 open request(s) to it, stale? |
 | codex-hosted | review | T53 authenticated recorded AI reasoning | 36 min ago | `f14798d` T53: Record production verification and original-e | 1 open request(s) to it |
 | Copilot | review | T6 UI prototype (mock data) | unknown | - | 2 open request(s) to it |
-| codex-replay | unknown | - | 3 h 31 min ago | `7bae579` T7: Route local OCR replay finding to T9 [codex-re |  |
+| codex-replay | unknown | - | 3 h 32 min ago | `7bae579` T7: Route local OCR replay finding to T9 [codex-re |  |
 | Copilot #3 | unknown | - | 3 h 33 min ago | - |  |
 | Codex #3 | outdated | T9 technical depth | unknown | - |  |
 | copilot-planner | outdated | T47d planner option ids + summary + chaser draft reach | unknown | - |  |
@@ -23,7 +23,7 @@ Machine-readable: `coord/agents_overview.json`. Head: `efe6718` T79: Verify supp
 | any new ones) | unknown | - | unknown | - |  |
 | their humans | unknown | - | unknown | - |  |
 | murat-agent | done | T79-Supplier-Loop | 1 min ago | `efe6718` T79: Verify supplier-loop replay and protected han | 1 open request(s) to it |
-| copilot-harness | done | T46 guard harness + golden evals | 7 min ago | `1ef645d` autosync: 1 files [nick] |  |
+| copilot-harness | done | T46 guard harness + golden evals | 8 min ago | `1ef645d` autosync: 1 files [nick] |  |
 | gülşah-agent | done | T71 live agent map | 12 min ago | `e401a39` coord: Gülşah's agents read coord/INBOX.md before  | 1 open request(s) to it |
 | Codex | done | T5 decisions, T7 live integration and replay, T8 submission | 26 min ago | `387bde0` autosync: 1 files [nick] | 2 open request(s) to it |
 | mail-agent | done | T78 automatic sending | 44 min ago | - |  |
@@ -64,13 +64,13 @@ Machine-readable: `coord/agents_overview.json`. Head: `efe6718` T79: Verify supp
 | sonnet-pack | done | T73 pack-out optimizer rebuilt on truth.readiness | unknown | - |  |
 | sonnet-gate | done | T72b artwork revision in Release Gate | unknown | - |  |
 | sonnet-wire | done | T74 register Release Gate + packplan as agent tools | unknown | - |  |
-| nick | released | stopped working on T71 visualization (handed over) | 10 min ago | `e8538fc` schedule: Vogt slot is 19:00 [nick] |  |
+| nick | released | stopped working on T71 visualization (handed over) | 11 min ago | `e8538fc` schedule: Vogt slot is 19:00 [nick] |  |
 | Nick (human) | unknown | - | 3 h 32 min ago | `bdea665` T8: frozen number set; claim T9/T10 |  |
 | Murat (human) | unknown | - | 3 h 34 min ago | `181bb19` T7: Record main deployment and UI handoff |  |
 
 ## Needs attention
 - **isil-agent** (in_progress)
-  - Blocker: Needs the team token on Isil's machine to run live.
+  - Blocker: Waiting for the team token on this machine to go live.
 - **codex-overseer** (in_progress)
   - Open request from nick (INBOX line 157): please take these OPEN tasks (details in coord/OPEN_TASKS.md; claim by adding your row to coord/TASKS.md and STATUS.md): T50 watcher: every 10 min run `python3 
   - in progress but no activity for over 90 min (last Sat 15:42)
@@ -150,7 +150,7 @@ Machine-readable: `coord/agents_overview.json`. Head: `efe6718` T79: Verify supp
 - T72b has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins; lines 98, 100).
 - T74 has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins; lines 102, 109).
 - T78 has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins; lines 107, 108).
-- 39 of the last 200 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership.
+- 39 of the last 202 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership.
 
 ## Unclaimed open tasks
 - T35: Triage agent (orchestrator-workers, closed tool whitelist, <=3 rounds, falls back to fixed order)
