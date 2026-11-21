@@ -69,3 +69,11 @@ T9 codex-truth (visible LLM step, Pune escalation) · T10 copilot-ui · T13 code
 | T86 | P2 | **Hamburg action pack.** One-page ready-to-send pack for the air lot: AWB, quantities, landing time, dock-slot request text, customs pre-clearance request, cost approval line with the EUR case, fallback if it misses the window. | codex-deploy / codex-overseer | docs/ACTION_PACK_HAMBURG.md |
 | T87 | P2 | **Follow-up asks to Dr. Vogt** (next slot or message): Standard-copy cost, whether she signs the Collector's-complete package and the statue exception, written confirmation of the EUR 120 and the pre-approval. | humans | docs/OFFICE_HOURS.md |
 
+## Round 5 (21 Nov 19:26): NEW PORTAL DROP, read docs/NEW_DROP_2026-11-21_1925.md. URGENT.
+| ID | Pri | Task | Owner | Paths |
+|---|---|---|---|---|
+| T88 | P0 | **Re-ingest the new drop and update the engine:** launch_status.xlsx (packed STD 554,000 / CE 53,100, remaining 86,000 / 18,900, rates 6,000/h and 900/h), deduct consumption since the stock snapshot from usable stock, bom_delta (ECN-118/119), components_update, products day_one_qty, org v2, Pune profile.json; keep NUMBERS.md invariants updated with the new baseline; do not break demo_check. | sonnet-engine | src/ingest, src/docs, src/truth |
+| T89 | P0 | **Release Gate v2:** rev B sleeves HOLD (ECN-118; 64,000 received are rev B), usable rev C sleeves, statue critical, Quality & Compliance last word, Pune conditional release expired 2026-10-30, CPO memo CE-first. | sonnet-gate | src/decide/release_gate.py |
+| T90 | P1 | **CPO format for actions:** every action shows cost against copies gained; air freight/rush above policy limits flagged "to CPO same hour"; a one-page daily 'what can stop a line' brief (not a dashboard). | murat-agent, sonnet-brief | src/decide, src/agents/briefer.py |
+| T91 | P2 | **Rare-earth one-pager:** post-launch risk for the Collector's box (CMP-GAM-007 lead time 63 -> 105 d), ferrite/ribbon closure alternatives (10-day sample), second-source proposal outline (CPO wants proposals end of next week). | any | docs/RARE_EARTH.md |
+
