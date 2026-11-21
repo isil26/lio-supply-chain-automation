@@ -175,20 +175,20 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
                                                       (chase["supplier_id"], chase["material"]))
             if not action:
                 raise ValueError("This case requires a current supplier-loop draft")
-            from .guardrails import Guardrails
-            if not Guardrails().validate_draft(chase["body"]).ok:
-                raise ValueError("Supplier-loop request failed the information-only check")
-            if auto and not demo:
-                from .autosend import _recent_addresses
-                canonical = parseaddr(chase["address"])[1].casefold()
-                recent = _recent_addresses(con, int(os.getenv("CHASER_AUTO_COOLDOWN_MIN", "30")), datetime.now(timezone.utc))
-                already_sent = con.execute("""SELECT 1 FROM messages m JOIN chases c ON c.id=m.chase_id
-                                             WHERE m.side='out' AND lower(c.address)=? AND m.body=? LIMIT 1""",
-                                           (canonical, chase["body"])).fetchone()
-                if canonical in recent or already_sent:
-                    raise ValueError("Supplier-loop dispatch is on cooldown or was already sent")
         elif chase["status"] != "draft":
             raise ValueError("Only a current draft can be sent")
+        if action or auto:
+            from .guardrails import Guardrails
+            if not Guardrails().validate_draft(chase["body"]).ok:
+                raise ValueError("Automatic request failed the information-only check")
+        if auto and not demo:
+            from .autosend import cooldown_minutes, duplicate_body, recent_cases
+            address = chase["address"].strip().lower()
+            case = (address, chase["material"])
+            if duplicate_body(con, address, chase["body"]) or case in recent_cases(
+                con, cooldown_minutes(), datetime.now(timezone.utc)
+            ):
+                raise ValueError("Automatic request is on cooldown or was already sent")
         message_id = make_msgid(domain=parseaddr(sender)[1].split("@")[-1])
         if not demo:
             from .allowlist import check_recipient

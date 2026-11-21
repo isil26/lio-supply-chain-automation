@@ -9,9 +9,10 @@ Safety that stays on:
   - every body must pass the guardrails (no binding commitment, no maximum price, no deadline
     slack, no mention of other suppliers) or it is skipped and logged;
   - no cap per cycle (Gülşah, 21 Nov: suppliers are simulated). Set CHASER_AUTO_MAX_PER_CYCLE to cap;
-  - anti-spam only: while a supplier hasn't answered our last email, at most one email per
-    CHASER_AUTO_COOLDOWN_MIN minutes (default 30); once they reply we answer right away;
-    and never the same text twice to the same address;
+  - distinct components can contact the same supplier in one cycle;
+  - an unanswered request cools down the same recipient and component for
+    CHASER_AUTO_COOLDOWN_MIN minutes (default 30, zero disables the wait);
+  - the same text is never sent twice to the same address automatically;
   - emails are information requests; purchase commitments still follow PP-07.
 Turn it off with CHASER_AUTO_SEND=0.
 """
@@ -19,6 +20,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta, timezone
+from functools import partial
 
 from .guardrails import Guardrails
 
@@ -28,17 +30,38 @@ def enabled(demo=False):
             and os.getenv("CHASER_REAL_SMTP") == "1")
 
 
-def _recent_addresses(con, minutes, now):
-    since = (now - timedelta(minutes=minutes)).isoformat(timespec="seconds")
-    # Waiting only applies while the supplier hasn't answered our last email.
-    # If they replied after it, we may answer straight away.
-    rows = con.execute("""
-        SELECT lower(c.address) AS address,
-               max(CASE WHEN m.side = 'out' THEN m.time END) AS last_out,
-               max(CASE WHEN m.side = 'in' THEN m.time END) AS last_in
-        FROM messages m JOIN chases c ON c.id = m.chase_id
-        GROUP BY lower(c.address)""").fetchall()
-    return {row[0] for row in rows if row[1] and row[1] >= since and not (row[2] and row[2] >= row[1])}
+def cooldown_minutes():
+    return max(0, int(os.getenv("CHASER_AUTO_COOLDOWN_MIN", "30")))
+
+
+def recent_cases(con, minutes, now):
+    """Find recipient and component pairs with recent unanswered live mail."""
+    if not minutes:
+        return set()
+    since = (now - timedelta(minutes=minutes)).isoformat()
+    return {tuple(row) for row in con.execute("""
+        SELECT DISTINCT lower(trim(c.address)), c.material
+        FROM messages sent JOIN chases c ON c.id = sent.chase_id
+        WHERE sent.side = 'out' AND julianday(sent.time) >= julianday(?)
+          AND coalesce(json_extract(sent.transport, '$.mode'), '') <> 'dry_run'
+          AND coalesce(json_extract(sent.transport, '$.status'), '') <> 'failed'
+          AND NOT EXISTS (
+            SELECT 1 FROM messages reply
+            WHERE reply.chase_id = sent.chase_id AND reply.side = 'in'
+              AND julianday(reply.time) >= julianday(sent.time)
+              AND coalesce(json_extract(reply.transport, '$.mode'), '') <> 'simulated'
+              AND coalesce(nullif(json_extract(reply.transport, '$.inReplyTo'), ''), sent.external_id) = sent.external_id
+          )
+    """, (since,))}
+
+
+def duplicate_body(con, address, body):
+    return con.execute("""
+        SELECT 1 FROM messages m JOIN chases c ON c.id=m.chase_id
+        WHERE m.side='out' AND lower(trim(c.address))=? AND m.body=?
+          AND coalesce(json_extract(m.transport, '$.mode'), '') <> 'dry_run'
+        LIMIT 1
+    """, (address, body)).fetchone() is not None
 
 
 def run(con, *, send=None, now=None, prepare=True):
@@ -51,7 +74,7 @@ def run(con, *, send=None, now=None, prepare=True):
         with con:
             _activity(con, agent, text, kind)
 
-    send = send or chaser_send
+    send = send or partial(chaser_send, auto=True)
     now = now or datetime.now(timezone.utc)
     if prepare:
         try:
@@ -67,7 +90,8 @@ def run(con, *, send=None, now=None, prepare=True):
         except Exception as exc:
             activity(con, "Mail Agent", f"Negotiation planning skipped ({exc.__class__.__name__}).", "warning")
     limit = int(os.getenv("CHASER_AUTO_MAX_PER_CYCLE", "0")) or None
-    busy = _recent_addresses(con, int(os.getenv("CHASER_AUTO_COOLDOWN_MIN", "30")), now)
+    minutes = cooldown_minutes()
+    busy = recent_cases(con, minutes, now)
     drafts = con.execute("SELECT id, supplier, address, body, supplier_id, material FROM chases WHERE status = 'draft' ORDER BY rowid").fetchall()
     results = []
     for chase_id, supplier, address, body, supplier_id, material in drafts:
@@ -75,14 +99,13 @@ def run(con, *, send=None, now=None, prepare=True):
             continue
         if limit and len([r for r in results if r["result"] == "sent"]) >= limit:
             break
-        if address.lower() in busy:
+        address = address.strip().lower()
+        case = (address, material)
+        if case in busy:
             continue
-        repeat = con.execute("""SELECT 1 FROM messages m JOIN chases c ON c.id = m.chase_id
-                                WHERE m.side = 'out' AND lower(c.address) = ? AND m.body = ? LIMIT 1""",
-                             (address.lower(), body)).fetchone()
-        if repeat:  # same text already went to this supplier: drop the duplicate draft
+        if duplicate_body(con, address, body):
             with con:
-                con.execute("UPDATE chases SET status = 'duplicate' WHERE id = ?", (chase_id,))
+                con.execute("UPDATE chases SET status = 'duplicate' WHERE id = ? AND status = 'draft'", (chase_id,))
             results.append({"id": chase_id, "supplier": supplier, "result": "duplicate"})
             continue
         check = Guardrails().validate_draft(body)
@@ -96,7 +119,8 @@ def run(con, *, send=None, now=None, prepare=True):
             activity(con, "Mail Agent", f"{supplier}: automatic send failed ({exc}).", "warning")
             results.append({"id": chase_id, "supplier": supplier, "result": "failed"})
             continue
-        busy.add(address.lower())
+        if minutes:
+            busy.add(case)
         activity(con, "Mail Agent", f"{supplier}: sent automatically.", "sent")
         results.append({"id": chase_id, "supplier": supplier, "result": "sent"})
     return results
