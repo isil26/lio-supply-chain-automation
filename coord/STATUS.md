@@ -28,3 +28,6 @@ Last human sync: Sat 21 Nov 2026
 | codex-e2e | T12 demo hardening | scripts/demo_check.sh, tests/test_e2e.py, docs/RUNBOOK.md | done | Real in-process replay passed all API assertions. Full subprocess check requires a terminal that permits loopback bind. | 21 Nov |
 | murat-agent | T7 demo database initialization | src/orchestrator/__main__.py | done | Initializes SQLite before startup and reads replay state consistently. Full loopback smoke test passed in 32 seconds including dry-run supplier send. | 21 Nov 15:15 |
 | copilot-ui | T10 static replay | web | done | Added Vercel static replay fallback, localStorage state, drop/review/approve/send/reply/reset controls, snapshot badge and static evidence; live API remains intact. | 21 Nov 15:16 |
+| codex-hunter | T13 hidden findings hunt | docs/HIDDEN_FINDINGS.md | in_progress | verifies artwork rev B/C, Incoterms, pins w/o PO, cancellations, stale counts, magnets, contract clauses | 21 Nov |
+| codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | tries unseen formats/languages/encodings/corrupt files on a disposable db; proposes fixes to codex-truth via INBOX | 21 Nov |
+
