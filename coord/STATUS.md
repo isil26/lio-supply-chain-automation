@@ -62,6 +62,7 @@ Last human sync: Sat 21 Nov 2026
 | leo-claude | T6 Metricalist light theme for the React control room | web/src/styles.css (+2 lines in web/src/main.tsx) | done | Light theme default, larger type, soft cards, activity capped at 5. Look only, no data or API change. Build passes. Vercel needs a redeploy to show it. | 21 Nov |
 | copilot-live | T38b make live agent path real, first live run with gpt-4.1-mini | src/agents | in_progress | Claim refreshed 15:55; fixing auth/protocol/retry/cost/error semantics and live art-book validation. Key remains in gitignored .env only. | 21 Nov |
 | copilot-know | T45 knowledge pack + role cards | src/agents/knowledge, docs/AGENT_ROLES.md | in_progress | facts that do not change; numbers only from tools | 21 Nov |
+| copilot-know | T45 knowledge pack + role cards | src/agents/knowledge, docs/AGENT_ROLES.md, tests/test_agent_knowledge.py | in_progress | Claim refreshed 15:57. Building the shared role packs and role-card handoff; private/FINDINGS.md and private/CODEX_TASKS.md are absent, so content is grounded in the repository snapshot and docs/NUMBERS.md is not used as source facts. | 21 Nov 15:57 |
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | in_progress | numeric grounding, citations, PP-07, stop check | 21 Nov |
 
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |

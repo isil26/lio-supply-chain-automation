@@ -19,3 +19,22 @@ How to claim: (1) add your agent name as owner in `coord/TASKS.md` (copy the row
 
 ## Already taken (do not duplicate)
 T9 codex-truth (visible LLM step, Pune escalation) · T10 copilot-ui · T13 codex-hunter · T14 codex-drops · T15/T17 codex-decide · T16 copilot-chaser · T18 nick (pitch/deck).
+
+## Round 2 (21 Nov, 16:10): more open tasks. H = best done by a human, A = agent can do it, H/A = either.
+| ID | Pri | Who | Task | Paths / output | Needs |
+|---|---|---|---|---|---|
+| T48 | P1 | H | **Browser QA of the live demo.** Run `python3 -m src.orchestrator --demo`, click the whole loop in Chrome and Safari (drop, risk evidence modal, approve, send dry-run, reply, reset), note every glitch with a screenshot. Nobody has verified browser rendering yet (agents' sandboxes could not). | docs/QA_BROWSER.md + screenshots in docs/ui/ | - |
+| T49 | P1 | H | **Rehearse the 3-minute pitch with a timer**, one speaker, one driver, a third person asks Q&A from docs/REDTEAM.md. Record timings and the three weakest moments. Do it 3 times before 02:00 and 3 times Sunday morning. | docs/REHEARSAL_LOG.md | T18 pitch |
+| T50 | P1 | H | **Watch the portal notifications and Discord #lio** every 30 minutes for new drops or Lio announcements; run `python3 bridge/sync.py` and post a line in coord/INBOX.md for each change. Assign a rotating owner. | coord/INBOX.md | - |
+| T51 | P1 | H | **Book the remaining office hours** with Felix Brunner and Nils Berger; add them to coord/SCHEDULE.md. Prepare their question lists (see T19). | coord/SCHEDULE.md, docs/OFFICE_HOURS.md | - |
+| T52 | P1 | H/A | **Record a live agent run for replay.** After copilot-live succeeds, record two more live runs (statue quality hold; unseen German notice) with gpt-4.1-mini, export traces to docs/agent_runs/ for the hosted replay and the video. | docs/agent_runs/ | T38b |
+| T53 | P1 | A | **Hosted replay of agent runs.** Show a recorded agent run (who called which tool, hand-offs, approvals pending) in the Vercel preview as 'Recorded live agent run' with timing and cost. Coordinate with codex-hosted/codex-access. No keys, no live calls. | web/, deploy/vercel | T52, T44 |
+| T54 | P2 | H/A | **Security and secrets sweep.** Check git history for keys/tokens/passwords, `.env` and `.soony_token` not tracked, hosted app auth, no data leaking through logs/cassettes/traces; rotate the OpenAI key after the hack. Output a checklist. | docs/SECURITY_CHECK.md | - |
+| T55 | P2 | A | **Cost monitor.** Script that sums store/llm_log.jsonl and agent traces into tokens and euros per run/day and warns above a budget; print on the status board. | scripts/cost_report.py | T33, T38b |
+| T56 | P2 | H | **Fresh-machine run.** A teammate who has not touched the repo clones it, follows README only, and reports every missing step (python, node, tesseract, .env, token). Fix README. | README.md, docs/RUNBOOK.md | T25 |
+| T57 | P2 | A | **Mobile and projector check.** Make sure the control room is readable at 1280x720 and on a phone (jury may view the hosted link), large fonts, contrast, no horizontal scroll. Screenshots before/after. | web/, docs/ui/ | T28 |
+| T58 | P2 | A | **Judge cheat sheet.** One page: our four criteria claims mapped to concrete proof in the demo and repo (e.g. 'nothing hardcoded' -> where; 'copes with new drop' -> T14 matrix; 'agents act' -> trace), with exact click paths. | docs/JUDGE_SHEET.md | - |
+| T59 | P2 | H/A | **Backup video + screenshots.** Record the 3-minute demo video (see T24) and a silent 60-second loop; export 6 key screenshots for the deck and README. | docs/video/ (links), docs/ui/ | T24 |
+| T60 | P3 | A | **Replay fixtures for more drops.** Build 3 extra believable portal drops (e.g. Pune PPAP release letter, Dongguan CNY schedule, Hwaseong delay notice) in a disposable replay set so the demo can show a second drop and the agents' reaction. Clearly marked synthetic, never in data/. | tests/drops/, replay set | T14 |
+| T61 | P3 | H | **Pricing and business interviews.** Ask 2 teammates' contacts or mentors in procurement what such a tool is worth; capture quotes (with permission) for the business-case slide. | docs/BUSINESS_CASE.md | - |
+| T62 | P3 | A | **Post-hack README and pitch notes for GitHub** (what we built, how to run, what we would do next, honest limits). | README.md section | after demo |
