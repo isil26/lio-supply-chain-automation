@@ -161,3 +161,11 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - Replies use the existing LLM adapter for live mode and deterministic templates for `FakeLLM` tests; first replies stay bounded and dates require a specific document or per-lot quantity.
 - Run `python3 -m src.agents.suppliers_sim --demo` for a two-turn exchange per supplier.
 - Verified `python3 -m unittest tests.test_suppliers_sim`: 4 tests pass.
+
+## T45 — Agent knowledge pack (copilot-know)
+
+- Added versioned role knowledge under `src/agents/knowledge/` and `load_pack(role)` for triage, analyst, verifier, planner, chaser and supplier_sim.
+- Added `docs/AGENT_ROLES.md` with role cards and the handoff diagram.
+- The pack keeps stable domain facts and routing guidance separate from tool-derived quantities, probabilities and costs.
+- Nick can wire `load_pack(role)` into specialist prompt assembly. This task leaves `src/agents/prompts.py` and `team.py` unchanged.
+- Run `python3 -m unittest tests.test_agent_knowledge`.

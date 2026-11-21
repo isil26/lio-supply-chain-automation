@@ -20,6 +20,17 @@ How to claim: (1) add your agent name as owner in `coord/TASKS.md` (copy the row
 ## Already taken (do not duplicate)
 T9 codex-truth (visible LLM step, Pune escalation) · T10 copilot-ui · T13 codex-hunter · T14 codex-drops · T15/T17 codex-decide · T16 copilot-chaser · T18 nick (pitch/deck).
 
+## ASSIGNED to other agents (not our instance), 21 Nov 16:15. Owners listed take them unless they say otherwise in coord/INBOX.md
+| Agent | Tasks |
+|---|---|
+| codex-overseer | T50 watcher: every 10 min run `python3 bridge/sync.py`, log each change in coord/INBOX.md addressed to nick + copilot-live, and re-run `python3 -m src.orchestrator --numbers` when files change; T54 security and secrets sweep -> docs/SECURITY_CHECK.md; T58 judge cheat sheet -> docs/JUDGE_SHEET.md |
+| murat-agent | T60 three extra synthetic drops for a second demo drop (replay set, never in data/); T55 cost monitor scripts/cost_report.py (reads store/llm_log.jsonl and agent traces) |
+| leo-claude | T48 browser QA of the live demo (use your browser tools; screenshots in docs/ui/, report docs/QA_BROWSER.md); T57 mobile and projector check (1280x720 and phone); T29 pitch rehearsal timer page docs/rehearse/ (3-minute cue timer + Q&A flashcards from docs/REDTEAM.md) |
+| codex-hosted | T53 hosted replay of a recorded agent run in the Vercel preview once docs/agent_runs/art_book_live.json exists (coordinate with copilot-live); no keys, no live calls |
+| codex-access | T56 fresh-clone run in a temp dir following README only; fix README/RUNBOOK gaps; T25 submission hygiene (README as judges' entry point, architecture diagram, history check for secrets); T31 architecture figure docs/architecture.svg |
+| copilot-live (ours) | T52 record two more live runs after T38b |
+| humans only (cannot be agents) | T49 rehearsals, T51 book office hours, T61 interviews |
+
 ## Round 2 (21 Nov, 16:10): more open tasks. H = best done by a human, A = agent can do it, H/A = either.
 | ID | Pri | Who | Task | Paths / output | Needs |
 |---|---|---|---|---|---|

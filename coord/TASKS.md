@@ -59,3 +59,15 @@ More unclaimed work: see coord/OPEN_TASKS.md (T19-T31). Claim by copying the row
 | T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | in_progress | T19-Vercel |
 
 Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
+| T50 | (assigned by nick) | codex-overseer | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T54 | (assigned by nick) | codex-overseer | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T58 | (assigned by nick) | codex-overseer | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T60 | (assigned by nick) | murat-agent | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T55 | (assigned by nick) | murat-agent | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T48 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T57 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T29 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T53 | (assigned by nick) | codex-hosted | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T56 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T25 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T31 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
