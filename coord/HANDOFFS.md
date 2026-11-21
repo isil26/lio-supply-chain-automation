@@ -1,5 +1,11 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T39 — Agent tool layer (copilot-tools)
+
+- Added `src/agents/tools.py`: a closed registry of thin adapters over readiness, sensitivity, supplier reliability, cited document search, source comparison, expedite analysis, chaser draft/send/parse, pending options, PP-07 escalation, and review requests.
+- Every handler returns `value` plus normalized `citations`; side-effecting tools are marked `needs_approval`, and `send_email` is hard-restricted to dry-run.
+- `python3 -m src.agents.tools --list` prints JSON names/schemas. `python3 -m unittest tests.test_agents_tools` passes (3 tests).
+
 ## T63 - Document Reader (copilot-reader)
 
 - Added `src/agents/reader.py`: `read_document(path, supplier_id=None)` returns the coverage/language/kind/facts/review contract, parses text/PDFs deterministically, and uses quote-validated text or vision JSON as a provisional fallback.
@@ -7,6 +13,13 @@
 - Review state persists in SQLite `doc_review`; call `DocumentReader(...).approve(file)` after human review. `reader_tool()` is compatible with the runtime tool registry.
 - CLI: `python3 -m src.agents.reader PATH`; focused validation: `python3 -m unittest tests.test_agents_reader -v` (4 passed).
 - No live model call was made; live cost `$0`. Register the tool in `src/agents/team.py`/role whitelists before enabling it in the runtime.
+
+## T63 reader follow-up — copilot-reader
+
+- `DocumentReader` now constructs the shared `LLMClient` when no client is injected, so the CLI honors configured model settings; configured images always take the vision path.
+- Vision instructions explicitly inspect strike-through/handwriting and preserve `printed_quantity`, `handwritten_quantity`, `handwriting_present`, and the evidence quote; handwritten quantities retain `read as X, uncertain` wording and remain review-required.
+- Offline validation: `python3 -m unittest tests.test_agents_reader -v` — 7 passed. The optional live smoke test reached `gpt-4.1-mini` and returned art-book printed 80,000 / handwritten 8,000 / review required; logged cost was unavailable (0.0 in the client log).
+- Requested Karton notice and second plain-scan live invocations were attempted but the non-interactive environment denied network approval; no result is claimed for either.
 
 ## T38b — Live multi-agent path (copilot-live)
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -21,7 +22,13 @@ SCENARIOS = Path(__file__).with_name("scenarios")
 
 def _fake_team(db_path: Path, scenario: str):
     from src.agents.team import _scenario_team
-    return _scenario_team(db_path, scenario)
+    scenario_name = {
+        "art_book_shortfall": "art_book",
+        "statue_quality_hold": "quality_hold",
+        "game_card_short_ship": "art_book",
+        "unseen_german_notice": "german_notice",
+    }.get(scenario, scenario)
+    return _scenario_team(db_path, scenario_name)
 
 
 def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
@@ -33,6 +40,12 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
         with tempfile.TemporaryDirectory() if index > 0 else tempfile.TemporaryDirectory() as temp:
             run_db = db_path if mode == "live" else Path(temp) / "eval.db"
             if mode == "live":
+                # Each run gets an isolated trace; reusing one DB makes stop_check
+                # report prior scenarios as repeated work.
+                isolated_db = Path(temp) / "live.db"
+                if db_path.exists():
+                    shutil.copy2(db_path, isolated_db)
+                run_db = isolated_db
                 team = build_team(run_db)
                 result = team.run_event(scenario["event"])
                 trace = team.db.execute(
@@ -44,7 +57,7 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
                                   str(run_db))
                 cost += sum(float(row.get("cost") or 0) for row in trace)
             else:
-                team = _fake_team(run_db, scenario["id"].split("_")[0])
+                team = _fake_team(run_db, scenario["id"])
                 if scenario["id"] in {"art_book_shortfall", "statue_quality_hold",
                                       "game_card_short_ship", "unseen_german_notice"}:
                     team.run_event(scenario["event"])

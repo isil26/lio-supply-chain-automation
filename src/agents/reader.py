@@ -102,7 +102,9 @@ class DocumentReader:
     def __init__(self, *, llm: LLMClient | None = None,
                  review_db: str | Path = "store/reader.sqlite",
                  repo: str | Path | None = None):
-        self.llm = llm
+        # Construct the shared client by default so the CLI honors configured
+        # vision credentials instead of silently taking the OCR-only path.
+        self.llm = llm if llm is not None else LLMClient()
         self.review_db = Path(review_db)
         self.repo = Path(repo or Path(__file__).resolve().parents[2])
 
@@ -183,8 +185,13 @@ class DocumentReader:
             image_parts.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}})
         prompt = (
             f"Read this {kind} procurement document. Identify the language and translate every "
-            "non-English fact into English. Transcribe evidence verbatim. Handwritten replacements "
-            "must say 'read as X, uncertain' and include the printed value in the same quote. "
+            "non-English fact into English. Transcribe evidence verbatim. For every quantity, "
+            "explicitly inspect for handwriting, strike-through, overwrite, or correction. Return "
+            "handwriting_present as a fact with a boolean value. If printed and handwritten values "
+            "differ, return separate printed_quantity and handwritten_quantity facts; the latter "
+            "must use the numeric value and translation_en wording 'read as X, uncertain', and "
+            "state which one applies. Include both values in the evidence quote. A plain printed "
+            "quantity must explicitly say handwriting_present=false. "
             "Never infer an illegible value. Return only the requested JSON."
         )
         try:
@@ -206,10 +213,19 @@ class DocumentReader:
                 continue
             if not 0 < confidence <= 1:
                 continue
+            field = str(item["field"])
+            value = item.get("value")
+            translation = str(item.get("translation_en") or result.get("translation_en") or "")
+            # Keep the machine-usable correction numeric while retaining the
+            # uncertainty wording required for downstream review.
+            if field == "handwritten_quantity" and isinstance(value, int):
+                translation = translation or f"read as {value:,}, uncertain"
+                if "uncertain" not in translation.casefold():
+                    translation = f"{translation}; read as {value:,}, uncertain"
             output.append({
-                "field": str(item["field"]), "value": item.get("value"), "quote": quote,
+                "field": field, "value": value, "quote": quote,
                 "page": page, "confidence": min(confidence, .95),
-                "translation_en": str(item.get("translation_en") or result.get("translation_en") or ""),
+                "translation_en": translation,
                 "source_file": path.as_posix(), "method": "llm_vision" if images else "llm_text",
                 "provisional": True,
             })
@@ -229,13 +245,21 @@ class DocumentReader:
                     "needs_review": True, "reason": review["reason"], "uncertainty": "document could not be read",
                     "review": review, "supplier_id": supplier_id}
         facts, language = self._deterministic(pages, resolved, kind)
+        image_vision = bool(images and self.llm and self.llm.configured())
         coverage = self._coverage(kind, facts)
-        if coverage != "full":
+        # A configured vision reader must inspect every scan, even if a local
+        # OCR/parser happened to produce a complete-looking result.
+        if image_vision or coverage != "full":
             proposed, model_language = self._model(resolved, kind, pages, images, language)
             if proposed:
                 facts.extend(proposed)
                 language = model_language
-                coverage = "partial" if coverage == "none" else coverage
+                coverage = self._coverage(kind, facts)
+        if source_type == "image" and not any(item["method"] == "llm_vision" for item in facts):
+            # Printed OCR cannot rule out a correction or strike-through.
+            coverage = "partial" if facts else "none"
+            for item in facts:
+                item["confidence"] = min(float(item["confidence"]), .69)
         low_confidence = any(item["confidence"] < .7 for item in facts)
         needs_review = coverage != "full" or low_confidence or any(item["provisional"] for item in facts)
         reason = None

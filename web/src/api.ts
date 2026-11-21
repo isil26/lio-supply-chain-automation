@@ -112,6 +112,33 @@ export type DashboardData = {
 
 type SourceReview = { file: string; reason: string };
 
+export type AgentRun = {
+  id: string;
+  event: string;
+  status: string;
+  cost: number;
+  started?: string;
+  finished?: string;
+  harness: { ok: boolean; violations: { rule: string; detail: string }[] };
+};
+
+export type AgentTraceStep = {
+  agent: string;
+  tool: string;
+  args_summary?: string;
+  result_summary?: string;
+  reason: string;
+  cost: number;
+  latency: number;
+  citations?: Source[];
+  status: string;
+};
+
+export type AgentTraceData = {
+  steps: AgentTraceStep[];
+  approvals_pending: { id: string; title?: string; detail?: string; [key: string]: unknown }[];
+};
+
 export interface DashboardApi {
   getDashboard(): Promise<DashboardData>;
   approveDecision(id: string): Promise<{ ok: boolean; status?: string }>;
@@ -123,6 +150,10 @@ export interface DashboardApi {
   dismissDrop(): Promise<{ ok: true }>;
   resetDemo(): Promise<{ ok: true }>;
   getMeta(): Promise<{ exported?: string; mode?: string }>;
+  getAgentRuns(): Promise<AgentRun[]>;
+  getAgentTrace(run?: string): Promise<AgentTraceData>;
+  runAgent(event?: string): Promise<{ id: string }>;
+  stopAgent(id: string): Promise<{ ok: boolean }>;
 }
 
 export const hostedReplayBuild = import.meta.env.VITE_SOONY_HOSTED_REPLAY === "1";
@@ -181,6 +212,19 @@ class HttpDashboardApi implements DashboardApi {
   async getMeta() {
     return {};
   }
+  getAgentRuns() {
+    return json<AgentRun[]>("/api/agents/runs", { cache: "no-store" });
+  }
+  getAgentTrace(run?: string) {
+    const query = run ? `?run=${encodeURIComponent(run)}` : "";
+    return json<AgentTraceData>(`/api/agents/trace${query}`, { cache: "no-store" });
+  }
+  runAgent(event = "data_drop") {
+    return json<{ id: string }>("/api/agents/run", { method: "POST", body: JSON.stringify({ event }) });
+  }
+  stopAgent(id: string) {
+    return json<{ ok: boolean }>("/api/agents/stop", { method: "POST", body: JSON.stringify({ id }) });
+  }
 }
 
 export class MockDashboardApi implements DashboardApi {
@@ -196,6 +240,12 @@ export class MockDashboardApi implements DashboardApi {
   async dismissDrop() { return { ok: true as const }; }
   async resetDemo() { return { ok: true as const }; }
   async getMeta() { return { mode: "static mock snapshot" }; }
+  async getAgentRuns() {
+    return [{ id: "mock-art-book", event: "art_book_shortfall", status: "completed", cost: 0, harness: { ok: true, violations: [] } }];
+  }
+  async getAgentTrace() { return { steps: [], approvals_pending: [] }; }
+  async runAgent() { return { id: "mock-art-book" }; }
+  async stopAgent() { return { ok: true }; }
 }
 
 const STATIC_STORAGE_KEY = "soony-static-sample-v2";
@@ -326,6 +376,18 @@ export class StaticDashboardApi implements DashboardApi {
   async getMeta() {
     return { mode: "Static sample replay" };
   }
+  async getAgentRuns() {
+    return [{ id: "recorded-art-book", event: "art_book_shortfall", status: "completed", cost: 0.057892, started: "2026-11-21T15:59:00+01:00", finished: "2026-11-21T16:00:12+01:00", harness: { ok: true, violations: [] } }];
+  }
+  async getAgentTrace() {
+    try {
+      const response = await fetch("/snapshot/agent_run.json", { cache: "no-store" });
+      if (response.ok) return response.json() as Promise<AgentTraceData>;
+    } catch {}
+    return { steps: [], approvals_pending: [] };
+  }
+  async runAgent() { return { id: "recorded-art-book" }; }
+  async stopAgent() { return { ok: true }; }
 }
 
 const search = new URLSearchParams(window.location.search);
