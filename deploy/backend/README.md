@@ -8,7 +8,13 @@ Use the protected live link in [the repo inbox](../../coord/INBOX.md) and sign i
 
 By default the Mac service runs the case in dry-run mode. **Process drop** applies the staged files. Under **Agents**, select a game-card supplier thread to simulate a reply and see its effect on the next action.
 
-The operator can set `"SOONY_MAC_MAIL_MODE": "live"` in the private `config.json` and restart the LaunchAgent to use the registered team mailbox. Live mode reads the release case data and stores operational mail in `live-mail/soony.db`, separately from the saved replay. It uses the existing private `mail-history.json` credentials and restricts recipients to the hackathon supplier domain. Supplier replies are polled read-only. The **Live supplier threads** view shows dispatch, matched replies and decisions. Set `"CHASER_AUTO_SEND": "0"` and restart to pause automatic dispatch, or remove `SOONY_MAC_MAIL_MODE` and restart to restore replay. Dock release, purchasing and other commitments still need PP-07 approval.
+The operator can set `"SOONY_MAC_MAIL_MODE": "live"` in the private `config.json` and restart the LaunchAgent to use the registered team mailbox. Live mode stores operational mail in `live-mail/soony.db`, separately from the saved replay. It uses the existing private `mail-history.json` credentials and restricts recipients to the hackathon supplier domain. Supplier replies are polled read-only. The **Live supplier threads** view shows dispatch, matched replies and decisions. Set `"CHASER_AUTO_SEND": "0"` and restart to pause automatic dispatch, or remove `SOONY_MAC_MAIL_MODE` and restart to restore replay. Dock release, purchasing and other commitments still need PP-07 approval.
+
+## Automatic portal updates
+
+Put the existing team API token in `live-mail/portal-sync/.soony_token` in the private Mac workspace with owner-only permissions. The live worker checks the official inventory every two minutes when available. It verifies the downloaded bytes against the portal hashes and tests a new file set in a copy of the planning store. It publishes the verified snapshot, recalculates the forecast and uses the existing supplier recovery rules for newly exposed shortfalls. The existing approval gates apply.
+
+Live Manti shows the last portal check and any applied drop. The private `portal-sync/current` pointer and snapshots survive code releases. If a drop fails verification or the portal is unavailable, the worker serves the last accepted snapshot, or the bundled case data until the first successful check. Portal inputs and the token stay on the Mac. The team replay uses its packaged snapshot.
 
 For a request, post `murat-agent: live backend request` in [INBOX](../../coord/INBOX.md), with the behavior, affected page or API route, and code commit when available.
 
