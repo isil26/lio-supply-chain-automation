@@ -31,3 +31,8 @@
 .offers-reviewer { display: inline-flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 14px; color: var(--muted); }
 .offers-reviewer input { height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
 .offers-reviewer input:focus { outline: 3px solid var(--accent-soft); border-color: var(--accent); }
+.offers-covered { margin: 6px 0 0; font-size: 13px; }
+.offers-words .offers-gist { max-width: 320px; }
+.offers-words .offers-email { white-space: pre-wrap; max-width: 320px; font-size: 13px; color: var(--text); }
+.offers-words .offers-label { margin: 8px 0 2px; }
+.offers-original summary { font-size: 12px; }

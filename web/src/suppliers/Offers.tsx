@@ -20,7 +20,47 @@ type Deal = {
   list_price: number | null; conditions: string | null; excerpt: string | null; signer: string;
   status: "pending" | "approved" | "declined" | "changed" | "superseded"; decided_by: string | null; decided_at: string | null;
 };
-type Data = { deals: Deal[]; best: Deal[]; notes?: Record<string, string>; as_of?: string };
+type Data = { deals: Deal[]; best: Deal[]; notes?: Record<string, string>; as_of?: string; gaps?: Record<string, number> };
+type English = { english: string | null; summary: string | null; language: string | null; source: string; error?: string };
+
+// One line a manager reads in seconds, built from the offer's own numbers (Gülşah, 22 Nov).
+const STATE: Record<string, string> = { late: "Too late for the launch", unavailable: "Cannot supply", incomplete: "Offer is missing details",
+  expired: "Offer expired", superseded: "Replaced by a newer offer", approval_required: "Needs approval first" };
+function gist(d: Deal) {
+  const parts: string[] = [];
+  if (d.offer_state && STATE[d.offer_state]) parts.push(STATE[d.offer_state]);
+  if (d.quantity != null) parts.push(`${d.quantity.toLocaleString("en-US")} of ${d.needed.toLocaleString("en-US")} units`);
+  if (d.offer_kind === "freight") parts.push(`freight by ${d.carrier ?? "carrier"}`);
+  else if (d.unit_price != null) parts.push(`${d.unit_price} ${d.currency ?? ""} each${d.price_eur != null && d.currency !== "EUR" ? ` (≈ €${d.price_eur.toFixed(2)})` : ""}`);
+  if (d.total_eur != null) parts.push(`total ${eur(d.total_eur)}`);
+  if (d.eta || d.eta_text) parts.push(`arrives ${arrives(d)}`);
+  if (d.moq) parts.push(`minimum order ${d.moq.toLocaleString("en-US")}`);
+  if (d.incoterm) parts.push(d.incoterm);
+  if (d.proof) parts.push(`proof: ${d.proof}`);
+  return parts.join(" · ") || "No numbers in the reply yet.";
+}
+
+// "What they said": English gist first, the English text on request, the original language last.
+function Words({ d, example }: { d: Deal; example: boolean }) {
+  const [english, setEnglish] = useState<English | "loading" | null>(null);
+  const open = () => {
+    if (example || english) return;
+    setEnglish("loading");
+    fetch(`/api/deals/${d.id}/english`, { cache: "no-store" }).then((r) => r.ok ? r.json() : null)
+      .then((value) => setEnglish(value ?? { english: null, summary: null, language: null, source: "failed", error: "Translation could not be loaded." }))
+      .catch(() => setEnglish({ english: null, summary: null, language: null, source: "failed", error: "Translation could not be loaded." }));
+  };
+  const e = english && english !== "loading" ? english : null;
+  return <details className="offers-words" onToggle={(event) => (event.target as HTMLDetailsElement).open && open()}>
+    <summary>What they said</summary>
+    <p className="offers-gist"><strong>In short:</strong> {e?.summary ?? gist(d)}</p>
+    {english === "loading" && <p className="muted">Translating…</p>}
+    {e?.english && e.source === "translated" && <><p className="offers-label">In English{e.language ? ` (from ${e.language})` : ""}</p><p className="offers-email">{e.english}</p></>}
+    {e?.english && e.source === "original" && <p className="offers-email">{e.english}</p>}
+    {e?.error && <p className="muted">{e.error}</p>}
+    {d.excerpt && !(e?.source === "original") && <details className="offers-original"><summary>Original email</summary><p className="offers-email">{d.excerpt}</p></details>}
+  </details>;
+}
 
 // Suppliers are shown by name and country of origin, e.g. "Hwaseong Memory (South Korea)".
 const COUNTRY: Record<string, string> = {
@@ -63,6 +103,7 @@ export function Offers() {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [tab, setTab] = useState<string | null>(null);
+  const [showCovered, setShowCovered] = useState(false);
 
   async function load() {
     try {
@@ -115,7 +156,11 @@ export function Offers() {
   }
 
   if (!data) return null;
-  const materials = [...new Set(data.deals.map((d) => d.material))];
+  // Only parts still short after counted stock and inbound get a tab; the rest are listed as covered (Gülşah, 22 Nov).
+  const allMaterials = [...new Set(data.deals.map((d) => d.material))];
+  const short = (m: string) => !data.gaps || !(m in data.gaps) || (data.gaps[m] ?? 0) > 0;
+  const covered = allMaterials.filter((m) => !short(m));
+  const materials = showCovered ? allMaterials : allMaterials.filter(short);
   const current = tab && materials.includes(tab) ? tab : materials[0];
   const rows = data.deals.filter((d) => d.material === current);
   const best = data.best.filter((d) => d.material === current);
@@ -131,11 +176,16 @@ export function Offers() {
       {materials.length > 0 && <div className="offers-tabs" role="tablist" aria-label="Products">
         {materials.map((m) => {
           const all = data.deals.filter((d) => d.material === m);
+          const gap = data.gaps?.[m] ?? all[0].needed;
           return <button key={m} role="tab" aria-selected={m === current} className={m === current ? "is-on" : ""} onClick={() => setTab(m)}>
-            {product(m)} <span className="muted">{all[0].needed.toLocaleString("en-US")} short · {all.length} supplier{all.length === 1 ? "" : "s"}</span>
+            {product(m)} <span className="muted">{gap ? `${gap.toLocaleString("en-US")} short` : "covered"} · {all.length} supplier{all.length === 1 ? "" : "s"}</span>
           </button>;
         })}
       </div>}
+      {covered.length > 0 && <p className="offers-covered muted">
+        We need to buy {allMaterials.filter(short).length === 1 ? "1 part" : `${allMaterials.filter(short).length} parts`}. Not short, nothing to buy: {covered.map(product).join(", ")} (stock plus deliveries already on the way cover them).{" "}
+        <button className="link-button" onClick={() => setShowCovered(!showCovered)}>{showCovered ? "Hide their offers" : "Show their offers anyway"}</button>
+      </p>}
 
       {!example && data.deals.some(d => d.material === current && d.eligible && (d.status === "pending" || d.status === "changed")) &&
         <label className="offers-reviewer">Reviewed by <input ref={nameRef} placeholder="Your name" value={reviewer} maxLength={80} autoComplete="name" onChange={event => setReviewer(event.target.value)} /></label>}
@@ -163,7 +213,7 @@ export function Offers() {
                 <th scope="row">{example ? country(d) : d.supplier}{d.best ? <span className="offers-tag">Best</span> : null}
                   {d.conditions && <p className="offers-cond">{d.conditions}</p>}
                   {!example && d.required_by && <p className="muted small-text">Required by {when(d.required_by)}</p>}
-                  {d.excerpt && <details><summary>{example ? "What they said" : "Their words"}</summary><p>{d.excerpt}</p></details>}
+                  {(d.excerpt || d.quantity != null) && <Words d={d} example={example}/>}
                 </th>
                 <td className="num">{d.quantity?.toLocaleString("en-US") ?? "–"}<span className="muted"> / {d.needed.toLocaleString("en-US")}</span></td>
                 <td className="num">{d.offer_kind === "freight" ? "Freight service" : unit(d)}{d.list_price != null && d.unit_price != null && d.unit_price > d.list_price && <span className="muted"> (contract {d.list_price})</span>}</td>
