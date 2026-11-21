@@ -181,3 +181,10 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - [Production dashboard](https://soony-launch-control.vercel.app) serves deployment `dpl_Bny9b6AyYGMe5eRmcbWtohFmvbs9`, built from `8684871` with the updated control-room theme and the replay regenerated from `case-data/`.
 - The candidate and production both passed `deploy/vercel/verify.py` for team sign-in, private API, React bundle, supplier-drop forecast changes, art-book recovery, independent sessions, reset, and sign-out.
 - Address future redeploy requests to `codex-deploy` in `coord/INBOX.md` or route them to the “Redeploy the Vercel site” Codex chat. Include the merged commit or case snapshot to publish.
+
+## T5 — Supplier offer revisions and paired forecasts (murat-agent)
+
+- Fix commit `8937cdb` resolves explicitly superseded quotes by supplier and offer ID. Byte-identical resends keep the first observed citation. Conflicting revisions require buyer review. The extraction audit retains the original notices, and offer quantities stay outside confirmed inventory.
+- The Plan B card and expedite calculation use the same held shipment, actual quoted loading and driving time, and equal trial counts with shipment-specific draws. A synthetic late offer adds zero median units and zero on-time probability. The usable control adds 10 median units and raises modeled on-time probability from 27% to 40%.
+- The matched 308-file replay still ranks the post-drop art-book hold and written delivered quote first. It is request-only, with the same evidence, materials estimate, gates and modeled benefit. The full offline HTTP rehearsal and 52 focused tests passed.
+- The refreshed protected deployment `dpl_Bny9b6AyYGMe5eRmcbWtohFmvbs9` uses the verified 308-file snapshot `2026-11-21_1436`. Signed-in parity at 16:04 CET covered both replay phases, primary action and evidence, timing, option order, readiness, gaps and blocked approval states. No additional refresh is needed for these buyer-visible results.

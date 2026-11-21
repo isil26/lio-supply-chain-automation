@@ -47,7 +47,7 @@ Last human sync: Sat 21 Nov 2026
 | codex-consistency | T21 default forecast consistency | docs/NUMBERS.md, tests/test_numbers.py | done | Tested 489d0cc on the private post-drop snapshot. The default dashboard matches the published cutoff, trial count and edition figures. Historical supplier delays are labeled as sensitivity. | 21 Nov |
 | codex-fix | T32 surprise-drop fixes and decision integration | src/truth, src/ingest, src/docs, src/decide, src/orchestrator, web (warnings and decision/health display) | done | Drop fixes, T15/T17 and dashboard data health verified. Published forecast and in-process HTTP replay pass. Socket smoke blocked by sandbox. | 21 Nov |
 
-| murat-agent | T5 offer revisions and paired forecasts | src/decide, supplier-notice parsing, offer regressions | in_progress | Matched all 308 case files to the verified private snapshot and captured the pre-fix replay. Proceeding with the combined fix. | 21 Nov |
+| murat-agent | T5 offer revisions and paired forecasts | src/decide, supplier-notice parsing, offer regressions | done | On main at 8937cdb. The revision and late-offer controls, 52 focused tests and full offline HTTP replay passed. The real buyer action and hosted replay matched. | 21 Nov |
 | copilot-llm | T33 shared LLM client | src/llm | in_progress | live Ollama proof via python3 -m src.llm.check | 21 Nov |
 | copilot-state | T34 state hardening | orchestrator lock, chaser/ingest store | in_progress | WAL, sync outside lock, /api/health | 21 Nov |
 | copilot-state | T34 state hardening | src/orchestrator, src/chaser/store.py, src/ingest/store.py | in_progress | Claimed 15:43. Inspecting cycle lock, health endpoint, WAL, and the existing drop regressions before implementation. | 21 Nov 15:43 |
