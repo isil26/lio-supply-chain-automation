@@ -187,6 +187,27 @@
       ],
       "body_content_type": "text/plain",
       "body": "Dzień dobry Pani Agnieszko,\n\ndziękujemy za sprawdzenie pozycji 00010 zamówienia 4500318775. Przygotowujemy dyspozycję do zatwierdzenia przez uprawnionego kupca. Do tego czasu prosimy o utrzymanie uzgodnionej bezpłatnej rezerwacji 5 900 artbooków.\n\nCzy Warta Trans i magazyn mogą wstępnie zarezerwować termin bezpłatnie dla tej dostawy, bez przyjazdu po towar lub zaciągania zobowiązań? Jeśli tak, prosimy o najwcześniejsze przedziały załadunku i rozładunku w Hamburgu, datę i godzinę CET wygaśnięcia tej rezerwacji oraz jej numer. Jeżeli Warta ma już dla tej partii numer przydzielony przez DC-HAM, prosimy o przekazanie potwierdzenia z numerem rampy lub rezerwacji i oknem czasowym. Jeżeli jest to wyłącznie proponowane okno przewoźnika, prosimy je tak oznaczyć i podać, czego potrzebuje Hamburg, aby je potwierdzić.\n\nChodzi wyłącznie o artbooki. Decyzję o zwolnieniu dostawy podejmuje uprawniony dział zakupów Soony. Wysyłka i jakiekolwiek odpłatne czynności wymagają odrębnej pisemnej dyspozycji.\n\nPozdrawiamy\nZespół Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:19:35+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<010201a1ff8cba99-142b8a97-720d-4bf2-b3e5-f2c83def0284-000000@eu-west-1.amazonses.com>",
+      "chase_id": null,
+      "in_reply_to": "<soony-karton-5900-warta-provisional-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179527692796.61223.10451353623898573343@gmail.com>",
+        "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>",
+        "<soony-karton-5900-free-hold-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff724fdd-4eafc58e-1511-4a37-b66e-2467c710830a-000000@eu-west-1.amazonses.com>",
+        "<soony-karton-5900-existing-po-window-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff881d2c-4613eaef-d6cd-43ce-945e-203fd20400c3-000000@eu-west-1.amazonses.com>",
+        "<soony-karton-5900-warta-provisional-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nutrzymujemy bezpłatną rezerwację 5 900 artbooków do czasu wygaśnięcia naszej porannej oferty; dokładną godzinę CET nadal sprawdzam w dokumentacji oferty. Nie mamy obecnie potwierdzonej bezpłatnej rezerwacji terminu u Warta Trans ani rezerwacji rampy lub okna w DC-HAM dla tej partii.\n\nMogę zwrócić się do Warta Trans o niewiążące proponowane okno, lecz jego potwierdzenie będzie wymagało właściwej dyspozycji od Soony oraz uzgodnienia odbioru w Hamburg. Towar pozostaje w naszym magazynie i nie zostanie przekazany przewoźnikowi bez pisemnego zwolnienia dostawy.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
     }
   ]
 }
