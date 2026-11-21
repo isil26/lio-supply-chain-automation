@@ -389,6 +389,7 @@ def dashboard(con, *, include_action_history=False):
             include_history=include_action_history, demo=demo,
         ),
         "approval": approval, "options": actions, "blockedApprovals": blocked,
+        "pastDecisions": decision_effects.past(con),
         "drop": snapshot.get("drop"),
         "sync": snapshot.get("sync"), "dataHealth": health,
         "model": truth["model"], "dataQuality": truth["data_quality"],
@@ -885,6 +886,11 @@ def handler(loop):
                             return self.out({"error": constraint["nextAction"], "status": "blocked"}, 409)
                         if match[2] == "approve" and any(a["kind"] == "review_recovery" and a.get("optionId") == match[1] for a in active):
                             return self.out({"error": "The matched shipment reply changed the dock plan. Review launch recovery.", "status": "blocked"}, 409)
+                        already = decisions(con).get(match[1])
+                        if already == "approved":  # repeat request or Review after approval: keep the record, no side effect
+                            effects = get_state(con, decision_effects.KEY, {}) or {}
+                            return self.out({"ok": True, "approvalId": match[1], "status": "approved",
+                                             "effect": effects.get(match[1])})
                         try:
                             status = authorize(con, decision, match[2])
                         except PermissionError as exc:
@@ -895,7 +901,7 @@ def handler(loop):
                             chaser.activity(con, "Procurement", f'{decision["title"]}: {message}')
                         by = body.get("by")[:80].strip() if isinstance(body.get("by"), str) else None
                         delivery = mail = None
-                        if status == "approved":  # Gülşah: Approve sends the supplier email (src/chaser/option_mail.py)
+                        if match[2] == "approve" and status == "approved":  # only an explicit, first Approve sends (option_mail)
                             from src.chaser import option_mail
                             try:
                                 mail = option_mail.preview(con, decision)

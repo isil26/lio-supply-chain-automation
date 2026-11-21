@@ -46,6 +46,23 @@ class DecisionEffectTest(unittest.TestCase):
         self.assertIn("Karton Nowak", text)
         self.assertIn("Sat 23:00", text)
 
+    def test_past_keeps_details_and_reply_even_after_the_option_is_gone(self):
+        from src.decide import authorize
+        con = db()
+        con.execute("INSERT INTO chases(id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)"
+                    " VALUES('T9','SUP-1','Boise','b@suppliers.juliansibbing.de','en','s','awaiting reply','M',1,'b','d')")
+        con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES('T9','r','in','b@x','We can hold 500.','2026-11-21T23:30:00+00:00')")
+        con.commit()
+        option = dict(OPTION, id="opt9", title="Check Boise stock")
+        authorize(con, option, "approve")
+        decision_effects.record(con, option, "approved", "Gülşah", [], delivery={"status": "sent", "recipient": "b@x",
+                                "subject": "Hold", "body": "Hello", "chase_id": "T9"})
+        rows = decision_effects.past(con)
+        self.assertEqual([r["id"] for r in rows], ["opt9"])
+        self.assertEqual(rows[0]["effect"]["email"]["subject"], "Hold")
+        self.assertEqual(rows[0]["effect"]["reply"]["body"], "We can hold 500.")
+        self.assertEqual(decision_effects.past(con, days=0), [])
+
 
 if __name__ == "__main__":
     unittest.main()
