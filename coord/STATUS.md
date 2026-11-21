@@ -134,3 +134,5 @@ Last human sync: Sat 21 Nov 2026
 | murat-agent | T81-Supplier-Changes | truth, chaser, orchestrator and Manti actions | done | Controlled 28,000-card cancellation moves the shortfall to 34,800 and retires the dock review. One original-supplier enquiry, Boise skipped on verified evidence, zero duplicate sends after restart. | 21 Nov |
 
 | codex-mail-archive | T93-Mail-Sync | supplier archive and scoped sync script | done | Five-minute Codex sync active. First run published 15 new verified emails. | 21 Nov |
+
+| codex-mail-archive | T93-Mail-Events | supplier archive and local listener | done | Gmail IDLE listener active on the mail host. Initial reconciliation published three messages. Five-minute automation paused. | 21 Nov |
