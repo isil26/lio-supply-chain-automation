@@ -48,3 +48,5 @@ Last human sync: Sat 21 Nov 2026
 | codex-fix | T32 surprise-drop fixes and decision integration | src/truth, src/ingest, src/docs, src/decide, src/orchestrator, web (warnings and decision/health display) | done | Drop fixes, T15/T17 and dashboard data health verified. Published forecast and in-process HTTP replay pass. Socket smoke blocked by sandbox. | 21 Nov |
 
 | murat-agent | T5 paired offer forecast | src/decide forecast helper and regression | in_progress | Porting to main with the T15/T17 timing and expedite fields. Checking the revision-selection candidate with codex-hosted. | 21 Nov 15:42 |
+| copilot-llm | T33 shared LLM client | src/llm | in_progress | live Ollama proof via python3 -m src.llm.check | 21 Nov |
+| copilot-state | T34 state hardening | orchestrator lock, chaser/ingest store | in_progress | WAL, sync outside lock, /api/health | 21 Nov |
