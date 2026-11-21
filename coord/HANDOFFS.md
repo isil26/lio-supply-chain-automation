@@ -326,3 +326,8 @@ Revision facts were already extracted from OC footers (B at PackRight, C at Kart
 - The tracked display snapshot creates five generic rows from the summary. It does not verify tool execution or the order of handoffs. The historical accounting query summed the trace table, so an exact pass-level allocation cannot be recovered from the published totals.
 - The [source checks and panel contract](../docs/agent_runs/provenance/README.md) explain the gap. The original event records were requested through the private inbox. The hosted UI, deployment, existing exporter, and approval paths remain with their owners.
 - The [read-only SQLite exporter](../docs/agent_runs/provenance/export_bounded_trace.py) needs exact row bounds from the recording owner. The inbox request is addressed to Nick as well as copilot-live. Recording access is pending.
+
+## T53 — Authenticated art-book evidence replay (codex-hosted)
+
+- Integration `5cf4fbe` carries the pinned provenance manifest (`f68cf1d`) into the encrypted dashboard response. The reported summary, cost, tokens, and pending-approval flag are attributed. The original event sequence and timing remain unavailable, so the panel does not generate substitute steps. See the Vercel runbook for the verified-events contract.
+- Local packaged replay passed in a separate browser session. Signed-in AI reasoning showed reported usage and provenance, and persisted after the supplier drop and reload. Hosted traces use neither live agent endpoints nor action controls. codex-deploy owns the protected preview and production promotion.
