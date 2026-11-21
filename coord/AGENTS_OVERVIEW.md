@@ -1,55 +1,55 @@
-# AGENTS OVERVIEW — generated 2026-11-21T17:45+01:00 by overview-agent. Do not edit; run `python scripts/overview.py`.
-Machine-readable: `coord/agents_overview.json`. Head: `28c11d7` T78: flush server logs; note task ID collision to gülşah-agent [overview-agent]
+# AGENTS OVERVIEW — generated 2026-11-21T17:55+01:00 by overview-agent. Do not edit; run `python scripts/overview.py`.
+Machine-readable: `coord/agents_overview.json`. Head: `1de087f` coord: isil-agent takes over T54 secrets sweep and T56 fresh-machine run [isil-agent]
 
-**56 agents**: 41 done, 5 outdated, 3 in progress, 2 review, 2 unknown, 1 assigned, 1 awaiting original source, 1 released. 13 INBOX requests look unanswered. Hand-written project picture: `coord/OVERVIEW.md` (nick).
+**57 agents**: 41 done, 5 outdated, 4 in progress, 2 review, 2 unknown, 1 assigned, 1 awaiting original source, 1 released. 13 INBOX requests look unanswered. Hand-written project picture: `coord/OVERVIEW.md` (nick).
 
 | Agent | State | Current task | Last activity | Last commit | Attention |
 |---|---|---|---|---|---|
-| codex-deploy | in_progress | T19-Redeploy production dashboard | 3 min ago | `d402aaf` T53: Record verified hosted AI reasoning deploymen |  |
-| codex-overseer | in_progress | Coordinate local product work with teammates | 2 h 02 min ago | `826a043` T32: Verify cancellation and stock replay fixes [c | 1 open request(s) to it, stale? |
+| isil-agent | in_progress | T54 secrets sweep + T56 fresh-machine run (T67 inbound option done) | 0 min ago | `1de087f` coord: isil-agent takes over T54 secrets sweep and |  |
+| codex-deploy | in_progress | T19-Redeploy production dashboard | 13 min ago | `d402aaf` T53: Record verified hosted AI reasoning deploymen |  |
+| codex-overseer | in_progress | Coordinate local product work with teammates | 2 h 13 min ago | `826a043` T32: Verify cancellation and stock replay fixes [c | 1 open request(s) to it, stale? |
 | codex-methods | in_progress | Product research and evaluations | unknown | - |  |
-| codex-access | assigned | T31 (assigned by nick) | 113 min ago | `596f79d` data: Add the verified team case snapshot [codex-a | 1 open request(s) to it, stale? |
-| codex-hosted | review | T53 authenticated recorded AI reasoning | 2 min ago | `f14798d` T53: Record production verification and original-e | 1 open request(s) to it |
+| codex-access | assigned | T31 (assigned by nick) | 2 h 03 min ago | `596f79d` data: Add the verified team case snapshot [codex-a | 1 open request(s) to it, stale? |
+| codex-hosted | review | T53 authenticated recorded AI reasoning | 12 min ago | `f14798d` T53: Record production verification and original-e | 1 open request(s) to it |
 | Copilot | review | T6 UI prototype (mock data) | unknown | - | 2 open request(s) to it |
-| overview-agent | outdated | T78 team overview digest | 0 min ago | `28c11d7` T78: flush server logs; note task ID collision to  |  |
-| murat-agent | awaiting original source | T53-Trace art-book provenance | 3 min ago | `d0d6a83` T53: Route recording request to copilot-live [mura | 1 open request(s) to it |
-| codex-replay | unknown | - | 2 h 57 min ago | `7bae579` T7: Route local OCR replay finding to T9 [codex-re |  |
-| Copilot #3 | unknown | - | 2 h 59 min ago | - |  |
+| overview-agent | outdated | T78 team overview digest | 10 min ago | `4490eb9` T78: refresh agents overview (56 agents, 3 in prog |  |
+| murat-agent | awaiting original source | T53-Trace art-book provenance | 13 min ago | `d0d6a83` T53: Route recording request to copilot-live [mura | 1 open request(s) to it |
+| codex-replay | unknown | - | 3 h 08 min ago | `7bae579` T7: Route local OCR replay finding to T9 [codex-re |  |
+| Copilot #3 | unknown | - | 3 h 09 min ago | - |  |
 | Codex #3 | outdated | T9 technical depth | unknown | - |  |
 | copilot-planner | outdated | T47d planner option ids + summary + chaser draft reach | unknown | - |  |
 | copilot-pack | outdated | T73 pack-out optimizer + numbered allocation | unknown | - |  |
 | copilot-gate2 | outdated | T72b artwork revision extraction -> gate HUMAN on sleeve | unknown | - |  |
-| gülşah-agent | done | T71 live agent map | 0 min ago | `467d895` Merge branch 'main' of https://github.com/isil26/l | 1 open request(s) to it |
-| mail-agent | done | T78 automatic sending | 10 min ago | - |  |
-| copilot-gate | done | T72 Release Gate | 39 min ago | - |  |
-| Codex | done | T5 decisions, T7 live integration and replay, T8 submission | 43 min ago | `952b5ed` autosync: 5 files [nick] | 2 open request(s) to it |
-| leo-claude | done | T6 redesign: Manti by Lio dark dashboard + supply map | 44 min ago | `c42a2e0` coord: deploy request for Manti redesign and behin | 2 open request(s) to it |
-| copilot-triage | done | T67 event taxonomy + materiality triage | 53 min ago | - |  |
-| copilot-viz | done | T71 live agent visualization + Present mode | 53 min ago | - |  |
-| copilot-claims | done | T69 money on the table | 57 min ago | - |  |
-| copilot-loop2 | done | T41b trace endpoint, German notice citation | 57 min ago | - |  |
-| isil-agent | done | T67 inbound expedite option | 67 min ago | `3c03270` T67: Draft a customs-documents request to the air- |  |
-| copilot-fix2 | done | T47b fix live eval failures (loops, citations, briefer policy) | 75 min ago | - |  |
-| copilot-loop | done | T41 autonomy loop + agent APIs | 80 min ago | - |  |
-| copilot-reader | done | T63 reader follow-up: mandatory vision for configured scans + handwrit | 83 min ago | - |  |
-| copilot-roles | done | T64 reply interpreter + T65 briefer | 87 min ago | - |  |
-| copilot-trace | done | T44 agent trace panel | 87 min ago | - |  |
-| copilot-tools | done | T39 agent tool layer | 92 min ago | - |  |
-| copilot-state | done | T34 state hardening | 98 min ago | `cdf97bf` autosync: 1 files [nick] |  |
-| copilot-live | done | T38b make live agent path real, first live run with gpt-4.1-mini | 103 min ago | - |  |
-| copilot-know | done | T45 knowledge pack + role cards | 108 min ago | - |  |
-| copilot-harness | done | T46 guard harness + golden evals | 108 min ago | - |  |
-| copilot-agents | done | T40 multi-agent team | 113 min ago | - |  |
-| copilot-runtime | done | T38 multi-agent runtime | 119 min ago | - |  |
-| copilot-sim | done | T42 simulated supplier agents | 119 min ago | - |  |
-| copilot-llm | done | T33 shared LLM client | 2 h 02 min ago | - |  |
-| codex-consistency | done | T21 default forecast consistency | 2 h 09 min ago | `544eb90` T21: Record forecast drift verification [codex-con |  |
-| copilot-chaser | done | T16 chaser scoring, R1 templates, validate_draft, ladder | 2 h 14 min ago | `ee01397` T16: chaser reply scoring, R1 templates, draft gua |  |
-| copilot-ui | done | T10 static replay | 2 h 29 min ago | - |  |
-| codex-sens | done | T11 readiness sensitivity | 2 h 36 min ago | `da78e91` T11 sensitivity, e2e tests, coord updates [codex-s |  |
-| codex-e2e | done | T12 demo hardening | 2 h 36 min ago | `da78e91` T11 sensitivity, e2e tests, coord updates [codex-s |  |
-| copilot-deck | done | T8 pitch deck | 2 h 51 min ago | `e979a50` T8: 6-slide pitch deck and speaker notes [copilot- |  |
-| Copilot #2 | done | T4 supplier chaser implementation | 3 h 29 min ago | - | 1 open request(s) to it |
+| Codex | done | T5 decisions, T7 live integration and replay, T8 submission | 2 min ago | `387bde0` autosync: 1 files [nick] | 2 open request(s) to it |
+| gülşah-agent | done | T71 live agent map | 8 min ago | `82cfa9b` T78: remove per-cycle cap, keep anti-spam (cooldow | 1 open request(s) to it |
+| mail-agent | done | T78 automatic sending | 20 min ago | - |  |
+| copilot-gate | done | T72 Release Gate | 49 min ago | - |  |
+| leo-claude | done | T6 redesign: Manti by Lio dark dashboard + supply map | 55 min ago | `c42a2e0` coord: deploy request for Manti redesign and behin | 2 open request(s) to it |
+| copilot-triage | done | T67 event taxonomy + materiality triage | 63 min ago | - |  |
+| copilot-viz | done | T71 live agent visualization + Present mode | 63 min ago | - |  |
+| copilot-claims | done | T69 money on the table | 67 min ago | - |  |
+| copilot-loop2 | done | T41b trace endpoint, German notice citation | 67 min ago | - |  |
+| copilot-fix2 | done | T47b fix live eval failures (loops, citations, briefer policy) | 85 min ago | - |  |
+| copilot-loop | done | T41 autonomy loop + agent APIs | 90 min ago | - |  |
+| copilot-reader | done | T63 reader follow-up: mandatory vision for configured scans + handwrit | 93 min ago | - |  |
+| copilot-roles | done | T64 reply interpreter + T65 briefer | 97 min ago | - |  |
+| copilot-trace | done | T44 agent trace panel | 97 min ago | - |  |
+| copilot-tools | done | T39 agent tool layer | 102 min ago | - |  |
+| copilot-state | done | T34 state hardening | 108 min ago | `cdf97bf` autosync: 1 files [nick] |  |
+| copilot-live | done | T38b make live agent path real, first live run with gpt-4.1-mini | 113 min ago | - |  |
+| copilot-know | done | T45 knowledge pack + role cards | 118 min ago | - |  |
+| copilot-harness | done | T46 guard harness + golden evals | 118 min ago | - |  |
+| copilot-agents | done | T40 multi-agent team | 2 h 03 min ago | - |  |
+| copilot-runtime | done | T38 multi-agent runtime | 2 h 09 min ago | - |  |
+| copilot-sim | done | T42 simulated supplier agents | 2 h 09 min ago | - |  |
+| copilot-llm | done | T33 shared LLM client | 2 h 12 min ago | - |  |
+| codex-consistency | done | T21 default forecast consistency | 2 h 19 min ago | `544eb90` T21: Record forecast drift verification [codex-con |  |
+| copilot-chaser | done | T16 chaser scoring, R1 templates, validate_draft, ladder | 2 h 25 min ago | `ee01397` T16: chaser reply scoring, R1 templates, draft gua |  |
+| copilot-ui | done | T10 static replay | 2 h 39 min ago | - |  |
+| codex-sens | done | T11 readiness sensitivity | 2 h 46 min ago | `da78e91` T11 sensitivity, e2e tests, coord updates [codex-s |  |
+| codex-e2e | done | T12 demo hardening | 2 h 46 min ago | `da78e91` T11 sensitivity, e2e tests, coord updates [codex-s |  |
+| copilot-deck | done | T8 pitch deck | 3 h 01 min ago | `e979a50` T8: 6-slide pitch deck and speaker notes [copilot- |  |
+| Copilot #2 | done | T4 supplier chaser implementation | 3 h 39 min ago | - | 1 open request(s) to it |
 | Codex #2 | done | T2 doc extraction (OC pdf, delivery-note images, notices, contracts) | unknown | - | 2 open request(s) to it |
 | codex-truth | done | T9 technical depth | unknown | - |  |
 | codex-hunter | done | T13 hidden findings hunt | unknown | - |  |
@@ -60,23 +60,22 @@ Machine-readable: `coord/agents_overview.json`. Head: `28c11d7` T78: flush serve
 | copilot-fix3 | done | T47c fix live eval failures via replay (stop_check bound, citation, nu | unknown | - |  |
 | sonnet-pack | done | T73 pack-out optimizer rebuilt on truth.readiness | unknown | - |  |
 | sonnet-gate | done | T72b artwork revision in Release Gate | unknown | - |  |
-| nick | released | stopped working on T71 visualization (handed over) | 0 min ago | `8a62f6b` Merge branch 'main' of https://github.com/isil26/l |  |
-| Nick (human) | unknown | - | 2 h 58 min ago | `bdea665` T8: frozen number set; claim T9/T10 |  |
-| Murat (human) | unknown | - | 3 h 00 min ago | `181bb19` T7: Record main deployment and UI handoff |  |
+| sonnet-wire | done | T74 register Release Gate + packplan as agent tools | unknown | - |  |
+| nick | released | stopped working on T71 visualization (handed over) | 11 min ago | `8a62f6b` Merge branch 'main' of https://github.com/isil26/l |  |
+| Nick (human) | unknown | - | 3 h 09 min ago | `bdea665` T8: frozen number set; claim T9/T10 |  |
+| Murat (human) | unknown | - | 3 h 10 min ago | `181bb19` T7: Record main deployment and UI handoff |  |
 
 ## Needs attention
 - **codex-overseer** (in_progress)
   - Open request from nick (INBOX line 157): please take these OPEN tasks (details in coord/OPEN_TASKS.md; claim by adding your row to coord/TASKS.md and STATUS.md): T50 watcher: every 10 min run `python3 
   - in progress but no activity for over 90 min (last Sat 15:42)
   - T50 assigned by nick, not acknowledged on the board
-  - T54 assigned by nick, not acknowledged on the board
   - T58 assigned by nick, not acknowledged on the board
 - **codex-methods** (in_progress)
   - in progress, but no commit, INBOX line or timed STATUS update found: likely stale
 - **codex-access** (assigned)
   - Open request from nick (INBOX line 161): please take these OPEN tasks (details in coord/OPEN_TASKS.md; claim by adding your row to coord/TASKS.md and STATUS.md): T56 fresh-clone run in a temp dir follo
   - in progress but no activity for over 90 min (last Sat 15:51)
-  - T56 assigned by nick, not acknowledged on the board
   - T25 assigned by nick, not acknowledged on the board
   - T31 assigned by nick, not acknowledged on the board
 - **codex-hosted** (review)
@@ -98,15 +97,15 @@ Machine-readable: `coord/agents_overview.json`. Head: `28c11d7` T78: flush serve
   - STATUS line 102 says 'in_progress' for T73, but TASKS.md says done (sonnet-pack): outdated row
 - **copilot-gate2** (outdated)
   - STATUS line 103 says 'in_progress' for T72b, but TASKS.md says done (sonnet-gate): outdated row
+- **Codex** (done)
+  - Open request from Codex (INBOX line 9): The ingestion replay test fails on main because commit 2d11f1c assigned the same synthetic PO ID to both fixtures. Please give the modern fixture a distinct syn
+  - Open request from Copilot #3 (INBOX line 26): The React build is complete in web/dist, but T7 still serves it at /react and control-room.html at /live. Please make web/dist the default / route and keep cont
+  - STATUS line 17 says 'in_progress' for T2, but TASKS.md says done (Codex #2): outdated row
 - **gülşah-agent** (done)
   - Open request from nick (INBOX line 190): copilot-viz (T71) is extending web/src/agents/* (agent graph, tool-call stream, Present mode) using your design tokens; please avoid editing web/src/agents/*. I
   - STATUS line 71 still says 'in_progress' for 'T28 UI taste + accessibility pass' but the agent moved on
 - **mail-agent** (done)
   - STATUS line 87 still says 'in_progress' for 'T26 mail agent: send approved supplier emails from' but the agent moved on
-- **Codex** (done)
-  - Open request from Codex (INBOX line 9): The ingestion replay test fails on main because commit 2d11f1c assigned the same synthetic PO ID to both fixtures. Please give the modern fixture a distinct syn
-  - Open request from Copilot #3 (INBOX line 26): The React build is complete in web/dist, but T7 still serves it at /react and control-room.html at /live. Please make web/dist the default / route and keep cont
-  - STATUS line 17 says 'in_progress' for T2, but TASKS.md says done (Codex #2): outdated row
 - **leo-claude** (done)
   - Open request from nick (INBOX line 159): please take these OPEN tasks (details in coord/OPEN_TASKS.md; claim by adding your row to coord/TASKS.md and STATUS.md): T48 browser QA of the live demo (use yo
   - Open request from nick (INBOX line 190): copilot-viz (T71) is extending web/src/agents/* (agent graph, tool-call stream, Present mode) using your design tokens; please avoid editing web/src/agents/*. I
@@ -146,8 +145,9 @@ Machine-readable: `coord/agents_overview.json`. Head: `28c11d7` T78: flush serve
 - T71 has 3 rows with 3 different titles in TASKS.md (re-owned or ID reused; last row wins (lines 93, 94, 101).
 - T73 has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins (lines 97, 99).
 - T72b has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins (lines 98, 100).
+- T74 has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins (lines 102, 109).
 - T78 has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins (lines 107, 108).
-- 35 of the last 178 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership.
+- 38 of the last 184 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership.
 
 ## Unclaimed open tasks
 - T35: Triage agent (orchestrator-workers, closed tool whitelist, <=3 rounds, falls back to fixed order)
