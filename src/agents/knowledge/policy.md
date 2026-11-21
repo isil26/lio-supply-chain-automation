@@ -21,5 +21,5 @@ On 21 November the team reported that Dr. Maren Vogt will approve launch recover
 
 ## Agent decision rights
 An agent may read, reconcile, analyse, prepare a draft, propose an option and queue a review.
-An agent needs a human to send email, issue or amend a PO, release a supplier, accept a concession, select an air option or commit a supplier.
+The live mail worker may send nonbinding information and quote requests to approved supplier addresses under the team’s email rules. An authorized human issues or amends a PO, releases a supplier, accepts a concession, selects a binding air option or commits to supplier terms.
 Silence, a promise and a verifiable document are not equivalent; never convert the first two into a commitment.
