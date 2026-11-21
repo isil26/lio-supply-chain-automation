@@ -2,9 +2,10 @@
 
 import csv
 import hashlib
+from io import StringIO
 import json
 import os
-from contextlib import closing
+from contextlib import closing, redirect_stderr
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -83,6 +84,13 @@ class Mirror:
         with patch.object(orchestrator, "ROOT", self.folder):
             self.loop.cycle()
         return self.snapshot()
+
+    def background_refresh(self):
+        # Stop after one iteration while retaining the server's real error handling.
+        with patch.object(self.loop.trigger, "wait", side_effect=lambda _: self.loop.stop.set()):
+            with redirect_stderr(StringIO()) as stderr:
+                self.loop.background()
+        return any(line.startswith("Pipeline: ") for line in stderr.getvalue().splitlines()), self.snapshot()
 
     def snapshot(self):
         with closing(connect(self.db)) as con:
@@ -167,6 +175,14 @@ class DropTests(unittest.TestCase):
         self.assertEqual(truth["editions"][PRODUCT]["p50"], 60)
         self.assertFalse(ui["options"])
         self.assertEqual([(event["file"], event["action"]) for event in ui["drop"]["changes"]], [(SHIP, "removed")])
+
+    def test_empty_stock_upload_retains_last_good_forecast(self):
+        self.mirror.put(STOCK, b"")
+        raised, (ui, truth, _, _) = self.mirror.background_refresh()
+        self.assertTrue(raised)
+        self.assertIn(f"{STOCK}: CSV has no header", ui["sync"]["error"])
+        self.assertEqual(truth, self.base)
+        self.assertEqual(ui["options"], self.base_ui["options"])
 
     def test_changed_bytes_at_same_path_replace_previous_rows(self):
         self.mirror.stock("2026-11-20", [("LOT-A", 10)])

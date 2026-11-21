@@ -1,12 +1,9 @@
 """Probe observed failures offline. Run from repo root with PYTHONPATH=. python tests/drops/audit_drops.py."""
 
-from contextlib import redirect_stderr
 from email import policy
 from email.message import EmailMessage
-from io import StringIO
 import json
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
 
 from openpyxl import Workbook
 from PIL import Image, ImageDraw, ImageFont
@@ -31,7 +28,7 @@ def pdf(path, *lines):
         commands.append(f"<{text}> Tj T*")
     stream = DecodedStreamObject()
     stream.set_data((" ".join(commands) + " ET").encode("ascii"))
-    page[NameObject("/Contents")] = stream
+    page[NameObject("/Contents")] = writer._add_object(stream)
     writer.write(path)
     writer.close()
 
@@ -93,22 +90,20 @@ def run(label, mutate):
         mirror = Mirror(folder)
         baseline_ui, baseline, _, _ = mirror.refresh()
         mutate(mirror)
-        crash = False
-        # Run exactly one real background iteration, including its error publication.
-        with patch.object(mirror.loop.trigger, "wait", side_effect=lambda _: mirror.loop.stop.set()):
-            with redirect_stderr(StringIO()) as stderr:
-                mirror.loop.background()
-                crash = bool(stderr.getvalue())
-        ui, truth, docs, orders = mirror.snapshot()
+        crash, (ui, truth, docs, orders) = mirror.background_refresh()
         print(json.dumps({
             "case": label, "cycle_exception": crash, "sync_error": ui["sync"]["error"],
             "sync_events": [event["action"] for event in ui["sync"].get("events", [])],
             "documents": [{"file": doc["source"], "fields": sorted(doc["fields"]),
-                           "error": doc.get("error"), "warnings": doc.get("warnings")} for doc in docs],
+                           "error": doc.get("error"), "warnings": doc.get("warnings"),
+                           "review": doc.get("review_reasons")} for doc in docs],
             "activity_warnings": [event["tool"] for event in ui["activity"] if event["type"] == "warning"],
             "issues": [issue["kind"] for issue in truth["issues"] if issue["kind"]],
             "on_hand": truth["parts"][PART]["on_hand"], "gap": truth["parts"][PART]["shortfall"],
-            "p50": truth["editions"][PRODUCT]["p50"], "forecast_changed": truth["editions"] != baseline["editions"],
+            "p50": truth["editions"][PRODUCT]["p50"], "forecast_changed": any(
+                truth["editions"][PRODUCT][key] != baseline["editions"][PRODUCT][key]
+                for key in ("p10", "p50", "p90", "probability")
+            ),
             "options_changed": ui["options"] != baseline_ui["options"],
             "options": [option["kind"] for option in ui["options"]],
             "inbound": [[row["id"], row["eta"], row["quantity"]] for row in truth["inbound"]],

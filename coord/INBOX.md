@@ -91,15 +91,15 @@
              with con:
 --- a/web/src/api.ts
 +++ b/web/src/api.ts
-@@ -92,3 +92,3 @@
+@@ -93,3 +93,3 @@
    drop: { title: string; detail: string; time: string } | null;
--  sync?: { pendingDrop?: number; lastSync?: string; detail?: string };
-+  sync?: { error?: string | null; pendingDrop?: number; lastSync?: string; detail?: string };
+-  sync?: { pendingDrop?: number; lastSync?: string; detail?: string; mode?: string };
++  sync?: { error?: string | null; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string };
    model?: string;
 --- a/web/src/main.tsx
 +++ b/web/src/main.tsx
-@@ -195,2 +195,3 @@
- 
+@@ -202,2 +202,3 @@
+
 +      {data.sync?.error && <div className="error-banner" role="alert">{data.sync.error}</div>}
        {error && <div className="error-banner">{error}<button onClick={() => setError("")}>×</button></div>}
 --- a/src/docs/pipeline.py
@@ -120,7 +120,7 @@
  from collections import defaultdict
 +
 +from src.ingest.readers import decode_csv
- 
+
 @@ -35,3 +38,3 @@
              continue
 -        with path.open(encoding="utf-8-sig", newline="") as stream:
