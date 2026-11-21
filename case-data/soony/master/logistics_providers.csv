@@ -1,0 +1,5 @@
+carrier_id,name,city,country,modes
+LSP-01,Nordhav Shipping A/S,Copenhagen,DK,ocean
+LSP-02,Alpen Air Cargo GmbH,Munich,DE,air
+LSP-03,Sahyadri Freight Forwarders Pvt. Ltd.,Mumbai,IN,ocean
+LSP-04,Warta Trans Sp. z o.o.,Poznań,PL,road

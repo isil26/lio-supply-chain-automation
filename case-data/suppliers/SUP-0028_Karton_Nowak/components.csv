@@ -1,0 +1,6 @@
+component_id,description,category,share,unit_price,currency,lead_time_days,moq,primary,note
+CMP-GAM-004,Cover Sleeve Grand Heist 6 (USK/PEGI),Print & Packaging,0.6,0.06,EUR,21,50000,Y,
+CMP-GAM-005,Cover Sleeve Grand Heist 5 (USK/PEGI),Print & Packaging,1.0,0.06,EUR,21,50000,Y,
+CMP-GAM-008,"Art Book Grand Heist 6 (96 p, hardcover)",Print & Packaging,1.0,2.1,EUR,35,5000,Y,
+CMP-GAM-009,City Map Poster Grand Heist 6 (folded),Print & Packaging,1.0,0.22,EUR,21,20000,Y,
+CMP-GAM-011,Activation Code Leaflet,Print & Packaging,1.0,0.03,EUR,21,100000,Y,

@@ -18,7 +18,7 @@ npm --prefix web ci
 npm --prefix web run build
 ```
 
-Load the team’s cached portal mirror into `data/`, or provision `SOONY_TOKEN` through the team’s private channel and sync while the portal is reachable. Keep the mirror, OCR cache, snapshots and recording inside the private team workspace. The portal download does not require mailbox credentials.
+For a fresh checkout, initialize the local mirror from the [supplied snapshot](../case-data/) with `cp -R case-data data`. Run this when `data/` does not yet exist. For live portal updates, provision `SOONY_TOKEN` through the team’s private channel and sync while the portal is reachable. Keep the mirror, OCR cache, snapshots and recording inside the private team workspace. The portal download does not require mailbox credentials.
 
 ```sh
 python3 bridge/sync.py  # Only when refreshing inputs from the portal

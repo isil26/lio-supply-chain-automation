@@ -1,0 +1,5 @@
+component_id,description,category,share,unit_price,currency,lead_time_days,moq,primary,note
+CMP-GAM-003,Game Card Case (clear),Print & Packaging,0.6,1.38,CNY,56,50000,Y,
+CMP-GAM-004,Cover Sleeve Grand Heist 6 (USK/PEGI),Print & Packaging,0.4,0.3984,CNY,56,50000,N,
+CMP-GAM-007,"Collector's Box Grand Heist 6 (rigid, magnetic lid)",Print & Packaging,1.0,24.63,CNY,63,5000,Y,
+CMP-MAG-005,NdFeB Disc Magnet 4x1 (lid closure),Magnets,1.0,0.0,CNY,63,0,Y,"fitted by supplier into CMP-GAM-007; not ordered, received or stocked separately"

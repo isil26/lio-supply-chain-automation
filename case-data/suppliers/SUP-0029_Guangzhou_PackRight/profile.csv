@@ -1,0 +1,2 @@
+supplier_id,name,legal_name,category,country,city,lat,lon,currency,payment_terms,incoterm,supplier_since,status,qualification_status,contact_name,contact_email,phone,preferred_language,notes
+SUP-0029,Guangzhou PackRight,"Guangzhou PackRight Packaging Co., Ltd.",Print & Packaging,CN,Guangzhou,23.1291,113.2644,CNY,NET30,FOB Yantian,2019-09-01,active,qualified,Lin Hui,lin.hui.packright@suppliers.juliansibbing.de,+86 20 8200 1100,zh,

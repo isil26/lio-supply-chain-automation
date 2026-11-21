@@ -1,0 +1,2 @@
+supplier_id,name,legal_name,category,country,city,lat,lon,currency,payment_terms,incoterm,supplier_since,status,qualification_status,contact_name,contact_email,phone,preferred_language,notes
+SUP-0010,Hwaseong Memory,"Hwaseong Memory Co., Ltd.",Game Media,KR,Hwaseong,37.1995,126.8311,USD,NET45,FOB Busan,2019-01-01,active,qualified,Seo-yeon Kim,sy.kim.hwaseong-memory@suppliers.juliansibbing.de,+82 31 200 3300,ko,

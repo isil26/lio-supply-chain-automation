@@ -1,0 +1,4 @@
+component_id,description,category,share,unit_price,currency,lead_time_days,moq,primary,note
+CMP-GAM-003,Game Card Case (clear),Print & Packaging,0.4,1.52,CNY,70,20000,N,
+CMP-GAM-006,Steel Case Grand Heist 6,Collector's Items,1.0,21.01,CNY,70,10000,Y,
+CMP-GAM-010,"Statue ""The Getaway"" (die-cast, 18 cm)",Collector's Items,0.8,83.31,CNY,77,5000,Y,

@@ -1,0 +1,13 @@
+component_id,description,category,uom,abc_class,critical,drawing_rev
+CMP-GAM-001,Game Card 128 GB – Grand Heist 6,Game Media,PC,A,Y,A
+CMP-GAM-002,Game Card 64 GB – Grand Heist 5,Game Media,PC,A,N,A
+CMP-GAM-003,Game Card Case (clear),Print & Packaging,PC,C,N,A
+CMP-GAM-004,Cover Sleeve Grand Heist 6 (USK/PEGI),Print & Packaging,PC,B,Y,B
+CMP-GAM-005,Cover Sleeve Grand Heist 5 (USK/PEGI),Print & Packaging,PC,C,N,A
+CMP-GAM-006,Steel Case Grand Heist 6,Collector's Items,PC,B,N,A
+CMP-GAM-007,"Collector's Box Grand Heist 6 (rigid, magnetic lid)",Print & Packaging,PC,B,N,A
+CMP-GAM-008,"Art Book Grand Heist 6 (96 p, hardcover)",Print & Packaging,PC,B,N,A
+CMP-GAM-009,City Map Poster Grand Heist 6 (folded),Print & Packaging,PC,C,N,A
+CMP-GAM-010,"Statue ""The Getaway"" (die-cast, 18 cm)",Collector's Items,PC,A,N,A
+CMP-GAM-011,Activation Code Leaflet,Print & Packaging,PC,C,N,A
+CMP-MAG-005,NdFeB Disc Magnet 4x1 (lid closure),Magnets,PC,C,N,A

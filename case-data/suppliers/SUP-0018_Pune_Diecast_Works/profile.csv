@@ -1,0 +1,2 @@
+supplier_id,name,legal_name,category,country,city,lat,lon,currency,payment_terms,incoterm,supplier_since,status,qualification_status,contact_name,contact_email,phone,preferred_language,notes
+SUP-0018,Pune Diecast Works,Pune Diecast Works Pvt. Ltd.,Collector's Items,IN,Pune,18.5204,73.8567,INR,NET30,FOB Nhava Sheva,2026-08-01,active,conditional,Rohan Deshmukh,rohan.d.pune-diecast@suppliers.juliansibbing.de,+91 20 2600 1100,en,"Second source for the statue. Conditional release, see PP-07."

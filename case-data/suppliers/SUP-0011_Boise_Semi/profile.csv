@@ -1,0 +1,2 @@
+supplier_id,name,legal_name,category,country,city,lat,lon,currency,payment_terms,incoterm,supplier_since,status,qualification_status,contact_name,contact_email,phone,preferred_language,notes
+SUP-0011,Boise Semi,Boise Semiconductor Inc.,Game Media,US,Boise,43.615,-116.2023,USD,NET30,EXW Boise,2023-05-01,active,qualified,Megan Ortiz,m.ortiz.boise-semi@suppliers.juliansibbing.de,+1 208 362 0144,en,

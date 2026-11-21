@@ -1,0 +1,4 @@
+product_id,name,product_line,lifecycle,launch_date,plan_weekly_units,plants,std_cost_eur
+FG-GH5-STD,Grand Heist 5 – Standard Edition (game card),Grand Heist,running,2013-09-17,30000,DC-HAM,7.8
+FG-GH6-STD,Grand Heist 6 – Standard Edition (game card),Grand Heist,launch,2026-11-22,160000,DC-HAM,11.9
+FG-GH6-CE,Grand Heist 6 – Collector's Edition,Grand Heist,launch,2026-11-22,12000,DC-HAM,34.5

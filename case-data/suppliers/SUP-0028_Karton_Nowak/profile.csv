@@ -1,0 +1,2 @@
+supplier_id,name,legal_name,category,country,city,lat,lon,currency,payment_terms,incoterm,supplier_since,status,qualification_status,contact_name,contact_email,phone,preferred_language,notes
+SUP-0028,Karton Nowak,Karton Nowak Sp. z o.o.,Print & Packaging,PL,Poznań,52.4064,16.9252,EUR,NET30,DAP Hamburg,2021-01-01,active,qualified,Agnieszka Nowak,a.nowak.karton-nowak@suppliers.juliansibbing.de,+48 61 842 0101,pl,

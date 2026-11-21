@@ -22,7 +22,7 @@ On the same snapshot and cutoff, `python3 -m src.truth.sensitivity` uses histori
 
 ## Forecast drift check
 
-Run `DEMO_DATA_DIR=/path/to/2026-11-21_1436/soony-data python3 -m unittest discover -s tests -p test_numbers.py` from the repo root. The test runs the offline dashboard on the published snapshot and compares the launch cutoff and each edition’s target, P10, P50, P90, and target probability. The fingerprint hashes sorted relative POSIX paths as `path<TAB>file-sha256<LF>` lines, excluding hidden files and directories.
+Run `DEMO_DATA_DIR=case-data python3 -m unittest discover -s tests -p test_numbers.py` from the repo root. The test runs the offline dashboard on the published snapshot and compares the launch cutoff and each edition’s target, P10, P50, P90, and target probability. The fingerprint hashes sorted relative POSIX paths as `path<TAB>file-sha256<LF>` lines, excluding hidden files and directories.
 
 ## Component gaps (remaining need vs usable stock + inbound that can reach DC-HAM before 20:00)
 | Part | Need | SAP stock | Usable stock | Inbound counted | Gap | Reason |

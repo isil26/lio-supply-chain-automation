@@ -1,0 +1,2 @@
+supplier_id,name,legal_name,category,country,city,lat,lon,currency,payment_terms,incoterm,supplier_since,status,qualification_status,contact_name,contact_email,phone,preferred_language,notes
+SUP-0019,Dongguan Precision Housings,"Dongguan Precision Housings Co., Ltd.",Collector's Items,CN,Dongguan,23.0207,113.7518,CNY,NET30,FOB Yantian,2018-03-01,active,qualified,Chen Jie,chen.jie.dg-precision@suppliers.juliansibbing.de,+86 769 2200 8800,zh,
