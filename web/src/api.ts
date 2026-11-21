@@ -165,7 +165,7 @@ export type DashboardData = {
   approval: Approval | null;
   options?: Approval[];
   drop: { title: string; detail: string; time: string } | null;
-  sync?: { error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string };
+  sync?: { error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string; mailMode?: "live" | "dry-run" };
   documentReviews?: SourceReview[];
   dataHealth?: { filesSeen: number; filesParsed: number; needsReview: number; errors: number; lastSyncAgeSeconds: number | null };
   model?: string;

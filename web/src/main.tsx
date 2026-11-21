@@ -343,7 +343,7 @@ function App() {
           <a href="https://soony-manti-live.vercel.app/?mail=1" className="ghost-button">Open verified supplier mailbox</a>
         </div>}
         {data.mailHistory && <div className="actions">
-          <button className="ghost-button" aria-pressed={!mailView} onClick={() => openMail(false)}>Demo threads</button>
+          <button className="ghost-button" aria-pressed={!mailView} onClick={() => openMail(false)}>{data.sync?.mailMode === "live" ? "Live supplier threads" : "Demo threads"}</button>
           <button className="ghost-button" aria-pressed={mailView} onClick={() => openMail(true)}>Verified team mailbox</button>
         </div>}
         {mailView && <p className="muted">{data.mailHistory?.status === "ready"

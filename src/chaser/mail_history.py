@@ -43,7 +43,10 @@ def _candidates(inbox, mailbox, matches):
                 yield _email(body)
 
 
-def _thread(message, threads):
+def _thread(message, threads, sent_threads):
+    known = sent_threads.get(str(message["Message-ID"] or ""))
+    if known:
+        return threads.get(known)
     subject = str(message["Subject"] or "")
     match = THREAD_ID.search(subject)
     return threads.get(match[1]) if match else None
@@ -53,8 +56,8 @@ def _address(value):
     return parseaddr(str(value or ""))[1].casefold()
 
 
-def _belongs_to_sent(message, threads, sender):
-    thread = _thread(message, threads)
+def _belongs_to_sent(message, threads, sent_threads, sender):
+    thread = _thread(message, threads, sent_threads)
     return (thread and _address(thread["address"]).endswith("@" + DEFAULT_DOMAINS)
             and _address(message["From"]) == sender.casefold()
             and [_address(addr) for _, addr in getaddresses([str(message["To"] or "")])]
@@ -76,6 +79,10 @@ def sync(inbox, sent_folder, *, source_db, history_db, sender):
     """Import only supplier mail tied to a known Chaser thread and Sent record."""
     with closing(connect(source_db)) as source:
         threads = {row["id"]: dict(row) for row in source.execute("SELECT * FROM chases")}
+        sent_threads = {row["external_id"]: row["chase_id"] for row in source.execute("""
+            SELECT external_id,chase_id FROM messages WHERE side='out'
+              AND json_extract(transport,'$.mode') IN ('smtp','gmail')
+        """)}
         truth = get_state(source, "truth", {})
         options = get_state(source, "options", [])
     with closing(connect(history_db)) as history:
@@ -83,8 +90,8 @@ def sync(inbox, sent_folder, *, source_db, history_db, sender):
         with history:
             save_state(history, "truth", truth)
             save_state(history, "options", options)
-            for message in _candidates(inbox, sent_folder, lambda header: _belongs_to_sent(header, threads, sender)):
-                thread = _thread(message, threads)
+            for message in _candidates(inbox, sent_folder, lambda header: _belongs_to_sent(header, threads, sent_threads, sender)):
+                thread = _thread(message, threads, sent_threads)
                 body = message.get_body(preferencelist=("plain",))
                 if not thread or not body:
                     continue
@@ -100,7 +107,8 @@ def sync(inbox, sent_folder, *, source_db, history_db, sender):
                     thread["subject"], "awaiting reply", thread["material"], thread["qty"], thread["body"],
                     thread["deadline"], external_id))
                 metadata = {"from": str(message["From"]), "to": str(message["To"]), "subject": str(message["Subject"]),
-                            "messageId": external_id, "mode": "gmail", "status": "gmail_sent"}
+                            "messageId": external_id, "inReplyTo": str(message.get("In-Reply-To") or ""),
+                            "mode": "gmail", "status": "gmail_sent"}
                 history.execute("""INSERT OR IGNORE INTO messages(chase_id,external_id,side,sender,body,time,transport)
                                    VALUES(?,?,?,?,?,?,?)""",
                                 (thread["id"], external_id, "out", sender, text, _sent_at(message), json.dumps(metadata)))

@@ -1,4 +1,4 @@
-"""Serve and update the protected Soony demo from a dedicated Git clone."""
+"""Serve and update the protected Soony backend from a dedicated Git clone."""
 
 import argparse
 import hashlib
@@ -30,6 +30,7 @@ class Host:
         self.releases.mkdir(parents=True, exist_ok=True)
         self.marker = self.home / "release"
         self.env = {**os.environ, **json.loads((self.home / "config.json").read_text())}
+        self.live_mail = self.env.get("SOONY_MAC_MAIL_MODE") == "live"
         self.env.update({
             "GIT_TERMINAL_PROMPT": "0",
             "CHASER_REAL_SMTP": "0",
@@ -86,17 +87,33 @@ class Host:
 
     def start(self, sha, release, halted):
         env = {**self.env, "SOONY_RELEASE_SHA": sha}
-        self.process = subprocess.Popen([
-            sys.executable, "-m", "src.orchestrator", "--demo",
-            "--data", str(release / "case-data"), "--replay-dir", str(self.home / "replay"),
-            "--port", str(self.port),
-        ], cwd=release, env=env)
+        config = self.home / "mail-history.json"
+        args = [sys.executable, "-m", "src.orchestrator", "--data", str(release / "case-data"),
+                "--port", str(self.port)]
+        if self.live_mail:
+            settings = json.loads(config.read_text())
+            user, password = settings.get("user"), settings.get("password")
+            if not user or not password:
+                raise RuntimeError("The private team mail configuration is incomplete")
+            env.update({
+                "CHASER_REAL_SMTP": "1", "CHASER_SENDER": user, "CHASER_SMTP_USERNAME": user,
+                "CHASER_SMTP_PASSWORD": password, "CHASER_SMTP_HOST": "smtp.gmail.com", "CHASER_SMTP_PORT": "587",
+                "CHASER_ALLOWED_DOMAINS": "suppliers.juliansibbing.de", "CHASER_ALLOWED_RECIPIENTS": "",
+                "SOONY_IMAP_USER": user, "SOONY_IMAP_PASSWORD": password, "SOONY_IMAP_HOST": "imap.gmail.com",
+                "SOONY_IMAP_PORT": "993", "SOONY_MAIL_HISTORY_DB": str(self.home / "mail-history.db"),
+            })
+            args.extend(["--db", str(self.home / "live-mail" / "soony.db"), "--mail-history-config", str(config)])
+        else:
+            args.extend(["--demo", "--replay-dir", str(self.home / "replay")])
+        self.process = subprocess.Popen(args, cwd=release, env=env)
+        expected_mode = "live" if self.live_mail else "dry-run"
         for _ in range(START_TIMEOUT):
             if self.process.poll() is not None or halted.is_set():
                 break
             try:
                 with urlopen(f"http://127.0.0.1:{self.port}/api/dashboard", timeout=2) as rows:
-                    if json.load(rows).get("readiness"):
+                    dashboard = json.load(rows)
+                    if dashboard.get("readiness") and (dashboard.get("sync") or {}).get("mailMode") == expected_mode:
                         return
             except (URLError, TimeoutError, ValueError):
                 pass
@@ -116,7 +133,7 @@ class Host:
             raise
         self.current = sha
         self.marker.write_text(sha + "\n")
-        print(f"Serving commit {sha}", flush=True)
+        print(f"Serving commit {sha} with {'live' if self.live_mail else 'dry-run'} supplier mail", flush=True)
         self.stop(self.gateway)
         self.gateway = subprocess.Popen(["node", "deploy/backend/gateway.cjs"], cwd=release, env=self.env)
 
