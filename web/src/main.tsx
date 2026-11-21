@@ -384,6 +384,7 @@ function App() {
                 {plan && <section className="decision-analysis" id={`reply-${plan.id}`} aria-label="Supplier reply decision">
                   <strong>{plan.simulated ? "Simulated decision" : "Reply decision"} · {{
                     proposed: "Proposed", pending: "Pending details", approved: "Approved for follow-up", review: "Under review",
+                    no_launch_cover: "Excluded from launch coverage", supplier_hold: "Stock release blocked",
                   }[plan.status]}</strong>
                   <p><a style={{ color: "var(--text)" }} href={`?${mailView ? "mail=1&" : ""}thread=${encodeURIComponent(selectedThread.id)}#reply-${plan.id}`}>Decision {plan.id}</a></p>
                   {plan.shipmentId && plan.reportedEta && <p>{plan.shipmentId} · Reported ETA {etaDate.format(new Date(plan.reportedEta))} CET</p>}

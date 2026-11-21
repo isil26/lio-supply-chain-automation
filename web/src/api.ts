@@ -51,7 +51,7 @@ export type Activity = {
 
 export type ReplyPlan = {
   id: string;
-  status: "proposed" | "pending" | "approved" | "review";
+  status: "proposed" | "pending" | "approved" | "review" | "no_launch_cover" | "supplier_hold";
   simulated: boolean;
   nextAction: string;
   shipmentId?: string;

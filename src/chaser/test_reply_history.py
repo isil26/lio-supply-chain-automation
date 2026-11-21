@@ -177,6 +177,40 @@ class ReplyHistoryTests(unittest.TestCase):
                 self.assertNotIn("shipmentId", plan)
                 self.assertIn("hold expiry", plan["nextAction"])
 
+    def test_live_constraints_block_an_option_after_a_matched_reply(self):
+        from src.chaser.negotiate import compare
+        from src.orchestrator.__main__ import supplier_option_block
+
+        thread = {"material": "PART", "supplier_id": "SUP-TEST", "qty": 80}
+        cases = {
+            "We cannot make 80 units available in Hamburg before the launch deadline.": "no_launch_cover",
+            "The 80 units are on hold pending written confirmation of EXW.": "supplier_hold",
+            "Our 80 units cannot be made available by the 22 November cut-off.": "no_launch_cover",
+        }
+        for text, disposition in cases.items():
+            with self.subTest(disposition=disposition):
+                plan = plan_reply({}, thread, text)
+                self.assertEqual(plan["disposition"], disposition)
+                self.assertTrue(all(quote in text for quote in plan["evidence"]))
+        generic = plan_reply({}, thread, "We cannot provide a delivered quote before the deadline.")
+        self.assertNotIn("disposition", generic)
+
+        with closing(connect(self.path)) as con, con:
+            text = "Qty: 80. ETA 2026-11-22 08:00. The units are on hold pending written confirmation of EXW."
+            con.execute("""INSERT INTO messages(chase_id,external_id,side,sender,body,time,transport,parsed)
+                           VALUES('AB12','example','in','supplier@example.invalid',?,
+                           '2026-11-21T13:00:00+00:00','{"mode":"inbox"}','{"reply_plan":{"id":"existing"}}')""", (text,))
+            option = {"kind": "alternate", "material": "PART", "supplier_id": "SUP-TEST"}
+            self.assertIsNone(supplier_option_block(option, chaser.live_reply_constraints(con)))
+            con.commit()
+            chaser.reconcile_reply_constraints(con)
+            active = chaser.live_reply_constraints(con)
+            self.assertEqual(supplier_option_block(option, active)["disposition"], "supplier_hold")
+            self.assertEqual(active["SUP-TEST", "PART"]["id"], "existing")
+            report = compare(con, "2026-11-22T20:00:00+01:00")["materials"][0]
+            self.assertIsNone(report["pick"])
+            self.assertTrue(any("release is blocked" in reason for reason in report["ranking"][0]["reasons"]))
+
     def test_rejected_smtp_attempt_does_not_become_a_sent_email(self):
         with closing(connect(self.path)) as con, patch("src.chaser.smtplib.SMTP") as smtp:
             transport = smtp.return_value.__enter__.return_value

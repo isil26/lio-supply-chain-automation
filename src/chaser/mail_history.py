@@ -121,6 +121,7 @@ def sync(inbox, sent_folder, *, source_db, history_db, sender):
         )):
             chase_id = sent[str(message["In-Reply-To"])][0]
             chaser.receive(history, message, matched_thread_id=chase_id)
+        chaser.reconcile_reply_constraints(history)
         chaser.supplier_loop.advance(history, truth, options, scope="verified")
         with history:
             save_state(history, "mailCheck", {"status": "ready", "checkedAt": now()})
