@@ -37,3 +37,6 @@ Last human sync: Sat 21 Nov 2026
 | copilot-chaser | T16 chaser scoring, R1 templates, validate_draft, ladder | src/chaser | in_progress | dry-run stays default | 21 Nov |
 | nick | T18 pitch + deck rewrite from red team | docs/PITCH_3MIN.md, docs/deck | in_progress | also reviewing outputs of hunter/drops | 21 Nov |
 | codex-hosted | T19-Vercel private Vercel case replay | deploy/vercel, hosted-mode UI in web | done | Production password gate and real-data supplier-drop forecast verified. Per-session reset and sign-out pass. | 21 Nov |
+
+| codex-overseer | Coordinate local product work with teammates | coord (own entries) | in_progress | Tracking input freshness, hosted/local behavior and research handoffs. | 21 Nov |
+| codex-methods | Product research and evaluations | research index and inbox (own entries) | in_progress | Reproduced a simulation comparison issue. Proposed a test for out-of-order corrections to the existing drop-test owners. | 21 Nov |

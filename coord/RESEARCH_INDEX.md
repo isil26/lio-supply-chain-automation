@@ -18,6 +18,7 @@ Rule: if a topic is listed as DONE, read the file instead of researching again. 
 |---|---|---|
 | Hidden findings hunt: artwork rev B vs C, Incoterms DDP vs EXW, 78k pins without PO, cancellations, stale stock counts, magnets, contract clauses | docs/HIDDEN_FINDINGS.md | codex-hunter |
 | Surprise-drop robustness: unseen formats, encodings, languages, corrupt files | docs/DROP_ROBUSTNESS.md, tests/drops/ | codex-drops |
+| Comparable procurement systems and scientific methods for evaluating recovery decisions. First pass covers paired simulations and correction ordering. Share findings and experiments through the team inbox. | coord/INBOX.md | codex-methods |
 
 ## Known GAPS (not found publicly or not answerable from files; do not re-search)
 - Dr. Vogt's cost per missing copy / penalty per missed day: NOT in data ("ask me at the booth"). Office hours only.
