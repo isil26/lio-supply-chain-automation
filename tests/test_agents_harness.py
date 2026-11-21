@@ -54,6 +54,24 @@ class HarnessTests(unittest.TestCase):
         result = stop_check(trace)
         self.assertFalse(result["ok"])
 
+    def test_stop_check_counts_only_tool_calls_and_allows_45(self):
+        trace = [{"tool": "search_documents", "args": {"query": str(index)},
+                  "result": "{}"} for index in range(45)]
+        trace += [{"agent": "analyst", "model": "gpt", "result": "final"}] * 30
+        allowed = stop_check(trace)
+        trace.append({"tool": "get_document", "args": {"file": "extra.pdf"}, "result": "{}"})
+        blocked = stop_check(trace)
+        self.assertTrue(allowed["ok"])
+        self.assertFalse(blocked["ok"])
+
+    def test_citation_check_normalizes_repo_relative_paths(self):
+        trace = [{"tool": "search_documents", "result":
+                  '{"citations":[{"file":"receiving/DC-HAM/20261118_WZ-261116-473.jpg","page":1,"quote":"handwritten 8 000"}]}'}]
+        result = citation_check([{"text": "The receiving scan says handwritten 8 000.",
+                                  "file": "./WZ-261116-473.jpg",
+                                  "quote": "handwritten 8 000"}], trace)
+        self.assertTrue(result["ok"])
+
     def test_language_check_accepts_polish_and_rejects_missing_ask(self):
         good = language_check("Proszę potwierdzić ilość i dokument partii PO-4500318768.",
                               "SUP-0028")

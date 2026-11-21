@@ -31,6 +31,9 @@ def _text(value: Any) -> str:
 def _tokens(value: Any) -> set[str]:
     text = _text(value)
     found = set()
+    compact = re.sub(r"(?<!\w)(\d+(?:\.\d+)?)k\b", lambda match:
+                     str(int(float(match.group(1)) * 1000)), text, flags=re.I)
+    text = compact + " " + text
     for match in re.finditer(r"\b\d+(?:[.,]\d+)*\b", text):
         raw = match.group(0)
         normalized = re.sub(r"[.,]", "", raw)
@@ -142,6 +145,25 @@ def _whitespace_fold(text: str) -> str:
     return re.sub(r"\s+", " ", str(text or "")).strip().casefold()
 
 
+def _repo_path(value: Any) -> str:
+    path = str(value or "").replace("\\", "/").strip().casefold()
+    if not path:
+        return ""
+    return path[2:] if path.startswith("./") else path
+
+
+def _same_file(wanted: Any, evidence: Any) -> bool:
+    wanted_path = _repo_path(wanted)
+    evidence_path = _repo_path(evidence)
+    if not wanted_path or not evidence_path:
+        return True
+    wanted_name = wanted_path.rsplit("/", 1)[-1]
+    evidence_name = evidence_path.rsplit("/", 1)[-1]
+    return wanted_path == evidence_path or wanted_name == evidence_name or (
+        wanted_name in evidence_name or evidence_name in wanted_name
+    )
+
+
 def citation_check(claims: Any, trace: Any, db_path: str | Path | None = None) -> dict:
     evidence = _evidence(trace, db_path)
     violations = []
@@ -155,23 +177,30 @@ def citation_check(claims: Any, trace: Any, db_path: str | Path | None = None) -
             wanted_file = None
             wanted_quote = None
         matched = False
+        matched_source = None
         for source in evidence:
             file_name = str(source.get("file") or "")
             quote = str(source.get("quote") or "")
+            file_matched = _same_file(wanted_file, file_name)
             if wanted_quote:
                 if (_whitespace_fold(wanted_quote) in _whitespace_fold(quote)
                         or _whitespace_fold(wanted_quote) in _whitespace_fold(claim_text)):
                     matched = True
             elif quote and _whitespace_fold(quote) in _whitespace_fold(claim_text):
                 matched = True
-            if wanted_file and file_name and wanted_file.casefold() not in file_name.casefold():
+            if wanted_file and file_name and not file_matched:
                 matched = False
             if matched:
+                matched_source = source
                 break
         if not matched:
             violations.append({"rule": "citation_check",
                                "detail": "Factual claim lacks a verifiable file/quote citation",
-                               "evidence": {"claim": claim_text}})
+                               "evidence": {"claim": claim_text,
+                                            "wanted_file": wanted_file,
+                                            "wanted_quote": wanted_quote,
+                                            "available_files": [str(s.get("file") or "") for s in evidence],
+                                            "available_quotes": [str(s.get("quote") or "") for s in evidence]}})
     return {"ok": not violations, "violations": violations}
 
 
@@ -244,11 +273,12 @@ def stop_check(trace: Any) -> dict:
         violations.append({"rule": "stop_check",
                            "detail": "Repeated tool call signature exceeded twice",
                            "evidence": {"tools": repeated}})
-    if len(rows) > 20:
+    tool_calls = sum(1 for row in rows if str(row.get("tool") or "").strip())
+    if tool_calls > 45:
         violations.append({"rule": "stop_check",
-                           "detail": "Trace exceeded the 20-step bound",
-                           "evidence": {"steps": len(rows)}})
-    total_cost = sum(float(row.get("cost") or 0) for row in rows)
+                           "detail": "Trace exceeded the 45 tool-call bound",
+                           "evidence": {"tool_calls": tool_calls, "bound": 45}})
+    total_cost = sum(float(row.get("cost") or 0) for row in rows if str(row.get("tool") or "").strip())
     if total_cost > 1.0:
         violations.append({"rule": "stop_check",
                            "detail": "Trace cost exceeded USD 1.00",

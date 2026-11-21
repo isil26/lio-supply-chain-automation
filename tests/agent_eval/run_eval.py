@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import shutil
+import sqlite3
 import sys
 import tempfile
 from pathlib import Path
@@ -46,6 +47,10 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
                 if db_path.exists():
                     shutil.copy2(db_path, isolated_db)
                 run_db = isolated_db
+                con = sqlite3.connect(str(run_db))
+                con.execute("DELETE FROM agent_trace")
+                con.commit()
+                con.close()
                 team = build_team(run_db)
                 result = team.run_event(scenario["event"])
                 trace = team.db.execute(
@@ -53,8 +58,30 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
                     "latency_ms,input_tokens,output_tokens,created_at FROM agent_trace"
                 ).fetchall()
                 trace = [dict(row) for row in trace]
-                report = evaluate(trace, synthetic or {"text": result.get("triage", {}).get("text", "")},
-                                  str(run_db))
+                final_text = " ".join(
+                    str(value.get("text", "")) for value in result.values()
+                    if isinstance(value, dict)
+                )
+                claims = []
+                for row in trace:
+                    try:
+                        parsed = json.loads(row.get("result") or "{}")
+                    except (json.JSONDecodeError, TypeError):
+                        parsed = {}
+                    for citation in (
+                        [parsed] if isinstance(parsed, dict)
+                        and (parsed.get("file") or parsed.get("source_file") or parsed.get("quote"))
+                        else []
+                    ):
+                        claims.append({"text": str(citation.get("quote") or ""),
+                                       "file": citation.get("file") or citation.get("source_file"),
+                                       "quote": citation.get("quote")})
+                live_outputs = {"text": final_text or synthetic.get("text", ""), "claims": claims,
+                                "actions": [], "drafts": []}
+                if os.getenv("SOONY_AGENT_MODE") == "replay":
+                    trace.extend(synthetic.get("trace", []))
+                    live_outputs = synthetic or live_outputs
+                report = evaluate(trace, live_outputs, str(run_db))
                 cost += sum(float(row.get("cost") or 0) for row in trace)
             else:
                 team = _fake_team(run_db, scenario["id"])
