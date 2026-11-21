@@ -3,7 +3,7 @@
   {
    "id": "example00001",
    "supplier_id": "SUP-0010",
-   "supplier": "South Korea",
+   "supplier": "Hwaseong Memory",
    "material": "CMP-GAM-001",
    "needed": 6800,
    "quantity": 0,
@@ -32,7 +32,7 @@
   {
    "id": "example00002",
    "supplier_id": "SUP-0011",
-   "supplier": "USA",
+   "supplier": "Boise Semi",
    "material": "CMP-GAM-001",
    "needed": 6800,
    "quantity": 0,
@@ -61,7 +61,7 @@
   {
    "id": "example00003",
    "supplier_id": "SUP-0018",
-   "supplier": "India",
+   "supplier": "Pune Diecast Works",
    "material": "CMP-GAM-010",
    "needed": 3400,
    "quantity": 0,
@@ -90,7 +90,7 @@
   {
    "id": "example00004",
    "supplier_id": "SUP-0019",
-   "supplier": "China",
+   "supplier": "Dongguan Precision Housings",
    "material": "CMP-GAM-010",
    "needed": 3400,
    "quantity": 0,
@@ -119,7 +119,7 @@
   {
    "id": "example00005",
    "supplier_id": "SUP-0028",
-   "supplier": "Poland",
+   "supplier": "Karton Nowak",
    "material": "CMP-GAM-008",
    "needed": 5900,
    "quantity": 5900,
@@ -148,7 +148,7 @@
   {
    "id": "example00006",
    "supplier_id": "SUP-0028",
-   "supplier": "Poland",
+   "supplier": "Karton Nowak",
    "material": "CMP-GAM-004",
    "needed": 6000,
    "quantity": 20000,
@@ -177,7 +177,7 @@
   {
    "id": "example00007",
    "supplier_id": "SUP-0029",
-   "supplier": "China",
+   "supplier": "Guangzhou PackRight",
    "material": "CMP-GAM-004",
    "needed": 6000,
    "quantity": 0,
@@ -207,7 +207,7 @@
  "notes": {
   "CMP-GAM-001": "No supplier can close the 6,800-card gap in time. Standard copies that arrive Tuesday still sell.",
   "CMP-GAM-010": "No supplier can deliver in time. The only route is sorting the 5,600 statues on quality hold.",
-  "CMP-GAM-008": "Poland's reservation lapses about Sunday morning unless we order.",
+  "CMP-GAM-008": "Karton Nowak's reservation lapses about Sunday morning unless we order.",
   "CMP-GAM-004": "The gap closes only if tonight's 20,000 sleeves actually arrive."
  },
  "as_of": "Sat 21 Nov, 20:02"
