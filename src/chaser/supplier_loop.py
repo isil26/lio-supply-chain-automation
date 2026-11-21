@@ -29,6 +29,10 @@ ACCEPTED = {"dry_run", "smtp_accepted", "gmail_sent"}
 DOCS = {"invoice", "packing_list", "air_waybill"}
 SLOT = re.compile(r"^(?:receiving |dock )slot\s*:\s*(?:confirmed|reserved)\b[^\n]*", re.I | re.M)
 ETA_NOTICE = re.compile(r"\b(?:ETA|arrival|delayed|rescheduled)\b", re.I)
+CARRIER_PENDING = re.compile(
+    r"\b(?:checking|confirming)\s+(?:the (?:ETA|arrival time)\s+)?with\s+(?:the\s+)?(?:airline|carrier)\b"
+    r"|항공사에\s*확인\s*중", re.I,
+)
 MESSAGE_ID = re.compile(r"<[^<>\s]+>")
 
 
@@ -355,6 +359,12 @@ def _card(con, scope, truth, options, sent, replies, clock):
             if missing:
                 actions.append(_followup(con, scope, "game_card", truth, reply, clock, missing))
             return actions
+        if len(same_date) == 1 and not dates and (pending := CARRIER_PENDING.search(reply["body"])):
+            due = min(reply["authored"] + timedelta(hours=1), cutoff)
+            if clock < due:
+                return [_action("game_card", "await_carrier_eta", "Wait for the airline’s ETA confirmation", "awaiting_reply",
+                                "The supplier is checking with the airline. Keep dock release and customs pending until the time-zoned ETA and documents arrive.",
+                                reply=reply, facts=[pending[0]], dueAt=due.isoformat(), **common)]
         actions = [_action("game_card", "verify_eta", "Verify the shipment ETA", "escalated",
                            "The matched reply did not establish one time-zoned ETA. Verify the shipment reference and any conflicting reports.",
                            reply=reply, **common)]

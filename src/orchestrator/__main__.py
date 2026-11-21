@@ -145,6 +145,12 @@ def network(con, site_id, short_materials):
     return {"hub": hub, "suppliers": suppliers, "shipments": shipments}
 
 
+def supplier_option_block(option, constraints):
+    if option.get("kind") in {"air", "alternate", "partial"}:
+        return constraints.get((option.get("supplier_id"), option.get("material")))
+    return None
+
+
 def dashboard(con):
     # Keep the risks, options and banner on the same published replay snapshot.
     snapshot = {row["key"]: json.loads(row["value"]) for row in con.execute(
@@ -155,9 +161,14 @@ def dashboard(con):
         return None
     chosen = snapshot.get("options", [])
     states = decisions(con)
+    live = (snapshot.get("sync") or {}).get("mailMode") == "live"
+    constraints = chaser.live_reply_constraints(con) if live else {}
     supplier_actions = supplier_loop.view(con, "demo" if (snapshot.get("sync") or {}).get("mode") == "replay" else "live")
     obsolete_dock = {item["optionId"]: item["detail"] for item in supplier_actions
                      if item["kind"] == "review_recovery" and item.get("optionId")}
+    for option in chosen:
+        if constraint := supplier_option_block(option, constraints):
+            obsolete_dock[option["id"]] = constraint["nextAction"]
     actions = [dict(option, status="blocked", review_requested=states.get(option["id"]) == "review")
                if option.get("approval_block") else dict(option, status=states.get(option["id"], "pending"))
                for option in chosen]
@@ -176,12 +187,14 @@ def dashboard(con):
             continue
         sources = [source for item in flagged for source in item["evidence"]] + part["evidence"]
         suppliers = [rate["supplier"].get("name") for rate in part["suppliers"] if rate.get("supplier")]
+        correspondence = [f'{rate["supplier"]["name"]}: {constraint["afterState"]}' for rate in part["suppliers"]
+                          if rate.get("supplier") and (constraint := constraints.get((rate["supplier_id"], part["material"])))]
         risks.append({"rank": 0, "id": part["material"], "component": part["label"],
                       "supplier": " / ".join(filter(None, suppliers)) or "Unresolved source",
                       "shortfall": f'{part["shortfall"]:,}' if part["shortfall"] else "—", "gap": part["shortfall"],
                       "firstStop": first, "required": part["required"], "onHand": part["on_hand"], "inbound": part["inbound"],
                       "severity": "Critical" if first or part["shortfall"] else "High",
-                      "detail": [item["title"] for item in flagged], "evidence": list(dict.fromkeys(map(cite_text, sources))),
+                      "detail": [item["title"] for item in flagged] + correspondence, "evidence": list(dict.fromkeys(map(cite_text, sources))),
                       "sources": sources})
     risks.sort(key=lambda risk: (-risk["firstStop"], -risk["gap"], risk["component"]))
     for rank, risk in enumerate(risks, 1):
@@ -362,6 +375,7 @@ class Loop:
                     sync_error = (sync_error + " " if sync_error else "") + f"Inbox polling failed ({exc.__class__.__name__})."
                     mail_ready = False
                 supplier_loop.import_verified(con, os.getenv("SOONY_MAIL_HISTORY_DB"))
+                chaser.reconcile_reply_constraints(con)
             supplier_loop.advance(con, get_state(con, "truth", {}), get_state(con, "options", []),
                                   scope="demo" if self.args.demo else "live",
                                   dispatch=mail_ready and not getattr(self.args, "once", True))
@@ -538,6 +552,10 @@ def handler(loop):
                         if not decision:
                             return self.out({"error": "Decision changed. Refresh before approving."}, 409)
                         active = supplier_loop.view(con, "demo" if loop.args.demo else "live")
+                        if match[2] == "approve" and not loop.args.demo and (
+                            constraint := supplier_option_block(decision, chaser.live_reply_constraints(con))
+                        ):
+                            return self.out({"error": constraint["nextAction"], "status": "blocked"}, 409)
                         if match[2] == "approve" and any(a["kind"] == "review_recovery" and a.get("optionId") == match[1] for a in active):
                             return self.out({"error": "The matched shipment reply changed the dock plan. Review launch recovery.", "status": "blocked"}, 409)
                         try:

@@ -82,6 +82,7 @@ class Quote:
     score: float = 0.0
     eligible: bool = False
     reasons: list[str] = field(default_factory=list)
+    constraint: str | None = None
 
     def price_eur(self, fx):
         if self.unit_price is None or not self.currency or self.currency not in fx:
@@ -169,9 +170,12 @@ def quotes_from_db(con, material=None):
         if material and row["material"] != material:
             continue
         try:
-            attachments = json.loads(row["parsed"] or "{}").get("attachments", [])
+            parsed = json.loads(row["parsed"] or "{}")
+            attachments = parsed.get("attachments", [])
+            constraint = (parsed.get("reply_plan") or {}).get("disposition")
         except (ValueError, AttributeError):
             attachments = []
+            constraint = None
         offer = parse_offer(row["body"], attachments)
         reply_hours = None
         try:
@@ -181,7 +185,8 @@ def quotes_from_db(con, material=None):
             pass
         quotes.append(Quote(row["id"], row["supplier_id"], row["supplier"], row["address"], row["language"],
                             row["material"], int(row["qty"]), offer["quantity"], offer["eta"],
-                            offer["unit_price"], offer["currency"], offer["commitment"], reply_hours))
+                            offer["unit_price"], offer["currency"], offer["commitment"], reply_hours,
+                            constraint=constraint))
     return quotes
 
 
@@ -272,7 +277,7 @@ def score_material(quotes, deadline, *, now=None, model=None, fx=None):
             **fact_factors(q),
         }
         q.score = round(100 * sum(weights[k] * v for k, v in q.factors.items()), 1)
-        q.eligible = bool(q.quantity) and q.p_on_time >= floor
+        q.eligible = not q.constraint and bool(q.quantity) and q.p_on_time >= floor
         q.reasons = _reasons(q, eur, buffer_h, floor, p is not None)
     ranked = sorted(quotes, key=lambda q: (q.eligible, q.score), reverse=True)
     return ranked, context, weights
@@ -296,6 +301,10 @@ def fact_factors(q):
 
 def _reasons(q, eur, buffer_h, floor, adjusted):
     r = []
+    if q.constraint == "no_launch_cover":
+        r.append("supplier explicitly ruled out covering this request by launch")
+    elif q.constraint == "supplier_hold":
+        r.append("supplier release is blocked pending the stated terms")
     f = q.facts or {}
     if q.eta is None:
         r.append("no delivery date given")

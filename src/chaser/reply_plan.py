@@ -13,6 +13,33 @@ ETA = re.compile(
 )
 PRICE_PENDING = re.compile(r"\b(?:freight|delivered|delivery)\s+(?:price|cost|quote)\s+(?:to\s+follow|pending)\b", re.I)
 HOLD = re.compile(r"\b(?:can|will)\s+hold\s+(\d{1,3}(?:,\d{3})+|\d+)\b", re.I)
+NO_COVER = re.compile(
+    r"\b(?:(?:cannot|can't|unable to)\s+(?:make|provide|supply|deliver)\b|cannot\s+be\s+made\s+available\b)"
+    r"[^\n.]{0,150}?\b(?:by|before)\b[^\n.]{0,55}?\b(?:deadline|cut[- ]?off)\b", re.I,
+)
+HELD_FOR_TERMS = re.compile(r"\bon hold pending\b[^\n.!?]{1,160}", re.I)
+SUPPLY_TERMS = re.compile(r"\b(?:units?|pieces?|stock|goods|parts?|quantity|made available|cannot deliver|unable to deliver)\b", re.I)
+RELEASE_TERMS = re.compile(r"\b(?:written confirmation|forwarder|freight|EXW|incoterm|collection|pickup|release)\b", re.I)
+
+
+def supply_constraint(body):
+    if (refusal := NO_COVER.search(body)) and SUPPLY_TERMS.search(refusal[0]):
+        return {
+            "disposition": "no_launch_cover",
+            "beforeState": "Supplier was being checked as a launch recovery source.",
+            "afterState": "Supplier says it cannot cover this request by the launch cut-off.",
+            "nextAction": "Exclude this offer from launch coverage. Keep the shortfall open and review other recovery options.",
+            "evidence": [refusal[0]],
+        }
+    if (hold := HELD_FOR_TERMS.search(body)) and RELEASE_TERMS.search(hold[0]):
+        return {
+            "disposition": "supplier_hold",
+            "beforeState": "Awaiting confirmation that the supplier can release the stock.",
+            "afterState": "Supplier says the stock remains on hold pending the stated conditions.",
+            "nextAction": "Queue the stated release conditions for Procurement and Logistics review. Count the stock only after the release and a usable delivery date are confirmed.",
+            "evidence": [hold[0]],
+        }
+    return {}
 
 
 def matching_offers(options, thread):
@@ -37,6 +64,9 @@ def cited_reference(body, shipment):
 
 
 def plan_reply(truth, thread, body, *, options=(), simulated=False):
+    constraint = supply_constraint(body)
+    if constraint:
+        return {"simulated": simulated, **constraint}
     shipments = matching_shipments(truth, thread)
     matches = [(shipment, quote) for shipment in shipments if (quote := cited_reference(body, shipment))]
     dates = list(ETA.finditer(body))

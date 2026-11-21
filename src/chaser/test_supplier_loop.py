@@ -188,6 +188,16 @@ class SupplierLoopTests(unittest.TestCase):
                     self.assertEqual(actions[0]["replyId"], reply_id)
                     self.assertEqual(self.db.execute("SELECT count(*) FROM messages WHERE side='out'").fetchone()[0], 1)
 
+    def test_carrier_confirmation_pending_keeps_the_dock_decision_waiting(self):
+        mid = self.sent(loop.CARD, "A004", f"Please confirm {loop.SHIPMENT}.", "dry_run")
+        body = f"{loop.SHIPMENT} confirmed. We are checking with the carrier and will send the arrival time."
+        self.assertTrue(self.reply("A004", mid, "pending-carrier", body, 18, simulated=True))
+        loop.advance(self.db, self.truth, self.options[:1], scope="demo", clock=WHEN + timedelta(minutes=30))
+        action, = loop.view(self.db, "demo")
+        self.assertEqual(action["kind"], "await_carrier_eta")
+        self.assertEqual(action["status"], "awaiting_reply")
+        self.assertEqual(self.db.execute("SELECT count(*) FROM messages WHERE side='out'").fetchone()[0], 1)
+
     @patch.dict("os.environ", {"CHASER_REAL_SMTP": "1", "CHASER_AUTO_SEND": "1",
                               "CHASER_SMTP_HOST": "test.invalid", "CHASER_SMTP_PORT": "587",
                               "CHASER_SENDER": "test@example.invalid", "SOONY_AGENTS": "0"})

@@ -361,6 +361,44 @@ def poll(con):
     return count
 
 
+def reconcile_reply_constraints(con):
+    """Revisit previously matched replies when the launch-constraint parser expands."""
+    from .reply_plan import supply_constraint
+
+    pending = con.execute("""
+        SELECT id,body,parsed FROM messages WHERE side='in'
+          AND json_extract(transport, '$.mode')='inbox'
+          AND json_extract(parsed, '$.reply_plan.disposition') IS NULL
+    """).fetchall()
+    with con:
+        for row in pending:
+            constraint = supply_constraint(row["body"])
+            if constraint:
+                fields = json.loads(row["parsed"] or "{}")
+                plan = fields.setdefault("reply_plan", {"id": f'mail-{row["id"]}', "simulated": False})
+                plan.update(constraint)
+                con.execute("UPDATE messages SET parsed=? WHERE id=?", (json.dumps(fields, ensure_ascii=False), row["id"]))
+                activity(con, "Supplier Chaser", constraint["nextAction"])
+
+
+def live_reply_constraints(con):
+    """Select the latest observed reply for each contacted supplier and component."""
+    latest = {}
+    for row in con.execute("""
+        SELECT c.supplier_id,c.material,m.parsed,m.id AS reply_id,c.id AS thread_id
+        FROM messages m JOIN chases c ON c.id=m.chase_id
+        WHERE m.side='in' AND json_extract(m.transport,'$.mode')='inbox'
+        ORDER BY julianday(coalesce(json_extract(m.transport,'$.authoredAt'),m.time)) DESC, m.id DESC
+    """):
+        latest.setdefault((row["supplier_id"], row["material"]), row)
+    blocks = {}
+    for key, row in latest.items():
+        plan = json.loads(row["parsed"] or "{}").get("reply_plan", {})
+        if plan.get("disposition"):
+            blocks[key] = {**plan, "thread_id": row["thread_id"], "reply_id": row["reply_id"]}
+    return blocks
+
+
 def expire(con):
     schema(con)
     with con:
@@ -401,7 +439,8 @@ def list_threads(con, decision_states=None):
                 entry["transport"] = {"mode": "simulated", "status": "received"}
             plan = (entry["parsed"] or {}).get("reply_plan")
             if plan:
-                plan["status"] = decision_states.get(plan.get("id"), "proposed" if plan.get("editions") or plan.get("holdUnits") else "pending")
+                default_status = plan.get("disposition") or ("proposed" if plan.get("editions") or plan.get("holdUnits") else "pending")
+                plan["status"] = decision_states.get(plan.get("id"), default_status)
             thread["messages"].append(entry)
         if not thread["messages"] and thread["status"] in {"draft", "loop draft", "superseded draft"}:
             thread["messages"] = [{
