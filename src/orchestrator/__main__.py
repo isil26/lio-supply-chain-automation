@@ -20,7 +20,7 @@ from urllib.parse import unquote, urlsplit
 
 from src import chaser
 from src.chaser.reply_plan import demo_reply
-from src.chaser import mail_history, supplier_loop
+from src.chaser import mail_history, recovery, supplier_loop
 from src.decide import authorize, choose, decisions
 from src.decide.actions import recovery_reviews
 from src.decide.release_gate import release_gate
@@ -200,6 +200,8 @@ def dashboard(con):
     live = (snapshot.get("sync") or {}).get("mailMode") == "live"
     constraints = chaser.live_reply_constraints(con) if live else {}
     supplier_actions = supplier_loop.view(con, "demo" if (snapshot.get("sync") or {}).get("mode") == "replay" else "live")
+    if live:
+        supplier_actions = [*recovery.view(con), *supplier_actions]
     obsolete_dock = {item["optionId"]: item["detail"] for item in supplier_actions
                      if item["kind"] == "review_recovery" and item.get("optionId")}
     for option in chosen:
@@ -217,7 +219,7 @@ def dashboard(con):
     risks = []
     for part in truth["parts"].values():
         flagged = [issue for issue in truth["issues"] if issue["material"] == part["material"] and issue["kind"] in
-                   {"quality_hold", "handwriting", "dock_hold", "short_ship", "tracker", "artwork", "revision_hold"}]
+                   {"quality_hold", "handwriting", "dock_hold", "short_ship", "tracker", "artwork", "revision_hold", "shipment_change"}]
         first = sum(edition.get("first_stop") == part["material"] for edition in truth["editions"].values())
         if not part["shortfall"] and not first and not flagged:
             continue
@@ -378,12 +380,30 @@ class Loop:
                     save_state(con, "pendingEvents", [*get_state(con, "pendingEvents", []), *successful])
             extracted = extract(con, self.root)
             handwriting = reconcile_handwriting(con, self.root)
+            mail_ready = True
+            mail_changed = False
+            if not self.args.demo:
+                try:
+                    chaser.poll(con)
+                except (OSError, chaser.imaplib.IMAP4.error) as exc:
+                    sync_error = (sync_error + " " if sync_error else "") + f"Inbox polling failed ({exc.__class__.__name__})."
+                    mail_ready = False
+                supplier_loop.import_verified(con, os.getenv("SOONY_MAIL_HISTORY_DB"))
+                chaser.reconcile_reply_constraints(con)
+                mail_watermark = recovery.watermark(con)
+                last_mail = get_state(con, "forecastMailWatermark", 0)
+                mail_changed = recovery.pending_revision(con, last_mail, mail_watermark)
             successful = get_state(con, "pendingEvents", [])
-            if not self.initialized or before is None or successful or extracted or handwriting or get_state(con, "pendingRecompute", False):
+            if (not self.initialized or before is None or successful or extracted or handwriting
+                    or mail_changed or get_state(con, "pendingRecompute", False)):
                 previous_options = get_state(con, "options", [])
                 with con:
                     save_state(con, "pendingRecompute", True)
-                truth = readiness(con, self.root)
+                if self.args.demo:
+                    truth = readiness(con, self.root)
+                else:
+                    truth = readiness(con, self.root, reconcile_shipments=lambda lots, deadline:
+                                      recovery.reconcile(con, lots, deadline, before or {}))
                 options = choose(con, truth, self.root)
                 for option in options:
                     if option.get("approval_block"):
@@ -409,15 +429,11 @@ class Loop:
                         drop = {"id": now(), "title": title, "detail": detail, "time": now(), "changes": changed, "drafts": draft_count}
                         save_state(con, "drop", drop)
                         chaser.activity(con, "Data Bridge", detail)
-            mail_ready = True
             if not self.args.demo:
-                try:
-                    chaser.poll(con)
-                except (OSError, chaser.imaplib.IMAP4.error) as exc:
-                    sync_error = (sync_error + " " if sync_error else "") + f"Inbox polling failed ({exc.__class__.__name__})."
-                    mail_ready = False
-                supplier_loop.import_verified(con, os.getenv("SOONY_MAIL_HISTORY_DB"))
-                chaser.reconcile_reply_constraints(con)
+                if mail_watermark != last_mail:
+                    with con:
+                        save_state(con, "forecastMailWatermark", mail_watermark)
+                recovery.advance(con, get_state(con, "truth", {}))
             supplier_loop.advance(con, get_state(con, "truth", {}), get_state(con, "options", []),
                                   scope="demo" if self.args.demo else "live",
                                   dispatch=mail_ready and not getattr(self.args, "once", True))
@@ -601,6 +617,13 @@ def handler(loop):
                     deal = re.fullmatch(r"/api/deals/([a-f0-9]{12})/(approve|decline)", path)
                     if deal:  # T90 mail-agent: record the decision and draft the supplier email
                         from src.chaser import deals as supplier_deals
+                        supplier_deals.schema(con)
+                        if deal[2] == "approve" and not loop.args.demo and (
+                            recovery.superseded_offer(con, deal[1])
+                            or recovery.pending_revision(con, get_state(con, "forecastMailWatermark", 0))
+                        ):
+                            return self.out({"error": "Supplier evidence changed. Review the current recovery action.",
+                                             "status": "blocked"}, 409)
                         try:
                             row = supplier_deals.decide(con, deal[1], deal[2], str(body.get("by") or "team member")[:80],
                                                         (str(body["note"])[:500] if body.get("note") else None))
@@ -611,6 +634,10 @@ def handler(loop):
                         return self.out(supplier_report(con, save=True, kind=body.get("kind", "all")))
                     match = re.fullmatch(r"/api/decisions/([a-f0-9]+)/(approve|review)", path)
                     if match:
+                        if (match[2] == "approve" and not loop.args.demo and
+                                recovery.pending_revision(con, get_state(con, "forecastMailWatermark", 0))):
+                            return self.out({"error": "A new supplier reply is being reconciled. Refresh before approving.",
+                                             "status": "blocked"}, 409)
                         decision = next((item for item in get_state(con, "options", []) if item["id"] == match[1]), None)
                         if not decision:
                             return self.out({"error": "Decision changed. Refresh before approving."}, 409)

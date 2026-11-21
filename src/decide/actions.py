@@ -18,7 +18,7 @@ def inbound_receiving_reviews(con, truth):
     for lot in truth.get("inbound", []):
         part = truth.get("parts", {}).get(lot["material"], {})
         gap = round(part.get("required", 0) - part.get("on_hand", 0))
-        if (gap <= 0 or lot["held"] or lot["quantity"] <= 0
+        if (gap <= 0 or lot["held"] or lot.get("missesPackout") or lot["quantity"] <= 0
                 or not lot.get("earliest") or datetime.fromisoformat(lot["earliest"]) >= cutoff):
             continue
         if lot["id"] == "SHP-2026-04313" and (hold := part.get("revision_hold")):
@@ -74,6 +74,8 @@ def recovery_reviews(con, truth, options, supplier_actions):
         kind, material = option["kind"], option.get("material")
         review = {"id": option["id"], "status": "awaiting_approval", "policy": POLICY}
         if kind == "inbound" and option.get("shipment_id") == "SHP-2026-04311":
+            if any(change["shipmentId"] == option["shipment_id"] for change in truth.get("shipmentChanges", [])):
+                continue  # The live recovery action carries the revised plan.
             tracking = next((action for action in supplier_actions if action["case"] == "game_card"
                              and action.get("optionId") == option["id"] and action.get("replyId")), {})
             review.update(

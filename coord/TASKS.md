@@ -125,3 +125,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T81-Supplier-Rescue | Verify supplier-only Sunday recovery for 6,800 cards and 3,400 statues and share Dr. Vogt’s spending guidance | supply-rescue | supplier correspondence, authorization notes, internal agent knowledge | in_progress | T81, T88 |
 
 | T93-Mail-Archive | Publish verified Supplier Chaser email chains for team agents | codex-mail-archive | docs/supplier-email-archive/, own coordination notes | done | T80-Mac-Mail |
+| T81-Supplier-Changes | Recompute on matched delivery changes, retire stale reviews, and chase permitted recovery options | murat-agent | src/truth shipment reconciliation, scoped chaser and orchestrator, existing Manti actions | done P0 | T79-Supplier-Loop, T81-Drop-1925, T90 |

@@ -13,11 +13,11 @@ type Deal = {
   eta: string | null; p_on_time: number | null; score: number | null; best: number; eligible: number;
   proof: string | null; incoterm: string | null; payment_terms: string | null; moq: number | null;
   list_price: number | null; conditions: string | null; excerpt: string | null; signer: string;
-  status: "pending" | "approved" | "declined" | "changed"; decided_by: string | null; decided_at: string | null;
+  status: "pending" | "approved" | "declined" | "changed" | "superseded"; decided_by: string | null; decided_at: string | null;
 };
 type Data = { deals: Deal[]; best: Deal[] };
 
-const STATUS: Record<Deal["status"], string> = { pending: "Waiting for you", approved: "Approved", declined: "Declined", changed: "Changed, decide again" };
+const STATUS: Record<Deal["status"], string> = { pending: "Waiting for you", approved: "Approved", declined: "Declined", changed: "Changed, decide again", superseded: "Superseded by supplier update" };
 
 function eur(value: number | null) { return value == null ? "–" : `€${Math.round(value).toLocaleString("en-US")}`; }
 function when(iso: string | null) {

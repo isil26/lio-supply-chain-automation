@@ -84,6 +84,8 @@ def draft(con, truth, options=None):
         for part in truth["parts"].values():
             if not part["shortfall"]:
                 continue
+            if any(change["material"] == part["material"] for change in truth.get("shipmentChanges", [])):
+                continue  # The recovery loop owns targeted outreach for this disruption.
             candidates = {row["supplier_id"] for row in part["suppliers"] if row["supplier"].get("status") == "active"}
             candidates.update(event["supplier"] for event in truth["issues"]
                               if event["material"] == part["material"] and event.get("supplier"))
@@ -169,7 +171,13 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
         if not chase:
             raise ValueError("Only a current draft can be sent")
         action = None
-        if supplier_loop.managed(chase["supplier_id"], chase["material"]):
+        if chase["status"] == "recovery draft":
+            from .recovery import eligible_draft
+
+            action = eligible_draft(con, chase_id) if auto and not demo else None
+            if not action:
+                raise ValueError("Recovery request changed or passed its send window")
+        elif supplier_loop.managed(chase["supplier_id"], chase["material"]):
             if managed and chase["status"] == "loop draft":
                 action = supplier_loop.eligible_draft(con, chase_id, "demo" if demo else "live",
                                                       (chase["supplier_id"], chase["material"]))

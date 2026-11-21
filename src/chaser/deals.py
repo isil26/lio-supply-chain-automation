@@ -103,10 +103,16 @@ def sync(con, deadline, *, now=None, model=None):
 
 
 def list_deals(con):
+    from .recovery import superseded_threads
+
     schema(con)
     cols = [d[0] for d in con.execute("SELECT * FROM deals LIMIT 0").description]
     rows = [dict(zip(cols, r)) for r in con.execute(
         "SELECT * FROM deals ORDER BY material, best DESC, eligible DESC, score DESC")]
+    superseded = superseded_threads(con)
+    for row in rows:
+        if row["thread_id"] in superseded:
+            row.update(status="superseded", best=0, eligible=0)
     best = {r["material"]: r for r in rows if r["best"]}
     return {"deals": rows, "best": list(best.values())}
 

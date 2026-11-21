@@ -60,7 +60,8 @@ function SupplierActions({ actions, select, mailView, onEvidence }: {
     {actions.map((action) => <div className="decision-analysis" id={`action-${action.id}`} key={action.id}>
       <strong>{action.title}</strong>
       <p>{action.scope === "demo" ? "Simulation" : action.scope === "verified" ? "Verified mailbox" : "Live workflow"} · {{
-        escalated: "Escalated", approval_required: "Approval queued", queued: "Ready for review", awaiting_reply: "Awaiting reply",
+        escalated: "Escalated", approval_required: "Approval queued",
+        queued: action.case === "recovery" ? "Enquiry queued" : "Ready for review", awaiting_reply: "Awaiting reply",
       }[action.status]}{action.owner && <> · {action.owner}</>}</p>
       <p>{action.detail}</p>
       {action.facts.length > 0 && <blockquote>{action.facts.join(" · ")}</blockquote>}
@@ -79,6 +80,7 @@ function SupplierActions({ actions, select, mailView, onEvidence }: {
         <button className="ghost-button" onClick={() => select(action.threadId!)}>Open supplier thread</button>)}
       {action.dispatchThread && action.dispatchThread !== action.threadId &&
         <button className="ghost-button" onClick={() => select(action.dispatchThread!)}>Open follow-up dispatch</button>}
+      {action.evidence && <button className="ghost-button" onClick={() => onEvidence(action.evidence!)}>Shipment evidence</button>}
       {action.policy && <button className="ghost-button" onClick={() => onEvidence({ file: action.policy })}>PP-07</button>}
     </div>)}
   </section>;
@@ -139,7 +141,8 @@ function App() {
   const selectedThread = useMemo<SupplierThread | undefined>(() => (
     visibleThreads?.find((thread) => thread.id === threadId) ?? visibleThreads?.[0]
   ), [visibleThreads, threadId]);
-  const supplierActions = mailView ? data?.mailHistory?.actions : data?.supplierActions;
+  const supplierActions = (mailView ? data?.mailHistory?.actions : data?.supplierActions)?.filter((item) => item.case !== "recovery");
+  const recoveryActions = data?.supplierActions?.filter((item) => item.case === "recovery");
 
   if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
@@ -370,6 +373,11 @@ function App() {
             <button className="ghost-button" onClick={() => setSource({ file: item.policy })}>PP-07</button>
           </div>
         </section>)}
+      </section> : null}
+
+      {recoveryActions?.length ? <section className="card" id="supplier-recovery">
+        <h3>Supplier recovery</h3>
+        <SupplierActions actions={recoveryActions} select={selectThread} mailView={false} onEvidence={setSource}/>
       </section> : null}
 
       {data.network && data.network.suppliers.length > 0 && <section className="card map-card">

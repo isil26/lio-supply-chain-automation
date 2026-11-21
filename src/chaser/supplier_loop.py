@@ -299,7 +299,9 @@ def _card(con, scope, truth, options, sent, replies, clock):
     item = next((s for s in truth.get("inbound", []) if s["id"] == SHIPMENT
                  and s["material"] == CARD[1] and s["supplier"] == CARD[0]), None)
     option = next((o for o in options if o.get("shipment_id") == SHIPMENT and o.get("kind") == "inbound"), None)
-    if not item or not truth.get("shifts"):
+    if (not item or not truth.get("shifts")
+            or any(change["shipmentId"] == SHIPMENT and change["lostUnits"] > 0
+                   for change in truth.get("shipmentChanges", []))):
         return []
     cutoff = min(as_time(truth["shifts"][-1][1]), as_time(truth["deadline"]))
     sent = [out for out in sent if SHIPMENT in out["body"]]

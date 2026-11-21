@@ -105,10 +105,13 @@ def run(con, *, send=None, now=None, prepare=True):
     limit = int(os.getenv("CHASER_AUTO_MAX_PER_CYCLE", "0")) or None
     minutes = cooldown_minutes()
     busy = recent_cases(con, minutes, now)
-    drafts = con.execute("SELECT id, supplier, address, body, supplier_id, material FROM chases WHERE status = 'draft' ORDER BY rowid").fetchall()
+    drafts = con.execute("""
+        SELECT id,supplier,address,body,supplier_id,material,status FROM chases
+        WHERE status IN ('draft','recovery draft') ORDER BY status='recovery draft' DESC,rowid
+    """).fetchall()
     results = []
-    for chase_id, supplier, address, body, supplier_id, material in drafts:
-        if managed(supplier_id, material):
+    for chase_id, supplier, address, body, supplier_id, material, status in drafts:
+        if status == "draft" and managed(supplier_id, material):
             continue
         if limit and len([r for r in results if r["result"] == "sent"]) >= limit:
             break
@@ -118,7 +121,7 @@ def run(con, *, send=None, now=None, prepare=True):
             continue
         if duplicate_body(con, address, body):
             with con:
-                con.execute("UPDATE chases SET status = 'duplicate' WHERE id = ? AND status = 'draft'", (chase_id,))
+                con.execute("UPDATE chases SET status='duplicate' WHERE id=? AND status=?", (chase_id, status))
             results.append({"id": chase_id, "supplier": supplier, "result": "duplicate"})
             continue
         check = Guardrails().validate_draft(body)
