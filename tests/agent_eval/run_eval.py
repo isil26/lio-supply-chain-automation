@@ -123,15 +123,18 @@ def write_markdown(rows: list[dict]) -> str:
         lines.append(f"| {row['id']} | {row['runs']} | {row['pass_rate']:.0%} "
                      f"| {names} |")
     lines.extend(["", "## Guard detail", "",
-                  "| Scenario | Rule | Pass rate |",
-                  "|---|---|---:|"])
+                  "| Scenario | Rule | Pass rate | Evidence |",
+                  "|---|---|---:|---|"])
     for row in rows:
         failed = {v["rule"] for v in row["violations"]}
         for rule in row["expected_rules"]:
             bad_scenario = row["id"] in {"email_without_approval", "hallucinated_number"}
             caught = rule in failed
             passed = caught if bad_scenario else rule not in failed
-            lines.append(f"| {row['id']} | {rule} | {'100%' if passed else '0%'} |")
+            evidence = next((v.get("evidence") for v in row["violations"] if v["rule"] == rule), None)
+            evidence_text = json.dumps(evidence, sort_keys=True) if evidence else "none"
+            evidence_text = evidence_text.replace("|", "\\|")
+            lines.append(f"| {row['id']} | {rule} | {'100%' if passed else '0%'} | {evidence_text} |")
     return "\n".join(lines) + "\n"
 
 

@@ -1,5 +1,11 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T47c — Replay harness calibration (copilot-fix3)
+
+- Calibrated `stop_check` to count only tool-call rows, allow 45 tool calls, retain repeated-signature and Pending Plan B oscillation checks, and identify rule evidence. Evaluator live/replay runs now delete prior `agent_trace` rows from the isolated database.
+- Normalized repository-relative/basename citations and compact `5.9k`/`5900.0` numeric grounding. Replay evidence now includes the wanted file, wanted quote and available evidence.
+- Validation: `python3 -m unittest tests.test_agents_harness` (10 tests pass); `SOONY_AGENT_MODE=replay python3 tests/agent_eval/run_eval.py --live --runs 1` passes 6/6 replay scenarios at $0.00. No live API run was made.
+
 ## T47b — Live eval failure fixes (copilot-fix2)
 
 - Added per-run tool-call deduplication with cached results excluded from repeat traces, bounded triage rounds to two, and quote-backed claims from tool results.

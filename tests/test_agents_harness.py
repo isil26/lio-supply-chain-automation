@@ -24,6 +24,10 @@ class HarnessTests(unittest.TestCase):
         result = numeric_grounding("Assumption: missing-copy cost is EUR 42,000.", trace)
         self.assertTrue(result["ok"])
 
+    def test_numeric_grounding_accepts_compact_k_and_float(self):
+        trace = [{"tool": "list_shortfalls", "args": {}, "result": '{"value":[{"shortfall":5900.0}]}'}]
+        self.assertTrue(numeric_grounding("The shortfall is 5.9k units.", trace)["ok"])
+
     def test_citation_check_requires_verbatim_quote(self):
         trace = [{"tool": "search_documents", "result":
                   '{"citations":[{"file":"art.pdf","page":1,"quote":"ordered 8,000"}]}'}]

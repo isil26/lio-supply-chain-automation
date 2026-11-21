@@ -31,9 +31,8 @@ def _text(value: Any) -> str:
 def _tokens(value: Any) -> set[str]:
     text = _text(value)
     found = set()
-    compact = re.sub(r"(?<!\w)(\d+(?:\.\d+)?)k\b", lambda match:
-                     str(int(float(match.group(1)) * 1000)), text, flags=re.I)
-    text = compact + " " + text
+    text = re.sub(r"(?<!\w)(\d+(?:\.\d+)?)k\b", lambda match:
+                  str(int(float(match.group(1)) * 1000)), text, flags=re.I)
     for match in re.finditer(r"\b\d+(?:[.,]\d+)*\b", text):
         raw = match.group(0)
         normalized = re.sub(r"[.,]", "", raw)
