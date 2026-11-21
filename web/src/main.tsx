@@ -294,7 +294,7 @@ function App() {
         </section>
       </div>
 
-      <AgentGraph onEvidence={setSource}/>
+      <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource}/>
 
       <BestSupplier/>
 
@@ -381,7 +381,7 @@ function App() {
         <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>
       </details>
     </section>
-    {behind && <BehindScenes activity={data.activity} onClose={() => setBehind(false)} onEvidence={setSource}/>}
+    {behind && <BehindScenes activity={data.activity} recording={data.recordedAgentRun} onClose={() => setBehind(false)} onEvidence={setSource}/>}
     {source && <EvidenceModal source={source} onClose={() => setSource(null)}/>}
   </main>;
 }

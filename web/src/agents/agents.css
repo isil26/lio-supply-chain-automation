@@ -117,3 +117,13 @@
   .agent-role.active, .map-hub-pulse { animation: none; }
   .agent-role, .agent-lane-arrow { transition: none; }
 }
+
+.recorded-agent-notes, .recorded-agent-provenance p { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.recorded-agent-notes { padding-inline-start: 0; }
+ul.recorded-agent-notes { padding-inline-start: 16px; }
+.recorded-agent-provenance p { margin: 6px 0 0; }
+.recorded-agent-timeline { overflow-x: auto; }
+@media (max-width: 720px) {
+  .recorded-agent-timeline .agent-step { grid-template-columns: 28px minmax(0, 1fr); }
+  .recorded-agent-timeline :is(.agent-step-tool, .agent-step-reason, .agent-citations, .agent-step-meta) { grid-column: 2; }
+}

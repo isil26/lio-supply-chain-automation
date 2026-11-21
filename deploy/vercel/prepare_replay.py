@@ -1,10 +1,12 @@
 """Evaluate the two states of a supplier drop in an isolated local replay."""
 import argparse
 import json
+import os
 import sys
 from contextlib import closing, redirect_stdout
 from pathlib import Path
 
+from recording import DEFAULT_RECORDING, load_recording
 from src.orchestrator.__main__ import Loop, connect, dashboard
 
 
@@ -37,6 +39,10 @@ def main():
     args = parser.parse_args()
     args.data = args.data.resolve(strict=True)
     args.demo, args.online = True, False
+    recording_path = os.environ.get("SOONY_AGENT_RECORDING_FILE")
+    recording = load_recording(Path(recording_path)) if recording_path else (
+        load_recording(DEFAULT_RECORDING) if DEFAULT_RECORDING.is_file() else None
+    )
     with redirect_stdout(sys.stderr):
         loop = Loop(args)
         if not loop.drop_files:
@@ -46,6 +52,8 @@ def main():
         loop.promote_drop()
         loop.cycle(sync=False)
         after = view(loop)
+    for phase in (before, after):
+        phase["recordedAgentRun"] = recording
     baseline = {risk["id"]: risk["gap"] for risk in before["risks"]}
     updated = {risk["id"]: risk["gap"] for risk in after["risks"]}
     if baseline == updated:

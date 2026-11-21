@@ -28,3 +28,15 @@ python3 deploy/vercel/verify.py https://soony-launch-control.vercel.app deploy/v
 ```
 
 Development against the full API continues with the [local runbook](../../docs/RUNBOOK.md).
+
+## Art-book recording
+
+The hosted **Behind the scenes → AI reasoning** panel reads `recordedAgentRun` from the authenticated `/api/dashboard` payload. The build takes the checked-in `docs/agent_runs/provenance/art-book-live.json` by default. Use `SOONY_AGENT_RECORDING_FILE` to select a different approved redacted manifest when running `prepare.sh`. The replay encrypts the projected fields and keeps the recording attached when the supplier drop is applied or reset. The React build contains neither the recording nor a live-agent client for this panel.
+
+The current `summary_only` manifest shows the published aggregate usage as reported and explains the missing event evidence. For `verified_events`, supply the verified run ID, pins for the original trace or redacted export in `sources`, and unique ordered `sequence` values across `steps` and `verified_handoffs`. Operational rows use `agent`, `status`, `tool` or handoff `target`, and optional `summary`, `recorded_at`, `latency_ms`, `cost_usd`, and source `citations`. Use null for unavailable metrics. `verified_usage` represents run-attributed provider totals. Include approval details only with `approvals_verified: true`. The runtime projection ignores raw tool arguments, results, reasoning, and proposed calls.
+
+```sh
+python3 deploy/vercel/verify.py "$TEAM_REPLAY_URL" "$TEAM_PASSWORD_FILE" --recording summary_only
+```
+
+Use `--recording verified_events` after original events have been recovered, verified, and redacted.
