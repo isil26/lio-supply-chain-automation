@@ -6,7 +6,7 @@
 "Sun 22 Nov at 20:00, DC-HAM needs 640,000 STD and 72,000 Collector's Editions."
 
 **0:10–0:20**
-"SAP says fine. The paper says short. SAP stock and the paper, tracker and supplier confirmations disagree."
+"Sunday, 8 p.m. 640,000 standard boxes, 72,000 numbered Collector's Editions, one warehouse. SAP shows the Collector's Edition fine. It isn't: 80,000 art books booked where 8,000 were ordered, a failed statue lot still counted as stock. We read the paper SAP never sees. Watch."
 
 **0:20–0:30**
 "This is the exception layer: a virtual procurement department whose agents execute the workflow, while a human approves decisions."
