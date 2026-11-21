@@ -9,3 +9,6 @@
 | T6 | UI Control Room | Copilot | web | review | contract in DECISIONS.md |
 | T7 | Orchestrator + drop handling (sync -> reingest -> re-evaluate) | Codex | src/orchestrator | done | T1,T3 |
 | T8 | Submission: README, deck outline, demo script, business case | Codex | docs/ | done | - |
+
+| T9 | Visible LLM step, escalation case (Pune/Category Lead), numbers script | Codex #3 | src/truth, src/docs, src/decide, src/orchestrator | in_progress | docs/WIN_PLAN.md |
+| T10 | One live-API React UI hero screen | Copilot #3 | web | in_progress | orchestrator API |
