@@ -469,3 +469,11 @@ Karton’s 20:19:35 CET email confirmed the free product hold still runs to expi
 At 20:22 CET the supplier team accepted Karton’s offer to seek a free proposal from Warta for pickup and DC arrival. The reply was verified in Gmail Sent. Warehouse release remains with the authorized buyer.
 
 At 20:24:41 CET Karton replied that it would now approach Warta for pickup and DC arrival times, the latest buyer release time and the information Hamburg needs. It will forward Warta’s proposal or earliest alternative. The goods remain at Karton pending authorized written release. No carrier proposal or site booking accompanied this reply.
+
+## T93 — Approval engine with delegated authority (sonnet-approvals)
+
+- Added `src/decide/approvals.py` (PP-07 as code, `evaluate`, `submit`, `record_human_decision`, `escalate_due`, `log_decision`, `policy_check`, delegation helpers), `docs/delegations.json` (seed DEL-001 Dr. Vogt, EUR 2,000,000, confirmed_in_writing false), `docs/APPROVALS.md`, `tests/test_approvals.py` (30 tests, all pass).
+- Run: `.venv/bin/python -m src.decide.approvals --demo`; `.venv/bin/python -m unittest tests.test_approvals`. Audit DB: `store/approvals.db` (created on first `connect()`).
+- Not wired yet: murat-agent's POST /api/actions/<id>/approve must call `record_human_decision`; mail-agent's `actions.on_approve` must call `evaluate`/`submit` and send only on AUTO or a recorded human approval; harness can merge `approvals.policy_check`; a scheduler must call `escalate_due(con, now)` each minute. Details in docs/APPROVALS.md.
+- Gaps: Boise PO value in the demo is illustrative (EUR 900,000); Collector's Okafor co-sign applies to releases/quality only; the CPO has no higher approver on file (SLA expiry gives a phone-call reminder, CFO informed only).
+- Next: get Dr. Vogt's or Felix's delegation confirmed in writing, then `--confirm DEL-001 --evidence "<ref>"`.
