@@ -149,6 +149,21 @@
       "references": [],
       "body_content_type": "text/plain",
       "body": "Hello,\n\nThank you for your reply.\n\nTo arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight. To complete our planning, could you also confirm: the quantity you can supply, the delivery date to Hamburg?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:14:03+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a1ff87abb8-2e83b028-b4e5-407d-93b9-99ddc142495a-000000@eu-west-1.amazonses.com>",
+      "chase_id": "300E2ABF53",
+      "in_reply_to": "<179528819557.18044.16283804452710627425@gmail.com>",
+      "references": [
+        "<179528819557.18044.16283804452710627425@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThe available quantity is 36,000 CMP-GAM-001 cards under PO 4500318769. The lot is packed and ready for release at our Boise dock once Soony provides written EXW Boise confirmation or nominates its forwarder; I’m still waiting on Logistics for the specific pickup time, address, packaging count, and gross weight.\n\nAfter release, the booked ORD–FRA air service is expected to reach Frankfurt about two days later. Final delivery timing to Hamburg depends on the carrier, customs clearance, and the onward road arrangement.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
     }
   ]
 }
