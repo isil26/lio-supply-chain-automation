@@ -19,7 +19,7 @@ from urllib.parse import unquote, urlsplit
 
 from src import chaser
 from src.chaser.reply_plan import demo_reply
-from src.chaser import mail_history
+from src.chaser import mail_history, supplier_loop
 from src.decide import authorize, choose, decisions
 from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
@@ -85,10 +85,11 @@ def dashboard_activity(con, blocked, clock, *, docs=None, reviews=()):
     for action in blocked:
         block = action["approval_block"]
         escalation.append({
-            "id": f'approval:{action["id"]}', "agent": "Decision Copilot", "tool": "ppap_policy",
+            "id": f'approval:{action["id"]}', "agent": "Decision Copilot", "tool": block.get("tool", "ppap_policy"),
             "input_ref": action["supplier_id"], "output_ref": f'options/{action["id"]}', "status": "blocked",
-            "citation": block["policy_clause"], "type": "warning", "time": action.get("evaluated_at"),
-            "action": f'{action["title"]}. {action["recommendation"]} {action["impact"]}',
+            "citation": block.get("policy_clause"), "type": "warning", "time": action.get("evaluated_at"),
+            "action": f'{action["title"]}. {block["reason"]}' if block.get("tool") else
+                      f'{action["title"]}. {action["recommendation"]} {action["impact"]}',
         })
     # Surface one evidence chain per model tool so a single verbose page cannot crowd out the other.
     proof = []
@@ -153,11 +154,18 @@ def dashboard(con):
         return None
     chosen = snapshot.get("options", [])
     states = decisions(con)
+    supplier_actions = supplier_loop.view(con, "demo" if (snapshot.get("sync") or {}).get("mode") == "replay" else "live")
+    obsolete_dock = {item["optionId"]: item["detail"] for item in supplier_actions
+                     if item["kind"] == "review_recovery" and item.get("optionId")}
     actions = [dict(option, status="blocked", review_requested=states.get(option["id"]) == "review")
                if option.get("approval_block") else dict(option, status=states.get(option["id"], "pending"))
                for option in chosen]
+    for option in actions:
+        if option["id"] in obsolete_dock:
+            option.update(status="blocked", approval_block={"reason": obsolete_dock[option["id"]],
+                           "tool": "supplier_reply", "owner": option.get("owner")})
     blocked = [option for option in actions if option["status"] == "blocked"]
-    approval = actions[0] if actions else None
+    approval = next((option for option in actions if option["id"] not in obsolete_dock), actions[0] if actions else None)
     risks = []
     for part in truth["parts"].values():
         flagged = [issue for issue in truth["issues"] if issue["material"] == part["material"] and issue["kind"] in
@@ -207,6 +215,7 @@ def dashboard(con):
                      "messages": [dict(msg, timestamp=msg["time"], time=clock(msg["time"])) for msg in thread["messages"]]}
                     for thread in chaser.list_threads(con, states)],
         "mailHistory": mail_history.view(clock),
+        "supplierActions": supplier_actions,
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": snapshot.get("drop"),
         "sync": snapshot.get("sync"), "dataHealth": health,
@@ -349,6 +358,9 @@ class Loop:
                     chaser.poll(con)
                 except (OSError, chaser.imaplib.IMAP4.error) as exc:
                     sync_error = (sync_error + " " if sync_error else "") + f"Inbox polling failed ({exc.__class__.__name__})."
+            supplier_loop.advance(con, get_state(con, "truth", {}), get_state(con, "options", []),
+                                  scope="demo" if self.args.demo else "live", dispatch=not self.args.once)
+            if not self.args.demo:
                 from src.chaser import autosend  # T78 mail-agent: automatic sending (live mode only)
                 if autosend.enabled(self.args.demo):
                     try:
@@ -520,6 +532,9 @@ def handler(loop):
                         decision = next((item for item in get_state(con, "options", []) if item["id"] == match[1]), None)
                         if not decision:
                             return self.out({"error": "Decision changed. Refresh before approving."}, 409)
+                        active = supplier_loop.view(con, "demo" if loop.args.demo else "live")
+                        if match[2] == "approve" and any(a["kind"] == "review_recovery" and a.get("optionId") == match[1] for a in active):
+                            return self.out({"error": "The matched shipment reply changed the dock plan. Review launch recovery.", "status": "blocked"}, 409)
                         try:
                             status = authorize(con, decision, match[2])
                         except PermissionError as exc:
@@ -540,27 +555,36 @@ def handler(loop):
                     if match and match[2] == "send":
                         if body.get("confirm") is not True:
                             return self.out({"error": "Review and confirm this supplier message before sending"}, 409)
-                        draft = con.execute("SELECT material,qty,status FROM chases WHERE id=?", (match[1],)).fetchone()
+                        draft = con.execute("SELECT supplier_id,material,qty,status FROM chases WHERE id=?", (match[1],)).fetchone()
                         truth = get_state(con, "truth", {})
                         if draft and draft["status"] == "draft":
                             current = truth.get("parts", {}).get(draft["material"], {})
                             if current.get("shortfall", 0) != draft["qty"]:
                                 return self.out({"error": "The quantity has changed. Refresh the launch snapshot before sending."}, 409)
-                        chaser.send(con, match[1], demo=loop.args.demo or os.getenv("CHASER_REAL_SMTP") != "1")
+                        managed = bool(draft and supplier_loop.managed(draft["supplier_id"], draft["material"]))
+                        chaser.send(con, match[1], demo=loop.args.demo or (not managed and os.getenv("CHASER_REAL_SMTP") != "1"),
+                                    managed=managed)
                         return self.out({"ok": True})
                     if match and loop.args.demo:
                         message = con.execute("SELECT * FROM chases WHERE id=?", (match[1],)).fetchone()
                         reply_text = body.get("text")
-                        if not message or message["status"] != "awaiting reply":
+                        managed = bool(message and supplier_loop.managed(message["supplier_id"], message["material"]))
+                        if not message or (message["status"] != "awaiting reply" and
+                                           not (managed and message["status"] == "reply to verify")):
                             raise ValueError("A sent demo thread is required")
+                        truth = get_state(con, "truth", {})
+                        options = get_state(con, "options", [])
                         if reply_text is None:
-                            reply_text = demo_reply(get_state(con, "truth", {}), message, get_state(con, "options", []))
+                            scenario = body.get("scenario")
+                            reply_text = supplier_loop.sample_card_reply(truth, scenario) if managed and scenario else demo_reply(truth, message, options)
                         if not isinstance(reply_text, str) or not reply_text.strip():
                             raise ValueError("Reply text must be nonempty")
                         reply = EmailMessage()
                         reply["From"], reply["Subject"], reply["In-Reply-To"] = message["address"], message["subject"], message["message_id"]
                         reply.set_content(reply_text)
                         parsed = chaser.receive(con, reply, simulated=True)
+                        if parsed and managed:
+                            supplier_loop.advance(con, truth, options, scope="demo")
                         if loop.agents and parsed:
                             loop.agents.submit({
                                 "kind": "reply",
@@ -571,6 +595,8 @@ def handler(loop):
                 return self.out({"error": "Unknown API endpoint"}, 404)
             except (ValueError, sqlite3.Error) as exc:
                 return self.out({"error": str(exc)}, 400)
+            except PermissionError as exc:
+                return self.out({"error": str(exc)}, 403)
 
         def local_request(self):
             host = self.headers.get("Host", "").split(":")[0]

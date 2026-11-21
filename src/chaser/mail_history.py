@@ -113,6 +113,7 @@ def sync(inbox, sent_folder, *, source_db, history_db, sender):
         )):
             chase_id = sent[str(message["In-Reply-To"])][0]
             chaser.receive(history, message, matched_thread_id=chase_id)
+        chaser.supplier_loop.advance(history, truth, options, scope="verified")
         with history:
             save_state(history, "mailCheck", {"status": "ready", "checkedAt": now()})
 
@@ -143,7 +144,7 @@ def view(clock):
         return {"status": "checking", "threads": []}
     with closing(connect(path)) as history:
         check = get_state(history, "mailCheck", {"status": "checking"})
-        return {**check, "threads": [
+        return {**check, "actions": chaser.supplier_loop.view(history, "verified"), "threads": [
             {**thread, "initials": "".join(word[0] for word in thread["supplier"].split()[:2]),
              "messages": [dict(message, timestamp=message["time"], time=clock(message["time"]))
                           for message in thread["messages"]]}

@@ -10,6 +10,7 @@ import {
   type Source,
   type SupplierThread,
   type SupplierMessage,
+  type SupplierAction,
 } from "./api";
 import { AgentTrace } from "./agents/AgentTrace";
 import { AgentGraph } from "./agents/AgentGraph";
@@ -46,6 +47,37 @@ function Countdown({ deadline }: { deadline: string }) {
 
 function formatNumber(value: number | undefined) {
   return typeof value === "number" ? value.toLocaleString("en-US") : "—";
+}
+
+const etaDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Berlin" });
+
+function SupplierActions({ actions, select, mailView, onEvidence }: {
+  actions: SupplierAction[]; select: (id: string) => void; mailView: boolean; onEvidence: (source: Source) => void;
+}) {
+  return <section aria-label="Supplier decisions and actions">
+    {actions.map((action) => <div className="decision-analysis" id={`action-${action.id}`} key={action.id}>
+      <strong>{action.title}</strong>
+      <p>{action.scope === "demo" ? "Simulation" : action.scope === "verified" ? "Verified mailbox" : "Live workflow"} · {{
+        escalated: "Escalated", approval_required: "Approval queued", queued: "Ready for review", awaiting_reply: "Awaiting reply",
+      }[action.status]}{action.owner && <> · {action.owner}</>}</p>
+      <p>{action.detail}</p>
+      {action.facts.length > 0 && <blockquote>{action.facts.join(" · ")}</blockquote>}
+      {action.eta && <p>Reported ETA · {etaDate.format(new Date(action.eta))} CET</p>}
+      {action.impact?.map((row) => <p key={row.edition}>{row.edition} median packs · {formatNumber(row.before)} → {formatNumber(row.after)}
+        <br/>With modeled faster dock handling · {formatNumber(row.withDock)}
+        <br/>On-time probability · {row.pBefore.toLocaleString("en-US", { style: "percent", maximumFractionDigits: 1 })} → {row.pAfter.toLocaleString("en-US", { style: "percent", maximumFractionDigits: 1 })}</p>)}
+      {action.reportedUnits != null && <p>{formatNumber(action.reportedUnits)} units reported · {formatNumber(action.unitsUncovered)} of {formatNumber(action.unitsNeeded)} uncovered if the offer arrives in time</p>}
+      {action.transport && <p>{({
+        dry_run: "Dry-run dispatch", smtp_accepted: "Accepted by SMTP", gmail_sent: "Verified in Gmail Sent",
+        attempting: "Transport attempt requires reconciliation", delivery_uncertain: "Delivery uncertain", failed: "Dispatch failed",
+      } as Record<string, string>)[action.transport.status] ?? "Transport unverified"} · {action.transport.messageId}</p>}
+      {action.dueAt && <p>Reply check · {etaDate.format(new Date(action.dueAt))} CET</p>}
+      {action.threadId && (action.replyId != null ?
+        <a className="ghost-button" href={`?${mailView ? "mail=1&" : ""}thread=${encodeURIComponent(action.threadId)}#message-${action.replyId}`}>Matched reply</a> :
+        <button className="ghost-button" onClick={() => select(action.threadId!)}>Open supplier thread</button>)}
+      {action.policy && <button className="ghost-button" onClick={() => onEvidence({ file: action.policy })}>PP-07</button>}
+    </div>)}
+  </section>;
 }
 
 function EvidenceModal({ source, onClose }: { source: Source; onClose: () => void }) {
@@ -103,6 +135,7 @@ function App() {
   const selectedThread = useMemo<SupplierThread | undefined>(() => (
     visibleThreads?.find((thread) => thread.id === threadId) ?? visibleThreads?.[0]
   ), [visibleThreads, threadId]);
+  const supplierActions = mailView ? data?.mailHistory?.actions : data?.supplierActions;
 
   if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
@@ -112,7 +145,6 @@ function App() {
   const grid = expedite?.sensitivity[0];
   const health = data.dataHealth;
   const age = health?.lastSyncAgeSeconds;
-  const etaDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Berlin" });
   const euros = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
   const sourceReviews = [...(data.sync?.warnings ?? []), ...(data.documentReviews ?? [])];
   const pendingDrop = (data.sync?.pendingDrop ?? 0) > 0;
@@ -175,11 +207,11 @@ function App() {
     } finally { setDecisionBusy(false); }
   };
 
-  const demoReply = async () => {
+  const demoReply = async (scenario?: "on-time" | "delayed") => {
     if (!selectedThread) return;
     setReplyBusy(true);
     try {
-      await dashboardApi.replyThread(selectedThread.id);
+      await dashboardApi.replyThread(selectedThread.id, undefined, scenario);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Demo reply could not be added");
@@ -223,7 +255,7 @@ function App() {
   const missing = data.risks.filter((risk) => gapOf(risk) > 0).slice(0, 3);
   const shortName = (name: string) => name.replace(/\s*[–-]\s*Grand Heist 6/i, "").replace(/Grand Heist 6\s*/i, "").replace(/\s*\(.*\)\s*/, "").replace(/"/g, "").trim();
   const reason = (risk: Risk) => (risk.detail?.[0] ?? risk.evidence[0] ?? "").replace(/^[A-Z0-9-]+(?:\s[A-Z0-9-]+)?:\s*/, "").replace(/^\d{3}-\d{6,}\s+/, "Shipment ");
-  const drafts = data.threads.filter((thread) => thread.status === "draft").length;
+  const drafts = data.threads.filter((thread) => ["draft", "loop draft"].includes(thread.status)).length;
   const reviews = health?.needsReview ?? sourceReviews.length;
   const deadline = new Date(data.launch.deadline);
 
@@ -316,6 +348,7 @@ function App() {
           ? (visibleThreads?.length ? "Read-only history reconciled from team Gmail." : "No verified chaser email found in the team mailbox.")
           : data.mailHistory?.status === "unavailable" ? "Mailbox check unavailable. Previously verified messages remain visible."
           : "Waiting for a read-only mailbox check."}{data.mailHistory?.checkedAt && <> · Checked {etaDate.format(new Date(data.mailHistory.checkedAt))} CET</>}</p>}
+        {supplierActions && supplierActions.length > 0 && <SupplierActions actions={supplierActions} select={selectThread} mailView={mailView} onEvidence={setSource}/>}
         <div className="agents-body">
           <div className="thread-list">
             {visibleThreads?.map((thread) => <button key={thread.id} className={thread.id === selectedThread?.id ? "thread selected" : "thread"} onClick={() => selectThread(thread.id)}>
@@ -336,7 +369,7 @@ function App() {
                 delivery_uncertain: "Delivery uncertain",
                 received: envelope.mode === "simulated" ? "Simulated supplier reply" : "Received in inbox",
               }[envelope.status]) : "Historical message · Transport unverified";
-              return <div className={`message ${message.side}`} key={message.id ?? index}>
+              return <div className={`message ${message.side}`} id={message.id == null ? undefined : `message-${message.id}`} key={message.id ?? index}>
                 <span>{status}{message.timestamp && <> · <time dateTime={message.timestamp}>{etaDate.format(new Date(message.timestamp))} CET</time></>}</span>
                 <div><strong>{envelope?.from ?? message.sender}</strong>{envelope?.to && <> → {envelope.to}</>}</div>
                 {envelope?.subject && <p><strong>{envelope.subject}</strong></p>}
@@ -370,8 +403,12 @@ function App() {
               </div>;
             })}
             <div className="actions">
-              {!hostedReplayBuild && !mailView && selectedThread.status === "draft" && <button className="primary-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : data.sync?.mode === "replay" ? "Approve dry-run email" : "Approve & send"}</button>}
-              {!hostedReplayBuild && !mailView && data.sync?.mode === "replay" && selectedThread.status === "awaiting reply" && <button className="ghost-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Simulate reply"}</button>}
+              {!hostedReplayBuild && !mailView && (selectedThread.status === "draft" || selectedThread.status === "loop draft") && <button className="primary-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : data.sync?.mode === "replay" ? "Approve dry-run email" : "Approve & send"}</button>}
+              {!hostedReplayBuild && !mailView && data.sync?.mode === "replay" && ["awaiting reply", "reply to verify"].includes(selectedThread.status) &&
+                (data.supplierActions?.some((action) => action.case === "game_card" && action.threadId === selectedThread.id) ? <>
+                  <button className="ghost-button" onClick={() => void demoReply("on-time")} disabled={replyBusy}>Simulate on-time ETA</button>
+                  <button className="ghost-button" onClick={() => void demoReply("delayed")} disabled={replyBusy}>Simulate delayed ETA</button>
+                </> : selectedThread.status === "awaiting reply" && <button className="ghost-button" onClick={() => void demoReply()} disabled={replyBusy}>Simulate reply</button>)}
             </div>
           </div>}
         </div>

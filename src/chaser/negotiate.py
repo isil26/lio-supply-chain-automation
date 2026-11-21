@@ -430,6 +430,10 @@ def draft_counter(quote, asks, units=None):
 
 def save_draft(con, quote, draft, deadline, units=None):
     """Store as a normal draft chase: it shows up for review and only a person can send it."""
+    from .supplier_loop import managed
+
+    if managed(quote.supplier_id, quote.material):
+        return False
     with con:
         inserted = con.execute("""INSERT OR IGNORE INTO chases
             (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)

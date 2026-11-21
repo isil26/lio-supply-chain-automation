@@ -45,6 +45,7 @@ def run(con, *, send=None, now=None, prepare=True):
     """Prepare and send drafts. Returns a list of {id, supplier, result}."""
     from . import activity as _activity
     from . import send as chaser_send
+    from .supplier_loop import managed
 
     def activity(con, agent, text, kind):
         with con:
@@ -67,9 +68,11 @@ def run(con, *, send=None, now=None, prepare=True):
             activity(con, "Mail Agent", f"Negotiation planning skipped ({exc.__class__.__name__}).", "warning")
     limit = int(os.getenv("CHASER_AUTO_MAX_PER_CYCLE", "0")) or None
     busy = _recent_addresses(con, int(os.getenv("CHASER_AUTO_COOLDOWN_MIN", "30")), now)
-    drafts = con.execute("SELECT id, supplier, address, body FROM chases WHERE status = 'draft' ORDER BY rowid").fetchall()
+    drafts = con.execute("SELECT id, supplier, address, body, supplier_id, material FROM chases WHERE status = 'draft' ORDER BY rowid").fetchall()
     results = []
-    for chase_id, supplier, address, body in drafts:
+    for chase_id, supplier, address, body, supplier_id, material in drafts:
+        if managed(supplier_id, material):
+            continue
         if limit and len([r for r in results if r["result"] == "sent"]) >= limit:
             break
         if address.lower() in busy:

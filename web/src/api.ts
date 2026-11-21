@@ -95,6 +95,29 @@ export type SupplierThread = {
   messages: SupplierMessage[];
 };
 
+export type SupplierAction = {
+  id: string;
+  case: "game_card" | "karton";
+  kind: string;
+  title: string;
+  detail: string;
+  scope: "demo" | "live" | "verified";
+  status: "escalated" | "approval_required" | "queued" | "awaiting_reply";
+  threadId?: string | null;
+  replyId?: number | null;
+  dispatchThread?: string;
+  owner?: string;
+  policy?: string;
+  facts: string[];
+  dueAt?: string;
+  eta?: string;
+  unitsNeeded?: number;
+  reportedUnits?: number;
+  unitsUncovered?: number;
+  impact?: { edition: string; before: number; after: number; withDock: number; pBefore: number; pAfter: number }[];
+  transport?: { mode: string; status: string; messageId: string; time: string };
+};
+
 export type Approval = {
   id: string;
   title: string;
@@ -135,7 +158,8 @@ export type DashboardData = {
   risks: Risk[];
   activity: Activity[];
   threads: SupplierThread[];
-  mailHistory?: { status: "ready" | "checking" | "unavailable"; checkedAt?: string; threads: SupplierThread[] } | null;
+  supplierActions?: SupplierAction[];
+  mailHistory?: { status: "ready" | "checking" | "unavailable"; checkedAt?: string; threads: SupplierThread[]; actions?: SupplierAction[] } | null;
   agents?: { enabled: boolean; mode?: string };
   recordedAgentRun?: RecordedAgentRun | null;
   approval: Approval | null;
@@ -189,7 +213,7 @@ export interface DashboardApi {
   reviewDecision(id: string): Promise<{ ok: boolean; status?: string }>;
   sendThread(id: string): Promise<{ ok: boolean }>;
   approveReply(id: number): Promise<{ ok: boolean }>;
-  replyThread(id: string, text?: string): Promise<{ ok: boolean }>;
+  replyThread(id: string, text?: string, scenario?: "on-time" | "delayed"): Promise<{ ok: boolean }>;
   sync(): Promise<{ ok: boolean }>;
   getSource(path: string): Promise<string>;
   dismissDrop(): Promise<{ ok: true }>;
@@ -240,8 +264,8 @@ class HttpDashboardApi implements DashboardApi {
   approveReply(id: number) {
     return json<{ ok: boolean }>(`/api/reply-decisions/${id}/approve`, { method: "POST", body: "{}" });
   }
-  replyThread(id: string, text?: string) {
-    return json<{ ok: boolean }>(`/api/threads/${id}/demo-reply`, { method: "POST", body: JSON.stringify({ text }) });
+  replyThread(id: string, text?: string, scenario?: "on-time" | "delayed") {
+    return json<{ ok: boolean }>(`/api/threads/${id}/demo-reply`, { method: "POST", body: JSON.stringify({ text, scenario }) });
   }
   sync() {
     return json<{ ok: boolean }>("/api/sync", { method: "POST", body: "{}" });
