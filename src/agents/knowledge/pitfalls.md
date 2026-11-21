@@ -30,3 +30,9 @@
   - Check: inspect PackRight Annex B and BOM interpretation; do not double-count until confirmed.
 - Pune supply is conditional and blocked while the Collector's Items Category Lead is vacant.
   - Check: route review to Supplier Quality and the authorised Category Lead.
+
+## Release gate and pack plan
+- The sleeve revision conflict (CMP-GAM-004, rev B vs rev C) is a HUMAN item: report quantities per revision from release_gate_status and escalate_to_human to Marketing / Head of Procurement; never pick a revision.
+- The quarantined statue lot (CMP-GAM-010) is HOLD until written quality release; do not count it as packable.
+- The game card (CMP-GAM-001) is the binding shared part for both editions, so an earlier arrival of the 28,000 air lot is the biggest lever; the art book and statue only matter for the Collector's share.
+- Never state units gained that are not in the packplan result; copy numbers exactly from the tool.

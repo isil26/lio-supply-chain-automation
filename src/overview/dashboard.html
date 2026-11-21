@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Manti Agents</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1b1f24;--mute:#5d6672;--line:#e3e6ea;--accent:#2f6fde;
+--ok:#1f8a4c;--run:#2f6fde;--warn:#b7791f;--bad:#c0392b;--chip:#eef1f5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--card:#1a1e24;--ink:#e7eaee;--mute:#99a2ad;--line:#2a3038;--accent:#6ea0ff;--ok:#4cc38a;--run:#6ea0ff;--warn:#e0a84a;--bad:#ef6b5e;--chip:#232830}}
+:root[data-theme="dark"]{--bg:#111418;--card:#1a1e24;--ink:#e7eaee;--mute:#99a2ad;--line:#2a3038;--accent:#6ea0ff;--ok:#4cc38a;--run:#6ea0ff;--warn:#e0a84a;--bad:#ef6b5e;--chip:#232830}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:18px 16px 8px;max-width:1280px;margin:auto}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--mute);font-size:13px}
+main{max-width:1280px;margin:auto;padding:0 16px 40px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+input[type=search]{flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;border-left:4px solid var(--line)}
+.card.in_progress,.card.assigned{border-left-color:var(--run)}
+.card.done,.card.released{border-left-color:var(--ok)}
+.card.review,.card.outdated,.card.stale{border-left-color:var(--warn)}
+.card.blocked{border-left-color:var(--bad)}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.name{font-weight:600;font-size:15px}
+.state{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+.task{margin:4px 0 6px}
+.meta{color:var(--mute);font-size:12px}
+.meta code{font-size:11px}
+ul.att{margin:8px 0 0;padding-left:18px;font-size:12.5px}
+ul.att li{margin:2px 0}
+li.bad{color:var(--bad)} li.warn{color:var(--warn)}
+details{margin-top:6px;font-size:12.5px;color:var(--mute)}
+section{margin-top:24px}
+h2{font-size:15px;margin:0 0 8px}
+.list{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin:0;list-style:none}
+.list li{padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+.list li:last-child{border:0}
+.err{color:var(--bad)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Team Manti agents: who is doing what</h1>
+  <div class="sub" id="sub">Loading…</div>
+</header>
+<main>
+  <div class="bar" id="filters"></div>
+  <div class="bar"><input type="search" id="q" placeholder="Filter by agent, task, directory…" aria-label="Filter"></div>
+  <div class="grid" id="grid"></div>
+  <div class="cols">
+    <section><h2>Board hygiene</h2><ul class="list" id="issues"></ul></section>
+    <section><h2>Recent commits</h2><ul class="list" id="commits"></ul></section>
+  </div>
+  <section><h2>Unclaimed open tasks</h2><ul class="list" id="unclaimed"></ul></section>
+</main>
+<script>
+const POLL_MS = 30000;
+const FILTERS = [["attention","Needs attention"],["active","Active"],["all","All"],["done","Done"]];
+let data = null, filter = "attention";
+try { filter = localStorage.getItem("ov-filter") || filter; } catch (e) {}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ACTIVE = new Set(["in_progress","assigned","review","blocked","awaiting original source"]);
+
+function attention(a){
+  const out = [];
+  (a.blockers||[]).forEach(b => out.push(["bad","Blocker: "+b]));
+  (a.inbox_open_to||[]).slice(-3).forEach(m => out.push(["warn",`Open request from ${m.from} (INBOX ${m.line}): ${m.text}`]));
+  (a.flags||[]).filter(f => !/superseded|duplicate/.test(f)).forEach(f => out.push([/no activity|stale/.test(f)?"warn":"", f]));
+  return out;
+}
+function visible(a){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  if (q && !JSON.stringify([a.name,a.current_task,a.dirs,a.notes]).toLowerCase().includes(q)) return false;
+  if (filter === "all") return true;
+  if (filter === "done") return a.state === "done" || a.state === "released";
+  if (filter === "active") return ACTIVE.has(a.state);
+  return ACTIVE.has(a.state) || a.state === "outdated" || (a.blockers||[]).length || (a.inbox_open_to||[]).length;
+}
+function render(){
+  if (!data) return;
+  const s = data.summary;
+  document.getElementById("sub").innerHTML =
+    `Generated ${esc(data.generated_at)} · head <code>${esc(data.head?.sha)}</code> ${esc(data.head?.subject)} · `+
+    `${s.agents} agents · ${s.inbox_requests_open} INBOX requests look unanswered · refreshes every ${POLL_MS/1000}s`;
+  const counts = Object.entries(s.by_state).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${v} ${k.replace("_"," ")}`).join(" · ");
+  document.getElementById("filters").innerHTML = FILTERS.map(([k,l]) =>
+    `<button class="chip" data-f="${k}" aria-pressed="${k===filter}">${l}</button>`).join("") +
+    `<span class="sub">${esc(counts)}</span>`;
+  const cards = data.agents.filter(visible).map(a => {
+    const att = attention(a);
+    const lc = a.last_commit;
+    const stale = (a.flags||[]).some(f => /no activity|likely stale/.test(f)) ? " stale" : "";
+    return `<article class="card ${esc(a.state.replace(/ /g,"_"))}${stale}">
+      <div class="top"><span class="name">${esc(a.name)}</span><span class="state">${esc(a.state)}</span></div>
+      <div class="task">${esc(a.current_task || "–")}</div>
+      <div class="meta">Last activity ${esc(a.last_activity_ago)}${a.dirs?` · <code>${esc(a.dirs)}</code>`:""}</div>
+      ${lc?`<div class="meta">Last commit <code>${esc(lc.sha)}</code> ${esc(lc.subject)}${lc.via_autosync?" (via autosync)":""}</div>`:""}
+      ${att.length?`<ul class="att">${att.map(([c,t])=>`<li class="${c}">${esc(t)}</li>`).join("")}</ul>`:""}
+      ${a.notes?`<details><summary>Latest STATUS note (line ${esc(a.status_line)})</summary>${esc(a.notes)}</details>`:""}
+    </article>`;
+  });
+  document.getElementById("grid").innerHTML = cards.join("") || `<p class="sub">No agents match this filter.</p>`;
+  document.getElementById("issues").innerHTML = data.issues.map(i=>`<li>${esc(i.text)}</li>`).join("") || "<li>None</li>";
+  document.getElementById("commits").innerHTML = data.recent_commits.map(c=>`<li><code>${esc(c.sha)}</code> ${esc(c.when.slice(11))} <b>${esc(c.agent)}</b> ${esc(c.subject)}</li>`).join("");
+  document.getElementById("unclaimed").innerHTML = s.unclaimed_open_tasks.map(t=>`<li><b>${esc(t.id)}</b> ${esc(t.title)}</li>`).join("") || "<li>None</li>";
+}
+async function load(){
+  try {
+    const r = await fetch("overview.json", {cache:"no-store"});
+    if (!r.ok) throw new Error(r.status);
+    data = await r.json(); render();
+  } catch (e) {
+    document.getElementById("sub").innerHTML = `<span class="err">Could not load overview.json (${esc(e.message)}). Start it with <code>python scripts/overview.py --serve 8765</code>.</span>`;
+  }
+}
+document.addEventListener("click", e => {
+  const f = e.target.closest("[data-f]"); if (!f) return;
+  filter = f.dataset.f; try { localStorage.setItem("ov-filter", filter); } catch (err) {}
+  render();
+});
+document.getElementById("q").addEventListener("input", render);
+load(); setInterval(load, POLL_MS);
+</script>
+</body>
+</html>

@@ -89,7 +89,8 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
             else:
                 team = _fake_team(run_db, scenario["id"])
                 if scenario["id"] in {"art_book_shortfall", "statue_quality_hold",
-                                      "game_card_short_ship", "unseen_german_notice"}:
+                                      "game_card_short_ship", "unseen_german_notice",
+                                      "sleeve_revision_conflict", "air_lot_priority"}:
                     team.run_event(scenario["event"])
                     trace = [dict(row) for row in team.db.execute(
                         "SELECT agent,model,step,tool,args,result,reason,cost,"
