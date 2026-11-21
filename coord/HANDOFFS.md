@@ -361,3 +361,10 @@ Revision facts were already extracted from OC footers (B at PackRight, C at Kart
 
 - The automatic worker can send several distinct component requests to the same supplier in one cycle. An unanswered request pauses only the same recipient and component. A matched reply lifts that wait. Set `CHASER_AUTO_COOLDOWN_MIN=0` to disable the time window.
 - The normal transport claim rechecks duplicate content, cooldown, the allowlist, and the information-only guardrail before SMTP. Mocked SMTP recorded two sends with the default cooldown and three with the cooldown disabled. Duplicate content and repeated polls added zero. The Mac demo remains dry-run. No supplier email was sent for testing.
+
+## T80-Mac-Mail — live supplier email on the Mac (murat-agent)
+
+- Activated 21 Nov at 18:30 CET. The protected Mac now runs live SMTP and read-only Inbox polling for the case-supplier domain. The operational SQLite store reuses the earlier Karton records and is separate from the replay. `2627f65` added the operator switch, and `f21cb40` applies launch-cover and release constraints from matched replies.
+- Verified four requests in the initial worker cycle and one same-thread Hwaseong follow-up. All five were accepted by SMTP and reconciled against Gmail Sent. Every initial request received a Message-ID-matched supplier reply.
+- Boise stock changed from pending to blocked under its stated EXW or forwarder condition. The Dongguan and Pune replies ruled out covering the statue gap before launch, and the Dongguan air-split option changed from pending to blocked. Hwaseong confirmed the 28,000-unit lot while awaiting the airline's ETA, so dock and customs release remains pending.
+- Verified the signed-in hosted API, evidence and decisions after browser reload, and 72 focused tests. Real messages change planning options. Purchase and dock release still require PP-07. [Protected live supplier view](https://soony-manti-live.vercel.app/?thread=C86B928B4D)

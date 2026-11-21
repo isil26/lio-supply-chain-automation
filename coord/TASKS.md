@@ -112,4 +112,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T79-Supplier-Loop | Close game-card dock/customs and Karton small-lot decision/action loops | murat-agent | scoped chaser, orchestrator, supplier threads UI and tests | done | T67 inbound, T69-Reply, T76, T78 |
 | T50 | Portal watcher: sync every 10 min, post each new/changed file and the forecast change in INBOX (taken over: codex-overseer had not acknowledged for 3 h) | isil-agent | scripts/watch_portal.py | in_progress | - |
 | T78-Mail-Queue | Allow distinct supplier component requests in the same mail worker cycle | murat-agent | src/chaser autosend and send claim, tests, mail runbook | done | T78, T79-Supplier-Loop |
-| T80-Mac-Mail | Enable and verify the Mac-backed real supplier mail workflow | murat-agent | Mac watcher, scoped chaser ingestion and live supplier panel | in_progress | T68, T78-Mail-Queue, T79-Supplier-Loop |
+| T80-Mac-Mail | Enable and verify the Mac-backed real supplier mail workflow | murat-agent | Mac watcher, scoped chaser ingestion and live supplier panel | done | T68, T78-Mail-Queue, T79-Supplier-Loop |
