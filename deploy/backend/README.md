@@ -19,3 +19,9 @@ The team login gateway stays on loopback. The tunnel exposes only that gateway. 
 The gateway uses `SOONY_TEAM_PASSWORD_HASH` and `SOONY_REPLAY_KEY` from an ignored local configuration file. A dedicated Vercel preview can package `deploy/vercel/package-live.sh` and set `SOONY_LIVE_UPSTREAM` to the live tunnel URL. Set `SOONY_LIVE_UPSTREAM_TOKEN` to the server-only credential that matches `SOONY_LIVE_GATEWAY_TOKEN` on the Mac. Deploy the preview separately from the replay alias.
 
 Verify releases using `node --test deploy/backend/test-gateway.cjs`, the reply-history unit tests and the private dashboard HTTP rehearsal. Store deployment keys and logs in the private workspace.
+
+## Verified mailbox history
+
+Open **Verified team mailbox** in the supplier threads area or use the live site with `?mail=1`. The dedicated reader searches the team mailbox's Sent and Inbox folders in read-only mode. It imports only messages tied to a known Chaser thread and matching draft or Chaser marker, and links inbound mail to the recorded sent Message-ID. The independent history database preserves evidence and deduplicates messages across deploys. This view has no send or approve action.
+
+The Mac enables the reader only when the operator supplies a private `mail-history.json` with the authorized Gmail user and app password next to the replay workspace. The app uses that account for IMAP reads only. This file and `mail-history.db` remain outside the release artifact and Git.

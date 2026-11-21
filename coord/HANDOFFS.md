@@ -1,5 +1,17 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T72 — Release Gate (copilot-gate)
+
+- Added `src/decide/release_gate.py`: pure cited GO/HOLD/HUMAN evaluation from readiness, extracted documents and supplier rows; includes quality, artwork, embedded magnet, conditional Pune authority, Incoterm and usable-stock rules plus per-edition packable units.
+- Added `GET /api/release-gate`, read-only `release_gate_status(part_id?)`, CLI `python3 -m src.decide.release_gate`, focused tests and `docs/RELEASE_GATE.md`.
+- Validation: `python3 -m unittest -v tests.test_release_gate tests.test_agents_tools` — 5 passed. Real-store CLI smoke was blocked by the non-interactive permission boundary because `store/soony.db` access required approval.
+
+## T47d — Planner option IDs, summary and chaser handoff (copilot-planner)
+
+- Added `list_options` and made `breakeven` report valid IDs when given an invalid one; Planner prompts now require copying real IDs.
+- Agent runs produce a deterministic summary from tool results, run numeric grounding, force a Planner-to-Chaser handoff, persist one pending draft approval, and attribute model cost to tool rows.
+- Validation: `python3 -m unittest tests.test_agents_team tests.test_agents_tools tests.test_agents_runtime tests.test_agents_loop` — 15 passed. Live validation was attempted but denied by the non-interactive permission boundary; no live cost/result is claimed.
+
 ## T41b — Agent trace projection and German notice guard (copilot-loop2)
 - `/api/agents/trace` now exposes UI-ready `steps` plus `approvals_pending`, while retaining the raw trace for compatibility. Each step includes agent, tool, args/result summaries, reason, cost, latency, citations and status. `/api/agents/runs` exposes event summary text, step count, harness result and total run cost.
 - The worker snapshots only rows created for each run, then normalizes trace and pending approval state. The German-notice fixture under `tests/fixtures/unseen_german_notice.txt` gives the scenario a real reviewable file; empty claims are ignored rather than turned into false citation violations.
@@ -288,7 +300,7 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 
 ## Vercel deployment and access (codex-deploy)
 
-- Production serves the Manti redesign from `136aec9` (UI commit `4e0464d`), deployment `dpl_GNpwtAz844jVBZ4N1KfGU62oeBSQ`. Verified the new React bundle, authenticated supply map data, supplier-drop forecasts, art-book recovery, session independence and reset on the candidate and production. The hosted build gates `<AgentTrace>` in `web/src/main.tsx` with `!hostedReplayBuild` in the isolated package pending the T53 recorded trace integration. The previous verified deployment is `dpl_2paCxGV13XqhA8C4nCEi3G4mKmKM` (`3247283`). [Soony production](https://soony-launch-control.vercel.app)
+- Production serves the Manti redesign and Behind the scenes from `952b5ed` (walkthrough commit `6640073`), deployment `dpl_J7MAm9Y1W3dBKNJq61DuC35BFi2R`. Candidate and production checks passed for sign-in, protected map and activity data, the supplier drop, session isolation, and reset. The isolated package gates the live trace in `web/src/main.tsx` and `web/src/BehindScenes.tsx` pending T53. The walkthrough uses the recorded pipeline activity. This release pins the existing alias to protected replay mode. The prior verified deployment is `dpl_GNpwtAz844jVBZ4N1KfGU62oeBSQ` (`136aec9`). [Soony production](https://soony-launch-control.vercel.app)
 - Merge the dashboard change to private `main`. The deploy watch checks every 10 minutes, verifies a protected candidate, promotes eligible changes, and posts the live commit in [INBOX](INBOX.md). To coordinate a specific merged commit, post `codex-deploy: Vercel release request <commit>` there with a short description and any verification details.
 - The project currently belongs to a Vercel Hobby team. On a Pro or Enterprise team, the owner can grant each designated releaser project access through their own Vercel account. Use the lowest role that can create and promote production deployments. Get access to the approved encryption key through the team's private storage. [Protected replay runbook](../deploy/vercel/README.md)
 - From a fresh checkout of the merged commit, run the case replay and build the prebuilt package per the runbook. Link the package to the existing `soony-launch-control` project and deploy with `--prod --skip-domain --meta soonySourceCommit=<full-sha>`. Sign in to the generated candidate URL with your Vercel account and the dashboard team password, then test **Process drop**, the updated forecast and **Reset replay**. Promote the verified candidate, run `deploy/vercel/verify.py` against the production URL as documented, and post the commit, deployment, and checks in INBOX. Keep account tokens and the replay key out of Git, logs and agent messages.
