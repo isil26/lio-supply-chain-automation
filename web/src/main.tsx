@@ -11,6 +11,7 @@ import {
   type SupplierThread,
 } from "./api";
 import { AgentTrace } from "./agents/AgentTrace";
+import { MantiLogo, SupplyMap } from "./SupplyMap";
 import "./styles.css";
 
 const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon" | "sun" | "check" | "arrow" }) => {
@@ -30,22 +31,13 @@ const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon"
 function Countdown({ deadline }: { deadline: string }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const timer = window.setInterval(() => setNow(Date.now()), 30000);
     return () => window.clearInterval(timer);
   }, []);
   const diff = Math.max(0, new Date(deadline).getTime() - now);
-  const values = [
-    [Math.floor(diff / 86400000), "DAYS"],
-    [Math.floor(diff / 3600000) % 24, "HRS"],
-    [Math.floor(diff / 60000) % 60, "MIN"],
-    [Math.floor(diff / 1000) % 60, "SEC"],
-  ];
-  return <div className="countdown" aria-label="Countdown to launch">
-    {values.map(([value, label], index) => <React.Fragment key={String(label)}>
-      {index > 0 && <span className="countdown-separator">:</span>}
-      <div><strong>{String(value).padStart(2, "0")}</strong><small>{label}</small></div>
-    </React.Fragment>)}
-  </div>;
+  const hours = Math.floor(diff / 3600000);
+  const minutes = Math.floor(diff / 60000) % 60;
+  return <div className="countdown" aria-label="Time to launch"><strong>{hours}h {String(minutes).padStart(2, "0")}m</strong><span>left</span></div>;
 }
 
 function formatNumber(value: number | undefined) {
@@ -72,7 +64,7 @@ function EvidenceModal({ source, onClose }: { source: Source; onClose: () => voi
 function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
   const [threadId, setThreadId] = useState("");
   const [dropVisible, setDropVisible] = useState(true);
   const [decisionBusy, setDecisionBusy] = useState(false);
@@ -186,149 +178,115 @@ function App() {
     }
   };
 
-  return <main className={dark ? "theme-dark" : "theme-light"}>
-    <aside className="rail">
-      <div className="brand-mark">S<span>O</span></div>
-      <nav>
-        <button className="nav-button active" title="Control room"><Icon name="grid"/></button>
-        <button className="nav-button" title="Risks" onClick={() => document.querySelector(".risks-panel")?.scrollIntoView({ behavior: "smooth" })}><Icon name="risk"/></button>
-        <button className="nav-button" title="Supplier threads" onClick={() => document.querySelector(".threads-panel")?.scrollIntoView({ behavior: "smooth" })}><Icon name="thread"/></button>
-        <button className="nav-button" title="Approvals" onClick={() => document.querySelector(".approval-panel")?.scrollIntoView({ behavior: "smooth" })}><Icon name="approval"/></button>
-      </nav>
-      <button className="theme-button" onClick={() => setDark((value) => !value)} title="Toggle theme"><Icon name={dark ? "sun" : "moon"}/></button>
-    </aside>
+  const editionName = (edition: string) => edition === "CE" ? "Collector's Edition" : "Standard Edition";
+  const editions = data.readiness.map((item) => {
+    const expected = item.p50 ?? item.packed;
+    return { ...item, expected, short: Math.max(0, item.target - expected) };
+  });
+  const totalShort = editions.reduce((sum, item) => sum + item.short, 0);
+  const onTrack = editions.every((item) => (item.probability ?? 0) >= 0.9);
+  const gapOf = (risk: Risk) => risk.gap ?? (Number(String(risk.shortfall).replace(/[^\d.]/g, "")) * (/k/i.test(risk.shortfall) ? 1000 : 1) || 0);
+  const missing = data.risks.filter((risk) => gapOf(risk) > 0).slice(0, 3);
+  const shortName = (name: string) => name.replace(/\s*[–-]\s*Grand Heist 6/i, "").replace(/Grand Heist 6\s*/i, "").replace(/\s*\(.*\)\s*/, "").replace(/"/g, "").trim();
+  const reason = (risk: Risk) => (risk.detail?.[0] ?? risk.evidence[0] ?? "").replace(/^[A-Z0-9-]+(?:\s[A-Z0-9-]+)?:\s*/, "").replace(/^\d{3}-\d{6,}\s+/, "Shipment ");
+  const drafts = data.threads.filter((thread) => thread.status === "draft").length;
+  const reviews = health?.needsReview ?? sourceReviews.length;
+  const deadline = new Date(data.launch.deadline);
 
-    <section className="workspace">
+  return <main className={dark ? "theme-dark" : "theme-light"}>
+    <section className="page">
       <header className="topbar">
-        <div><p className="eyebrow">{hostedReplayBuild ? "TEAM REPLAY · SOONY CASE DATA" : "SOONY OPERATIONS / GLOBAL LAUNCH"}</p><h1>Launch Control Room</h1></div>
-        {isStaticMode() && <button className="static-badge" onClick={() => void resetDemo()} title="Reset demo">
-          Sample replay · {meta.exported ?? "frozen"}
-        </button>}
-        {isStaticMode() && <button className="reset-demo" onClick={() => void resetDemo()}>Reset demo</button>}
-        <div className="launch-status"><span className="live-dot"/><div><strong>{data.launch.name}</strong><small>{data.launch.location} · 22 NOV · 20:00 CET</small></div></div>
-        {hostedReplayBuild && <form method="post" action="/logout"><button className="review-button" type="submit">Sign out</button></form>}
+        <div className="topbar-left"><MantiLogo/><span className="divider"/><h1>{data.launch.name}</h1></div>
+        <div className="top-actions">
+          <Countdown deadline={data.launch.deadline}/>
+          {isStaticMode() && <button className="ghost-button" onClick={() => void resetDemo()}>Reset</button>}
+          {hostedReplayBuild && <form method="post" action="/logout"><button className="ghost-button" type="submit">Sign out</button></form>}
+          <button className="icon-button" onClick={() => setDark((value) => !value)} title="Toggle theme" aria-label="Toggle theme"><Icon name={dark ? "sun" : "moon"}/></button>
+        </div>
       </header>
 
-      {data.sync?.error && <div className="error-banner" role="alert">{data.sync.error}</div>}
-      {health && <p className="data-health">Data health · {health.filesSeen} seen · {health.filesParsed} parsed · {health.needsReview} need review · {health.errors} errors · {age == null ? "Sync pending" : age < 60 ? "Synced <1 min ago" : `Synced ${Math.floor(age / 60)} min ago`}</p>}
-      {sourceReviews.length > 0 && <details className="error-banner source-reviews">
-        <summary>{sourceReviews.length} sources need review · {sourceReviews[0].file.split("/").pop()}</summary>
-        <ul>{sourceReviews.map(({ file, reason }) => <li key={`${file}:${reason}`}>{file} · {reason}</li>)}</ul>
-      </details>}
-      {error && <div className="error-banner">{error}<button onClick={() => setError("")}>×</button></div>}
-      {dropVisible && data.drop && <div className="drop-banner">
-        <div className="drop-icon"><Icon name="arrow"/></div>
-        <div><strong>{data.drop.title}</strong><span>{data.drop.detail}</span></div>
-        <button className="sync-button" onClick={() => void runSync(hostedReplayBuild && !pendingDrop)} disabled={syncBusy}>{syncBusy ? "Syncing…" : hostedReplayBuild && !pendingDrop ? "Reset replay" : isStaticMode() ? "Release data drop" : "Process drop"}</button>
-        {!hostedReplayBuild && <button onClick={() => { setDropVisible(false); void dashboardApi.dismissDrop(); }} aria-label="Dismiss data drop">×</button>}
+      {data.sync?.error && <div className="notice alert" role="alert">{data.sync.error}</div>}
+      {error && <div className="notice alert">{error}<button className="link-button" onClick={() => setError("")}>Dismiss</button></div>}
+      {dropVisible && data.drop && (pendingDrop || isStaticMode() || hostedReplayBuild) && <div className="notice">
+        <span>New supplier files</span>
+        <button className="primary-button small" onClick={() => void runSync(hostedReplayBuild && !pendingDrop)} disabled={syncBusy}>{syncBusy ? "Updating…" : hostedReplayBuild && !pendingDrop ? "Reset" : "Update"}</button>
       </div>}
 
-      <div className="clock-strip">
-        <div><p className="section-label">TIME TO SHIP</p><Countdown deadline={data.launch.deadline}/></div>
-        <div className="readiness-cards">
-          {data.readiness.map((item) => {
-            const p10 = item.p10 ?? item.packed;
-            const p50 = item.p50 ?? item.packed;
-            const p90 = item.p90 ?? item.packed;
-            const scaleMax = Math.max(item.target, p90);
-            const left = (p10 / scaleMax) * 100;
-            const width = Math.max(2, ((p90 - p10) / scaleMax) * 100);
-            const median = (p50 / scaleMax) * 100;
-            return <article className="readiness-card" key={item.edition}>
-              <div className="edition-head"><span>{item.edition}</span><em className={item.tone}>{item.status}</em></div>
-              <div className="percent-row"><strong>{Math.round((item.probability ?? 0) * 100)}<small>%</small></strong><span>P(on time)</span></div>
-              <div className="range-meta"><span>{formatNumber(p10)}</span><b>p10 / p50 / p90</b><span>{formatNumber(p90)}</span></div>
-              <div className="range-bar"><i style={{ left: `${left}%`, width: `${width}%` }}/><b style={{ left: `${median}%` }}/></div>
-              <div className="packed-meta"><span>{formatNumber(item.packed)} packed</span><span>{formatNumber(item.target)} target</span></div>
-            </article>;
-          })}
+      <section className="hero">
+        <h2>{onTrack ? "On track for Sunday" : <><span className="big-number">{formatNumber(totalShort)}</span> copies short on Sunday</>}</h2>
+        <div className="editions">
+          {editions.map((item) => <div className="edition" key={item.edition}>
+            <div className="edition-row"><span>{item.edition === "CE" ? "Collector's" : "Standard"}</span><strong>{item.short ? `−${formatNumber(item.short)}` : "✓"}</strong></div>
+            <div className="bar" aria-label={`${formatNumber(item.expected)} of ${formatNumber(item.target)}`}>
+              <i className="packed" style={{ width: `${(item.packed / item.target) * 100}%` }}/>
+              <i className="expected" style={{ width: `${(Math.min(item.expected, item.target) / item.target) * 100}%` }}/>
+            </div>
+          </div>)}
         </div>
-      </div>
+        <p className="legend"><i className="dot packed"/>packed <i className="dot expected"/>expected by Sunday <i className="dot track"/>missing</p>
+      </section>
 
-      <div className="content-grid">
-        <section className="panel risks-panel">
-          <div className="panel-heading"><div><p className="section-label">WHAT BREAKS FIRST</p><h2>Top risks</h2></div><span className="panel-count">{data.risks.length} exceptions</span></div>
-          <div className="risk-list">
-            {data.risks.slice(0, 5).map((risk) => {
+      <div className="columns">
+        <section className="card">
+          <h3>Missing parts</h3>
+          {missing.length ? <ol className="missing">
+            {missing.map((risk) => {
               const evidence = riskEvidence(risk);
-              return <article className="risk-row" key={`${risk.rank}-${risk.id ?? risk.component}`}>
-                <span className={`rank rank-${risk.severity.toLowerCase()}`}>{String(risk.rank).padStart(2, "0")}</span>
-                <div className="risk-main"><strong>{risk.component}</strong><span>{risk.supplier}</span></div>
-                <div className="truth-compare">
-                  <div><small>SAP says</small><strong>{risk.onHand != null ? `${formatNumber(risk.onHand)} usable` : "No gap"}</strong></div>
-                  <div><small>Reality</small><strong className={risk.severity === "Critical" ? "critical-text" : ""}>{risk.shortfall === "—" ? "No verified gap" : `${risk.shortfall} short`}</strong></div>
-                </div>
-                <button className="evidence" disabled={!evidence} onClick={() => evidence && setSource(evidence)}>Evidence <b>{risk.sources?.length ?? risk.evidence.length}</b></button>
-              </article>;
+              return <li key={`${risk.rank}-${risk.id ?? risk.component}`}>
+                <strong>{shortName(risk.component)}</strong>
+                <span className="missing-right"><b>{formatNumber(gapOf(risk))}</b>{evidence && <button className="link-button" onClick={() => setSource(evidence)}>Why?</button>}</span>
+              </li>;
             })}
-          </div>
+          </ol> : <p className="empty">None</p>}
         </section>
 
-        <section className="panel activity-panel">
-          <div className="panel-heading"><div><p className="section-label">AGENT NETWORK</p><h2>{hostedReplayBuild ? "Replay activity" : "Live activity"}</h2></div>{!hostedReplayBuild && <span className="running"><i/> Running</span>}</div>
-          <div className="activity-list">
-            {data.activity.slice(0, 5).map((item) => <article className="activity-row" key={item.id}>
-              <span className={`activity-mark ${item.type}`}>{item.type === "sent" ? "→" : item.type === "warning" ? "!" : "◆"}</span>
-              <div><strong>{item.agent}</strong><p>{item.action}</p></div><time>{item.time}</time>
-            </article>)}
-          </div>
-        </section>
-
-        <section className="panel threads-panel">
-          <div className="panel-heading"><div><p className="section-label">SUPPLIER OPS</p><h2>Threads</h2></div><span className="panel-count">{data.threads.length} open</span></div>
-          <div className="thread-layout">
-            <div className="thread-list">
-              {data.threads.map((thread) => <button key={thread.id} className={thread.id === selectedThread?.id ? "thread-item selected" : "thread-item"} onClick={() => setThreadId(thread.id)}>
-                <span className="avatar">{thread.initials}</span><div><strong>{thread.supplier}</strong><p>{thread.subject}</p></div><em>{thread.status}</em>
-              </button>)}
-            </div>
-            {selectedThread && <div className="thread-detail">
-              <div className="thread-detail-head"><div><strong>{selectedThread.supplier}</strong><span>{selectedThread.subject}</span></div><em>{selectedThread.status}</em></div>
-              <div className="messages">
-                {selectedThread.messages.map((message, index) => <div className={`message ${message.side}`} key={index}>
-                  <span>{message.sender}</span><p>{message.text}</p>{message.time && <time>{message.time}</time>}
-                </div>)}
-              </div>
-              <div className="thread-actions">
-                <span className={`workflow-state ${selectedThread.status.split(" ").join("-")}`}>{selectedThread.status === "draft" ? "Draft" : selectedThread.status === "awaiting reply" ? "Sent" : selectedThread.status}</span>
-                {!hostedReplayBuild && selectedThread.status === "draft" && <button className="approve-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : "Approve & send"}<Icon name="arrow"/></button>}
-                {!hostedReplayBuild && (selectedThread.status === "awaiting reply" || selectedThread.status === "sent") && <button className="review-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Demo reply"}</button>}
-              </div>
-            </div>}
-          </div>
-        </section>
-
-        <section className="approval-panel">
-          <div className="approval-head"><div><p className="section-label">HUMAN DECISION</p><h2>{approval?.title ?? "No action awaiting approval"}</h2></div>{approval && <span>{approval.owner}</span>}</div>
+        <section className="card decision">
+          <h3>Next step</h3>
           {approval ? <>
-            <div className="recommendation">
-              <div className="recommendation-copy"><span className="recommended">Recommended</span><p>{approval.recommendation}</p></div>
-              <div className="approval-price"><small>Estimated cost</small>{approval.price == null ? <strong>Pending</strong> : <strong>€{approval.price.toLocaleString("en-US")}</strong>}</div>
-            </div>
-            <div className="decision-meta"><div><span>Impact</span><strong>{approval.impact}</strong></div><div><span>Residual risk</span><strong>{approval.risk}</strong></div><div><span>Authorization</span><strong>{approval.threshold}</strong></div></div>
-            {timing && <p className="decision-analysis">{timing.basis} · {Math.round(timing.p_on_time * 100)}% estimated arrival by the final shift end · p50 {etaDate.format(new Date(timing.eta_p50))} · p90 {etaDate.format(new Date(timing.eta_p90))} CET · {timing.sample_count} historical PO lines</p>}
-            {expedite && grid && <details className="decision-analysis">
-              <summary>Expedite break-even · {expedite.status}</summary>
-              <p>{formatNumber(expedite.q_missing)} exposed copies · Materials estimate, freight and dock costs pending</p>
-              <p>{expedite.thresholds[0]?.break_even_loss_eur == null
-                ? `No break-even at the modeled probability gain for ${expedite.readiness_scope}.`
-                : `${euros.format(expedite.thresholds[0].break_even_loss_eur)} per missing copy at the modeled probability gain for ${expedite.readiness_scope}.`}</p>
-              <table><thead><tr><th>Assumed on-time gain</th>{grid.probability_gains.map(gain => <th key={gain}>+{Math.round(gain * 100)} pp</th>)}</tr></thead>
-                <tbody><tr><th>Break-even per copy</th>{grid.break_even_loss_eur.map((value, i) => <td key={i}>{value == null ? "—" : euros.format(value)}</td>)}</tr>
-                  {grid.grid.map(row => <tr key={row.loss_per_copy_eur}><th>Net at {euros.format(row.loss_per_copy_eur)}/copy</th>{row.net_benefit_eur.map((value, i) => <td key={i}>{euros.format(value)}</td>)}</tr>)}</tbody>
-              </table>
-            </details>}
-            <div className="decision-actions">
-              <span>{approval.status ? `Status: ${approval.status}` : "Buyer approval required"}</span>
-              {!hostedReplayBuild && <>
-                <button className="review-button" onClick={() => void approve(true)} disabled={decisionBusy}>Request review</button>
-                <button className="approve-button" onClick={() => void approve(false)} disabled={decisionBusy || approval.status === "approved"}>{approval.status === "approved" ? <><Icon name="check"/> Approved</> : <>Approve <Icon name="arrow"/></>}</button>
-              </>}
-            </div>
-          </> : <div className="empty-approval">Live options will appear after the next readiness evaluation.</div>}
+            <p className="decision-title">{approval.title}</p>
+            {approval.price != null && <p className="price">€{Math.round(approval.price).toLocaleString("en-US")}</p>}
+            {!hostedReplayBuild && <div className="actions">
+              <button className="primary-button" onClick={() => void approve(false)} disabled={decisionBusy || approval.status === "approved"}>{approval.status === "approved" ? <><Icon name="check"/> Approved</> : "Approve"}</button>
+              <button className="ghost-button" onClick={() => void approve(true)} disabled={decisionBusy}>Review</button>
+            </div>}
+            <details className="more">
+              <summary>Details</summary>
+              <p>{approval.recommendation}</p>
+              <p>Approver: {approval.owner}</p>
+              {timing && <p>{Math.round(timing.p_on_time * 100)}% chance it arrives in time, based on {timing.sample_count} past orders.</p>}
+            </details>
+          </> : <p className="empty">Nothing to decide</p>}
         </section>
       </div>
-      <AgentTrace onEvidence={setSource}/>
+
+      {data.network && data.network.suppliers.length > 0 && <section className="card map-card">
+        <h3>Supply network</h3>
+        <SupplyMap network={data.network}/>
+      </section>}
+
+      <details className="card agents">
+        <summary><h3>Agents</h3><span className="muted">{drafts} emails ready · {reviews} files to check</span></summary>
+        <div className="agents-body">
+          <div className="thread-list">
+            {data.threads.map((thread) => <button key={thread.id} className={thread.id === selectedThread?.id ? "thread selected" : "thread"} onClick={() => setThreadId(thread.id)}>
+              <strong>{thread.supplier}</strong><span>{thread.status}</span>
+            </button>)}
+          </div>
+          {selectedThread && <div className="thread-detail">
+            {selectedThread.messages.slice(-2).map((message, index) => <div className={`message ${message.side}`} key={index}>
+              <span>{message.sender}</span><p>{message.text}</p>
+            </div>)}
+            <div className="actions">
+              {!hostedReplayBuild && selectedThread.status === "draft" && <button className="primary-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : "Approve & send"}</button>}
+              {!hostedReplayBuild && (selectedThread.status === "awaiting reply" || selectedThread.status === "sent") && <button className="ghost-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Simulate reply"}</button>}
+            </div>
+          </div>}
+        </div>
+        <ul className="activity">
+          {data.activity.slice(0, 5).map((item) => <li key={item.id}><strong>{item.agent}</strong> {item.action}</li>)}
+        </ul>
+        <AgentTrace onEvidence={setSource}/>
+      </details>
     </section>
     {source && <EvidenceModal source={source} onClose={() => setSource(null)}/>}
   </main>;
