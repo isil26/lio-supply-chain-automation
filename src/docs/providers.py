@@ -96,8 +96,8 @@ _TRANSLATION_INSTRUCTIONS = (
 class LocalVisionClient:
     def __init__(self, model, url=None):
         self.model = model
-        self.url = url
-        self.cache_key = f"local-vision:{model}:{url or DEFAULT_URL}"
+        self.url = url or os.getenv("SOONY_LOCAL_URL", DEFAULT_URL)
+        self.cache_key = f"local-vision:{model}:{self.url}"
 
     def extract(self, image, *, kind):
         mime = mimetypes.guess_type(image.name)[0] or "image/png"
@@ -109,20 +109,20 @@ class LocalVisionClient:
                 {"type": "text", "text": f"Document category: {kind}."},
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}},
             ],
-            **({"url": self.url} if self.url else {}),
+            url=self.url,
         )
 
 
 class LocalTranslationClient:
     def __init__(self, model, url=None):
         self.model = model
-        self.url = url
-        self.cache_key = f"local-translation:{model}:{url or DEFAULT_URL}"
+        self.url = url or os.getenv("SOONY_LOCAL_URL", DEFAULT_URL)
+        self.cache_key = f"local-translation:{model}:{self.url}"
 
     def extract(self, text, *, kind):
         result = _complete(
             self.model, _TRANSLATION_INSTRUCTIONS, f"Document category: {kind}.\n\n{text}",
-            **({"url": self.url} if self.url else {}),
+            url=self.url,
         )
         return result["facts"]
 

@@ -52,12 +52,14 @@ def waiting_exposure(part, editions, products):
 def ppap_block(docs, supplier, part, onboarding):
     if (supplier.get("qualification_status") or "").casefold() != "conditional":
         return None
-    contract = next((doc for doc in docs if doc["kind"] == "contract"
-                     and doc.get("supplier_id") == supplier["supplier_id"]
-                     and any(field["value"].get("material") == part for field in doc["fields"].get("annex", []))
-                     and any("PPAP" in field["value"] and "written release" in field["value"]
-                             for field in doc["fields"].get("qualification", []))), None)
-    if not contract:
+    contract_clauses = [
+        field["citation"] for doc in docs
+        if doc["kind"] == "contract" and doc.get("supplier_id") == supplier["supplier_id"]
+        and any(field["value"].get("material") == part for field in doc["fields"].get("annex", []))
+        for field in doc["fields"].get("qualification", [])
+        if field.get("method") != "llm_text" and "PPAP" in field["value"] and "written release" in field["value"]
+    ]
+    if not contract_clauses:
         return None
     sections = {entry["value"].splitlines()[0]: entry["citation"] for doc in docs if doc["source"] == POLICY
                 for entry in doc["fields"].get("policy_clause", [])}
@@ -82,7 +84,7 @@ def ppap_block(docs, supplier, part, onboarding):
         "policy_clause": release,
         "exception": {"role": head["value"]["role"], "name": head_name, "policy_clause": exception},
         "evidence": [release, exception, quality["citation"], category["citation"], head["citation"],
-                     *([note] if note else []), *field_sources(contract, "qualification")],
+                     *([note] if note else []), *contract_clauses],
     }
 
 

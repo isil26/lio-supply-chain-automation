@@ -124,16 +124,19 @@ function drawOptions(){
   const item=state.options.find(o=>o.id===optionId) ?? state.options[0];
   $("options").replaceChildren();
   if(!item){$("options").append(label("No decisions pending."));return;}
+  const blocked=item.status==="blocked";
+  const reviewed=item.status==="review" || item.review_requested;
   $("options").append(listSelect("Decision",state.options.map(o=>({id:o.id,name:o.title})),item.id,id=>{optionId=id;drawOptions();}));
   $("options").append(node("h3",item.title),node("p",item.recommendation),
-    label(item.price===null?"Quote pending":new Intl.NumberFormat("en-IE",{style:"currency",currency:item.currency,maximumFractionDigits:2}).format(item.price),"price"),
+    label(blocked?"Blocked":item.price===null?"Quote pending":new Intl.NumberFormat("en-IE",{style:"currency",currency:item.currency,maximumFractionDigits:2}).format(item.price),"price"),
     label(item.priceLabel ?? item.price_label ?? "Cost estimate"),label(item.impact),label(item.risk),label(item.threshold));
   const actions=node("div",undefined,"actions");
   const approve=button(item.status==="approved"?"Approved":"Approve next step",()=>action("/api/decisions/"+item.id+"/approve",{},"Approval recorded."),true);
-  const review=button(item.status==="review"?"Review requested":"Request review",()=>action("/api/decisions/"+item.id+"/review",{},"Review requested."));
+  const review=button(reviewed?"Review requested":"Request review",()=>action("/api/decisions/"+item.id+"/review",{},"Review requested."));
   approve.disabled=item.status==="approved";
-  review.disabled=item.status==="approved" || item.status==="review";
-  actions.append(approve,review,button("Evidence",()=>evidence(item.title,item.evidence)));
+  review.disabled=item.status==="approved" || reviewed;
+  if(!blocked) actions.append(approve);
+  actions.append(review,button("Evidence",()=>evidence(item.title,item.evidence)));
   $("options").append(actions);
 }
 function drawThreads(){
@@ -167,7 +170,9 @@ function drawThreads(){
 function drawActivity(){
   $("activity").replaceChildren(...state.activity.slice(0,8).map(item=>{
     const row=node("article",undefined,"activity");
-    row.append(node("strong",item.agent),node("small",item.time),node("p",item.action));
+    const detail=node("p",item.action);
+    if(item.citation) detail.append(" ",button("Evidence",()=>evidence(item.action,[item.citation])));
+    row.append(node("strong",item.agent),node("small",item.time),detail);
     return row;
   }));
 }

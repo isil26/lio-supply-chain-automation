@@ -49,3 +49,12 @@
 - Created `docs/deck/README.md` with browser presentation and PDF export steps.
 - Source constraints: pitch figures come from `docs/NUMBERS.md`; cost-per-missing-copy and pricing are visibly marked as placeholders.
 - Presenter should open `docs/deck/index.html` in Chromium and export to a 16in x 9in PDF before submission.
+
+## T9 technical depth (codex-truth)
+
+- Optional Ollama extraction uses `SOONY_LLM_MODEL` for notice text and `SOONY_LLM_VISION_MODEL` for receiving crops. `SOONY_LLM_URL` overrides the default loopback endpoint. `SOONY_LLM_PROVIDER=none` selects deterministic extraction. The text quote must match independent OCR or the PDF text layer. Vision must match both the part and the independent handwriting-cell OCR. Model-supplied transcription never provides validation evidence.
+- `GET /api/dashboard` returns OCR, model and validation records in `activity`, including accepted and rejected candidates. Event citations open the original page in the standalone view. Cached traces keep their original execution times. Both model adapters were exercised with test responses on real source documents. A live Ollama model was unavailable in this workspace.
+- The Pune PPAP option and `blockedApprovals` show the exact PP-07 §5 clause and §6 exception route. Dr. Maren Vogt can approve a documented exception. Daniel Okafor still provides written Supplier Quality release once PPAP succeeds. Approval returns HTTP 409 while the release is blocked. Requesting review preserves the block. The component gap exposes up to 3,400 CE copies, or €117,300 at finished-goods standard cost. The missed-copy financial cost is pending confirmation.
+- The 282-document replay had zero extraction errors and zero generic receipt-scan issues. Multi-line receipt matching, the narrow quantity OCR crop, and the art-book correction resolve the three false reports. The art-book adjustment remains a critical handwriting issue. The correction also works with English-only Tesseract and the pipeline invalidates older receiving caches.
+- Refresh locally with `python3 -m src.orchestrator --once`. Then run `python3 -m src.orchestrator --numbers` to print the Markdown report from the evaluated SQLite store. `--db` selects a different evaluated store. The replay preserved the frozen forecast and €12,390 art-book materials estimate. The report counts eight Incoterm conflict lines across six POs.
+- Verified with `python3 -m unittest discover -s src` (34 tests) and the private snapshot.

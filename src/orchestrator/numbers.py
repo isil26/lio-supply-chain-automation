@@ -45,13 +45,13 @@ def numbers_report(con):
         "# NUMBERS.md — live launch snapshot", "",
         "## Launch", "",
         f'- Deadline {deadline:%a %d %b %Y %H:%M} ({LOCAL.key}), {truth["site"]}.',
-        f'- Deadline evidence: {source_refs([truth["source"]])}.', "",
+        f'- Deadline source is {source_refs([truth["source"]])}.', "",
     ]
     lines.extend(table(("Edition", "Demand", "Packed", "Packed share", "Remaining"), (
         (labels[pid], number(row["target"]), number(row["packed"]), f'{row["packed"] / row["target"]:.1%}',
          number(row["remaining"])) for pid, row in editions.items()
     )))
-    lines += ["", f'Pack-out evidence: {source_refs(source for row in editions.values() for source in row["evidence"])}.',
+    lines += ["", f'Pack-out sources are {source_refs(source for row in editions.values() for source in row["evidence"])}.',
               "", "## Forecast", "", f'{truth["model"]["runs"]} runs. {truth["model"]["allocation"]}. '
               f'{truth["model"]["assumptions"]}', ""]
     lines.extend(table(("Edition", "Target", "Expected packed (p10 / p50 / p90)", "P(reach target)", "First stop", "Gap at p50"), (
@@ -81,21 +81,21 @@ def numbers_report(con):
                                "Bundled" if part["embedded_in"] else number(part["inbound"]),
                                number(part["shortfall"]), reason))
     lines.extend(table(("Part", "Need", "SAP stock", "Usable stock", "Inbound counted", "Gap", "Reason"), component_rows))
-    lines += ["", "SAP stock-only gaps: " + (", ".join(naive) if naive else "none") + ".", "",
+    lines += ["", "SAP stock-only gaps are " + (", ".join(naive) if naive else "zero") + ".", "",
               "## Price of the first decision", ""]
     if options:
         decision = options[0]
         price = "quote pending" if decision["price"] is None else f'{decision["currency"]} {decision["price"]:,.2f}'
         lines += [f'- {decision["title"]} — {price}. {decision.get("price_label", "Cost estimate")}. '
                   f'{decision["recommendation"]} {decision["impact"]} {decision["threshold"]}',
-                  f'- Evidence: {source_refs(decision["evidence"])}.',
-                  f'- Options ({len(options)} total): ' + " / ".join(item["title"] for item in options) + "."]
+                  f'- Decision sources are {source_refs(decision["evidence"])}.',
+                  f'- The {len(options)} options are ' + " / ".join(item["title"] for item in options) + "."]
     else:
         lines.append("- No decision options in the evaluated snapshot.")
     for option in options:
         if option.get("approval_block"):
             lines.extend([f'- {option["title"]}. {option["impact"]} {option["recommendation"]}',
-                          f'- Approval evidence: {source_refs(option["approval_block"]["evidence"])}.'])
+                          f'- Approval sources are {source_refs(option["approval_block"]["evidence"])}.'])
 
     quality = truth["data_quality"]
     receipts = [issue for issue in issues if issue["kind"] == "receipt"]
@@ -107,13 +107,13 @@ def numbers_report(con):
     shipments = list(rows(con, "shipment"))
     erp_shipments = {row["shipment_id"] for row in shipments if "/erp/" in row["source"]["file"]}
     tracker_shipments = {row["shipment_id"] for row in shipments if "/logistics/" in row["source"]["file"]}
-    lines.append(f'- Tracker coverage: {number(len(erp_shipments & tracker_shipments))} of {number(len(erp_shipments))} ERP shipments.')
+    lines.append(f'- The tracker covers {number(len(erp_shipments & tracker_shipments))} of {number(len(erp_shipments))} ERP shipments.')
     confirmations = [issue for issue in issues if issue["kind"] == "confirmation"]
     incoterms = [issue for issue in confirmations if "incoterm" in issue.get("changed_fields", [])
                  or "terms " in issue["title"]]
     incoterm_pos = {issue.get("po") or match[1] for issue in incoterms
                     if (match := re.match(r"PO (\S+)", issue["title"]))}
-    lines.append(f'- Incoterm conflicts: {len(incoterms)} lines across {len(incoterm_pos)} POs.')
+    lines.append(f'- Incoterm conflicts affect {len(incoterms)} lines across {len(incoterm_pos)} POs.')
     for issue in confirmations:
         if "promised_date" in issue.get("changed_fields", []) or "promised_date " in issue["title"]:
             lines.append(f'- {issue["title"]} ({source_refs(issue["evidence"])}).')
