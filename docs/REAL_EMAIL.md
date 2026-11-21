@@ -38,3 +38,11 @@ Then start the app as usual (`python3 -m src.orchestrator --online`). In the con
 - Every send still needs human approval and passes the draft guardrails (no price ceilings, walkaway or deadline slack).
 - First real send: one supplier, one approved email, check the Gmail "Sent" folder, then wait for the reply to arrive in the inbox.
 - Tests: `python3 -m unittest src.chaser.test_allowlist src.chaser.test_chaser` (needs `data/`, e.g. `cp -R case-data data`). Tests never send real mail.
+
+## Compare suppliers and negotiate (T74)
+`python3 -m src.chaser.mail_agent compare` reads the latest reply in every supplier thread and ranks the suppliers per material:
+- most weight: chance to arrive before the cut-off (history-adjusted with `src/decide/reliability.py` when the store has enough history) times how much of the need it covers;
+- then landed unit price (converted to EUR with the assumed rates printed under the ranking; override with `CHASER_FX_EUR="USD=0.92,CNY=0.13"`);
+- then evidence (none, date, date + quantity, shipping document).
+
+For the pick it proposes a target price: the cheapest other on-time quote if lower, otherwise 5% below its own quote. `--save-drafts` stores a polite price-review email (EN/PL/KO/ZH) as a normal draft, so it waits in the control room until a person sends it. The email never names other suppliers, a maximum price or deadline slack (guardrails), and never commits to an order. A price a supplier accepts is still a quote until procurement approves it under PP-07.
