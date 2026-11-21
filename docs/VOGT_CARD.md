@@ -4,8 +4,10 @@ She answers only what we ask and does not volunteer. Ask in this order, stop whe
 ## Ask (in this order)
 1. **What does one missing Collector's Edition cost Soony on day one?** (refund, lost sale, chargeback, brand). And one missing Standard copy?
 2. **Which edition do you protect if parts run short, Collector's or Standard, and are partial shipments to pre-orders acceptable?** (Numbered Collector's Editions are all pre-ordered: who decides which pre-orders go without?)
+   *Concrete version (isil-agent):* game cards run out Saturday night and the next 28,000 land Sunday 12:00. Saving cards for Collector's gets all 72,000 Collector's out but costs about 14,000 Standard copies, and only works if the art books and statues are secured too. Use her answer to 1 with docs/VOGT_BREAKEVEN.md: worth it only if a missing Collector's costs more than about 2.5x a missing Standard.
 3. **Who signs the Pune statue release and a concession on the lot that failed inspection, now that the Category Lead role is vacant?** (PP-07 limits: Buyer under 50k, Category Lead under 500k, Head under 2M.)
 4. **What air-freight / expedite budget exists until Sunday 20:00 and who signs it?** (Example in front of her: Karton can hold and load 8,000 finished art books, estimated about EUR 12,390; game-card air lot flew 28,000 of 48,000.)
+   *Add (isil-agent):* will she pay an expedite fee for a pre-booked dock slot and early customs for that 28,000-card air lot? Model: about +21,000 Standard and +3,000 Collector's copies, worth ~€360k even at cost of goods (docs/VOGT_BREAKEVEN.md). Katrin Jansen releases the slot (PP-07 §3).
 5. **If a tool told you about problems like these 48 hours earlier, what would that be worth per launch?**
 
 ## Only if time is left (each is a decision only she can make)
