@@ -1,6 +1,10 @@
 """Incremental extraction, reconciliation and atomic JSONL publication."""
 
-import fcntl
+try:
+    import fcntl
+except ImportError:  # Windows has no fcntl; use a byte-range lock instead.
+    fcntl = None
+    import msvcrt
 import hashlib
 import json
 import os
@@ -137,6 +141,20 @@ def publish(rows, output):
             pending.unlink(missing_ok=True)
 
 
+def _exclusive_lock(stream):
+    """Block until this process holds the pipeline lock; released when the file closes."""
+    if fcntl is not None:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        return
+    stream.seek(0)
+    while True:
+        try:
+            msvcrt.locking(stream.fileno(), msvcrt.LK_LOCK, 1)  # retries for ~10 s, then raises
+            return
+        except OSError:
+            continue
+
+
 def run_pipeline(data, state, output, *, vision=None, translator=None):
     data, state, output = Path(data).resolve(), Path(state), Path(output)
     if not data.is_dir():
@@ -144,7 +162,7 @@ def run_pipeline(data, state, output, *, vision=None, translator=None):
     output.parent.mkdir(parents=True, exist_ok=True)
     lock = output.with_suffix(output.suffix + ".lock")
     with lock.open("a") as stream:
-        fcntl.flock(stream, fcntl.LOCK_EX)
+        _exclusive_lock(stream)
         manifest = json.loads(state.read_text(encoding="utf-8")) if state.is_file() else None
         if manifest is not None and (not isinstance(manifest, dict) or any(
             not isinstance(sha, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", sha) for sha in manifest.values()
