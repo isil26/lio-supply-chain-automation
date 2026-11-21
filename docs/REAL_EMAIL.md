@@ -2,6 +2,8 @@
 
 Since 21 Nov 18:45 (Gülşah's decision) mail-agent sends supplier emails automatically in live mode (`CHASER_REAL_SMTP=1`, not `--demo`): each orchestrator cycle it drafts reminders and negotiation emails, then sends every draft (`src/chaser/autosend.py`). No cap per cycle (suppliers are simulated). Kept: supplier allowlist, guardrails, anti-spam (while a supplier hasn't answered, one email per 30 min, `CHASER_AUTO_COOLDOWN_MIN`; after a reply we answer at once; never the same text twice to the same supplier). Stop it with `CHASER_AUTO_SEND=0`. The demo replay keeps dry-run and the approval step.
 
+**Send modes (IMPORTANT.md §6, 21 Nov 20:50).** AUTO is only for information requests (status, quantity, date, documents, quotes, reminders, answers): they go out without a click and the activity log says "AUTO (information request)". Anything binding (accepting a price or offer, an order, a reservation on our terms; detected in EN/PL/KO/ZH by `autosend.binding`) is ONE-CLICK: it is sent only after a named person clicked, either Approve in the Supplier offers table, an approved action (T83/T94), or `POST /api/mail/<id>/approve {"by": "<name>"}`. Until then the email stays `awaiting click` (list: `GET /api/mail/held`) and the log says "ONE-CLICK needed". Sent binding emails are logged "ONE-CLICK approved by <name>".
+
 ## One-time setup (a human does this)
 1. Team Gmail: manti.starthackathon@gmail.com (created 21 Nov). Turn on 2-Step Verification (Google Account > Security).
 2. Create an app password: https://myaccount.google.com/apppasswords, name it "lio chaser", copy the 16 characters.

@@ -634,6 +634,9 @@ def handler(loop):
                         if deadline:
                             supplier_deals.sync(con, deadline)
                         return self.out(supplier_deals.list_deals(con))
+                    if path == "/api/mail/held":  # IMPORTANT 6 mail-agent: binding emails waiting for one click
+                        from src.chaser import autosend as mail_auto
+                        return self.out({"held": mail_auto.held(con)})
                     if path == "/api/suppliers/best":  # T77 mail-agent: read-only ranking
                         return self.out(supplier_report(con, save=False))
                     if path == "/api/documents":
@@ -706,6 +709,15 @@ def handler(loop):
                         except KeyError:
                             return self.out({"error": "Unknown offer. Refresh the page."}, 404)
                         return self.out({"ok": True, "deal": row})
+                    held = re.fullmatch(r"/api/mail/([A-Za-z0-9_-]{1,64})/approve", path)
+                    if held:  # IMPORTANT 6 mail-agent: one click on a binding email; the next mail cycle sends it
+                        from src.chaser import autosend as mail_auto
+                        try:
+                            return self.out({"ok": True, **mail_auto.approve(con, held[1], str(body.get("by") or "")[:80])})
+                        except KeyError:
+                            return self.out({"error": "Unknown email."}, 404)
+                        except ValueError as exc:
+                            return self.out({"error": str(exc)}, 400)
                     if path == "/api/suppliers/drafts":  # T77 mail-agent: create drafts only, never sends
                         return self.out(supplier_report(con, save=True, kind=body.get("kind", "all")))
                     match = re.fullmatch(r"/api/decisions/([a-f0-9]+)/(approve|review)", path)
