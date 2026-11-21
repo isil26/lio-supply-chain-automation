@@ -51,3 +51,12 @@ SAP-believed view (naive netting): game card 34,800, case 32,000, magnet 100,800
 
 ## Open / not to claim until verified
 - Magnet BOM line (double count vs real stop). Whether the 350k cases can be collected today. Real status of the dock-held game card lot. Any price other than the art book option. The EUR 12k pilot fee (a guess).
+
+
+## Dr. Vogt's number (Sat 21 Nov evening, reported by the team; verify in writing)
+- **Refund: EUR 120 per Collector's Edition shipped even one day late.** Standard-copy cost: unknown.
+- Collector's shortfall vs 72,000 target, baseline p50: 72,000 - 62,550 = **9,450 copies** -> exposure **EUR 1,134,000** (p90 64,350: 7,650 -> EUR 918,000). Upper bound if all 25,200 unpacked copies slipped: EUR 3,024,000.
+- Optimizer protecting the Collector's Edition (docs/PACKPLAN.md, 66,100): gap 5,900 -> EUR 708,000, i.e. **EUR 426,000 less** exposure than baseline.
+- Dock slot + early customs for the 28,000-card air lot (docs/VOGT_BREAKEVEN.md, +3,133 Collector's): **EUR 375,960** of refunds avoided from the Collector's side alone, plus about +21,216 Standard copies (Standard cost unknown).
+- "Collector's complete" package (reaches 72,000, +5,848 vs option A): up to **EUR 701,760** avoided; it costs about 14,292 Standard copies, so it pays off only if one missing Standard copy costs less than about EUR 48 (assumes the EUR 12,390 art books; statue concession cost unquoted).
+All figures are exposure under the assumption that every copy not packed by Sunday 20:00 ships at least a day late and triggers the refund. Not a forecast of actual refunds.

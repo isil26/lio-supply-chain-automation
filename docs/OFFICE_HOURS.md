@@ -19,3 +19,11 @@ Optional if time: Can Marketing approve sleeve revision B? Which pre-orders get 
 | 5 | | price = ? | business case |
 
 After the slot: update docs/NUMBERS.md (mark source: "Dr. Vogt, office hours, Sat 19:00"), docs/PITCH_3MIN.md and the deck, replace the [ASK DR. VOGT] placeholders, then commit and push. Tell the team in coord/INBOX.md.
+
+
+## ANSWERS RECEIVED (Dr. Maren Vogt, Sat 21 Nov, reported by the team to nick at 21 Nov 19:19; not yet in writing)
+| # | What she said | Number / fact | Used in |
+|---|---|---|---|
+| 1 | Soony must **refund EUR 120 per premium (Collector's) edition even if it ships only one day late.** | **L_CE = EUR 120 per Collector's copy not delivered on time.** L_STD: NOT given (still unknown). | docs/NUMBERS.md, docs/VOGT_BREAKEVEN.md, deck slide 5, expedite model |
+| 3 | She would **approve anything that saves the launch and leads to profit**, for example the Hamburg actions (dock slot, early customs). | Pre-approval in principle for net-profitable launch-saving actions; still within PP-07 limits, dock slot still needs the site lead (Katrin Jansen). | docs/AUTHORIZATIONS.md, action queue |
+| product | **She is bored of dashboards. She does not want a dashboard; she wants actionable things.** | Product direction: action-first (do-now tasks with owner, deadline, EUR at stake, one-click send/approve), not charts. | pitch, UI, agents |
