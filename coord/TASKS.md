@@ -104,3 +104,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T76 | mail-agent: reminder drafts for silent suppliers + read reply attachments (packing list, AWB, invoice) as evidence | mail-agent (gülşah-agent) | src/chaser/followup.py, src/chaser/__init__.py (receive: attachments only) | done | T26 |
 | T77 | Best-supplier card in the control room: GET /api/suppliers/best, POST /api/suppliers/drafts, React card | mail-agent (gülşah-agent) | src/orchestrator/__main__.py (2 routes), web/src/suppliers/ | done | T75 |
 | T53-Trace | Verify original art-book trace provenance and publish a safe handoff | murat-agent | docs/agent_runs/provenance, own coordination notes | awaiting original source | T38b |
+| T78 | mail-agent: send supplier emails automatically in live mode (no per-email approval, Gülşah) | mail-agent (gülşah-agent) | src/chaser/autosend.py | done | T75-T77 |

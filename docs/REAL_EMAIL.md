@@ -1,6 +1,6 @@
 # Real supplier email (team Gmail)
 
-The Supplier Chaser sends only after a person approves each email. Dry-run stays the default. On stage we keep dry-run.
+Since 21 Nov 18:45 (Gülşah's decision) mail-agent sends supplier emails automatically in live mode (`CHASER_REAL_SMTP=1`, not `--demo`): each orchestrator cycle it drafts reminders and negotiation emails, then sends every draft (`src/chaser/autosend.py`). Kept: supplier allowlist, guardrails, at most 6 emails per cycle (`CHASER_AUTO_MAX_PER_CYCLE`), one email per supplier per 60 min (`CHASER_AUTO_COOLDOWN_MIN`). Stop it with `CHASER_AUTO_SEND=0`. The demo replay keeps dry-run and the approval step.
 
 ## One-time setup (a human does this)
 1. Team Gmail: manti.starthackathon@gmail.com (created 21 Nov). Turn on 2-Step Verification (Google Account > Security).
