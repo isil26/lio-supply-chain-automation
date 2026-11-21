@@ -213,7 +213,8 @@ class AutonomyLoop:
                 con.execute(
                     "UPDATE agent_runs SET status=?,cost=?,finished=?,harness_report=?,trace_json=?,reason=?,trace_start=? WHERE id=?",
                     (status, cost, time.time(), _json(report or {}),
-                     _json(trace), result.get("live_failed", {}).get("reason") if isinstance(result, dict) else None,
+                     _json(trace),
+                     (result.get("live_failed", {}).get("reason") or result.get("summary")) if isinstance(result, dict) else None,
                      trace_start, run_id),
                 )
         except Exception as exc:

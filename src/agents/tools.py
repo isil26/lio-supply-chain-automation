@@ -21,6 +21,7 @@ from src.chaser.store import ChaserStore
 from src.decide import choose as choose_options
 from src.decide.expedite import choose as score_expedite
 from src.decide.reliability import SupplierReliability
+from src.decide.release_gate import release_gate
 from src.docs import documents
 from src.ingest.store import DB, ROOT, connect, rows
 from src.truth import readiness
@@ -79,6 +80,18 @@ def _list_shortfalls(ctx, args):
         truth = ctx.truth(con)
     parts = [part for part in truth["parts"].values() if part["shortfall"] > 0 and not part["embedded_in"]]
     return _result(parts, [source for part in parts for source in part.get("evidence", [])])
+
+
+def _release_gate_status(ctx, args):
+    with ctx.db() as con:
+        gate = release_gate(con, ctx.data_root)
+    part_id = args.get("part_id")
+    if part_id:
+        value = gate["parts"].get(str(part_id))
+        if value is None:
+            raise ValueError(f"Unknown part_id: {part_id}")
+        return _result(value, value.get("evidence", []))
+    return _result(gate, [source for part in gate["parts"].values() for source in part.get("evidence", [])])
 
 
 def _whatif(ctx, args):
@@ -316,6 +329,7 @@ def all_tools(db_path=DB) -> list[dict]:
     tools = [
         ("get_readiness", "Compute the deterministic cited readiness forecast; use first for a launch overview.", _schema({},), _get_readiness, False),
         ("list_shortfalls", "List components whose deterministic required quantity exceeds usable stock/inbound; use to identify every current gap.", _schema({}), _list_shortfalls, False),
+        ("release_gate_status", "Read-only cited GO/HOLD/HUMAN release status for every BOM part, or one part_id.", _schema({"part_id": text}), _release_gate_status, False),
         ("whatif", "Replay a readiness scenario without mutating state; example changes={\"release_lot\":\"...\"}.", _schema({"changes": {"type": "object"}}, ("changes",)), _whatif, False),
         ("supplier_history", "Return calibrated lateness and source evidence for one real SUP-#### supplier, e.g. SUP-0028.", _schema({"supplier_id": text}, ("supplier_id",)), _supplier_history, False),
         ("search_documents", "Search extracted facts and exact citations. Query distinctive terms such as a PO, material, notice filename, AQL, inspection, or release; do not use only 'launch'.", _schema({"query": text, "supplier_id": text}), _search_documents, False),
