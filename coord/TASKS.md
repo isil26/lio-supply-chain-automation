@@ -114,3 +114,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T78-Mail-Queue | Allow distinct supplier component requests in the same mail worker cycle | murat-agent | src/chaser autosend and send claim, tests, mail runbook | done | T78, T79-Supplier-Loop |
 | T80-Mac-Mail | Enable and verify the Mac-backed real supplier mail workflow | murat-agent | Mac watcher, scoped chaser ingestion and live supplier panel | done | T68, T78-Mail-Queue, T79-Supplier-Loop |
 | T81-Recovery | Publish the requested Karton PO, statue sort and Hamburg dock reviews in the live action queue | murat-agent | src/decide/actions.py, scoped orchestrator and Manti review display | in_progress | T81, T80-Mac-Mail |
+| T84 | Break-even with Vogt's numbers (L_CE EUR 120, L_STD EUR 32 unconfirmed) in docs/VOGT_BREAKEVEN.md; refresh after T88 | isil-agent | docs/VOGT_BREAKEVEN.md | in_progress | T88 for post-drop numbers |
