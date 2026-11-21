@@ -138,10 +138,12 @@ def network(con, site_id, short_materials):
     supply = {}
     for supplier, material in con.execute("SELECT supplier_id, component_id FROM supplier_components"):
         supply.setdefault(supplier, set()).add(material)
-    suppliers = [{"id": sid, "name": name, "city": city, "country": country, "lat": lat, "lon": lon,
-                  "atRisk": bool(supply.get(sid, set()) & short_materials)}
-                 for sid, name, city, country, lat, lon in con.execute(
-                     "SELECT supplier_id, name, city, country, lat, lon FROM suppliers WHERE lat IS NOT NULL AND lon IS NOT NULL")]
+    # One point per supplier: a re-sent profile (e.g. a data drop) can leave several rows; the last one wins.
+    suppliers = list({sid: {"id": sid, "name": name, "city": city, "country": country, "lat": lat, "lon": lon,
+                            "atRisk": bool(supply.get(sid, set()) & short_materials)}
+                      for sid, name, city, country, lat, lon in con.execute(
+                          "SELECT supplier_id, name, city, country, lat, lon FROM suppliers "
+                          "WHERE lat IS NOT NULL AND lon IS NOT NULL ORDER BY rowid")}.values())
     shipments = []
     for sid, supplier, mode, status, lat, lon, eta, materials in con.execute(
             "SELECT shipment_id, supplier_id, mode, status, last_lat, last_lon, eta, material_ids FROM open_shipments "
