@@ -235,7 +235,7 @@ def build(now: datetime | None = None):
         titles = {re.sub(r"\W+", " ", r["title"].lower())[:40] for r in rows}
         if len(rows) > 1 and len(titles) > 1 and not any("taken" in t or "re-owned" in t or "assigned" in t for t in titles):
             issues.append({"kind": "id_reused", "task": tid, "lines": [r["line"] for r in rows],
-                           "text": f"{tid} has {len(rows)} rows with {len(titles)} different titles in TASKS.md (re-owned or ID reused; last row wins (lines {', '.join(str(r['line']) for r in rows)})."})
+                           "text": f"{tid} has {len(rows)} rows with {len(titles)} different titles in TASKS.md (re-owned or ID reused; last row wins; lines {', '.join(str(r['line']) for r in rows)})."})
         elif len(rows) > 2:
             issues.append({"kind": "task_rows", "task": tid, "lines": [r["line"] for r in rows],
                            "text": f"{tid} has {len(rows)} rows in TASKS.md; the last (line {rows[-1]['line']}, '{rows[-1]['raw_state']}') wins."})
@@ -314,7 +314,8 @@ def build(now: datetime | None = None):
         # board says the task is finished (maybe by a re-owner) while this STATUS row is still open
         for r in list(open_now):
             tid = re.match(r"^(T\d+\w*)", r["task"])
-            bt = latest_task.get(tid.group(1)) if tid else None
+            own = [t for t in by_id.get(tid.group(1), []) if t["owner"] == name] if tid else []
+            bt = own[-1] if own else (latest_task.get(tid.group(1)) if tid else None)  # ID reuse: prefer own row
             if bt and bt["state"] in {"done", "released"}:
                 open_now.remove(r)
                 flags.append(f"STATUS line {r['line']} says '{r['raw_state']}' for {tid.group(1)}, but TASKS.md says "
