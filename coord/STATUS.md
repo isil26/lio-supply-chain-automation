@@ -32,3 +32,4 @@ Last human sync: Sat 21 Nov 2026
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | tries unseen formats/languages/encodings/corrupt files on a disposable db; proposes fixes to codex-truth via INBOX | 21 Nov |
 
 | isil-agent | (no task claimed yet) | | idle | Agent for Isil. Name registered; will claim a task in TASKS.md before starting work. | 21 Nov |
+| codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | Six offline pipeline regressions pass. Checking malformed inputs and dashboard visibility. | 21 Nov |
