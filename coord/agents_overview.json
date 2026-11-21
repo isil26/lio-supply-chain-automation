@@ -1,23 +1,23 @@
 {
- "generated_at": "2026-11-21T19:42+01:00",
+ "generated_at": "2026-11-21T19:53+01:00",
  "generator": "overview-agent (scripts/overview.py)",
  "head": {
-  "sha": "3ddbf39",
-  "subject": "T6: Record verified hosted header alignment [codex-deploy]",
-  "when": "2026-11-21T19:40+01:00"
+  "sha": "7bc6a3b",
+  "subject": "T81-Drop-1925: Update live launch recovery reviews [murat-agent]",
+  "when": "2026-11-21T19:49+01:00"
  },
  "summary": {
-  "agents": 62,
+  "agents": 64,
   "by_state": {
    "in_progress": 6,
    "assigned": 1,
    "review": 2,
    "unknown": 7,
    "outdated": 2,
-   "done": 43,
+   "done": 45,
    "released": 1
   },
-  "status_rows": 112,
+  "status_rows": 117,
   "inbox_requests_open": 14,
   "unclaimed_open_tasks": [
    {
@@ -55,15 +55,15 @@
    "dirs": "coord",
    "notes": "Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX.",
    "status_line": 73,
-   "last_activity": "2026-11-21T19:40+01:00",
-   "last_activity_ago": "2 min ago",
+   "last_activity": "2026-11-21T19:46+01:00",
+   "last_activity_ago": "6 min ago",
    "last_commit": {
-    "sha": "3ddbf39",
-    "when": "2026-11-21T19:40+01:00",
-    "subject": "T6: Record verified hosted header alignment [codex-deploy]",
+    "sha": "a37a8a9",
+    "when": "2026-11-21T19:46+01:00",
+    "subject": "T86: Coordinate protected replay handoff for 19:25 drop [codex-deploy]",
     "via_autosync": false
    },
-   "commits_total": 18,
+   "commits_total": 19,
    "board_tasks": [
     {
      "id": "T19-Redeploy",
@@ -104,15 +104,15 @@
    "dirs": "scripts/overview.py, src/overview/, coord/AGENTS_OVERVIEW.md, coord/agents_overview.json",
    "notes": "Digest on main: coord/AGENTS_OVERVIEW.md + coord/agents_overview.json (newest STATUS row per agent, outdated/duplicate rows, unanswered INBOX, stale in_progress). Live page: `python3 scripts/overview.py --serve 8765`. Runs on Isil's laptop and refreshes the two files every 10 min while it is on. Read-only on all other files.",
    "status_line": 115,
-   "last_activity": "2026-11-21T19:32+01:00",
+   "last_activity": "2026-11-21T19:42+01:00",
    "last_activity_ago": "10 min ago",
    "last_commit": {
-    "sha": "0b8e5c0",
-    "when": "2026-11-21T19:32+01:00",
-    "subject": "T78: refresh agents overview (62 agents, 7 in progress) [overview-agent]",
+    "sha": "aa09eee",
+    "when": "2026-11-21T19:42+01:00",
+    "subject": "T78: refresh agents overview (62 agents, 6 in progress) [overview-agent]",
     "via_autosync": false
    },
-   "commits_total": 21,
+   "commits_total": 22,
    "board_tasks": [
     {
      "id": "T78",
@@ -146,7 +146,7 @@
    "notes": "Tracking input freshness, hosted/local behavior and research handoffs.",
    "status_line": 42,
    "last_activity": "2026-11-21T15:42+01:00",
-   "last_activity_ago": "4 h 00 min ago",
+   "last_activity_ago": "4 h 10 min ago",
    "last_commit": {
     "sha": "826a043",
     "when": "2026-11-21T15:42+01:00",
@@ -293,7 +293,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T15:51+01:00",
-   "last_activity_ago": "3 h 51 min ago",
+   "last_activity_ago": "4 h 01 min ago",
    "last_commit": {
     "sha": "596f79d",
     "when": "2026-11-21T15:51+01:00",
@@ -343,7 +343,7 @@
    "notes": "`5cf4fbe` implementation. Protected local browser login, AI reasoning, supplier update and reload passed. Summary-only provenance at `f68cf1d`; original events awaiting source. codex-deploy owns protected preview and promotion.",
    "status_line": 113,
    "last_activity": "2026-11-21T17:43+01:00",
-   "last_activity_ago": "119 min ago",
+   "last_activity_ago": "2 h 10 min ago",
    "last_commit": {
     "sha": "f14798d",
     "when": "2026-11-21T17:43+01:00",
@@ -427,7 +427,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T19:25+01:00",
-   "last_activity_ago": "17 min ago",
+   "last_activity_ago": "28 min ago",
    "last_commit": {
     "sha": "23221f3",
     "when": "2026-11-21T19:25+01:00",
@@ -452,7 +452,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T18:44+01:00",
-   "last_activity_ago": "57 min ago",
+   "last_activity_ago": "68 min ago",
    "last_commit": {
     "sha": "4552716",
     "when": "2026-11-21T18:44+01:00",
@@ -477,7 +477,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:47+01:00",
-   "last_activity_ago": "4 h 55 min ago",
+   "last_activity_ago": "5 h 05 min ago",
    "last_commit": {
     "sha": "7bae579",
     "when": "2026-11-21T14:47+01:00",
@@ -502,7 +502,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:46+01:00",
-   "last_activity_ago": "4 h 56 min ago",
+   "last_activity_ago": "5 h 07 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [],
@@ -636,136 +636,22 @@
    "flags": []
   },
   {
-   "name": "gülşah-agent",
-   "kind": "agent",
-   "current_task": "T71 live agent map",
-   "state": "done",
-   "dirs": "web/src/agents/AgentGraph.tsx, agentGraph.css",
-   "notes": "New \"Agents at work\" card under Missing parts/Next step. Gülşah picked the graph. Live: polls runs+trace every 2 s, new runs replay from step 1. Hosted: replays /snapshot/agent_run.json in plain words. Old AgentTrace and Behind the scenes untouched. Build passes. Vercel needs a redeploy to show it.",
-   "status_line": 107,
-   "last_activity": "2026-11-21T19:36+01:00",
-   "last_activity_ago": "6 min ago",
-   "last_commit": {
-    "sha": "c5a85a5",
-    "when": "2026-11-21T19:36+01:00",
-    "subject": "T78: email review fixes: Hamburg time in emails, one negotiation per supplier+part, tests run without data/ [gülşah-agent]",
-    "via_autosync": false
-   },
-   "commits_total": 28,
-   "board_tasks": [
-    {
-     "id": "T71",
-     "title": "Agent visualization rebuilt as live agent map: main-page card \"Agents at work\", agents lig",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [
-    {
-     "line": 71,
-     "task": "T28 UI taste + accessibility pass",
-     "state": "in_progress"
-    }
-   ],
-   "blockers": [],
-   "inbox_open_to": [
-    {
-     "line": 190,
-     "from": "nick",
-     "when": "21 Nov",
-     "text": "copilot-viz (T71) is extending web/src/agents/* (agent graph, tool-call stream, Present mode) using your design tokens; please avoid editing web/src/agents/*. If you want to own the visualization instead, say so here and I will stop copilot"
-    }
-   ],
-   "inbox_open_from": [],
-   "flags": [
-    "STATUS line 71 still says 'in_progress' for 'T28 UI taste + accessibility pass' but the agent moved on"
-   ]
-  },
-  {
-   "name": "leo-claude",
-   "kind": "agent",
-   "current_task": "T6 redesign: Manti by Lio dark dashboard + supply map",
-   "state": "done",
-   "dirs": "web/src (main.tsx, styles.css, SupplyMap.tsx), small hooks in src/orchestrator dashboard() and src/ingest/store.py",
-   "notes": "Answer-first layout, one accent colour, map of suppliers/shipments/DC-HAM from data. AgentTrace kept inside Agents section. Vercel needs redeploy. 13 tests already failing on main before this (chaser etc.), none added.",
-   "status_line": 91,
-   "last_activity": "2026-11-21T19:35+01:00",
-   "last_activity_ago": "7 min ago",
-   "last_commit": {
-    "sha": "4319983",
-    "when": "2026-11-21T19:35+01:00",
-    "subject": "T6: Align header items on one line [leo-claude]",
-    "via_autosync": false
-   },
-   "commits_total": 13,
-   "board_tasks": [
-    {
-     "id": "T48",
-     "title": "(assigned by nick)",
-     "state": "assigned"
-    },
-    {
-     "id": "T57",
-     "title": "(assigned by nick)",
-     "state": "assigned"
-    },
-    {
-     "id": "T29",
-     "title": "(assigned by nick)",
-     "state": "assigned"
-    }
-   ],
-   "board_open": [
-    "T48",
-    "T57",
-    "T29"
-   ],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [
-    {
-     "line": 159,
-     "from": "nick",
-     "when": "21 Nov 16:00",
-     "text": "please take these OPEN tasks (details in coord/OPEN_TASKS.md; claim by adding your row to coord/TASKS.md and STATUS.md): T48 browser QA of the live demo (use your browser tools; screenshots in docs/ui/, report docs/QA_BROWSER.md) | T57 mobi"
-    },
-    {
-     "line": 190,
-     "from": "nick",
-     "when": "21 Nov",
-     "text": "copilot-viz (T71) is extending web/src/agents/* (agent graph, tool-call stream, Present mode) using your design tokens; please avoid editing web/src/agents/*. If you want to own the visualization instead, say so here and I will stop copilot"
-    },
-    {
-     "line": 253,
-     "from": "nick",
-     "when": "21 Nov 19:19",
-     "text": "NEW DIRECTION FROM DR. VOGT. (1) Soony refunds EUR 120 per Collector's Edition shipped even one day late. (2) She would approve anything that saves the launch and leads to profit, e.g. the Hamburg actions. (3) She is bored of dashboards: sh"
-    }
-   ],
-   "inbox_open_from": [],
-   "flags": [
-    "T48 assigned by nick, not acknowledged on the board",
-    "T57 assigned by nick, not acknowledged on the board",
-    "T29 assigned by nick, not acknowledged on the board"
-   ]
-  },
-  {
    "name": "murat-agent",
    "kind": "agent",
-   "current_task": "T81-Recovery",
+   "current_task": "T81-Drop-1925",
    "state": "done",
-   "dirs": "src/decide/actions.py, scoped orchestrator and Manti review display",
-   "notes": "Verified three pending approval cards and two Message-ID matched replies. Boise ruled out Sunday morning and Hwaseong could not confirm carrier timing, documents or additional on-time stock.",
-   "status_line": 121,
-   "last_activity": "2026-11-21T19:34+01:00",
-   "last_activity_ago": "8 min ago",
+   "dirs": "case-data and live recovery reviews",
+   "notes": "Portal files on private main at 4de57a7. Verified the new forecast and matched supplier replies. Manti reviews cover the air lot, art-book PO, rev-C receipt, terminal case pickup and statue sort. See HANDOFFS for conditional full-launch schedule.",
+   "status_line": 128,
+   "last_activity": "2026-11-21T19:49+01:00",
+   "last_activity_ago": "3 min ago",
    "last_commit": {
-    "sha": "4a6d09e",
-    "when": "2026-11-21T19:34+01:00",
-    "subject": "T81: Record verified recovery outreach and pending reviews [murat-agent]",
+    "sha": "7bc6a3b",
+    "when": "2026-11-21T19:49+01:00",
+    "subject": "T81-Drop-1925: Update live launch recovery reviews [murat-agent]",
     "via_autosync": false
    },
-   "commits_total": 39,
+   "commits_total": 41,
    "board_tasks": [
     {
      "id": "T7",
@@ -852,9 +738,155 @@
    ],
    "inbox_open_from": [],
    "flags": [
+    "1 older STATUS row(s) superseded by newer ones",
     "STATUS line 110 still says 'awaiting original source' for 'T53-Trace art-book provenance' but the agent moved on",
     "T60 assigned by nick, not acknowledged on the board",
     "T55 assigned by nick, not acknowledged on the board"
+   ]
+  },
+  {
+   "name": "gülşah-agent",
+   "kind": "agent",
+   "current_task": "T71 live agent map",
+   "state": "done",
+   "dirs": "web/src/agents/AgentGraph.tsx, agentGraph.css",
+   "notes": "New \"Agents at work\" card under Missing parts/Next step. Gülşah picked the graph. Live: polls runs+trace every 2 s, new runs replay from step 1. Hosted: replays /snapshot/agent_run.json in plain words. Old AgentTrace and Behind the scenes untouched. Build passes. Vercel needs a redeploy to show it.",
+   "status_line": 107,
+   "last_activity": "2026-11-21T19:48+01:00",
+   "last_activity_ago": "4 min ago",
+   "last_commit": {
+    "sha": "cba79b6",
+    "when": "2026-11-21T19:48+01:00",
+    "subject": "T90: supplier offers table with best offer and Approve/Decline [gülşah-agent]",
+    "via_autosync": false
+   },
+   "commits_total": 30,
+   "board_tasks": [
+    {
+     "id": "T71",
+     "title": "Agent visualization rebuilt as live agent map: main-page card \"Agents at work\", agents lig",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [
+    {
+     "line": 71,
+     "task": "T28 UI taste + accessibility pass",
+     "state": "in_progress"
+    }
+   ],
+   "blockers": [],
+   "inbox_open_to": [
+    {
+     "line": 190,
+     "from": "nick",
+     "when": "21 Nov",
+     "text": "copilot-viz (T71) is extending web/src/agents/* (agent graph, tool-call stream, Present mode) using your design tokens; please avoid editing web/src/agents/*. If you want to own the visualization instead, say so here and I will stop copilot"
+    }
+   ],
+   "inbox_open_from": [],
+   "flags": [
+    "STATUS line 71 still says 'in_progress' for 'T28 UI taste + accessibility pass' but the agent moved on"
+   ]
+  },
+  {
+   "name": "sonnet-profit",
+   "kind": "agent",
+   "current_task": "T92 profit plan",
+   "state": "done",
+   "dirs": "docs/PROFIT_PLAN.md, scripts/profit_model.py",
+   "notes": "Best subset ABCDF (Collector first, dock+customs, cases, art books, statues) base net about EUR 840k, cost EUR 31k. Rerun after engine refresh and Vogt L_STD confirmation. No commit.",
+   "status_line": 125,
+   "last_activity": "2026-11-21T19:46+01:00",
+   "last_activity_ago": "7 min ago",
+   "last_commit": {
+    "sha": "5565430",
+    "when": "2026-11-21T19:46+01:00",
+    "subject": "autosync: 6 files [nick]",
+    "via_autosync": true
+   },
+   "commits_total": 1,
+   "board_tasks": [
+    {
+     "id": "T92-profit",
+     "title": "Profit plan and model (docs/PROFIT_PLAN.md, scripts/profit_model.py)",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "leo-claude",
+   "kind": "agent",
+   "current_task": "T6 redesign: Manti by Lio dark dashboard + supply map",
+   "state": "done",
+   "dirs": "web/src (main.tsx, styles.css, SupplyMap.tsx), small hooks in src/orchestrator dashboard() and src/ingest/store.py",
+   "notes": "Answer-first layout, one accent colour, map of suppliers/shipments/DC-HAM from data. AgentTrace kept inside Agents section. Vercel needs redeploy. 13 tests already failing on main before this (chaser etc.), none added.",
+   "status_line": 91,
+   "last_activity": "2026-11-21T19:35+01:00",
+   "last_activity_ago": "17 min ago",
+   "last_commit": {
+    "sha": "4319983",
+    "when": "2026-11-21T19:35+01:00",
+    "subject": "T6: Align header items on one line [leo-claude]",
+    "via_autosync": false
+   },
+   "commits_total": 13,
+   "board_tasks": [
+    {
+     "id": "T48",
+     "title": "(assigned by nick)",
+     "state": "assigned"
+    },
+    {
+     "id": "T57",
+     "title": "(assigned by nick)",
+     "state": "assigned"
+    },
+    {
+     "id": "T29",
+     "title": "(assigned by nick)",
+     "state": "assigned"
+    }
+   ],
+   "board_open": [
+    "T48",
+    "T57",
+    "T29"
+   ],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [
+    {
+     "line": 159,
+     "from": "nick",
+     "when": "21 Nov 16:00",
+     "text": "please take these OPEN tasks (details in coord/OPEN_TASKS.md; claim by adding your row to coord/TASKS.md and STATUS.md): T48 browser QA of the live demo (use your browser tools; screenshots in docs/ui/, report docs/QA_BROWSER.md) | T57 mobi"
+    },
+    {
+     "line": 190,
+     "from": "nick",
+     "when": "21 Nov",
+     "text": "copilot-viz (T71) is extending web/src/agents/* (agent graph, tool-call stream, Present mode) using your design tokens; please avoid editing web/src/agents/*. If you want to own the visualization instead, say so here and I will stop copilot"
+    },
+    {
+     "line": 253,
+     "from": "nick",
+     "when": "21 Nov 19:19",
+     "text": "NEW DIRECTION FROM DR. VOGT. (1) Soony refunds EUR 120 per Collector's Edition shipped even one day late. (2) She would approve anything that saves the launch and leads to profit, e.g. the Hamburg actions. (3) She is bored of dashboards: sh"
+    }
+   ],
+   "inbox_open_from": [],
+   "flags": [
+    "T48 assigned by nick, not acknowledged on the board",
+    "T57 assigned by nick, not acknowledged on the board",
+    "T29 assigned by nick, not acknowledged on the board"
    ]
   },
   {
@@ -866,7 +898,7 @@
    "notes": "Dock slot worth EUR 1.05M (EUR 376k on CE refunds alone); Collector's-first package +EUR 232k to 689k net; full save plan with the Boise lot by Sun 08:00 worth EUR 1.8M (EUR 1.08M CE only). Will refresh after T88.",
    "status_line": 34,
    "last_activity": "2026-11-21T19:30+01:00",
-   "last_activity_ago": "11 min ago",
+   "last_activity_ago": "22 min ago",
    "last_commit": {
     "sha": "edb0f23",
     "when": "2026-11-21T19:30+01:00",
@@ -915,13 +947,13 @@
   {
    "name": "mail-agent",
    "kind": "agent",
-   "current_task": "T83 send path for actions",
+   "current_task": "T90 offers table + Approve/Decline",
    "state": "done",
-   "dirs": "src/chaser/actions.py, test_actions.py",
-   "notes": "`actions.on_approve(con, action, approved_by)` dispatches one approved T81 action: supplier -> email in their language via the chaser path (allowlist, guardrails; live sends, else dry run; supplier-loop cases not mailed twice; send problems leave it queued for the next auto-send cycle); internal -> prepared message to the named person with what/by when/EUR case (EUR 32 Std, EUR 120 CE)/evidence/PP-07 approver. `actions.status(con)` for the Actions screen, `actions.mark(con, id, 'sent'",
-   "status_line": 122,
+   "dirs": "src/chaser/deals.py, web/src/suppliers/Offers.tsx, 2 routes",
+   "notes": "deals table (qty, unit price, EUR total, arrival, on-time chance, proof, incoterm, terms, MOQ, contract price, their words), best offer per part, Approve = PP-07 signer + non-binding reserve email, Decline = polite email; offer changes after a decision reset it to \"changed\". 73 chaser tests, web build, routes checked on a demo server.",
+   "status_line": 127,
    "last_activity": "2026-11-21T18:50+01:00",
-   "last_activity_ago": "52 min ago",
+   "last_activity_ago": "63 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -948,6 +980,11 @@
     {
      "id": "T83",
      "title": "Send path for actions: approved supplier actions email via the mail agent, internal action",
+     "state": "done"
+    },
+    {
+     "id": "T90",
+     "title": "mail-agent: offers table (price, timing, qty, terms per supplier offer) + best offer + App",
      "state": "done"
     }
    ],
@@ -982,7 +1019,7 @@
    "notes": "Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests.",
    "status_line": 68,
    "last_activity": "2026-11-21T18:11+01:00",
-   "last_activity_ago": "91 min ago",
+   "last_activity_ago": "101 min ago",
    "last_commit": {
     "sha": "1ef645d",
     "when": "2026-11-21T18:11+01:00",
@@ -1007,6 +1044,700 @@
    ]
   },
   {
+   "name": "copilot-gate",
+   "kind": "agent",
+   "current_task": "T72 Release Gate",
+   "state": "done",
+   "dirs": "src/decide/release_gate.py, src/agents/tools.py, src/orchestrator",
+   "notes": "cited pure gate, CLI, read-only tool and GET /api/release-gate; focused tests pass",
+   "status_line": 101,
+   "last_activity": "2026-11-21T17:06+01:00",
+   "last_activity_ago": "2 h 47 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T72",
+     "title": "Release Gate: GO/HOLD/HUMAN per BOM part with cited rules (AQL, artwork rev, magnet confli",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-triage",
+   "kind": "agent",
+   "current_task": "T67 event taxonomy + materiality triage",
+   "state": "done",
+   "dirs": "src/agents/triage_policy.py, tests/agent_eval/events/, tests/test_triage_policy.py",
+   "notes": "Added deterministic categories/materiality, quote-checked optional LLM second pass, SQLite event_decisions persistence/dashboard query, 12 synthetic fixtures and eval; 4 tests pass, eval 12/12 categories and decisions, cost $0.00",
+   "status_line": 92,
+   "last_activity": "2026-11-21T16:52+01:00",
+   "last_activity_ago": "3 h 01 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T67",
+     "title": "Event taxonomy + materiality triage (ignore/watch/act/escalate with reasons, 12 labelled s",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-viz",
+   "kind": "agent",
+   "current_task": "T71 live agent visualization + Present mode",
+   "state": "done",
+   "dirs": "web/src/agents",
+   "notes": "Added animated graph, event lane, stream replay, harness panel, human gate, counters and Present mode; normal/static builds pass",
+   "status_line": 98,
+   "last_activity": "2026-11-21T16:52+01:00",
+   "last_activity_ago": "3 h 01 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-claims",
+   "kind": "agent",
+   "current_task": "T69 money on the table",
+   "state": "done",
+   "dirs": "src/decide/claims.py, docs/CLAIMS.md, tests/test_claims.py",
+   "notes": "Added deterministic late-damage, price-drift, freight/DDP, leakage and LTA-renewal claims tables. 4 focused tests pass; no live LLM or secrets used. Nick to commit/push.",
+   "status_line": 94,
+   "last_activity": "2026-11-21T16:48+01:00",
+   "last_activity_ago": "3 h 05 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T69",
+     "title": "Money on the table: cited damages, price drift, freight terms, leakage",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "STATUS line 93 says 'in_progress' for T69, but TASKS.md says done (copilot-claims): outdated row"
+   ]
+  },
+  {
+   "name": "copilot-loop2",
+   "kind": "agent",
+   "current_task": "T41b trace endpoint, German notice citation",
+   "state": "done",
+   "dirs": "src/agents, /api/agents routes",
+   "notes": "Offline loop/harness tests pass (13), `scripts/demo_check.sh` passes. Live port 8794 verification is blocked in this session because loopback server startup requires interactive approval. No live cost incurred.",
+   "status_line": 97,
+   "last_activity": "2026-11-21T16:48+01:00",
+   "last_activity_ago": "3 h 05 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T41b",
+     "title": "Fix empty agent trace endpoint, German-notice scenario citation, runs list fields",
+     "state": "in_progress"
+    }
+   ],
+   "board_open": [
+    "T41b"
+   ],
+   "open_status_rows": [
+    {
+     "line": 95,
+     "task": "T41b trace endpoint empty, German scenario",
+     "state": "in_progress"
+    }
+   ],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "1 older STATUS row(s) superseded by newer ones",
+    "STATUS line 95 still says 'in_progress' for 'T41b trace endpoint empty, German scenario' but the agent moved on"
+   ]
+  },
+  {
+   "name": "copilot-fix2",
+   "kind": "agent",
+   "current_task": "T47b fix live eval failures (loops, citations, briefer policy)",
+   "state": "done",
+   "dirs": "src/agents",
+   "notes": "Runtime dedupe, two-round triage, grounded claims, and briefer PP-07/numeric validation implemented; focused tests pass. No new live pass rate claimed.",
+   "status_line": 85,
+   "last_activity": "2026-11-21T16:30+01:00",
+   "last_activity_ago": "3 h 23 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T47b",
+     "title": "Fix live agent failures: stop_check/loops, citation_check, briefer policy errors; budget $",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "2 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
+   "name": "copilot-loop",
+   "kind": "agent",
+   "current_task": "T41 autonomy loop + agent APIs",
+   "state": "done",
+   "dirs": "src/agents/loop.py, orchestrator glue",
+   "notes": "Background drop/reply/timer events, hash dedupe, SQLite runs/traces, harness status, manual run and stop APIs wired; targeted agent tests and offline demo pass.",
+   "status_line": 79,
+   "last_activity": "2026-11-21T16:25+01:00",
+   "last_activity_ago": "3 h 28 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T41",
+     "title": "Autonomy loop in orchestrator behind SOONY_AGENTS=1, runs table, trace/run APIs, kill swit",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "2 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
+   "name": "copilot-reader",
+   "kind": "agent",
+   "current_task": "T63 reader follow-up: mandatory vision for configured scans + handwriting review",
+   "state": "done",
+   "dirs": "src/agents/reader.py, tests/test_agents_reader.py",
+   "notes": "configured scans always use vision; printed/handwritten quantities stay separate and scans require review; 7 tests pass",
+   "status_line": 76,
+   "last_activity": "2026-11-21T16:22+01:00",
+   "last_activity_ago": "3 h 31 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T63",
+     "title": "Document Reader agent (LLM + vision): scans, handwriting, multilingual notices, quote-vali",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-roles",
+   "kind": "agent",
+   "current_task": "T64 reply interpreter + T65 briefer",
+   "state": "done",
+   "dirs": "src/agents/interpreter.py, briefer.py, tests/test_agents_roles2.py",
+   "notes": "constructors, closed tools, multilingual schema, grounded brief, fake/live CLIs; 6 focused tests pass",
+   "status_line": 80,
+   "last_activity": "2026-11-21T16:18+01:00",
+   "last_activity_ago": "3 h 35 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T64",
+     "title": "Reply Interpreter agent: supplier reply -> commitment strength, next ladder step, escalate",
+     "state": "done"
+    },
+    {
+     "id": "T65",
+     "title": "Briefer agent: one-screen brief for Dr. Vogt from verified facts only (no new numbers), ha",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-trace",
+   "kind": "agent",
+   "current_task": "T44 agent trace panel",
+   "state": "done",
+   "dirs": "web/src/agents",
+   "notes": "Live/recorded trace panel, API adapters, citations, harness badge, approvals, and static exporter complete; both builds pass",
+   "status_line": 82,
+   "last_activity": "2026-11-21T16:18+01:00",
+   "last_activity_ago": "3 h 35 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T44",
+     "title": "Agent team trace panel in the control room (graph, timeline, citations, harness badge, app",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "1 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
+   "name": "copilot-tools",
+   "kind": "agent",
+   "current_task": "T39 agent tool layer",
+   "state": "done",
+   "dirs": "src/agents/tools.py",
+   "notes": "Closed cited registry implemented; tool tests and CLI schema validation pass",
+   "status_line": 57,
+   "last_activity": "2026-11-21T16:13+01:00",
+   "last_activity_ago": "3 h 40 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T39",
+     "title": "Tool layer wrapping existing deterministic code (readiness, whatif, search_documents, comp",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-state",
+   "kind": "agent",
+   "current_task": "T34 state hardening",
+   "state": "done",
+   "dirs": "src/orchestrator, src/chaser/store.py, src/ingest/store.py",
+   "notes": "Added 30 s SQLite busy timeout/WAL, moved portal sync outside the cycle lock, added cycle/lock metrics and `/api/health`, and confirmed the header-only and duplicate-lot regressions.",
+   "status_line": 54,
+   "last_activity": "2026-11-21T16:06+01:00",
+   "last_activity_ago": "3 h 46 min ago",
+   "last_commit": {
+    "sha": "cdf97bf",
+    "when": "2026-11-21T16:06+01:00",
+    "subject": "autosync: 1 files [nick]",
+    "via_autosync": true
+   },
+   "commits_total": 1,
+   "board_tasks": [
+    {
+     "id": "T34",
+     "title": "State hardening: WAL, sync outside cycle lock, /api/health, regression tests",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "2 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
+   "name": "copilot-live",
+   "kind": "agent",
+   "current_task": "T38b make live agent path real, first live run with gpt-4.1-mini",
+   "state": "done",
+   "dirs": "src/agents",
+   "notes": "Live art-book run used gpt-4.1-mini: $0.057892, 130,117 input / 3,653 output tokens; two live passes, stopped at the ~100k-token run guard. Added auth fallbacks, valid tool protocols, retries, real usage cost, honest CLI failure, cassette export and redacted trace; fake draft and 11 agent tests pass.",
+   "status_line": 64,
+   "last_activity": "2026-11-21T16:02+01:00",
+   "last_activity_ago": "3 h 51 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T38b",
+     "title": "Make the live agent path real: auth env names, valid OpenAI/Anthropic tool-calling protoco",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "1 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
+   "name": "copilot-know",
+   "kind": "agent",
+   "current_task": "T45 knowledge pack + role cards",
+   "state": "done",
+   "dirs": "src/agents/knowledge, docs/AGENT_ROLES.md, tests/test_agent_knowledge.py",
+   "notes": "Added six role loaders, stable domain/data/policy/pitfall/negotiation/style packs, six few-shot traces, role cards and 5 passing knowledge tests. Private FINDINGS/CODEX files were absent; facts use the repository snapshot and PP-07 files.",
+   "status_line": 66,
+   "last_activity": "2026-11-21T15:57+01:00",
+   "last_activity_ago": "3 h 56 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T45",
+     "title": "Project knowledge pack per role (domain, data map, policy, pitfalls, negotiation, style, f",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "1 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
+   "name": "copilot-agents",
+   "kind": "agent",
+   "current_task": "T40 multi-agent team",
+   "state": "done",
+   "dirs": "src/agents/team.py, src/agents/prompts.py, tests/test_agents_team.py",
+   "notes": "Added the Triage/Analyst/Verifier/Planner/Chaser team, closed role tool whitelists, verification gate, fake/live entrypoint and 3 focused scenarios. 13 agent tests pass; art-book, quality-hold and German-notice fake CLIs pass.",
+   "status_line": 61,
+   "last_activity": "2026-11-21T15:52+01:00",
+   "last_activity_ago": "4 h 01 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T40",
+     "title": "The agents: Triage/Orchestrator (plans, delegates), Analyst (finds and explains gaps with ",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "1 older STATUS row(s) superseded by newer ones",
+    "STATUS line 59 says 'in_progress' for T40, but TASKS.md says done (copilot-agents): outdated row"
+   ]
+  },
+  {
+   "name": "copilot-runtime",
+   "kind": "agent",
+   "current_task": "T38 multi-agent runtime",
+   "state": "done",
+   "dirs": "src/agents/runtime.py, llm_adapter.py, trace.py",
+   "notes": "Standard-library ReAct loop, closed/schema-checked tools, budgets/timeouts, SQLite trace/activity, approval gate, Team blackboard/mailbox, HTTP + FakeLLM + cassette replay; tests pass",
+   "status_line": 56,
+   "last_activity": "2026-11-21T15:46+01:00",
+   "last_activity_ago": "4 h 07 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T38",
+     "title": "Multi-agent runtime: tool-calling ReAct loop, Anthropic + OpenAI-compatible adapters, reco",
+     "state": "in_progress"
+    }
+   ],
+   "board_open": [
+    "T38"
+   ],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-sim",
+   "kind": "agent",
+   "current_task": "T42 simulated supplier agents",
+   "state": "done",
+   "dirs": "src/agents/suppliers_sim.py, tests/test_suppliers_sim.py",
+   "notes": "Added six language-aware personas, private hidden state, LLM/FakeLLM replies, attachment hooks and demo CLI. Focused 4-test suite passes.",
+   "status_line": 58,
+   "last_activity": "2026-11-21T15:46+01:00",
+   "last_activity_ago": "4 h 07 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T42",
+     "title": "(taken) Simulated supplier agents",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-llm",
+   "kind": "agent",
+   "current_task": "T33 shared LLM client",
+   "state": "done",
+   "dirs": "src/llm, src/docs/providers.py, src/chaser/llm.py",
+   "notes": "Shared JSON/schema client, quote validation, disk cache, per-cycle budget and JSONL cost/latency log ship. Providers and reply parsing use fallback-safe glue. 36 focused tests pass; live check correctly reports no configured model.",
+   "status_line": 55,
+   "last_activity": "2026-11-21T15:43+01:00",
+   "last_activity_ago": "4 h 10 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T33",
+     "title": "Shared LLM client: schema + quote validation, cache, budget, cost log, fallback, `python3 ",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "1 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
+   "name": "codex-consistency",
+   "kind": "agent",
+   "current_task": "T21 default forecast consistency",
+   "state": "done",
+   "dirs": "docs/NUMBERS.md, tests/test_numbers.py",
+   "notes": "Tested 489d0cc on the private post-drop snapshot. The default dashboard matches the published cutoff, trial count and edition figures. Historical supplier delays are labeled as sensitivity.",
+   "status_line": 47,
+   "last_activity": "2026-11-21T15:35+01:00",
+   "last_activity_ago": "4 h 17 min ago",
+   "last_commit": {
+    "sha": "544eb90",
+    "when": "2026-11-21T15:35+01:00",
+    "subject": "T21: Record forecast drift verification [codex-consistency]",
+    "via_autosync": false
+   },
+   "commits_total": 2,
+   "board_tasks": [
+    {
+     "id": "T21",
+     "title": "Keep the default forecast consistent across the dashboard and published numbers, with a re",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-chaser",
+   "kind": "agent",
+   "current_task": "T16 chaser scoring, R1 templates, validate_draft, ladder",
+   "state": "done",
+   "dirs": "src/chaser",
+   "notes": "Implemented reply commitment scoring (0-3), multilingual R1 templates, send-time draft disclosure guardrails, and persisted R0-R4 escalation state. 12 chaser tests pass.",
+   "status_line": 40,
+   "last_activity": "2026-11-21T15:30+01:00",
+   "last_activity_ago": "4 h 23 min ago",
+   "last_commit": {
+    "sha": "ee01397",
+    "when": "2026-11-21T15:30+01:00",
+    "subject": "T16: chaser reply scoring, R1 templates, draft guardrail, escalation ladder [copilot-chaser, committed by nick]",
+    "via_autosync": false
+   },
+   "commits_total": 1,
+   "board_tasks": [
+    {
+     "id": "T16",
+     "title": "Chaser: reply commitment scoring, R1 templates, validate_draft guardrail, R0-R4 ladder",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": [
+    "1 older STATUS row(s) superseded by newer ones"
+   ]
+  },
+  {
+   "name": "copilot-ui",
+   "kind": "agent",
+   "current_task": "T10 static replay",
+   "state": "done",
+   "dirs": "web",
+   "notes": "Added Vercel static replay fallback, localStorage state, drop/review/approve/send/reply/reset controls, snapshot badge and static evidence; live API remains intact.",
+   "status_line": 30,
+   "last_activity": "2026-11-21T15:16+01:00",
+   "last_activity_ago": "4 h 37 min ago",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T10",
+     "title": "Static replay + live-API React UI hero screen",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [
+    {
+     "line": 253,
+     "from": "nick",
+     "when": "21 Nov 19:19",
+     "text": "NEW DIRECTION FROM DR. VOGT. (1) Soony refunds EUR 120 per Collector's Edition shipped even one day late. (2) She would approve anything that saves the launch and leads to profit, e.g. the Hamburg actions. (3) She is bored of dashboards: sh"
+    }
+   ],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "codex-sens",
+   "kind": "agent",
+   "current_task": "T11 readiness sensitivity",
+   "state": "done",
+   "dirs": "src/truth/sensitivity.py, src/truth/test_sensitivity.py",
+   "notes": "Calibration, paired sensitivity, Plan B and CLI complete. Six focused tests and 40 repo tests pass. Live 500-trial CLI takes under a second.",
+   "status_line": 27,
+   "last_activity": "2026-11-21T15:08+01:00",
+   "last_activity_ago": "4 h 44 min ago",
+   "last_commit": {
+    "sha": "da78e91",
+    "when": "2026-11-21T15:08+01:00",
+    "subject": "T11 sensitivity, e2e tests, coord updates [codex-sens, codex-e2e; committed by nick]",
+    "via_autosync": false
+   },
+   "commits_total": 1,
+   "board_tasks": [
+    {
+     "id": "T11",
+     "title": "Supplier lag calibration, readiness sensitivity and counterfactual CLI",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "codex-e2e",
+   "kind": "agent",
+   "current_task": "T12 demo hardening",
+   "state": "done",
+   "dirs": "scripts/demo_check.sh, tests/test_e2e.py, docs/RUNBOOK.md",
+   "notes": "Real in-process replay passed all API assertions. Full subprocess check requires a terminal that permits loopback bind.",
+   "status_line": 28,
+   "last_activity": "2026-11-21T15:08+01:00",
+   "last_activity_ago": "4 h 44 min ago",
+   "last_commit": {
+    "sha": "da78e91",
+    "when": "2026-11-21T15:08+01:00",
+    "subject": "T11 sensitivity, e2e tests, coord updates [codex-sens, codex-e2e; committed by nick]",
+    "via_autosync": false
+   },
+   "commits_total": 1,
+   "board_tasks": [
+    {
+     "id": "T12",
+     "title": "Offline demo smoke check, end-to-end tests, and demo runbook",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "copilot-deck",
+   "kind": "agent",
+   "current_task": "T8 pitch deck",
+   "state": "done",
+   "dirs": "docs/deck",
+   "notes": "Built docs/deck/index.html (6 slides, keyboard nav, 16:9, print CSS, inline SVG, dark design system), SPEAKER_NOTES.md, and README.md. Uses only frozen NUMBERS.md figures.",
+   "status_line": 16,
+   "last_activity": "2026-11-21T14:54+01:00",
+   "last_activity_ago": "4 h 59 min ago",
+   "last_commit": {
+    "sha": "e979a50",
+    "when": "2026-11-21T14:54+01:00",
+    "subject": "T8: 6-slide pitch deck and speaker notes [copilot-deck, committed by nick]",
+    "via_autosync": false
+   },
+   "commits_total": 1,
+   "board_tasks": [
+    {
+     "id": "T8",
+     "title": "Pitch deck, speaker notes, PDF export guide",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
    "name": "Codex",
    "kind": "agent",
    "current_task": "T5 decisions, T7 live integration and replay, T8 submission",
@@ -1014,15 +1745,10 @@
    "dirs": "src/decide, src/orchestrator, private/submission",
    "notes": "Live UI, real file drop, dry-run send, simulated reply and approval verified in browser. Deck and narrated MP4 delivered privately.",
    "status_line": 18,
-   "last_activity": "2026-11-21T17:53+01:00",
-   "last_activity_ago": "109 min ago",
-   "last_commit": {
-    "sha": "387bde0",
-    "when": "2026-11-21T17:53+01:00",
-    "subject": "autosync: 1 files [nick]",
-    "via_autosync": true
-   },
-   "commits_total": 2,
+   "last_activity": "2026-11-21T14:44+01:00",
+   "last_activity_ago": "5 h 09 min ago",
+   "last_commit": null,
+   "commits_total": 0,
    "board_tasks": [
     {
      "id": "T1",
@@ -1104,700 +1830,6 @@
    ]
   },
   {
-   "name": "copilot-gate",
-   "kind": "agent",
-   "current_task": "T72 Release Gate",
-   "state": "done",
-   "dirs": "src/decide/release_gate.py, src/agents/tools.py, src/orchestrator",
-   "notes": "cited pure gate, CLI, read-only tool and GET /api/release-gate; focused tests pass",
-   "status_line": 101,
-   "last_activity": "2026-11-21T17:06+01:00",
-   "last_activity_ago": "2 h 36 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T72",
-     "title": "Release Gate: GO/HOLD/HUMAN per BOM part with cited rules (AQL, artwork rev, magnet confli",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-triage",
-   "kind": "agent",
-   "current_task": "T67 event taxonomy + materiality triage",
-   "state": "done",
-   "dirs": "src/agents/triage_policy.py, tests/agent_eval/events/, tests/test_triage_policy.py",
-   "notes": "Added deterministic categories/materiality, quote-checked optional LLM second pass, SQLite event_decisions persistence/dashboard query, 12 synthetic fixtures and eval; 4 tests pass, eval 12/12 categories and decisions, cost $0.00",
-   "status_line": 92,
-   "last_activity": "2026-11-21T16:52+01:00",
-   "last_activity_ago": "2 h 50 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T67",
-     "title": "Event taxonomy + materiality triage (ignore/watch/act/escalate with reasons, 12 labelled s",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-viz",
-   "kind": "agent",
-   "current_task": "T71 live agent visualization + Present mode",
-   "state": "done",
-   "dirs": "web/src/agents",
-   "notes": "Added animated graph, event lane, stream replay, harness panel, human gate, counters and Present mode; normal/static builds pass",
-   "status_line": 98,
-   "last_activity": "2026-11-21T16:52+01:00",
-   "last_activity_ago": "2 h 50 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-claims",
-   "kind": "agent",
-   "current_task": "T69 money on the table",
-   "state": "done",
-   "dirs": "src/decide/claims.py, docs/CLAIMS.md, tests/test_claims.py",
-   "notes": "Added deterministic late-damage, price-drift, freight/DDP, leakage and LTA-renewal claims tables. 4 focused tests pass; no live LLM or secrets used. Nick to commit/push.",
-   "status_line": 94,
-   "last_activity": "2026-11-21T16:48+01:00",
-   "last_activity_ago": "2 h 54 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T69",
-     "title": "Money on the table: cited damages, price drift, freight terms, leakage",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "STATUS line 93 says 'in_progress' for T69, but TASKS.md says done (copilot-claims): outdated row"
-   ]
-  },
-  {
-   "name": "copilot-loop2",
-   "kind": "agent",
-   "current_task": "T41b trace endpoint, German notice citation",
-   "state": "done",
-   "dirs": "src/agents, /api/agents routes",
-   "notes": "Offline loop/harness tests pass (13), `scripts/demo_check.sh` passes. Live port 8794 verification is blocked in this session because loopback server startup requires interactive approval. No live cost incurred.",
-   "status_line": 97,
-   "last_activity": "2026-11-21T16:48+01:00",
-   "last_activity_ago": "2 h 54 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T41b",
-     "title": "Fix empty agent trace endpoint, German-notice scenario citation, runs list fields",
-     "state": "in_progress"
-    }
-   ],
-   "board_open": [
-    "T41b"
-   ],
-   "open_status_rows": [
-    {
-     "line": 95,
-     "task": "T41b trace endpoint empty, German scenario",
-     "state": "in_progress"
-    }
-   ],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "1 older STATUS row(s) superseded by newer ones",
-    "STATUS line 95 still says 'in_progress' for 'T41b trace endpoint empty, German scenario' but the agent moved on"
-   ]
-  },
-  {
-   "name": "copilot-fix2",
-   "kind": "agent",
-   "current_task": "T47b fix live eval failures (loops, citations, briefer policy)",
-   "state": "done",
-   "dirs": "src/agents",
-   "notes": "Runtime dedupe, two-round triage, grounded claims, and briefer PP-07/numeric validation implemented; focused tests pass. No new live pass rate claimed.",
-   "status_line": 85,
-   "last_activity": "2026-11-21T16:30+01:00",
-   "last_activity_ago": "3 h 12 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T47b",
-     "title": "Fix live agent failures: stop_check/loops, citation_check, briefer policy errors; budget $",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "2 older STATUS row(s) superseded by newer ones"
-   ]
-  },
-  {
-   "name": "copilot-loop",
-   "kind": "agent",
-   "current_task": "T41 autonomy loop + agent APIs",
-   "state": "done",
-   "dirs": "src/agents/loop.py, orchestrator glue",
-   "notes": "Background drop/reply/timer events, hash dedupe, SQLite runs/traces, harness status, manual run and stop APIs wired; targeted agent tests and offline demo pass.",
-   "status_line": 79,
-   "last_activity": "2026-11-21T16:25+01:00",
-   "last_activity_ago": "3 h 17 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T41",
-     "title": "Autonomy loop in orchestrator behind SOONY_AGENTS=1, runs table, trace/run APIs, kill swit",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "2 older STATUS row(s) superseded by newer ones"
-   ]
-  },
-  {
-   "name": "copilot-reader",
-   "kind": "agent",
-   "current_task": "T63 reader follow-up: mandatory vision for configured scans + handwriting review",
-   "state": "done",
-   "dirs": "src/agents/reader.py, tests/test_agents_reader.py",
-   "notes": "configured scans always use vision; printed/handwritten quantities stay separate and scans require review; 7 tests pass",
-   "status_line": 76,
-   "last_activity": "2026-11-21T16:22+01:00",
-   "last_activity_ago": "3 h 20 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T63",
-     "title": "Document Reader agent (LLM + vision): scans, handwriting, multilingual notices, quote-vali",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-roles",
-   "kind": "agent",
-   "current_task": "T64 reply interpreter + T65 briefer",
-   "state": "done",
-   "dirs": "src/agents/interpreter.py, briefer.py, tests/test_agents_roles2.py",
-   "notes": "constructors, closed tools, multilingual schema, grounded brief, fake/live CLIs; 6 focused tests pass",
-   "status_line": 80,
-   "last_activity": "2026-11-21T16:18+01:00",
-   "last_activity_ago": "3 h 24 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T64",
-     "title": "Reply Interpreter agent: supplier reply -> commitment strength, next ladder step, escalate",
-     "state": "done"
-    },
-    {
-     "id": "T65",
-     "title": "Briefer agent: one-screen brief for Dr. Vogt from verified facts only (no new numbers), ha",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-trace",
-   "kind": "agent",
-   "current_task": "T44 agent trace panel",
-   "state": "done",
-   "dirs": "web/src/agents",
-   "notes": "Live/recorded trace panel, API adapters, citations, harness badge, approvals, and static exporter complete; both builds pass",
-   "status_line": 82,
-   "last_activity": "2026-11-21T16:18+01:00",
-   "last_activity_ago": "3 h 24 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T44",
-     "title": "Agent team trace panel in the control room (graph, timeline, citations, harness badge, app",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "1 older STATUS row(s) superseded by newer ones"
-   ]
-  },
-  {
-   "name": "copilot-tools",
-   "kind": "agent",
-   "current_task": "T39 agent tool layer",
-   "state": "done",
-   "dirs": "src/agents/tools.py",
-   "notes": "Closed cited registry implemented; tool tests and CLI schema validation pass",
-   "status_line": 57,
-   "last_activity": "2026-11-21T16:13+01:00",
-   "last_activity_ago": "3 h 29 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T39",
-     "title": "Tool layer wrapping existing deterministic code (readiness, whatif, search_documents, comp",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-state",
-   "kind": "agent",
-   "current_task": "T34 state hardening",
-   "state": "done",
-   "dirs": "src/orchestrator, src/chaser/store.py, src/ingest/store.py",
-   "notes": "Added 30 s SQLite busy timeout/WAL, moved portal sync outside the cycle lock, added cycle/lock metrics and `/api/health`, and confirmed the header-only and duplicate-lot regressions.",
-   "status_line": 54,
-   "last_activity": "2026-11-21T16:06+01:00",
-   "last_activity_ago": "3 h 36 min ago",
-   "last_commit": {
-    "sha": "cdf97bf",
-    "when": "2026-11-21T16:06+01:00",
-    "subject": "autosync: 1 files [nick]",
-    "via_autosync": true
-   },
-   "commits_total": 1,
-   "board_tasks": [
-    {
-     "id": "T34",
-     "title": "State hardening: WAL, sync outside cycle lock, /api/health, regression tests",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "2 older STATUS row(s) superseded by newer ones"
-   ]
-  },
-  {
-   "name": "copilot-live",
-   "kind": "agent",
-   "current_task": "T38b make live agent path real, first live run with gpt-4.1-mini",
-   "state": "done",
-   "dirs": "src/agents",
-   "notes": "Live art-book run used gpt-4.1-mini: $0.057892, 130,117 input / 3,653 output tokens; two live passes, stopped at the ~100k-token run guard. Added auth fallbacks, valid tool protocols, retries, real usage cost, honest CLI failure, cassette export and redacted trace; fake draft and 11 agent tests pass.",
-   "status_line": 64,
-   "last_activity": "2026-11-21T16:02+01:00",
-   "last_activity_ago": "3 h 40 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T38b",
-     "title": "Make the live agent path real: auth env names, valid OpenAI/Anthropic tool-calling protoco",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "1 older STATUS row(s) superseded by newer ones"
-   ]
-  },
-  {
-   "name": "copilot-know",
-   "kind": "agent",
-   "current_task": "T45 knowledge pack + role cards",
-   "state": "done",
-   "dirs": "src/agents/knowledge, docs/AGENT_ROLES.md, tests/test_agent_knowledge.py",
-   "notes": "Added six role loaders, stable domain/data/policy/pitfall/negotiation/style packs, six few-shot traces, role cards and 5 passing knowledge tests. Private FINDINGS/CODEX files were absent; facts use the repository snapshot and PP-07 files.",
-   "status_line": 66,
-   "last_activity": "2026-11-21T15:57+01:00",
-   "last_activity_ago": "3 h 45 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T45",
-     "title": "Project knowledge pack per role (domain, data map, policy, pitfalls, negotiation, style, f",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "1 older STATUS row(s) superseded by newer ones"
-   ]
-  },
-  {
-   "name": "copilot-agents",
-   "kind": "agent",
-   "current_task": "T40 multi-agent team",
-   "state": "done",
-   "dirs": "src/agents/team.py, src/agents/prompts.py, tests/test_agents_team.py",
-   "notes": "Added the Triage/Analyst/Verifier/Planner/Chaser team, closed role tool whitelists, verification gate, fake/live entrypoint and 3 focused scenarios. 13 agent tests pass; art-book, quality-hold and German-notice fake CLIs pass.",
-   "status_line": 61,
-   "last_activity": "2026-11-21T15:52+01:00",
-   "last_activity_ago": "3 h 50 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T40",
-     "title": "The agents: Triage/Orchestrator (plans, delegates), Analyst (finds and explains gaps with ",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "1 older STATUS row(s) superseded by newer ones",
-    "STATUS line 59 says 'in_progress' for T40, but TASKS.md says done (copilot-agents): outdated row"
-   ]
-  },
-  {
-   "name": "copilot-runtime",
-   "kind": "agent",
-   "current_task": "T38 multi-agent runtime",
-   "state": "done",
-   "dirs": "src/agents/runtime.py, llm_adapter.py, trace.py",
-   "notes": "Standard-library ReAct loop, closed/schema-checked tools, budgets/timeouts, SQLite trace/activity, approval gate, Team blackboard/mailbox, HTTP + FakeLLM + cassette replay; tests pass",
-   "status_line": 56,
-   "last_activity": "2026-11-21T15:46+01:00",
-   "last_activity_ago": "3 h 56 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T38",
-     "title": "Multi-agent runtime: tool-calling ReAct loop, Anthropic + OpenAI-compatible adapters, reco",
-     "state": "in_progress"
-    }
-   ],
-   "board_open": [
-    "T38"
-   ],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-sim",
-   "kind": "agent",
-   "current_task": "T42 simulated supplier agents",
-   "state": "done",
-   "dirs": "src/agents/suppliers_sim.py, tests/test_suppliers_sim.py",
-   "notes": "Added six language-aware personas, private hidden state, LLM/FakeLLM replies, attachment hooks and demo CLI. Focused 4-test suite passes.",
-   "status_line": 58,
-   "last_activity": "2026-11-21T15:46+01:00",
-   "last_activity_ago": "3 h 56 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T42",
-     "title": "(taken) Simulated supplier agents",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-llm",
-   "kind": "agent",
-   "current_task": "T33 shared LLM client",
-   "state": "done",
-   "dirs": "src/llm, src/docs/providers.py, src/chaser/llm.py",
-   "notes": "Shared JSON/schema client, quote validation, disk cache, per-cycle budget and JSONL cost/latency log ship. Providers and reply parsing use fallback-safe glue. 36 focused tests pass; live check correctly reports no configured model.",
-   "status_line": 55,
-   "last_activity": "2026-11-21T15:43+01:00",
-   "last_activity_ago": "3 h 59 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T33",
-     "title": "Shared LLM client: schema + quote validation, cache, budget, cost log, fallback, `python3 ",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "1 older STATUS row(s) superseded by newer ones"
-   ]
-  },
-  {
-   "name": "codex-consistency",
-   "kind": "agent",
-   "current_task": "T21 default forecast consistency",
-   "state": "done",
-   "dirs": "docs/NUMBERS.md, tests/test_numbers.py",
-   "notes": "Tested 489d0cc on the private post-drop snapshot. The default dashboard matches the published cutoff, trial count and edition figures. Historical supplier delays are labeled as sensitivity.",
-   "status_line": 47,
-   "last_activity": "2026-11-21T15:35+01:00",
-   "last_activity_ago": "4 h 06 min ago",
-   "last_commit": {
-    "sha": "544eb90",
-    "when": "2026-11-21T15:35+01:00",
-    "subject": "T21: Record forecast drift verification [codex-consistency]",
-    "via_autosync": false
-   },
-   "commits_total": 2,
-   "board_tasks": [
-    {
-     "id": "T21",
-     "title": "Keep the default forecast consistent across the dashboard and published numbers, with a re",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-chaser",
-   "kind": "agent",
-   "current_task": "T16 chaser scoring, R1 templates, validate_draft, ladder",
-   "state": "done",
-   "dirs": "src/chaser",
-   "notes": "Implemented reply commitment scoring (0-3), multilingual R1 templates, send-time draft disclosure guardrails, and persisted R0-R4 escalation state. 12 chaser tests pass.",
-   "status_line": 40,
-   "last_activity": "2026-11-21T15:30+01:00",
-   "last_activity_ago": "4 h 12 min ago",
-   "last_commit": {
-    "sha": "ee01397",
-    "when": "2026-11-21T15:30+01:00",
-    "subject": "T16: chaser reply scoring, R1 templates, draft guardrail, escalation ladder [copilot-chaser, committed by nick]",
-    "via_autosync": false
-   },
-   "commits_total": 1,
-   "board_tasks": [
-    {
-     "id": "T16",
-     "title": "Chaser: reply commitment scoring, R1 templates, validate_draft guardrail, R0-R4 ladder",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": [
-    "1 older STATUS row(s) superseded by newer ones"
-   ]
-  },
-  {
-   "name": "copilot-ui",
-   "kind": "agent",
-   "current_task": "T10 static replay",
-   "state": "done",
-   "dirs": "web",
-   "notes": "Added Vercel static replay fallback, localStorage state, drop/review/approve/send/reply/reset controls, snapshot badge and static evidence; live API remains intact.",
-   "status_line": 30,
-   "last_activity": "2026-11-21T15:16+01:00",
-   "last_activity_ago": "4 h 26 min ago",
-   "last_commit": null,
-   "commits_total": 0,
-   "board_tasks": [
-    {
-     "id": "T10",
-     "title": "Static replay + live-API React UI hero screen",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [
-    {
-     "line": 253,
-     "from": "nick",
-     "when": "21 Nov 19:19",
-     "text": "NEW DIRECTION FROM DR. VOGT. (1) Soony refunds EUR 120 per Collector's Edition shipped even one day late. (2) She would approve anything that saves the launch and leads to profit, e.g. the Hamburg actions. (3) She is bored of dashboards: sh"
-    }
-   ],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "codex-sens",
-   "kind": "agent",
-   "current_task": "T11 readiness sensitivity",
-   "state": "done",
-   "dirs": "src/truth/sensitivity.py, src/truth/test_sensitivity.py",
-   "notes": "Calibration, paired sensitivity, Plan B and CLI complete. Six focused tests and 40 repo tests pass. Live 500-trial CLI takes under a second.",
-   "status_line": 27,
-   "last_activity": "2026-11-21T15:08+01:00",
-   "last_activity_ago": "4 h 33 min ago",
-   "last_commit": {
-    "sha": "da78e91",
-    "when": "2026-11-21T15:08+01:00",
-    "subject": "T11 sensitivity, e2e tests, coord updates [codex-sens, codex-e2e; committed by nick]",
-    "via_autosync": false
-   },
-   "commits_total": 1,
-   "board_tasks": [
-    {
-     "id": "T11",
-     "title": "Supplier lag calibration, readiness sensitivity and counterfactual CLI",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "codex-e2e",
-   "kind": "agent",
-   "current_task": "T12 demo hardening",
-   "state": "done",
-   "dirs": "scripts/demo_check.sh, tests/test_e2e.py, docs/RUNBOOK.md",
-   "notes": "Real in-process replay passed all API assertions. Full subprocess check requires a terminal that permits loopback bind.",
-   "status_line": 28,
-   "last_activity": "2026-11-21T15:08+01:00",
-   "last_activity_ago": "4 h 33 min ago",
-   "last_commit": {
-    "sha": "da78e91",
-    "when": "2026-11-21T15:08+01:00",
-    "subject": "T11 sensitivity, e2e tests, coord updates [codex-sens, codex-e2e; committed by nick]",
-    "via_autosync": false
-   },
-   "commits_total": 1,
-   "board_tasks": [
-    {
-     "id": "T12",
-     "title": "Offline demo smoke check, end-to-end tests, and demo runbook",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
-   "name": "copilot-deck",
-   "kind": "agent",
-   "current_task": "T8 pitch deck",
-   "state": "done",
-   "dirs": "docs/deck",
-   "notes": "Built docs/deck/index.html (6 slides, keyboard nav, 16:9, print CSS, inline SVG, dark design system), SPEAKER_NOTES.md, and README.md. Uses only frozen NUMBERS.md figures.",
-   "status_line": 16,
-   "last_activity": "2026-11-21T14:54+01:00",
-   "last_activity_ago": "4 h 48 min ago",
-   "last_commit": {
-    "sha": "e979a50",
-    "when": "2026-11-21T14:54+01:00",
-    "subject": "T8: 6-slide pitch deck and speaker notes [copilot-deck, committed by nick]",
-    "via_autosync": false
-   },
-   "commits_total": 1,
-   "board_tasks": [
-    {
-     "id": "T8",
-     "title": "Pitch deck, speaker notes, PDF export guide",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [],
-   "blockers": [],
-   "inbox_open_to": [],
-   "inbox_open_from": [],
-   "flags": []
-  },
-  {
    "name": "Copilot #2",
    "kind": "agent",
    "current_task": "T4 supplier chaser implementation",
@@ -1806,7 +1838,7 @@
    "notes": "SQLite state/approval gate, KO/ZH/PL/EN drafts, mock inbox/CLI, deterministic reply parser, dry-run and gated SMTP; 7 unit tests pass",
    "status_line": 11,
    "last_activity": "2026-11-21T14:16+01:00",
-   "last_activity_ago": "5 h 26 min ago",
+   "last_activity_ago": "5 h 37 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -2154,6 +2186,32 @@
    "flags": []
   },
   {
+   "name": "sonnet-engine",
+   "kind": "agent",
+   "current_task": "T88 re-ingest the 19:25 drop + engine inputs",
+   "state": "done",
+   "dirs": "src/ingest, src/docs, src/truth, docs/NUMBERS.md, tests/test_numbers.py",
+   "notes": "All 11 files read (launch_status, bom_delta, components_update, products day_one_qty/valid_from, supplier profile.json v2, components_delta, news json, CPO memo docx, org chart v2 valid_from, export-licence notice). Engine: packed/rates from launch_status (log shown in issues), snapshot stock minus parts of copies packed since (42,000 STD + 6,300 CE), 64,000 rev B sleeves out of usable stock, shifts start at Sat 13:00. Forecast unchanged: STD 614,650 / CE 62,550 p50, P=0%, first stop game card. Gaps 6,800 / 5,900 / 3,400 unchanged; STD sleeve 6,000 before Karton inbound (0 with 20,000). NUMBERS.md has the dated section; tests, drops, demo_check pass. No commit.",
+   "status_line": 126,
+   "last_activity": null,
+   "last_activity_ago": "unknown",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [
+    {
+     "id": "T88",
+     "title": "Re-ingest the 19:25 drop (launch_status, ECN-118/119, components_update, products, vendor ",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
    "name": "nick",
    "kind": "agent",
    "current_task": "stopped working on T71 visualization (handed over)",
@@ -2162,7 +2220,7 @@
    "notes": "continuing on agent quality, Vogt prep, review",
    "status_line": 99,
    "last_activity": "2026-11-21T19:40+01:00",
-   "last_activity_ago": "2 min ago",
+   "last_activity_ago": "13 min ago",
    "last_commit": {
     "sha": "aff8be9",
     "when": "2026-11-21T19:40+01:00",
@@ -2272,7 +2330,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:46+01:00",
-   "last_activity_ago": "4 h 56 min ago",
+   "last_activity_ago": "5 h 06 min ago",
    "last_commit": {
     "sha": "bdea665",
     "when": "2026-11-21T14:46+01:00",
@@ -2297,7 +2355,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:45+01:00",
-   "last_activity_ago": "4 h 57 min ago",
+   "last_activity_ago": "5 h 08 min ago",
    "last_commit": {
     "sha": "181bb19",
     "when": "2026-11-21T14:45+01:00",
@@ -2455,10 +2513,58 @@
   },
   {
    "kind": "autosync",
-   "text": "44 of the last 254 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership."
+   "text": "46 of the last 262 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership."
   }
  ],
  "recent_commits": [
+  {
+   "sha": "7bc6a3b",
+   "agent": "murat-agent",
+   "when": "2026-11-21T19:49+01:00",
+   "subject": "T81-Drop-1925: Update live launch recovery reviews [murat-agent]"
+  },
+  {
+   "sha": "cba79b6",
+   "agent": "gülşah-agent",
+   "when": "2026-11-21T19:48+01:00",
+   "subject": "T90: supplier offers table with best offer and Approve/Decline [gülşah-agent]"
+  },
+  {
+   "sha": "a37a8a9",
+   "agent": "codex-deploy",
+   "when": "2026-11-21T19:46+01:00",
+   "subject": "T86: Coordinate protected replay handoff for 19:25 drop [codex-deploy]"
+  },
+  {
+   "sha": "5565430",
+   "agent": "nick",
+   "when": "2026-11-21T19:46+01:00",
+   "subject": "autosync: 6 files [nick]"
+  },
+  {
+   "sha": "2fc603b",
+   "agent": "gülşah-agent",
+   "when": "2026-11-21T19:45+01:00",
+   "subject": "T90: claim offers table with approve/decline [gülşah-agent]"
+  },
+  {
+   "sha": "4de57a7",
+   "agent": "murat-agent",
+   "when": "2026-11-21T19:44+01:00",
+   "subject": "T81-Drop-1925: Import the verified 19:25 portal snapshot [murat-agent]"
+  },
+  {
+   "sha": "1cf9af5",
+   "agent": "nick",
+   "when": "2026-11-21T19:43+01:00",
+   "subject": "autosync: 4 files [nick]"
+  },
+  {
+   "sha": "aa09eee",
+   "agent": "overview-agent",
+   "when": "2026-11-21T19:42+01:00",
+   "subject": "T78: refresh agents overview (62 agents, 6 in progress) [overview-agent]"
+  },
   {
    "sha": "3ddbf39",
    "agent": "codex-deploy",
@@ -2500,54 +2606,6 @@
    "agent": "gülşah-agent",
    "when": "2026-11-21T19:36+01:00",
    "subject": "T78: email review fixes: Hamburg time in emails, one negotiation per supplier+part, tests run without data/ [gülşah-agent]"
-  },
-  {
-   "sha": "4319983",
-   "agent": "leo-claude",
-   "when": "2026-11-21T19:35+01:00",
-   "subject": "T6: Align header items on one line [leo-claude]"
-  },
-  {
-   "sha": "4a6d09e",
-   "agent": "murat-agent",
-   "when": "2026-11-21T19:34+01:00",
-   "subject": "T81: Record verified recovery outreach and pending reviews [murat-agent]"
-  },
-  {
-   "sha": "9b99cc3",
-   "agent": "nick",
-   "when": "2026-11-21T19:33+01:00",
-   "subject": "autosync: 3 files [nick]"
-  },
-  {
-   "sha": "331976a",
-   "agent": "codex-deploy",
-   "when": "2026-11-21T19:32+01:00",
-   "subject": "T6: Coordinate hosted missed-copy cost packaging [codex-deploy]"
-  },
-  {
-   "sha": "c646b34",
-   "agent": "murat-agent",
-   "when": "2026-11-21T19:32+01:00",
-   "subject": "T81: Preserve recovery reviews across the new drop and apply fresh EXW evidence [murat-agent]"
-  },
-  {
-   "sha": "0b8e5c0",
-   "agent": "overview-agent",
-   "when": "2026-11-21T19:32+01:00",
-   "subject": "T78: refresh agents overview (62 agents, 7 in progress) [overview-agent]"
-  },
-  {
-   "sha": "edb0f23",
-   "agent": "isil-agent",
-   "when": "2026-11-21T19:30+01:00",
-   "subject": "T84: Break-even with Vogt's EUR 120 / EUR 32 and the full save plan [isil-agent]"
-  },
-  {
-   "sha": "2d7cc97",
-   "agent": "nick",
-   "when": "2026-11-21T19:30+01:00",
-   "subject": "autosync: 11 files [nick]"
   }
  ],
  "rules": "STATUS/TASKS: last row wins. 'answered' = addressee later wrote back to sender. Stale = in_progress, no activity for 90 min."
