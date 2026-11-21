@@ -166,22 +166,15 @@ class DemoReplayTest(unittest.TestCase):
             approved = self.dashboard(lambda snapshot, sync: True)
             self.assertEqual({row["id"]: row["status"] for row in approved["options"]}.get(option_id), "approved")
 
-        with timed("Confirm supplier send and verify dry-run transport"):
-            self.assertEqual(approved["sync"]["mailMode"], "dry-run")
-            _, truth = self.request("/api/truth")
-            ready_card_lots = {(item["supplier"], item["material"]) for item in truth["inbound"]
-                               if item["material"] == "CMP-GAM-001" and not item["held"]
-                               and item["earliest"] and item["earliest"] < truth["deadline"]}
-            draft = next((row for row in approved["threads"] if row["status"] == "draft"
-                          and row["qty"] == gaps.get(row["material"])
-                          and (row["supplier_id"], row["material"]) in ready_card_lots), None)
-            self.assertIsNotNone(draft, "No current supplier draft")
-            thread_id = draft["id"]
-            status, result = self.request(f"/api/threads/{thread_id}/send", {"confirm": True})
-            self.assertEqual(status, 200)
-            self.assertIs(result.get("ok"), True)
-            sent = self.dashboard(lambda snapshot, sync: True)
+        with timed("Verify automatic dry-run request on the shipment thread"):
+            sent = self.dashboard(lambda snapshot, sync: any(
+                a["case"] == "game_card" and a.get("transport", {}).get("status") == "dry_run"
+                for a in snapshot.get("supplierActions", ())
+            ))
             self.assertEqual(sent["sync"]["mailMode"], "dry-run")
+            action = next(a for a in sent["supplierActions"] if a["case"] == "game_card")
+            thread_id = action["threadId"]
+            self.assertEqual(action["status"], "awaiting_reply")
             thread = next(row for row in sent["threads"] if row["id"] == thread_id)
             self.assertEqual(thread["status"], "awaiting reply")
             self.assertTrue(any(message["side"] == "out" and message["sender"] == "Supplier Chaser (demo)"
@@ -201,8 +194,10 @@ class DemoReplayTest(unittest.TestCase):
             self.assertTrue(plan["simulated"])
             self.assertTrue(plan["evidence"])
             self.assertIn("Escalate", plan["nextAction"])
-            self.assertTrue(any(row["after"] < row["before"] or row["upperAfter"] < row["upperBefore"]
-                                for row in plan["editions"]), plan["editions"])
+            recovery = next(row for row in reply["supplierActions"] if row["case"] == "game_card")
+            self.assertEqual(recovery["kind"], "review_recovery")
+            self.assertTrue(all(row["withDock"] == row["after"] for row in recovery["impact"]))
+            self.assertEqual(self.request(f'/api/decisions/{recovery["optionId"]}/approve', {})[0], 409)
             self.assertEqual(reply["readiness"], sent["readiness"])
             self.assertEqual(plan["status"], "proposed")
             status, result = self.request(f'/api/reply-decisions/{incoming["id"]}/approve', {})
@@ -215,10 +210,9 @@ class DemoReplayTest(unittest.TestCase):
 
         with timed("Link an art-book hold reply to the current offer without pricing a PO"):
             offer = next(row for row in updated["options"] if row["kind"] == "partial" and row["material"] == "CMP-GAM-008")
-            art_thread = next(row for row in updated["threads"] if row["status"] == "draft"
+            art_thread = next(row for row in sent["threads"] if row["status"] == "awaiting reply"
                               and row["supplier_id"] == offer["supplier_id"] and row["material"] == offer["material"])
             art_id = art_thread["id"]
-            self.assertEqual(self.request(f"/api/threads/{art_id}/send", {"confirm": True})[0], 200)
             self.assertEqual(self.request(f"/api/threads/{art_id}/demo-reply", {})[0], 200)
             art_state = self.dashboard(lambda snapshot, sync: True)
             received = next(row for row in art_state["threads"] if row["id"] == art_id)["messages"][-1]
