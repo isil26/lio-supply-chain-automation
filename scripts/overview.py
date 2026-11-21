@@ -482,7 +482,7 @@ def publish(data, last_fp: str | None) -> str | None:
         git("pull", "--rebase", "--autostash", "-q", "origin", "main")
         r = subprocess.run(["git", "-C", str(ROOT), "push", "-q", "origin", "HEAD:main"], capture_output=True, text=True)
         if r.returncode == 0:
-            print(time.strftime("%H:%M:%S"), "pushed overview", git("rev-parse", "--short", "HEAD").strip())
+            print(time.strftime("%H:%M:%S"), "pushed overview", git("rev-parse", "--short", "HEAD").strip(), flush=True)
             return fingerprint(data)
         time.sleep(5)
     print("push failed:", r.stderr.strip()[:300], file=sys.stderr)
@@ -500,7 +500,7 @@ def serve(port: int, every: int, pull: bool, write_files: bool, push_every: int 
                 elif write_files:
                     write(d)
             except Exception as e:  # keep serving the last good snapshot
-                print("refresh failed:", e, file=sys.stderr)
+                print("refresh failed:", e, file=sys.stderr, flush=True)
             time.sleep(every)
     refresh(False)
     threading.Thread(target=loop, daemon=True).start()
@@ -526,7 +526,7 @@ def serve(port: int, every: int, pull: bool, write_files: bool, push_every: int 
             self.wfile.write(body)
 
     print(f"overview dashboard on http://127.0.0.1:{port} (refresh every {every}s, git pull={'on' if pull else 'off'}, "
-          f"push={'every %ss' % push_every if push_every else 'off'})")
+          f"push={'every %ss' % push_every if push_every else 'off'})", flush=True)
     ThreadingHTTPServer(("127.0.0.1", port), H).serve_forever()
 
 
