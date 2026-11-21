@@ -1,4 +1,4 @@
-# OVERVIEW — where we are (Sat 21 Nov, 16:10). Update this file when the picture changes.
+# OVERVIEW (PUBLISH EVERYTHING: if it is not on GitHub it does not exist for the team or the jury) — where we are (Sat 21 Nov, 16:10). Update this file when the picture changes.
 Deadline: **Sun 22 Nov 12:00 submission** (prototype, deck, video <= 3 min, code + README). Demos from 14:00. Vogt office hours **Sat 18:00**.
 
 ## The goal
