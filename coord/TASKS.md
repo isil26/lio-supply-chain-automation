@@ -45,12 +45,12 @@ More unclaimed work: see coord/OPEN_TASKS.md (T19-T31). Claim by copying the row
 | T36 | Fallback extractor + coverage contract (full/partial/none) + review queue incl. .eml | open P1 | src/docs | T33 |
 | T37 | LLM-drafted chaser emails with validator and template fallback | open P2 | src/chaser | T33 |
 | T38 | Multi-agent runtime: tool-calling ReAct loop, Anthropic + OpenAI-compatible adapters, record/replay cassettes, Team with delegate + blackboard + mailbox, trace to activity feed, human-gate primitive | copilot-runtime | src/agents/runtime.py, llm_adapter.py, trace.py | in_progress P1 | - |
-| T39 | Tool layer wrapping existing deterministic code (readiness, whatif, search_documents, compare_sources, breakeven, draft/send/parse, propose_option, escalate_to_human, request_review) | copilot-tools | src/agents/tools.py | in_progress P1 | - |
+| T39 | Tool layer wrapping existing deterministic code (readiness, whatif, search_documents, compare_sources, breakeven, draft/send/parse, propose_option, escalate_to_human, request_review) | copilot-tools | src/agents/tools.py | done | - |
 | T40 | The agents: Triage/Orchestrator (plans, delegates), Analyst (finds and explains gaps with citations), Verifier (checks every claim against quotes, rejects unsupported), Planner (Plan B options with cost), Chaser agent (autonomous ladder: draft, wait, parse reply, escalate). System prompts, tool whitelists, hand-offs | copilot-agents | src/agents/team.py, prompts.py | done P1 | T38, T39 |
 | T41 | Autonomy loop: on a data-drop event the Triage agent runs; timers advance the chaser ladder; approval queue; kill switch; budget cap per cycle; replay from cassettes for a reliable demo; wire into src/orchestrator behind SOONY_AGENTS=1 with the old pipeline as fallback | open P1 | src/orchestrator (small), src/agents/loop.py | T40 |
 | T42 | Simulated supplier agents: LLM personas per supplier (language, private capacity/ETA, reliability from history, deliberately vague or late replies) that answer drafted emails; makes the whole multi-agent loop testable without real email, also a demo fallback | open P1 | src/agents/suppliers_sim.py | T38 |
 | T43 | Test runs with a real API: scripted scenarios (art-book shortfall, quality hold, game-card short-ship, unseen German notice), run each 3-5 times, record cassettes, measure success rate, tool-call correctness, hallucinated numbers (must be 0), cost and latency; report in docs/AGENT_EVAL.md | open P1 | tests/agent_eval/, docs/AGENT_EVAL.md | T40, API key |
-| T44 | UI: multi-agent trace view (who called which tool and why, hand-offs between agents, approvals waiting) in React + standalone page | open P2 | web/ | T38 trace format |
+| T44 | UI: multi-agent trace view (who called which tool and why, hand-offs between agents, approvals waiting) in React + standalone page | copilot-trace | web/src/agents | done P2 | T38 trace format |
 | T42 | (taken) Simulated supplier agents | copilot-sim | src/agents/suppliers_sim.py | done P1 | T38 done; deterministic fallback and demo CLI verified |
 | T38b | Make the live agent path real: auth env names, valid OpenAI/Anthropic tool-calling protocol, honest errors (no silent scripted fallback), cost accounting, first successful live run recorded to cassettes + docs/agent_runs/ | copilot-live | src/agents | done P1 | T38, T39, T40 |
 | T45 | Project knowledge pack per role (domain, data map, policy, pitfalls, negotiation, style, few-shot examples) + role cards docs/AGENT_ROLES.md; loader load_pack(role); no computed numbers in the pack | copilot-know | src/agents/knowledge, docs/AGENT_ROLES.md | done P1 | - |
@@ -59,7 +59,7 @@ More unclaimed work: see coord/OPEN_TASKS.md (T19-T31). Claim by copying the row
 | T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | done | T19-Vercel |
 | T47 | Wire pack + harness into prompts/runtime: agents load their pack, every run is evaluated by the harness, violations block proposals and show in UI | open P1 | src/agents | T45, T46, T38b |
 | T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | in_progress | T19-Vercel |
-| T47 | Wire pack + harness into prompts/runtime: agents load their pack, every run is evaluated by the harness, violations block proposals and show in UI | copilot-wire in_progress P1 | src/agents | T45, T46, T38b |
+| T47 | Wire pack + harness into prompts/runtime: agents load their pack, every run is evaluated by the harness, violations block proposals and show in UI | copilot-wire done P1 | src/agents | T45, T46, T38b |
 | T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | in_progress | T19-Vercel |
 
 Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
@@ -76,3 +76,12 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T25 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T31 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T28 | UI taste + accessibility pass (wording, contrast, keyboard focus, phone layout) | gülşah-agent | web/src/main.tsx, web/src/styles.css, docs/ui/ | in_progress | builds on leo-claude's Metricalist theme |
+| T63 | Document Reader agent (LLM + vision): scans, handwriting, multilingual notices, quote-validated facts, coverage rating, review queue, provisional facts need approval | copilot-reader | src/agents/reader.py | done P1 | T33 |
+| T64 | Reply Interpreter agent: supplier reply -> commitment strength, next ladder step, escalate | copilot-roles | src/agents/interpreter.py, tests/test_agents_roles2.py | done P1 | T47 |
+| T65 | Briefer agent: one-screen brief for Dr. Vogt from verified facts only (no new numbers), harness-checked | copilot-roles | src/agents/briefer.py, tests/test_agents_roles2.py | done P1 | T47 |
+| T66 | Per-role model routing: cheap model for extraction/parsing, stronger for Planner; cost table; configurable via env | open P2 | src/agents | T47 |
+| T67 | Inbound expedite option: dock slot + customs pre-clearance for game-card air lot SHP-2026-04311 (lands Sun 12:00) and pickup of 350k cases SHP-2026-04276 at CTA; owner DC-HAM site lead; draft to forwarder/dock; before/after forecast. Model: dock <=4h lifts STD 614,650->639,100, CE 62,550->66,100 | isil-agent | src/decide/inbound.py, tests/test_inbound.py (+ one registration hook in src/decide/__init__.py, coordinated) | in_progress P1 | T3, T17 |
+| T41 | Autonomy loop in orchestrator behind SOONY_AGENTS=1, runs table, trace/run APIs, kill switch, replay, harness on every run | copilot-loop | src/agents/loop.py, orchestrator glue | done P1 | T47 |
+| T44 | Agent team trace panel in the control room (graph, timeline, citations, harness badge, approvals, recorded-run mode for hosted) | copilot-trace | web/src/agents | done P2 | T41 contract |
+| T47b | Fix live agent failures: stop_check/loops, citation_check, briefer policy errors; budget $0.60 | copilot-fix2 | src/agents | done P1 | T47 |
+| T47c | Harness calibration + debug citation/numeric failures in replay; one live run per scenario under $0.30 | copilot-fix3 | src/agents | done P1 | T47b |

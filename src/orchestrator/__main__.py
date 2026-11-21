@@ -23,6 +23,7 @@ from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
 from src.orchestrator.numbers import numbers_report
 from src.truth import LOCAL, readiness
+from src.agents.loop import AutonomyLoop
 
 DIST = ROOT / "web" / "dist"
 CONTROL_ROOM = Path(__file__).resolve().parent
@@ -228,6 +229,7 @@ class Loop:
         else:
             self.root = args.data
             self.database = args.db
+        self.agents = AutonomyLoop(self.database) if os.getenv("SOONY_AGENTS") == "1" else None
 
     @staticmethod
     def copy(source, dest):
@@ -314,7 +316,18 @@ class Loop:
             self.health["lastCycleTime"] = now()
             self.health["durationMs"] = round((time.monotonic() - started) * 1000)
             self.health["errors"] = [sync_error] if sync_error else []
-            return len(successful)
+            cycle_result = len(successful)
+        if self.agents:
+            if cycle_result:
+                with closing(connect(self.database)) as agent_con:
+                    drop = get_state(agent_con, "drop", {}) or {}
+                self.agents.submit({
+                    "kind": "drop",
+                    "changed_files": [event["source"] for event in successful],
+                    "summary": drop.get("detail", "Data drop processed"),
+                })
+            self.agents.tick()
+        return cycle_result
 
     def promote_drop(self):
         with self.lock:
@@ -363,7 +376,23 @@ def handler(loop):
                         return self.out(health)
                     if path == "/api/dashboard":
                         value = dashboard(con)
+                        if value is not None and loop.agents:
+                            value["agents"] = {
+                                "enabled": loop.agents.enabled,
+                                "status": "offline (deterministic mode)" if not loop.agents.enabled else "running",
+                                "runs": loop.agents.runs(5),
+                            }
                         return self.out(value) if value else self.out({"error": "Building launch snapshot", "sync": get_state(con, "sync")}, 503)
+                    if path == "/api/agents/runs":
+                        return self.out(loop.agents.runs() if loop.agents else [])
+                    if path.startswith("/api/agents/trace"):
+                        run_id = urlsplit(self.path).query.removeprefix("run=")
+                        if not loop.agents or not run_id:
+                            return self.out({"error": "run is required"}, 400)
+                        try:
+                            return self.out(loop.agents.trace(run_id))
+                        except KeyError:
+                            return self.out({"error": "Unknown agent run"}, 404)
                     if path == "/api/truth":
                         return self.out(get_state(con, "truth"))
                     if path == "/api/documents":
@@ -410,6 +439,14 @@ def handler(loop):
                         loop.promote_drop()
                     loop.trigger.set()
                     return self.out({"ok": True}, 202)
+                if path == "/api/agents/stop":
+                    if loop.agents:
+                        return self.out(loop.agents.stop())
+                    return self.out({"ok": True, "status": "stopped"})
+                if path == "/api/agents/run":
+                    if not loop.agents:
+                        return self.out({"ok": False, "status": "offline"}, 409)
+                    return self.out(loop.agents.submit(body), 202)
                 with closing(connect(loop.database)) as con:
                     chaser.schema(con)
                     match = re.fullmatch(r"/api/decisions/([a-f0-9]+)/(approve|review)", path)
@@ -446,7 +483,14 @@ def handler(loop):
                         reply = EmailMessage()
                         reply["From"], reply["Subject"], reply["In-Reply-To"] = message["address"], message["subject"], message["message_id"]
                         reply.set_content(reply_text)
-                        return self.out({"ok": chaser.receive(con, reply)})
+                        parsed = chaser.receive(con, reply)
+                        if loop.agents and parsed:
+                            loop.agents.submit({
+                                "kind": "reply",
+                                "changed_files": [],
+                                "summary": "Supplier reply received and parsed",
+                            })
+                        return self.out({"ok": parsed})
                 return self.out({"error": "Unknown API endpoint"}, 404)
             except (ValueError, sqlite3.Error) as exc:
                 return self.out({"error": str(exc)}, 400)

@@ -1,0 +1,78 @@
+{
+  "steps": [
+    {
+      "agent": "Triage",
+      "tool": "recorded_run",
+      "args_summary": "art_book",
+      "result_summary": "completed",
+      "reason": "Replayed from a redacted recorded run",
+      "cost": 0.011578,
+      "latency": 0,
+      "citations": [],
+      "status": "completed"
+    },
+    {
+      "agent": "Analyst",
+      "tool": "recorded_run",
+      "args_summary": "art_book",
+      "result_summary": "completed",
+      "reason": "Replayed from a redacted recorded run",
+      "cost": 0.011578,
+      "latency": 0,
+      "citations": [
+        {
+          "file": "WZ-261116-473.jpg",
+          "page": 1,
+          "quote": "Handwritten quantity overrides the SAP booking"
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "agent": "Verifier",
+      "tool": "recorded_run",
+      "args_summary": "art_book",
+      "result_summary": "completed",
+      "reason": "Replayed from a redacted recorded run",
+      "cost": 0.011578,
+      "latency": 0,
+      "citations": [
+        {
+          "file": "WZ-261116-473.jpg",
+          "page": 1,
+          "quote": "Handwritten quantity overrides the SAP booking"
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "agent": "Planner",
+      "tool": "recorded_run",
+      "args_summary": "art_book",
+      "result_summary": "completed",
+      "reason": "Replayed from a redacted recorded run",
+      "cost": 0.011578,
+      "latency": 0,
+      "citations": [],
+      "status": "completed"
+    },
+    {
+      "agent": "Chaser",
+      "tool": "recorded_run",
+      "args_summary": "art_book",
+      "result_summary": "completed",
+      "reason": "Replayed from a redacted recorded run",
+      "cost": 0.011578,
+      "latency": 0,
+      "citations": [],
+      "status": "completed"
+    }
+  ],
+  "approvals_pending": [
+    {
+      "id": "recorded-approval",
+      "title": "Recorded human approval",
+      "detail": "Replay only; no supplier email was sent."
+    }
+  ]
+}

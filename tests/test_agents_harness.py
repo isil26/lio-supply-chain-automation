@@ -24,6 +24,10 @@ class HarnessTests(unittest.TestCase):
         result = numeric_grounding("Assumption: missing-copy cost is EUR 42,000.", trace)
         self.assertTrue(result["ok"])
 
+    def test_numeric_grounding_accepts_compact_k_and_float(self):
+        trace = [{"tool": "list_shortfalls", "args": {}, "result": '{"value":[{"shortfall":5900.0}]}'}]
+        self.assertTrue(numeric_grounding("The shortfall is 5.9k units.", trace)["ok"])
+
     def test_citation_check_requires_verbatim_quote(self):
         trace = [{"tool": "search_documents", "result":
                   '{"citations":[{"file":"art.pdf","page":1,"quote":"ordered 8,000"}]}'}]
@@ -53,6 +57,24 @@ class HarnessTests(unittest.TestCase):
         trace += [{"tool": "propose_option", "result": "Pending Plan B"}] * 2
         result = stop_check(trace)
         self.assertFalse(result["ok"])
+
+    def test_stop_check_counts_only_tool_calls_and_allows_45(self):
+        trace = [{"tool": "search_documents", "args": {"query": str(index)},
+                  "result": "{}"} for index in range(45)]
+        trace += [{"agent": "analyst", "model": "gpt", "result": "final"}] * 30
+        allowed = stop_check(trace)
+        trace.append({"tool": "get_document", "args": {"file": "extra.pdf"}, "result": "{}"})
+        blocked = stop_check(trace)
+        self.assertTrue(allowed["ok"])
+        self.assertFalse(blocked["ok"])
+
+    def test_citation_check_normalizes_repo_relative_paths(self):
+        trace = [{"tool": "search_documents", "result":
+                  '{"citations":[{"file":"receiving/DC-HAM/20261118_WZ-261116-473.jpg","page":1,"quote":"handwritten 8 000"}]}'}]
+        result = citation_check([{"text": "The receiving scan says handwritten 8 000.",
+                                  "file": "./WZ-261116-473.jpg",
+                                  "quote": "handwritten 8 000"}], trace)
+        self.assertTrue(result["ok"])
 
     def test_language_check_accepts_polish_and_rejects_missing_ask(self):
         good = language_check("Proszę potwierdzić ilość i dokument partii PO-4500318768.",

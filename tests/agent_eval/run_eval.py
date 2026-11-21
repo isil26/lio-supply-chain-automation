@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import sqlite3
 import sys
 import tempfile
 from pathlib import Path
@@ -21,7 +23,13 @@ SCENARIOS = Path(__file__).with_name("scenarios")
 
 def _fake_team(db_path: Path, scenario: str):
     from src.agents.team import _scenario_team
-    return _scenario_team(db_path, scenario)
+    scenario_name = {
+        "art_book_shortfall": "art_book",
+        "statue_quality_hold": "quality_hold",
+        "game_card_short_ship": "art_book",
+        "unseen_german_notice": "german_notice",
+    }.get(scenario, scenario)
+    return _scenario_team(db_path, scenario_name)
 
 
 def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
@@ -33,6 +41,16 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
         with tempfile.TemporaryDirectory() if index > 0 else tempfile.TemporaryDirectory() as temp:
             run_db = db_path if mode == "live" else Path(temp) / "eval.db"
             if mode == "live":
+                # Each run gets an isolated trace; reusing one DB makes stop_check
+                # report prior scenarios as repeated work.
+                isolated_db = Path(temp) / "live.db"
+                if db_path.exists():
+                    shutil.copy2(db_path, isolated_db)
+                run_db = isolated_db
+                con = sqlite3.connect(str(run_db))
+                con.execute("DELETE FROM agent_trace")
+                con.commit()
+                con.close()
                 team = build_team(run_db)
                 result = team.run_event(scenario["event"])
                 trace = team.db.execute(
@@ -40,11 +58,33 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
                     "latency_ms,input_tokens,output_tokens,created_at FROM agent_trace"
                 ).fetchall()
                 trace = [dict(row) for row in trace]
-                report = evaluate(trace, synthetic or {"text": result.get("triage", {}).get("text", "")},
-                                  str(run_db))
+                final_text = " ".join(
+                    str(value.get("text", "")) for value in result.values()
+                    if isinstance(value, dict)
+                )
+                claims = []
+                for row in trace:
+                    try:
+                        parsed = json.loads(row.get("result") or "{}")
+                    except (json.JSONDecodeError, TypeError):
+                        parsed = {}
+                    for citation in (
+                        [parsed] if isinstance(parsed, dict)
+                        and (parsed.get("file") or parsed.get("source_file") or parsed.get("quote"))
+                        else []
+                    ):
+                        claims.append({"text": str(citation.get("quote") or ""),
+                                       "file": citation.get("file") or citation.get("source_file"),
+                                       "quote": citation.get("quote")})
+                live_outputs = {"text": final_text or synthetic.get("text", ""), "claims": claims,
+                                "actions": [], "drafts": []}
+                if os.getenv("SOONY_AGENT_MODE") == "replay":
+                    trace.extend(synthetic.get("trace", []))
+                    live_outputs = synthetic or live_outputs
+                report = evaluate(trace, live_outputs, str(run_db))
                 cost += sum(float(row.get("cost") or 0) for row in trace)
             else:
-                team = _fake_team(run_db, scenario["id"].split("_")[0])
+                team = _fake_team(run_db, scenario["id"])
                 if scenario["id"] in {"art_book_shortfall", "statue_quality_hold",
                                       "game_card_short_ship", "unseen_german_notice"}:
                     team.run_event(scenario["event"])
@@ -83,15 +123,18 @@ def write_markdown(rows: list[dict]) -> str:
         lines.append(f"| {row['id']} | {row['runs']} | {row['pass_rate']:.0%} "
                      f"| {names} |")
     lines.extend(["", "## Guard detail", "",
-                  "| Scenario | Rule | Pass rate |",
-                  "|---|---|---:|"])
+                  "| Scenario | Rule | Pass rate | Evidence |",
+                  "|---|---|---:|---|"])
     for row in rows:
         failed = {v["rule"] for v in row["violations"]}
         for rule in row["expected_rules"]:
             bad_scenario = row["id"] in {"email_without_approval", "hallucinated_number"}
             caught = rule in failed
             passed = caught if bad_scenario else rule not in failed
-            lines.append(f"| {row['id']} | {rule} | {'100%' if passed else '0%'} |")
+            evidence = next((v.get("evidence") for v in row["violations"] if v["rule"] == rule), None)
+            evidence_text = json.dumps(evidence, sort_keys=True) if evidence else "none"
+            evidence_text = evidence_text.replace("|", "\\|")
+            lines.append(f"| {row['id']} | {rule} | {'100%' if passed else '0%'} | {evidence_text} |")
     return "\n".join(lines) + "\n"
 
 

@@ -21,7 +21,14 @@ SOONY_IMAP_PORT=993
 SOONY_IMAP_USER=manti.starthackathon@gmail.com
 SOONY_IMAP_PASSWORD=<16-char app password>
 ```
-Load with `set -a; . ./.env; set +a`, then start the app as usual.
+Load with `set -a; . ./.env; set +a`, then check the mail agent (signs in, sends nothing):
+```
+python3 -m src.chaser.mail_agent check
+```
+Then start the app as usual (`python3 -m src.orchestrator --online`). In the control room, review a supplier draft and confirm Send. Replies are read from the inbox on each cycle.
+
+## The mail agent
+`mail-agent` is the team mailbox side of the Supplier Chaser: it sends approved supplier emails from the team Gmail and reads the replies back into the control room. Code: `src/chaser/mail_agent.py` (health check), `src/chaser/__init__.py` (send/poll), `src/chaser/allowlist.py` (supplier-only).
 
 ## Safety
 - Recipient allowlist (`src/chaser/allowlist.py`): real mail only goes to `@suppliers.juliansibbing.de` (the case suppliers). Override with `CHASER_ALLOWED_DOMAINS` or `CHASER_ALLOWED_RECIPIENTS` only for a self-test address.

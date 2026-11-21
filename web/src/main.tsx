@@ -10,6 +10,7 @@ import {
   type Source,
   type SupplierThread,
 } from "./api";
+import { AgentTrace } from "./agents/AgentTrace";
 import "./styles.css";
 
 const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon" | "sun" | "check" | "arrow" }) => {
@@ -327,6 +328,7 @@ function App() {
           </> : <div className="empty-approval">Live options will appear after the next readiness evaluation.</div>}
         </section>
       </div>
+      <AgentTrace onEvidence={setSource}/>
     </section>
     {source && <EvidenceModal source={source} onClose={() => setSource(null)}/>}
   </main>;

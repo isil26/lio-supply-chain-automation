@@ -72,6 +72,26 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(team.get("risk")["part"], "X")
         self.assertEqual(team.delegate("lead", "worker", "check")["status"], "completed")
 
+    def test_repeated_tool_call_is_cached_and_not_retraced(self):
+        class RepeatLLM:
+            def chat(self, messages, tools, system, model=None):
+                return {"text": "", "tool_calls": [
+                    {"name": "echo", "arguments": {"value": "x"}}
+                ], "usage": {}}
+
+        calls = []
+        agent = Agent("worker", "test", [Tool(
+            "echo", lambda value: calls.append(value) or {"value": value},
+            {"type": "object", "properties": {"value": {"type": "string"}},
+             "required": ["value"]},
+        )], llm=RepeatLLM(), max_steps=2)
+        db = sqlite3.connect(":memory:")
+        self.assertEqual(agent.run("repeat", db)["status"], "max_steps")
+        self.assertEqual(calls, ["x"])
+        self.assertEqual(db.execute(
+            "SELECT count(*) FROM agent_trace WHERE tool='echo'"
+        ).fetchone()[0], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

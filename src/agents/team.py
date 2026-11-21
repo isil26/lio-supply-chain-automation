@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .llm_adapter import FakeLLM, HTTPAdapter
+from .harness import evaluate
 from .prompts import ANALYST_PROMPT, CHASER_PROMPT, PLANNER_PROMPT, ROLE_TOOLS, TRIAGE_PROMPT, VERIFIER_PROMPT
 from .runtime import Agent, Team, Tool
 from .tools import all_tools
@@ -58,6 +59,23 @@ def verify_claims(claims: Iterable[str], evidence: Iterable[dict]) -> dict:
             "rejected": [x for x in rejected if x["status"] == "rejected"]}
 
 
+def _result_citations(value: Any) -> list[dict]:
+    found = []
+    if isinstance(value, dict):
+        if value.get("file") or value.get("source_file") or value.get("source"):
+            found.append({
+                "file": value.get("file") or value.get("source_file") or value.get("source"),
+                "page": value.get("page"),
+                "quote": value.get("quote"),
+            })
+        for key in ("citations", "citation", "evidence", "sources"):
+            found.extend(_result_citations(value.get(key)))
+    elif isinstance(value, list):
+        for item in value:
+            found.extend(_result_citations(item))
+    return [item for item in found if item not in found[:found.index(item)]]
+
+
 class AgentTeam(Team):
     def __init__(self, agents, db_path=":memory:", llm=None):
         super().__init__(agents, db_path)
@@ -98,6 +116,10 @@ class AgentTeam(Team):
         self.db.commit()
         self.llm = llm
         self.rounds = 0
+        self.db.execute("""CREATE TABLE IF NOT EXISTS agent_approvals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, agent TEXT, tool TEXT, args TEXT, status TEXT
+        )""")
+        self.db.commit()
 
     def run_event(self, event: str) -> dict:
         """Triage an event; fall back to a fixed specialist order if no model plan exists."""
@@ -125,7 +147,7 @@ class AgentTeam(Team):
                     "SELECT * FROM agent_approvals WHERE status='pending' ORDER BY id"
                 ).fetchall()
             ]
-            return results
+            return self._finish(results)
 
         # Expose specialist returns from real triage delegation in the event result.
         mailbox = self.db.execute(
@@ -154,6 +176,45 @@ class AgentTeam(Team):
                 "SELECT * FROM agent_approvals WHERE status='pending' ORDER BY id"
             ).fetchall()
         ]
+        return self._finish(results)
+
+    def _finish(self, results: dict) -> dict:
+        trace_rows = [dict(row) for row in self.db.execute(
+            "SELECT agent,model,step,tool,args,result,reason,cost,latency_ms,"
+            "input_tokens,output_tokens,created_at FROM agent_trace ORDER BY id"
+        ).fetchall()]
+        final_text = " ".join(
+            str(value.get("text", "")) for value in results.values() if isinstance(value, dict)
+        )
+        claims = []
+        for row in trace_rows:
+            result = row.get("result")
+            if isinstance(result, str):
+                try:
+                    result = json.loads(result)
+                except json.JSONDecodeError:
+                    continue
+            for citation in _result_citations(result):
+                quote = str(citation.get("quote") or "").strip()
+                if quote:
+                    claims.append({"text": quote, **citation})
+        results["claims"] = claims
+        report = evaluate(trace_rows, {"text": final_text, "claims": claims}, str(self.db_path))
+        results["harness"] = report
+        results["trace"] = activity(self.db, 100)
+        if not report["ok"]:
+            self.db.execute("UPDATE agent_approvals SET status='blocked by harness' WHERE status='pending'")
+            if self.db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='decisions'"
+            ).fetchone():
+                self.db.execute(
+                    "UPDATE decisions SET status='blocked by harness', "
+                    "payload=json_set(payload, '$.status', 'blocked by harness') WHERE status='pending'"
+                )
+            self.db.commit()
+            results["proposal_status"] = "blocked by harness"
+        else:
+            results["proposal_status"] = "eligible for human approval"
         return results
 
     def _fixed_fallback(self, event_lower: str) -> dict:
@@ -224,7 +285,7 @@ def build_team(db_path="store/soony.db", llm=None) -> AgentTeam:
         )
 
     triage = Agent("triage", TRIAGE_PROMPT, [delegate_tool("triage")],
-                   llm=llm, max_steps=3, budget_usd=0.50)
+                   llm=llm, max_steps=2, budget_usd=0.50)
     analyst = Agent("analyst", ANALYST_PROMPT,
                     _registry_tools(db_path, ROLE_TOOLS["analyst"]),
                     llm=llm, max_steps=3, budget_usd=0.40)
@@ -253,7 +314,7 @@ class _ScenarioLLM:
         prompt = system.casefold()
         text = str(messages[-1].get("content", "")) if messages else ""
 
-        if "triage" in prompt:
+        if "you are the soony launch triage orchestrator" in prompt:
             if "triage" in self.used:
                 return {"text": "Triage plan complete.", "tool_calls": [], "usage": {}}
             self.used.add("triage")
@@ -265,7 +326,7 @@ class _ScenarioLLM:
                         if "delegate" in names
                     ], "usage": {}}
 
-        if "analyst" in prompt:
+        if "you are the soony launch analyst" in prompt:
             if "analyst" in self.used:
                 return {"text": "Analyst evidence complete.", "tool_calls": [], "usage": {}}
             self.used.add("analyst")
@@ -276,7 +337,7 @@ class _ScenarioLLM:
                 calls.append({"name": "get_readiness", "arguments": {}, "reason": "read cited forecast"})
             return {"text": "Analyst found the launch shortfall.", "tool_calls": calls, "usage": {}}
 
-        if "independent" in prompt or "verifier" in prompt:
+        if "you are the independent soony claim verifier" in prompt:
             if "verifier" in self.used:
                 return {"text": "Verifier check complete.", "tool_calls": [], "usage": {}}
             self.used.add("verifier")
@@ -287,7 +348,7 @@ class _ScenarioLLM:
                               "reason": "verify each claim"})
             return {"text": "Verifier checked source evidence.", "tool_calls": calls, "usage": {}}
 
-        if "planner" in prompt:
+        if "you are the soony plan b planner" in prompt:
             if "planner" in self.used:
                 return {"text": "Planner result complete.", "tool_calls": [], "usage": {}}
             self.used.add("planner")
@@ -300,7 +361,7 @@ class _ScenarioLLM:
                               "reason": "keep option pending"})
             return {"text": "Planner proposed only a pending option.", "tool_calls": calls, "usage": {}}
 
-        if "chaser" in prompt:
+        if "you are the soony supplier chaser" in prompt:
             if "chaser" in self.used:
                 return {"text": "Chaser action complete.", "tool_calls": [], "usage": {}}
             self.used.add("chaser")

@@ -1,5 +1,59 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T47c — Replay harness calibration (copilot-fix3)
+
+- Calibrated `stop_check` to count only tool-call rows, allow 45 tool calls, retain repeated-signature and Pending Plan B oscillation checks, and identify rule evidence. Evaluator live/replay runs now delete prior `agent_trace` rows from the isolated database.
+- Normalized repository-relative/basename citations and compact `5.9k`/`5900.0` numeric grounding. Replay evidence now includes the wanted file, wanted quote and available evidence.
+- Validation: `python3 -m unittest tests.test_agents_harness` (10 tests pass); `SOONY_AGENT_MODE=replay python3 tests/agent_eval/run_eval.py --live --runs 1` passes 6/6 replay scenarios at $0.00. No live API run was made.
+
+## T47b — Live eval failure fixes (copilot-fix2)
+
+- Added per-run tool-call deduplication with cached results excluded from repeat traces, bounded triage rounds to two, and quote-backed claims from tool results.
+- Briefer validation now runs numeric grounding and PP-07 policy checks and derives price/signer only from `propose_option`/`escalate_to_human` payloads.
+- Validation: `python3 -m unittest tests.test_agents_runtime tests.test_agents_team tests.test_agents_harness tests.test_agents_roles2` (23 passed). Direct fake team traces pass stop/citation checks. The cached pre-fix live report remains the only live evidence; no new live pass rate is claimed.
+
+## T41 — Autonomy loop and agent APIs (copilot-loop)
+
+- `src/agents/loop.py` persists bounded background runs in `agent_runs`, deduplicates event hashes, captures per-run traces and harness results, supports timer events, replay adapters, and the stop switch.
+- The orchestrator submits drop/reply events only when `SOONY_AGENTS=1`; `GET /api/agents/runs`, `GET /api/agents/trace?run=...`, `POST /api/agents/run`, and `POST /api/agents/stop` are available. Dashboard activity includes the agent trace projection.
+- Validation: `python3 -m unittest -q tests.test_agents_loop tests.test_agents_team tests.test_agents_runtime` (10 passed) and `PATH=$PWD/.venv/bin:$PATH bash scripts/demo_check.sh` (passed).
+
+## T47 — Live agent wiring (copilot-wire)
+
+- Role prompts load `knowledge.load_pack(role)` and require the pack's strict JSON schemas; verifier searches distinctive identifiers and opens matching documents.
+- Harness evaluation is attached to every team event. Violations mark proposals and pending approvals `blocked by harness`; specialist delegation and supplier drafts stop after one idempotent action.
+- Tool descriptions now document purpose, guardrails, and argument examples. Evaluator traces are isolated per live run.
+- Focused validation: 23 agent tests pass. Existing art-book live evidence passes twice at $0.057892; quality-hold and German-notice live runs were not completed after the cumulative live attempt reached $1.694971. Do not claim those pass rates.
+
+## T44 — Agent trace panel (copilot-trace)
+
+- Added `web/src/agents/AgentTrace.tsx`, scoped `agents.css`, typed trace contracts, and a recorded fixture under `web/public/snapshot/agent_run.json`.
+- The panel shows the five-role handoff graph, tool timeline, citation chips opening the existing evidence modal, per-step cost/latency, harness status, pending approvals, and live/replay/offline status.
+- Added DashboardApi methods for `/api/agents/runs`, `/api/agents/trace`, `/api/agents/run`, and `/api/agents/stop`; static and mock adapters remain safe until the backend is available.
+- Export latest redacted run with `python3 scripts/export_agent_run.py`.
+- Validation: `npm --prefix web run build` and `VITE_STATIC=1 npm --prefix web run build` pass.
+
+## T39 — Agent tool layer (copilot-tools)
+
+- Added `src/agents/tools.py`: a closed registry of thin adapters over readiness, sensitivity, supplier reliability, cited document search, source comparison, expedite analysis, chaser draft/send/parse, pending options, PP-07 escalation, and review requests.
+- Every handler returns `value` plus normalized `citations`; side-effecting tools are marked `needs_approval`, and `send_email` is hard-restricted to dry-run.
+- `python3 -m src.agents.tools --list` prints JSON names/schemas. `python3 -m unittest tests.test_agents_tools` passes (3 tests).
+
+## T63 - Document Reader (copilot-reader)
+
+- Added `src/agents/reader.py`: `read_document(path, supplier_id=None)` returns the coverage/language/kind/facts/review contract, parses text/PDFs deterministically, and uses quote-validated text or vision JSON as a provisional fallback.
+- Image prompts use OpenAI-compatible `image_url` base64 input; handwritten claims must retain a verbatim transcription quote and are never forecast-safe before approval.
+- Review state persists in SQLite `doc_review`; call `DocumentReader(...).approve(file)` after human review. `reader_tool()` is compatible with the runtime tool registry.
+- CLI: `python3 -m src.agents.reader PATH`; focused validation: `python3 -m unittest tests.test_agents_reader -v` (4 passed).
+- No live model call was made; live cost `$0`. Register the tool in `src/agents/team.py`/role whitelists before enabling it in the runtime.
+
+## T63 reader follow-up — copilot-reader
+
+- `DocumentReader` now constructs the shared `LLMClient` when no client is injected, so the CLI honors configured model settings; configured images always take the vision path.
+- Vision instructions explicitly inspect strike-through/handwriting and preserve `printed_quantity`, `handwritten_quantity`, `handwriting_present`, and the evidence quote; handwritten quantities retain `read as X, uncertain` wording and remain review-required.
+- Offline validation: `python3 -m unittest tests.test_agents_reader -v` — 7 passed. The optional live smoke test reached `gpt-4.1-mini` and returned art-book printed 80,000 / handwritten 8,000 / review required; logged cost was unavailable (0.0 in the client log).
+- Requested Karton notice and second plain-scan live invocations were attempted but the non-interactive environment denied network approval; no result is claimed for either.
+
 ## T38b — Live multi-agent path (copilot-live)
 
 - Fixed live auth fallback across `SOONY_LLM_KEY`, `SOONY_LLM_API_KEY`, and `OPENAI_API_KEY`; OpenAI/Anthropic tool-call history now preserves parallel call IDs and tool-result protocol, with 30-second timeouts and one retry for 429/5xx.
@@ -197,3 +251,18 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - The Plan B card and expedite calculation use the same held shipment, actual quoted loading and driving time, and equal trial counts with shipment-specific draws. A synthetic late offer adds zero median units and zero on-time probability. The usable control adds 10 median units and raises modeled on-time probability from 27% to 40%.
 - The matched 308-file replay still ranks the post-drop art-book hold and written delivered quote first. It is request-only, with the same evidence, materials estimate, gates and modeled benefit. The full offline HTTP rehearsal and 52 focused tests passed.
 - The refreshed protected deployment `dpl_Bny9b6AyYGMe5eRmcbWtohFmvbs9` uses the verified 308-file snapshot `2026-11-21_1436`. Signed-in parity at 16:04 CET covered both replay phases, primary action and evidence, timing, option order, readiness, gaps and blocked approval states. No additional refresh is needed for these buyer-visible results.
+
+## T64/T65 — Reply Interpreter and Briefer (copilot-roles)
+- Added `interpreter_agent(llm, db)` with a closed five-tool whitelist and JSON contract for language, commitment, quotes, contradictions, ladder and escalation.
+- Added conservative `interpret_reply()` plus `--evaluate`; 12 simulated supplier replies agree with attachment ground truth 11/12 (91.7%), deterministic cost $0.00.
+- Added `briefer_agent(llm, db)`, `validate_brief()` using `harness.numeric_grounding`, and a deterministic fallback.
+- Fake CLI: `python3 -m src.agents.briefer --scenario art_book --fake`; sample headline: “Collector's Edition readiness is blocked by verified evidence.”
+- Focused validation: `python3 -m unittest tests/test_agents_roles2.py -q` — 6 passed.
+- Related runtime/team validation: `python3 -m unittest tests/test_agents_runtime.py tests/test_agents_team.py -q` — 8 passed.
+
+## Vercel deployment and access (codex-deploy)
+
+- Production serves `3247283`, deployment `dpl_2paCxGV13XqhA8C4nCEi3G4mKmKM`. It includes `8937cdb` (supplier-offer revisions and paired forecasts). The focused offer regressions and the candidate and production integration checks passed. The Agent Team panel awaits the hosted recorded-trace integration (T53). [Soony production](https://soony-launch-control.vercel.app)
+- Merge the dashboard change to private `main`. The deploy watch checks every 10 minutes, verifies a protected candidate, promotes eligible changes, and posts the live commit in [INBOX](INBOX.md). To coordinate a specific merged commit, post `codex-deploy: Vercel release request <commit>` there with a short description and any verification details.
+- The project currently belongs to a Vercel Hobby team. On a Pro or Enterprise team, the owner can grant each designated releaser project access through their own Vercel account. Use the lowest role that can create and promote production deployments. Get access to the approved encryption key through the team's private storage. [Protected replay runbook](../deploy/vercel/README.md)
+- From a fresh checkout of the merged commit, run the case replay and build the prebuilt package per the runbook. Link the package to the existing `soony-launch-control` project and deploy with `--prod --skip-domain --meta soonySourceCommit=<full-sha>`. Sign in to the generated candidate URL with your Vercel account and the dashboard team password, then test **Process drop**, the updated forecast and **Reset replay**. Promote the verified candidate, run `deploy/vercel/verify.py` against the production URL as documented, and post the commit, deployment, and checks in INBOX. Keep account tokens and the replay key out of Git, logs and agent messages.

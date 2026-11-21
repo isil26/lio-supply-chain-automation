@@ -213,7 +213,15 @@ def _draft_email(ctx, args):
         with ctx.db() as con:
             issue_data["deadline"] = ctx.truth(con)["deadline"]
     issue = Issue.from_dict(issue_data)
-    draft = SupplierChaser(ChaserStore(ctx.db_path), data_root=ctx.data_root).draft(issue, args.get("tone"))
+    store = ChaserStore(ctx.db_path)
+    existing = next((thread for thread in store.list_threads()
+                     if thread["supplier_id"] == issue.supplier_id
+                     and thread["component"] == issue.component
+                     and thread["po"] == issue.po
+                     and thread["state"] in {"pending", "approved"}), None)
+    if existing:
+        return _result(existing)
+    draft = SupplierChaser(store, data_root=ctx.data_root).draft(issue, args.get("tone"))
     return _result(draft)
 
 
@@ -289,17 +297,17 @@ def all_tools(db_path=DB) -> list[dict]:
     ctx = _ToolContext(db_path)
     text = {"type": "string"}
     tools = [
-        ("get_readiness", "Compute the cited readiness forecast.", _schema({},), _get_readiness, False),
-        ("list_shortfalls", "List launch components with deterministic shortfalls.", _schema({}), _list_shortfalls, False),
-        ("whatif", "Replay a readiness scenario without mutating state.", _schema({"changes": {"type": "object"}}, ("changes",)), _whatif, False),
-        ("supplier_history", "Return calibrated supplier lateness and evidence.", _schema({"supplier_id": text}, ("supplier_id",)), _supplier_history, False),
-        ("search_documents", "Search extracted document facts and citations.", _schema({"query": text, "supplier_id": text}), _search_documents, False),
-        ("get_document", "Return one extracted document and its cited fields.", _schema({"file": text}, ("file",)), _get_document, False),
-        ("list_shipments", "List normalized shipment rows with source citations.", _schema({}), _list_shipments, False),
-        ("get_po", "Return normalized PO lines with source citations.", _schema({"po_number": text}, ("po_number",)), _get_po, False),
-        ("compare_sources", "Compare SAP, receipts, notices and reconciled truth.", _schema({"material_id": text}, ("material_id",)), _compare_sources, False),
-        ("breakeven", "Calculate deterministic expedite break-even sensitivity.", _schema({"option_id": text, "loss_per_copy": {"type": ["number", "null"]}}, ("option_id",)), _breakeven, False),
-        ("draft_email", "Create a guarded supplier-language draft. Supply a real SUP-#### supplier_id and the issue with component, PO and requested commitment.", _schema({
+        ("get_readiness", "Compute the deterministic cited readiness forecast; use first for a launch overview.", _schema({},), _get_readiness, False),
+        ("list_shortfalls", "List components whose deterministic required quantity exceeds usable stock/inbound; use to identify every current gap.", _schema({}), _list_shortfalls, False),
+        ("whatif", "Replay a readiness scenario without mutating state; example changes={\"release_lot\":\"...\"}.", _schema({"changes": {"type": "object"}}, ("changes",)), _whatif, False),
+        ("supplier_history", "Return calibrated lateness and source evidence for one real SUP-#### supplier, e.g. SUP-0028.", _schema({"supplier_id": text}, ("supplier_id",)), _supplier_history, False),
+        ("search_documents", "Search extracted facts and exact citations. Query distinctive terms such as a PO, material, notice filename, AQL, inspection, or release; do not use only 'launch'.", _schema({"query": text, "supplier_id": text}), _search_documents, False),
+        ("get_document", "Open one extracted document by exact filename or basename and return all quoted fields; use after search_documents.", _schema({"file": text}, ("file",)), _get_document, False),
+        ("list_shipments", "List normalized shipment rows with source citations when an inbound ETA or tracker contradiction matters.", _schema({}), _list_shipments, False),
+        ("get_po", "Return normalized PO lines and source citations for a real PO number, e.g. 4500318768.", _schema({"po_number": text}, ("po_number",)), _get_po, False),
+        ("compare_sources", "Compare SAP, receipts, notices and reconciled truth for one material, e.g. CMP-GAM-008.", _schema({"material_id": text}, ("material_id",)), _compare_sources, False),
+        ("breakeven", "Calculate deterministic expedite break-even sensitivity; loss_per_copy stays null when Dr. Vogt has not supplied it.", _schema({"option_id": text, "loss_per_copy": {"type": ["number", "null"]}}, ("option_id",)), _breakeven, False),
+        ("draft_email", "Create exactly one guarded, approval-required supplier-language draft per supplier/component/PO issue. Supply real SUP-#### and issue fields; example supplier_id=SUP-0028.", _schema({
             "supplier_id": text,
             "issue": {"type": "object", "properties": {
                 "component": text, "po": text, "what_we_need": text,
@@ -307,11 +315,11 @@ def all_tools(db_path=DB) -> list[dict]:
             }},
             "tone": text,
         }, ("supplier_id", "issue")), _draft_email, False),
-        ("send_email", "Send only a dry-run for a previously approved draft.", _schema({"draft_id": text, "mode": text}, ("draft_id",)), _send_email, True),
-        ("parse_reply", "Parse a supplier reply and advance the persisted ladder.", _schema({"thread_id": text, "text": text}, ("thread_id", "text")), _parse_reply, False),
-        ("propose_option", "Persist a pending option for human approval.", _schema({"kind": text, "title": text, "rationale": text, "evidence": {"type": "array"}}, ("kind", "title", "rationale")), _propose_option, True),
-        ("escalate_to_human", "Route a cited issue to PP-07 human signers.", _schema({"role": text, "reason": text, "evidence": {"type": "array"}}, ("role", "reason")), _escalate, True),
-        ("request_review", "Persist a document review request.", _schema({"file": text, "reason": text}, ("file", "reason")), _request_review, True),
+        ("send_email", "Attempt only a dry-run for a previously approved draft; never send real email and never bypass the human gate.", _schema({"draft_id": text, "mode": text}, ("draft_id",)), _send_email, True),
+        ("parse_reply", "Parse a supplier reply and advance the persisted R0-R4 ladder using the cited thread id.", _schema({"thread_id": text, "text": text}, ("thread_id", "text")), _parse_reply, False),
+        ("propose_option", "Persist one pending Plan B option for human approval; it is not an execution or commitment.", _schema({"kind": text, "title": text, "rationale": text, "evidence": {"type": "array"}}, ("kind", "title", "rationale")), _propose_option, True),
+        ("escalate_to_human", "Route a cited issue to the PP-07 human signer; use for quality holds, vacant roles, and unknown facts.", _schema({"role": text, "reason": text, "evidence": {"type": "array"}}, ("role", "reason")), _escalate, True),
+        ("request_review", "Persist a human document-review request when a new or unsupported format/fact prevents a safe conclusion.", _schema({"file": text, "reason": text}, ("file", "reason")), _request_review, True),
     ]
     return [{"name": name, "description": description, "input_schema": schema,
              "handler": lambda args, fn=handler: fn(ctx, args), "needs_approval": approval}

@@ -1,0 +1,12 @@
+{
+  "steps": [
+    {"agent":"Triage","tool":"get_readiness","args_summary":"edition=CE","result_summary":"Art book gap detected","reason":"Route the new launch risk to specialists","cost":0.0012,"latency":420,"citations":[{"file":"stock_snapshot.csv","row":8,"quote":"CMP-GAM-008 usable stock 19,300"}],"status":"completed"},
+    {"agent":"Analyst","tool":"search_documents","args_summary":"art book GR 5000413065","result_summary":"Handwritten 8,000 overrides SAP 80,000","reason":"Find source evidence behind the stock contradiction","cost":0.0064,"latency":1180,"citations":[{"file":"WZ-261116-473.jpg","page":1,"quote":"Handwritten quantity: 8 000"}],"status":"completed"},
+    {"agent":"Verifier","tool":"compare_sources","args_summary":"SAP vs receiving scan","result_summary":"Verified booking discrepancy","reason":"Reject unsupported inventory claims before planning","cost":0.0048,"latency":760,"citations":[{"file":"WZ-261116-473.jpg","page":1,"quote":"Printed 80.000 crossed out; handwritten 8 000"}],"status":"completed"},
+    {"agent":"Planner","tool":"propose_option","args_summary":"art-book recovery","result_summary":"Prepare quote request; human approval required","reason":"Enumerate a recovery option without inventing a missing-copy cost","cost":0.0092,"latency":1340,"citations":[{"file":"Oferta_tryb_ekspresowy.pdf","page":1,"quote":"Express loading and transport estimate"}],"status":"completed"},
+    {"agent":"Chaser","tool":"draft_email","args_summary":"supplier=SUP-0028 language=PL","result_summary":"Draft saved; not sent","reason":"Ask for a dated, lot-level commitment and booking proof","cost":0.0031,"latency":690,"citations":[{"file":"SUP-0028/profile.csv","row":2,"quote":"Preferred supplier language: Polish"}],"status":"completed"}
+  ],
+  "approvals_pending": [
+    {"id":"recorded-art-book-quote","title":"Secure art-book recovery quote","detail":"Human approval required before any supplier outreach."}
+  ]
+}
