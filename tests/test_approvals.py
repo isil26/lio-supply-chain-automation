@@ -113,6 +113,14 @@ class NeverRules(unittest.TestCase):
 
 
 class Delegation(unittest.TestCase):
+    def test_simulated_grants_require_explicit_replay(self):
+        grant = deleg(id="DEL-TEST-example", simulated=True)
+        self.assertEqual(ap.evaluate(act(), NOW, [grant])["mode"], ap.ONE_CLICK)
+        replay = ap.evaluate(act(), NOW, [grant], allow_simulated=True)
+        self.assertEqual((replay["mode"], replay["delegation_id"]), (ap.AUTO, grant["id"]))
+        self.assertTrue(replay["simulated"])
+        self.assertIn("Simulated approval", replay["reason"])
+
     def test_confirmed_covers_info_request_auto(self):
         r = ap.evaluate(act(), NOW, [deleg()])
         self.assertEqual((r["mode"], r["delegation_id"]), (ap.AUTO, "DEL-T"))

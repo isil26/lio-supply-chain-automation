@@ -162,7 +162,12 @@ class DemoReplayTest(unittest.TestCase):
 
         with timed("Verify action queue review, persistence and dismissal"):
             status, cap = self.request("/api/auto-approve", {"limitEur": 2_000_000})
-            self.assertEqual((status, cap["approved"]), (200, []))
+            self.assertEqual(status, 200)
+            simulated = {
+                option["id"] for option in updated["options"]
+                if option["status"] == "pending" and (option.get("approvalMode") or {}).get("simulated")
+            }
+            self.assertEqual(set(cap["approved"]), simulated)
             self.assertEqual(self.request("/api/auto-approve", {"limitEur": 0})[0], 200)
             code, result = self.request("/api/actions")
             self.assertEqual(code, 200)
@@ -190,7 +195,8 @@ class DemoReplayTest(unittest.TestCase):
             self.assertEqual(next(row for row in persisted if row["id"] == review["id"])["status"], "dismissed")
 
         with timed("Approve a pending option and verify persisted state"):
-            option = next((row for row in updated["options"] if row["status"] == "pending"), None)
+            option = next((row for row in updated["options"]
+                           if row["status"] == "pending" and row["id"] not in simulated), None)
             self.assertIsNotNone(option, "No actionable approval option")
             option_id = option["id"]
             status, result = self.request(f"/api/decisions/{option_id}/approve", {})

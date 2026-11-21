@@ -31,7 +31,7 @@ def policy_input(action):
     return result
 
 
-def project(con, actions, *, include_history):
+def project(con, actions, *, include_history, demo=False):
     """Project policy without registering reviews or running delivery on a read."""
     pending = {}
     if include_history and con.execute(
@@ -44,7 +44,7 @@ def project(con, actions, *, include_history):
         row = pending.get(action["id"])
         if row and row["status"] == "pending":
             policy["requested_at"] = row["requested_at"]
-        ev = approvals.evaluate(policy, delegations=delegations)
+        ev = approvals.evaluate(policy, delegations=delegations, allow_simulated=demo)
         ev.pop("evaluated_at")
         action["approval"] = ev
         action["mode"] = ev["mode"]

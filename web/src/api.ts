@@ -129,7 +129,7 @@ export type Approval = {
   id: string;
   modeled_impact?: Record<string, { medianDelta?: number; expectedDelta?: number }>;
   latest_action?: string | null;
-  approvalMode?: { mode?: string; approver?: string; reason?: string; escalateTo?: string | null; slaMinutes?: number; blockedBy?: string[] } | null;
+  approvalMode?: { mode?: string; approver?: string; reason?: string; escalateTo?: string | null; slaMinutes?: number; blockedBy?: string[]; simulated?: boolean } | null;
   title: string;
   kind?: string;
   recommendation: string;
