@@ -139,3 +139,5 @@ Last human sync: Sat 21 Nov 2026
 | murat-agent | T50-Live-Portal | bridge, live worker and Manti sync view | in_progress | Authenticated the Mac to the official read-only portal API. Baseline manifest matches all 318 verified files. | 21 Nov |
 | murat-agent | T50-Live-Portal | bridge, live worker and Manti sync view | done | Authenticated portal inventory matches all 318 files. Controlled add/change/remove refreshed forecast and sent one captured enquiry. Restart and rejected inputs preserved the accepted plan. | 21 Nov |
 | codex-deploy | T19-CI push-triggered protected Vercel release | .github/workflows/soony-vercel.yml, .github/soony-vercel | in_progress | GitHub push trigger and build passed in run 44940975860. Publishing awaits the project-scoped Vercel CI token. The five-minute release watch continues. | 21 Nov |
+
+| codex-overseer | T-Mail-Planning | supplier email planning, negotiation and approvals | in_progress | Reusing the live chaser and offer approval paths with isolated replay tests. | 21 Nov |
