@@ -91,6 +91,9 @@ def draft(con, truth):
 
 def send(con, chase_id, demo=False):
     schema(con)
+    if not demo:
+        from .mailenv import load_team_mail_env
+        load_team_mail_env()
     sender = os.getenv("CHASER_SENDER")
     host = os.getenv("CHASER_SMTP_HOST")
     if not sender:
@@ -186,6 +189,8 @@ def receive(con, message):
 
 
 def poll(con):
+    from .mailenv import load_team_mail_env
+    load_team_mail_env()
     host, username = os.getenv("SOONY_IMAP_HOST"), os.getenv("SOONY_IMAP_USER")
     if not host or not username:
         return 0

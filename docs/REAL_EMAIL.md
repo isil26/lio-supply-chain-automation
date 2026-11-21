@@ -8,7 +8,10 @@ The Supplier Chaser sends only after a person approves each email. Dry-run stays
 3. In the hackathon portal, Settings > Mail senders, add the Gmail address and press Add. Suppliers ignore mail from unregistered senders.
 4. Hand the address and app password to whoever runs the app, through the team's private channel. Never commit them or paste them into a chat with agents.
 
-## .env on the machine that runs the app (gitignored)
+## Settings
+The team Gmail settings, including the app password, are tracked in the private repo at `deploy/mail/team-gmail.env` (approved by Gülşah, 21 Nov) and load automatically. To send for real, a person still sets `CHASER_REAL_SMTP=1` and approves each email. Set `CHASER_NO_TEAM_MAIL=1` to ignore the file.
+
+## Equivalent .env (only if you want to override the tracked file)
 ```
 CHASER_REAL_SMTP=1
 CHASER_SENDER=manti.starthackathon@gmail.com

@@ -45,7 +45,7 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
   - On a conflict, keep both sides and ask the owner in `coord/INBOX.md`. Never force-push, never rewrite history, never revert others' commits.
 
 ## Hard rules
-- The shared Vercel dashboard password is approved for tracking in this private repository. Collaborators and their agents can use [`deploy/vercel/team-password.txt`](deploy/vercel/team-password.txt) to sign in. Keep all other secrets, `.soony_token`, `data/`, and `store/` out of Git and logs. Data is for this hackathon only.
+- The shared Vercel dashboard password is approved for tracking in this private repository. Collaborators and their agents can use [`deploy/vercel/team-password.txt`](deploy/vercel/team-password.txt) to sign in. The team Gmail app password for mail-agent is also approved for tracking (Gülşah, 21 Nov) in [`deploy/mail/team-gmail.env`](deploy/mail/team-gmail.env); it is loaded automatically and never turns real sending on by itself. Keep all other secrets, `.soony_token`, `data/`, and `store/` out of Git and logs. Data is for this hackathon only.
 - Use [`case-data/`](case-data/) for the supplied portal snapshot. Pass `--data case-data` to the offline dashboard or ingest commands. For portal updates, sync into `data/` with `python3 bridge/sync.py`. Derive answers from the case files and cite the file and page or row.
 - Numbers come from deterministic tools (MRP, Monte Carlo, cost calc); LLMs read, route, explain, draft.
 - Outbound emails to suppliers require the approval gate; default is dry-run.

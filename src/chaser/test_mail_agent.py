@@ -10,8 +10,16 @@ ENV.update(CHASER_SENDER="team@example.test", CHASER_SMTP_HOST="smtp.example.tes
 
 class MailAgentTest(unittest.TestCase):
     def test_status_lists_missing(self):
-        with mock.patch.dict(os.environ, {}, clear=True):
+        with mock.patch.dict(os.environ, {"CHASER_NO_TEAM_MAIL": "1"}, clear=True):
             self.assertEqual(mail_agent.main(["status"]), 1)
+
+    def test_team_mail_file_loads_but_never_enables_real_send(self):
+        from .mailenv import load_team_mail_env
+        with mock.patch.dict(os.environ, {"CHASER_SENDER": "keep@example.test"}, clear=True):
+            self.assertTrue(load_team_mail_env())
+            self.assertEqual(os.environ["CHASER_SENDER"], "keep@example.test")
+            self.assertEqual(os.environ["CHASER_SMTP_HOST"], "smtp.gmail.com")
+            self.assertNotIn("CHASER_REAL_SMTP", os.environ)
 
     def test_check_signs_in_without_sending(self):
         with mock.patch.dict(os.environ, ENV, clear=True), \

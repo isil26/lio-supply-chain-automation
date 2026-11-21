@@ -54,6 +54,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog="python3 -m src.chaser.mail_agent")
     parser.add_argument("command", choices=["status", "check"])
     args = parser.parse_args(argv)
+    from .mailenv import load_team_mail_env
+    load_team_mail_env()
     info = status()
     print(f"Mail agent sender: {info['sender'] or '(not set)'}")
     print(f"Real sending: {'ON' if info['real_sending_enabled'] else 'off (dry-run)'}; suppliers only: {info['allowed_domains']}")
