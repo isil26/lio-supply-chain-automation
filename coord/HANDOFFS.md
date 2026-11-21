@@ -108,3 +108,9 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 
 - [Report and proposed diff](../docs/DROP_ROBUSTNESS.md). Run `python -m unittest discover -s tests/drops -v` for seven fast regressions. Run `PYTHONPATH=. python tests/drops/audit_drops.py` for the 20 diagnostic probes.
 - Highest-impact failures were cancelled inbound surviving a stale tracker, same-date stock copies double-counting a lot, and document extraction losing new facts without a visible warning. The source owner received an exact proposal in INBOX.
+
+## T21 — Default forecast consistency (codex-consistency)
+
+- Tested `489d0cc` on the complete private snapshot `2026-11-21_1436`. The offline dashboard matches the published post-drop edition targets, P10/P50/P90, target probabilities, trial count and 20:00 CET cutoff. The default CE median is 62,550 and P90 is 64,350. The 66,100 CE median belongs to the historical supplier-delay sensitivity scenario.
+- Run the drift check using the snapshot and command in [NUMBERS.md](../docs/NUMBERS.md#forecast-drift-check). It passed with a fresh database and rejected both a one-copy CE median drift and the kickoff input fingerprint. All six sensitivity tests passed.
+- Any future change to the default forecast should refresh the dashboard, published figures and presentation from the same snapshot and model. The sensitivity ranges can differ under their own assumptions.
