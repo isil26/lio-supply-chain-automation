@@ -79,6 +79,33 @@ class ChaserStore:
                     created_at TEXT NOT NULL
                 );
             """)
+            message_columns = {
+                row[1] for row in db.execute("PRAGMA table_info(messages)").fetchall()
+            }
+            if "message_id" not in message_columns:
+                db.execute("ALTER TABLE messages RENAME TO messages_legacy")
+                db.execute("""
+                    CREATE TABLE messages (
+                        message_id TEXT PRIMARY KEY,
+                        thread_id TEXT NOT NULL REFERENCES threads(thread_id),
+                        direction TEXT NOT NULL,
+                        sender TEXT,
+                        recipient TEXT,
+                        subject TEXT,
+                        body TEXT,
+                        created_at TEXT NOT NULL
+                    )
+                """)
+                legacy_columns = {
+                    row[1] for row in db.execute("PRAGMA table_info(messages_legacy)").fetchall()
+                }
+                if {"chase_id", "external_id", "side", "sender", "body", "time"} <= legacy_columns:
+                    db.execute("""
+                        INSERT OR IGNORE INTO messages
+                            (message_id,thread_id,direction,sender,recipient,subject,body,created_at)
+                        SELECT external_id, chase_id, side, sender, NULL, NULL, body, time
+                        FROM messages_legacy
+                    """)
             reply_columns = {
                 row[1] for row in db.execute("PRAGMA table_info(replies)").fetchall()
             }
