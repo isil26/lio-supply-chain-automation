@@ -25,7 +25,7 @@ class DecisionEffectTest(unittest.TestCase):
         effect = decision_effects.record(con, OPTION, "approved", "Gülşah", [])
         self.assertFalse(effect["sent"])
         self.assertTrue(effect["lines"][0].startswith("Approved by Gülşah at "))
-        self.assertIn("does not place an order", " ".join(effect["lines"]))
+        self.assertNotIn("Still needed", " ".join(effect["lines"]))
         options = decision_effects.attach(con, [dict(OPTION, status="approved"), {"id": "x", "status": "pending"}])
         self.assertIn("effect", options[0])
         self.assertNotIn("effect", options[1])

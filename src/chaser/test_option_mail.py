@@ -50,10 +50,19 @@ class OptionMailTest(unittest.TestCase):
         self.assertEqual((mail["mode"], mail["body"], mail["threadId"]), ("conversation", "Dzień dobry", "T1"))
         self.assertIsNone(option_mail.send(con, option, "Gülşah", demo=True, mail=mail))
 
-    def test_no_supplier_email(self):
-        self.assertEqual(option_mail.preview(db(), dict(OPTION, supplier_id=None))["mode"], "none")
-        self.assertEqual(option_mail.preview(db(), dict(OPTION, kind="quality"))["mode"], "none")
-
+    def test_internal_decision_goes_to_the_doer_via_team_mailbox(self):
+        con = db()
+        option = {"id": "p1", "kind": "priority", "title": "Confirm the pack-out priority", "owner": "Dr. Maren Vogt",
+                  "recommendation": "Keep all shifts active.", "deadline": "2026-11-22T20:00:00+01:00"}
+        mail = option_mail.preview(con, option)
+        self.assertEqual((mail["mode"], mail["to"]), ("internal", "team@example.invalid"))
+        self.assertIn("Katrin Jansen", mail["recipientName"])
+        self.assertTrue(mail["body"].startswith("Hello Katrin,"))
+        row = option_mail.send(con, option, "Gülşah", demo=True, mail=mail)
+        self.assertEqual((row["status"], row["kind"]), ("sent", "internal"))
+        self.assertEqual(con.execute("SELECT status FROM chases WHERE id=?", (row["chase_id"],)).fetchone()[0],
+                         "internal awaiting reply")
+        self.assertEqual(option_mail.preview(con, dict(OPTION, supplier_id=None))["mode"], "internal")
 
 if __name__ == "__main__":
     unittest.main()

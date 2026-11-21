@@ -83,15 +83,14 @@ def describe(con, option, status, by=None, queue=None, *, auto=None, delivery=No
     email = None
     if delivery:  # this click sent (or tried to send) the supplier email
         more, sent = _delivery_lines(delivery)
+        if delivery.get("status") == "sent" and str(delivery.get("supplier_id") or delivery.get("kind")) == "internal":
+            more = [f"Message sent to {delivery.get('recipient')} via the team mailbox. Waiting for their reply."]
         if delivery.get("status") == "sent" and "Dry run" in (delivery.get("note") or ""):
-            more = [more[0].replace("Email sent", "Email sent (demo, nothing left the building)")]
+            more = [more[0].replace(". Waiting", " (demo, nothing left the building). Waiting")]
         lines += more
         email = {"to": delivery.get("recipient"), "subject": delivery.get("subject"), "body": delivery.get("body"),
                  "status": delivery.get("status")}
         thread_id = delivery.get("chase_id")
-        if sent:
-            lines.append("It asks for a hold and a quote; it is not an order. "
-                         f"Before any PO: {option.get('threshold') or option.get('owner') or 'its approver signs'}.")
     elif follow and follow.get("delivery"):
         more, sent = _delivery_lines(follow["delivery"])
         lines += more
@@ -108,12 +107,8 @@ def describe(con, option, status, by=None, queue=None, *, auto=None, delivery=No
                          f"Last message {last}; {'they have replied' if replies else 'no reply yet'}.")
         else:
             lines.append(f"Latest email with {name}: {last}; {'they have replied' if replies else 'no reply yet'}.")
-    if not sent:
-        if option.get("request_only"):
-            lines.append("This click records the team's go-ahead. It does not place an order by itself. "
-                         f"Still needed: {option.get('threshold') or option.get('owner') or 'its approver'}.")
-        else:
-            lines.append(f"No email or order was sent by this click. Next: {option.get('owner') or 'the owner'} acts on it.")
+    if mail and mail.get("mode") == "conversation" and mail.get("note"):
+        lines.append(mail["note"])
     if follow and not delivery and not follow.get("delivery") and follow.get("status") == "pending":
         lines.append(f"Follow-up in Actions: “{follow.get('title')}”.")
     return {"at": at, "by": by, "sent": sent, "lines": lines, "threadId": thread_id, "email": email}
@@ -128,8 +123,13 @@ def record(con, option, status, by=None, queue=None, *, auto=None, delivery=None
     return effect
 
 
+OLD_LINES = ("This click records", "No email or order was sent", "It asks for a hold and a quote")
+
+
 def attach(con, options):
     effects = get_state(con, KEY, {}) or {}
+    for effect in effects.values():  # wording from before 22 Nov 00:30: the approver is the decision-maker
+        effect["lines"] = [line for line in effect.get("lines", []) if not line.startswith(OLD_LINES)]
     for option in options:
         if option.get("id") in effects and option.get("status") not in (None, "pending"):
             option["effect"] = effects[option["id"]]
