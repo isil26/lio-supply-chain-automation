@@ -121,3 +121,5 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T90 | mail-agent: offers table (price, timing, qty, terms per supplier offer) + best offer + Approve/Decline on the dashboard | mail-agent (gülşah-agent) | src/chaser/deals.py, 3 routes in src/orchestrator, web/src/suppliers/ | done | T75-T78 |
 | T92-profit | Profit plan and model (docs/PROFIT_PLAN.md, scripts/profit_model.py) | sonnet-profit | docs, scripts | done | engine refresh for post-drop counts |
 | T88 | Re-ingest the 19:25 drop (launch_status, ECN-118/119, components_update, products, vendor master v2, news, memo, org v2) and update engine inputs + NUMBERS.md baseline | sonnet-engine | src/ingest, src/docs, src/truth | done | T1, T3 |
+
+| T81-Supplier-Rescue | Verify supplier-only Sunday recovery for 6,800 cards and 3,400 statues and share Dr. Vogt’s spending guidance | supply-rescue | supplier correspondence, authorization notes, internal agent knowledge | in_progress | T81, T88 |

@@ -1,5 +1,9 @@
 # Decision policy
 
+## Launch recovery funding
+
+On 21 November the team reported that Dr. Maren Vogt will approve launch recovery spending below EUR 2,000,000. Keep this guidance internal when seeking supplier quotes. A specific PO, freight booking, dock slot and quality release each need their own evidence. For the current recovery, external outreach is limited to supplier email.
+
 ## PP-07 limits
 - Buyer may approve one purchase order below EUR 50,000.
 - Category Lead may approve below EUR 500,000.

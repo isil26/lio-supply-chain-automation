@@ -8,7 +8,7 @@ PACK_DIR = Path(__file__).resolve().parent
 COMMON = ("domain.md", "data_map.md", "style.md")
 ROLE_FILES = {
     "triage": ("policy.md", "pitfalls.md"),
-    "analyst": ("pitfalls.md",),
+    "analyst": ("policy.md", "pitfalls.md"),
     "verifier": ("policy.md", "pitfalls.md"),
     "planner": ("policy.md", "pitfalls.md", "negotiation.md"),
     "chaser": ("policy.md", "pitfalls.md", "negotiation.md"),
