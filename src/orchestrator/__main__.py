@@ -354,15 +354,18 @@ class Loop:
                         drop = {"id": now(), "title": title, "detail": detail, "time": now(), "changes": changed, "drafts": draft_count}
                         save_state(con, "drop", drop)
                         chaser.activity(con, "Data Bridge", detail)
+            mail_ready = True
             if not self.args.demo:
                 try:
                     chaser.poll(con)
                 except (OSError, chaser.imaplib.IMAP4.error) as exc:
                     sync_error = (sync_error + " " if sync_error else "") + f"Inbox polling failed ({exc.__class__.__name__})."
+                    mail_ready = False
                 supplier_loop.import_verified(con, os.getenv("SOONY_MAIL_HISTORY_DB"))
             supplier_loop.advance(con, get_state(con, "truth", {}), get_state(con, "options", []),
-                                  scope="demo" if self.args.demo else "live", dispatch=not getattr(self.args, "once", True))
-            if not self.args.demo:
+                                  scope="demo" if self.args.demo else "live",
+                                  dispatch=mail_ready and not getattr(self.args, "once", True))
+            if mail_ready and not self.args.demo and not getattr(self.args, "once", True):
                 from src.chaser import autosend  # T78 mail-agent: automatic sending (live mode only)
                 if autosend.enabled(self.args.demo):
                     try:
@@ -632,6 +635,7 @@ def main():
     parser.add_argument("--data", type=Path, default=ROOT / "data")
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument("--replay-dir", type=Path, help="reuse a private local replay workspace")
+    parser.add_argument("--mail-history-config", type=Path, help="private team mailbox configuration for the read-only history reader")
     parser.add_argument("--interval", type=float, default=45)
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--online", action="store_true", help="poll the private portal")
@@ -669,14 +673,16 @@ def main():
     # Initialize SQLite and WAL before the worker and the first request can open it.
     with closing(connect(loop.database)) as con:
         chaser.schema(con)
-    history_config = args.replay_dir.parent / "mail-history.json" if args.replay_dir else None
+    history_config = args.mail_history_config or (args.replay_dir.parent / "mail-history.json" if args.replay_dir else None)
+    history_db = settings = None
+    if history_config and history_config.is_file():
+        settings = json.loads(history_config.read_text())
+        history_db = history_config.with_name("mail-history.db")
+        os.environ["SOONY_MAIL_HISTORY_DB"] = str(history_db)
     with ThreadingHTTPServer(("127.0.0.1", args.port), handler(loop)) as server:
         thread = threading.Thread(target=loop.background, daemon=True)
         thread.start()
-        if history_config and history_config.is_file():
-            settings = json.loads(history_config.read_text())
-            history_db = history_config.with_name("mail-history.db")
-            os.environ["SOONY_MAIL_HISTORY_DB"] = str(history_db)
+        if settings and history_db:
             threading.Thread(target=mail_history.run,
                              args=(loop.stop, loop.database, history_db, settings), daemon=True).start()
         print(f"Launch Control Room at http://127.0.0.1:{args.port} (Ctrl-C to stop)", flush=True)

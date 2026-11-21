@@ -6,7 +6,9 @@ The live backend runs on Murat’s Mac. It stays up while the Mac is signed in, 
 
 Use the protected live link in [the repo inbox](../../coord/INBOX.md) and sign in with the existing team password. Agents can use the same sign-in to obtain a session cookie, then read `/api/dashboard` and `/api/health`. Browser actions and API calls share the same state. Get credentials through the existing private team workflow.
 
-The live preview runs the case in dry-run mode. **Process drop** applies the staged files. Under **Agents & activity**, select a game-card supplier thread, approve the dry-run email, then choose **Simulate reply**. A matched reply can show the supplier's quoted ETA, the before/after pack-out scenario and a proposed next action. Approving that action records a follow-up decision. Supplier sends and inventory remain subject to their approval gates.
+By default the Mac service runs the case in dry-run mode. **Process drop** applies the staged files. Under **Agents**, select a game-card supplier thread to simulate a reply and see its effect on the next action.
+
+The operator can set `"SOONY_MAC_MAIL_MODE": "live"` in the private `config.json` and restart the LaunchAgent to use the registered team mailbox. Live mode reads the release case data and stores operational mail in `live-mail/soony.db`, separately from the saved replay. It uses the existing private `mail-history.json` credentials and restricts recipients to the hackathon supplier domain. Supplier replies are polled read-only. The **Live supplier threads** view shows dispatch, matched replies and decisions. Set `"CHASER_AUTO_SEND": "0"` and restart to pause automatic dispatch, or remove `SOONY_MAC_MAIL_MODE` and restart to restore replay. Dock release, purchasing and other commitments still need PP-07 approval.
 
 For a request, post `murat-agent: live backend request` in [INBOX](../../coord/INBOX.md), with the behavior, affected page or API route, and code commit when available.
 
@@ -24,4 +26,4 @@ Verify releases using `node --test deploy/backend/test-gateway.cjs`, the reply-h
 
 Open **Verified team mailbox** in the supplier threads area or use the live site with `?mail=1`. The dedicated reader searches the team mailbox's Sent and Inbox folders in read-only mode. It imports only messages tied to a known Chaser thread and matching draft or Chaser marker, and links inbound mail to the recorded sent Message-ID. The independent history database preserves evidence and deduplicates messages across deploys. This view has no send or approve action.
 
-The Mac enables the reader only when the operator supplies a private `mail-history.json` with the authorized Gmail user and app password next to the replay workspace. The app uses that account for IMAP reads only. This file and `mail-history.db` remain outside the release artifact and Git.
+The Mac enables the reader only when the operator supplies a private `mail-history.json` with the authorized Gmail user and app password next to the replay workspace. The history reader itself only reads IMAP. In live mode the operational worker also uses the mailbox for supplier SMTP and reply intake. This file and `mail-history.db` remain outside the release artifact and Git.

@@ -134,6 +134,39 @@ class ReplyHistoryTests(unittest.TestCase):
             self.assertEqual(next(chaser.list_threads(source))["status"], "draft")
             self.assertEqual(source.execute("SELECT count(*) FROM messages").fetchone()[0], 0)
 
+    def test_live_inbox_poll_matches_already_read_replies_without_changing_imap_flags(self):
+        with closing(connect(self.path)) as con, patch("src.chaser.smtplib.SMTP") as smtp:
+            smtp.return_value.__enter__.return_value.send_message.return_value = {}
+            chaser.send(con, "AB12")
+            outbound = smtp.return_value.__enter__.return_value.send_message.call_args.args[0]
+            reply = EmailMessage()
+            reply["From"] = "supplier@example.invalid"
+            reply["Subject"] = str(outbound["Subject"])
+            reply["In-Reply-To"] = str(outbound["Message-ID"])
+            reply["Message-ID"] = "<already-read@example.invalid>"
+            reply.set_content("SHIP-1 delayed.\nRevised ETA: 2026-11-22T22:00:00+01:00")
+            with patch.dict(os.environ, {"SOONY_IMAP_HOST": "imap.example.invalid", "SOONY_IMAP_USER": "team@example.invalid"}), \
+                    patch("src.chaser.imaplib.IMAP4_SSL") as imap:
+                inbox = imap.return_value.__enter__.return_value
+                inbox.select.return_value = ("OK", [])
+                inbox.uid.side_effect = [("OK", [b"11"]), ("OK", [(b"message", reply.as_bytes())])] * 2
+                self.assertEqual(chaser.poll(con), 1)
+                self.assertEqual(chaser.poll(con), 0)
+                inbox.select.assert_called_with("INBOX", readonly=True)
+                self.assertEqual([c.args[0] for c in inbox.uid.call_args_list], ["search", "fetch"] * 2)
+                self.assertNotIn("UNSEEN", inbox.uid.call_args_list[0].args[2])
+            self.assertEqual(con.execute("SELECT count(*) FROM messages WHERE side='in'").fetchone()[0], 1)
+
+    def test_verified_sent_lookup_uses_recorded_id_for_a_followup_with_its_parents_subject(self):
+        thread = {"address": "fixture@suppliers.juliansibbing.de", "subject": "Re: [SOONY-AB12] Test"}
+        parent = {**thread, "subject": "[SOONY-AB12] Test"}
+        outbound = EmailMessage()
+        outbound["From"], outbound["To"] = "team@example.invalid", thread["address"]
+        outbound["Subject"], outbound["Message-ID"] = thread["subject"], "<followup@example.invalid>"
+        threads = {"CD34": thread, "AB12": parent}
+        self.assertTrue(mail_history._belongs_to_sent(outbound, threads, {"<followup@example.invalid>": "CD34"}, "team@example.invalid"))
+        self.assertFalse(mail_history._belongs_to_sent(outbound, threads, {}, "team@example.invalid"))
+
     def test_ambiguous_hold_reply_leaves_offer_pending_without_an_eta_request(self):
         thread = {"material": "PART", "supplier_id": "SUP-TEST", "qty": 80}
         offer = {"id": "offer", "kind": "partial", "supplier_id": "SUP-TEST", "material": "PART"}

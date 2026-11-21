@@ -344,18 +344,20 @@ def poll(con):
     count = 0
     with imaplib.IMAP4_SSL(host, int(os.getenv("SOONY_IMAP_PORT", "993")), ssl_context=ssl.create_default_context(), timeout=20) as inbox:
         inbox.login(username, os.getenv("SOONY_IMAP_PASSWORD", ""))
-        inbox.select("INBOX")
-        status, hits = inbox.uid("search", None, '(UNSEEN SUBJECT "SOONY-")')
-        if status != "OK" or not hits:
+        if inbox.select("INBOX", readonly=True)[0] != "OK":
+            raise imaplib.IMAP4.error("Cannot open the supplier inbox read-only")
+        status, hits = inbox.uid("search", None, '(HEADER Subject "SOONY-")')
+        if status != "OK":
+            raise imaplib.IMAP4.error("Cannot search for supplier replies")
+        if not hits:
             return 0
-        for uid in hits[0].split()[:40]:
+        for uid in (hits[0] or b"").split()[-120:]:
             status, payload = inbox.uid("fetch", uid, "(BODY.PEEK[])")
             if status != "OK":
                 continue
             item = next((entry[1] for entry in payload if isinstance(entry, tuple)), None)
             if item and receive(con, email.message_from_bytes(item, policy=default)):
                 count += 1
-                inbox.uid("store", uid, "+FLAGS", "(\\Seen)")
     return count
 
 
