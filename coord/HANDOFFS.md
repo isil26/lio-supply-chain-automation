@@ -64,3 +64,9 @@
 Run `python3 -m src.truth.sensitivity` in the project virtual environment. Use `--add COMPONENT=UNITS` for custom stock cases. The CLI reads the existing store and prints calibrated lag, baseline, first-stop criticality and paired one-day and Plan B deltas. The 500-trial run on the live snapshot took under a second.
 
 Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `shipment_earliest` in the counterfactual changes dict. With matching supplier profiles the empty changes dict reproduces the report baseline. PO lateness is an end-to-end proxy for residual handling lag, and stock scenarios assume usable units at first shift. The dock rescue includes a conditional early arrival for comparison with the scheduled ETA. Six T11 tests and 40 repository tests passed.
+
+## T12 — Demo hardening (codex-e2e)
+
+- `scripts/demo_check.sh` starts offline replay on a free loopback port in a disposable workspace and runs `tests/test_e2e.py` with unittest. It times dashboard readiness, the staged drop, the NUMBERS.md assertions, approval and dry-run send. No application wiring is needed.
+- `docs/RUNBOOK.md` covers setup, the stage sequence, the cached dashboard, offline replay and the local recording.
+- Real data passed all assertions through the in-process HTTP handler, with SQLite initialized before polling. Baseline took 95.71 seconds and the drop 0.94 seconds. The sandbox denied loopback bind, so run the shell preflight from the demo laptop terminal. The startup SQLite race and bind restriction are both recorded in the inbox for nick.
