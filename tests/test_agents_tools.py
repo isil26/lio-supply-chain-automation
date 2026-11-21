@@ -12,7 +12,7 @@ class ToolRegistryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             tools = all_tools(Path(directory) / "soony.db")
         expected = {
-            "get_readiness", "list_shortfalls", "whatif", "supplier_history",
+            "get_readiness", "list_shortfalls", "release_gate_status", "whatif", "supplier_history",
             "search_documents", "get_document", "list_shipments", "get_po",
             "compare_sources", "list_options", "breakeven", "draft_email", "send_email",
             "parse_reply", "propose_option", "escalate_to_human", "request_review",

@@ -21,6 +21,7 @@ from src import chaser
 from src.chaser.reply_plan import demo_reply
 from src.chaser import mail_history
 from src.decide import authorize, choose, decisions
+from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
 from src.orchestrator.numbers import numbers_report
@@ -432,6 +433,8 @@ def handler(loop):
                             return self.out({"error": "Unknown agent run"}, 404)
                     if path == "/api/truth":
                         return self.out(get_state(con, "truth"))
+                    if path == "/api/release-gate":
+                        return self.out(release_gate(con, loop.root))
                     if path == "/api/documents":
                         return self.out(list(documents(con)))
                     if path.startswith("/api/source/"):
