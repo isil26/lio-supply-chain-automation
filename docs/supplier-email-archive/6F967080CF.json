@@ -208,6 +208,28 @@
       ],
       "body_content_type": "text/plain",
       "body": "Dzień dobry,\n\nutrzymujemy bezpłatną rezerwację 5 900 artbooków do czasu wygaśnięcia naszej porannej oferty; dokładną godzinę CET nadal sprawdzam w dokumentacji oferty. Nie mamy obecnie potwierdzonej bezpłatnej rezerwacji terminu u Warta Trans ani rezerwacji rampy lub okna w DC-HAM dla tej partii.\n\nMogę zwrócić się do Warta Trans o niewiążące proponowane okno, lecz jego potwierdzenie będzie wymagało właściwej dyspozycji od Soony oraz uzgodnienia odbioru w Hamburg. Towar pozostaje w naszym magazynie i nie zostanie przekazany przewoźnikowi bez pisemnego zwolnienia dostawy.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:22:09+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "[SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<soony-karton-5900-carrier-proposal-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": null,
+      "in_reply_to": "<010201a1ff8cba99-142b8a97-720d-4bf2-b3e5-f2c83def0284-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179527692796.61223.10451353623898573343@gmail.com>",
+        "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>",
+        "<soony-karton-5900-free-hold-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff724fdd-4eafc58e-1511-4a37-b66e-2467c710830a-000000@eu-west-1.amazonses.com>",
+        "<soony-karton-5900-existing-po-window-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff881d2c-4613eaef-d6cd-43ce-945e-203fd20400c3-000000@eu-west-1.amazonses.com>",
+        "<soony-karton-5900-warta-provisional-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff8cba99-142b8a97-720d-4bf2-b3e5-f2c83def0284-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry Pani Agnieszko,\n\ntak, przyjmujemy propozycję uzyskania od Warta Trans niewiążącego okna transportu. Prosimy o bezpłatne zapytanie przewoźnika już teraz, na podstawie możliwej wysyłki częściowej 5 900 artbooków z poz. 00010 zamówienia 4500318775. Prosimy przekazać odpowiedź Warta z proponowanymi godzinami załadunku w Poznaniu i przyjazdu do DC-HAM (CET), najpóźniejszą godziną, do której kupiec może zwolnić towar dla tego kursu, oraz danymi, których przewoźnik potrzebuje do umówienia przyjęcia. Jeśli brakuje miejsca na niedzielny poranek, prosimy podać najwcześniejszą realną alternatywę.\n\nTo zgoda na bezpłatne zapytanie o plan przewoźnika. Towar pozostaje w magazynie, do czasu pisemnego zwolnienia przez uprawnione zakupy Soony i uzgodnienia przyjęcia.\n\nDziękujemy\nZespół Soony\n"
     }
   ]
 }
