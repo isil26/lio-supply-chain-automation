@@ -141,7 +141,13 @@ function App() {
 
   if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
-  const approval = data.approval;
+  // Next step = the open option that saves the most copies in the forecast; falls back to the backend's pick.
+  const copiesSaved = (option: { modeled_impact?: Record<string, { medianDelta?: number }> } | null | undefined) =>
+    Object.values(option?.modeled_impact ?? {}).reduce((sum, edition) => sum + Math.max(0, edition.medianDelta ?? 0), 0);
+  const bestOption = (data.options ?? []).filter((option) => option.status !== "blocked")
+    .reduce<typeof data.approval>((best, option) => copiesSaved(option) > copiesSaved(best) ? option : best, null);
+  const approval = bestOption && copiesSaved(bestOption) > 0 ? bestOption : data.approval;
+  const saved = copiesSaved(approval);
   const timing = approval?.supplier_timing;
   const expedite = approval?.expedite;
   const grid = expedite?.sensitivity[0];
@@ -283,6 +289,7 @@ function App() {
 
       <section className="hero">
         <h2>{onTrack ? "On track for Sunday" : <><span className="big-number">{formatNumber(totalShort)}</span> copies short on Sunday</>}</h2>
+        {!onTrack && saved > 0 && <p className="hero-save">One action can save <strong>{formatNumber(Math.min(saved, totalShort))}</strong> of them <span aria-hidden="true">→</span> <a href="#next-step">{approval?.title}</a></p>}
         <div className="editions">
           {editions.map((item) => <div className="edition" key={item.edition}>
             <div className="edition-row"><span>{item.edition === "CE" ? "Collector's" : "Standard"}</span><strong>{item.short ? `−${formatNumber(item.short)}` : "✓"}</strong></div>
@@ -302,18 +309,20 @@ function App() {
             {missing.map((risk) => {
               const evidence = riskEvidence(risk);
               return <li key={`${risk.rank}-${risk.id ?? risk.component}`}>
-                <strong>{shortName(risk.component)}</strong>
+                <span className="part-name"><strong>{shortName(risk.component)}</strong>{(risk.inbound ?? 0) > 0 && <small>{formatNumber(risk.inbound)} still on the way</small>}</span>
                 <span className="missing-right"><b>{formatNumber(gapOf(risk))}</b>{evidence && <button className="link-button" onClick={() => setSource(evidence)}>Why?</button>}</span>
               </li>;
             })}
           </ol> : <p className="empty">None</p>}
         </section>
 
-        <section className="card decision">
+        <section className="card decision" id="next-step">
           <h3>Next step</h3>
           {approval ? <>
             <p className="decision-title">{approval.title}</p>
-            {approval.price != null && <p className="price">€{Math.round(approval.price).toLocaleString("en-US")}</p>}
+            {saved > 0 && <p className="price">+{formatNumber(saved)} <span className="price-unit">copies</span></p>}
+            {approval.price != null && (saved > 0 ? <p className="muted">€{Math.round(approval.price).toLocaleString("en-US")}</p> : <p className="price">€{Math.round(approval.price).toLocaleString("en-US")}</p>)}
+            {approval.price == null && saved > 0 && <p className="muted small-text">Approver: {approval.owner}</p>}
             {!hostedReplayBuild && <div className="actions">
               <button className="primary-button" onClick={() => void approve(false)} disabled={decisionBusy || approval.status === "approved"}>{approval.status === "approved" ? <><Icon name="check"/> Approved</> : "Approve"}</button>
               <button className="ghost-button" onClick={() => void approve(true)} disabled={decisionBusy}>Review</button>

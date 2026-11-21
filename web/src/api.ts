@@ -120,6 +120,7 @@ export type SupplierAction = {
 
 export type Approval = {
   id: string;
+  modeled_impact?: Record<string, { medianDelta?: number; expectedDelta?: number }>;
   title: string;
   kind?: string;
   recommendation: string;

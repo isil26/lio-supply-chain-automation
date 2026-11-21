@@ -267,3 +267,11 @@ button:disabled { opacity: .5; cursor: default; }
   .bs-body { padding: 16px; }
   .bs-node { width: 104px; }
 }
+
+/* Biggest lever */
+.hero-save { margin: 14px 0 0; font-size: 17px; color: var(--muted); }
+.hero-save strong { color: var(--text); }
+.hero-save a { color: var(--accent); text-decoration: none; }
+.hero-save a:hover { text-decoration: underline; }
+.price-unit { font-size: 20px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.part-name { display: flex; flex-direction: column; } .part-name small { color: var(--muted); font-size: 13px; margin-top: 2px; }
