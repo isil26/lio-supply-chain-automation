@@ -28,10 +28,12 @@ test('live gateway requires team sign-in and forwards authorized JSON', async (t
   assert.equal(received, 0);
   const origin = gateway.replace('http:', 'https:');
   const login = await fetch(gateway + '/login', {
-    method: 'POST', headers: { origin }, body: new URLSearchParams({ password: 'test-team-password' }),
+    method: 'POST', headers: { origin },
+    body: new URLSearchParams({ password: 'test-team-password', next: '/?mail=1&thread=AB12' }),
     redirect: 'manual',
   });
   assert.equal(login.status, 303);
+  assert.equal(login.headers.get('location'), '/?mail=1&thread=AB12');
   const cookie = login.headers.get('set-cookie').split(';')[0];
   const headers = { cookie, 'content-type': 'application/json' };
   const read = await fetch(gateway + '/api/dashboard', { headers });
