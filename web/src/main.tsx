@@ -71,7 +71,7 @@ function EvidenceModal({ source, onClose }: { source: Source; onClose: () => voi
 function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
   const [threadId, setThreadId] = useState("");
   const [dropVisible, setDropVisible] = useState(true);
   const [decisionBusy, setDecisionBusy] = useState(false);
@@ -266,7 +266,7 @@ function App() {
         <section className="panel activity-panel">
           <div className="panel-heading"><div><p className="section-label">AGENT NETWORK</p><h2>{hostedReplayBuild ? "Replay activity" : "Live activity"}</h2></div>{!hostedReplayBuild && <span className="running"><i/> Running</span>}</div>
           <div className="activity-list">
-            {data.activity.slice(0, 8).map((item) => <article className="activity-row" key={item.id}>
+            {data.activity.slice(0, 5).map((item) => <article className="activity-row" key={item.id}>
               <span className={`activity-mark ${item.type}`}>{item.type === "sent" ? "→" : item.type === "warning" ? "!" : "◆"}</span>
               <div><strong>{item.agent}</strong><p>{item.action}</p></div><time>{item.time}</time>
             </article>)}
