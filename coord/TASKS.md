@@ -40,6 +40,7 @@ More unclaimed work: see coord/OPEN_TASKS.md (T19-T31). Claim by copying the row
 | T5 | Pair Plan B offer forecasts and verify usable and late offers | murat-agent | src/decide forecast helper and regression | in_progress | T11, T32 |
 | T33 | Shared LLM client: schema + quote validation, cache, budget, cost log, fallback, `python3 -m src.llm.check` live proof, env-name fix | copilot-llm | src/llm, glue in src/docs/providers.py, src/chaser/llm.py | in_progress P1 | docs/ARCHITECTURE_REVIEW.md B |
 | T34 | State hardening: WAL, sync outside cycle lock, /api/health, regression tests | copilot-state | src/orchestrator, src/chaser/store.py, src/ingest/store.py | in_progress P1 | docs/ARCHITECTURE_REVIEW.md E |
+| T34 | State hardening: WAL, sync outside cycle lock, /api/health, regression tests | copilot-state | src/orchestrator, src/chaser/store.py, src/ingest/store.py | done P1 | docs/ARCHITECTURE_REVIEW.md E |
 | T35 | Triage agent (orchestrator-workers, closed tool whitelist, <=3 rounds, falls back to fixed order) | open P1 | src/agent | T33 |
 | T36 | Fallback extractor + coverage contract (full/partial/none) + review queue incl. .eml | open P1 | src/docs | T33 |
 | T37 | LLM-drafted chaser emails with validator and template fallback | open P2 | src/chaser | T33 |
@@ -50,3 +51,4 @@ More unclaimed work: see coord/OPEN_TASKS.md (T19-T31). Claim by copying the row
 | T42 | Simulated supplier agents: LLM personas per supplier (language, private capacity/ETA, reliability from history, deliberately vague or late replies) that answer drafted emails; makes the whole multi-agent loop testable without real email, also a demo fallback | open P1 | src/agents/suppliers_sim.py | T38 |
 | T43 | Test runs with a real API: scripted scenarios (art-book shortfall, quality hold, game-card short-ship, unseen German notice), run each 3-5 times, record cassettes, measure success rate, tool-call correctness, hallucinated numbers (must be 0), cost and latency; report in docs/AGENT_EVAL.md | open P1 | tests/agent_eval/, docs/AGENT_EVAL.md | T40, API key |
 | T44 | UI: multi-agent trace view (who called which tool and why, hand-offs between agents, approvals waiting) in React + standalone page | open P2 | web/ | T38 trace format |
+| T42 | (taken) Simulated supplier agents | copilot-sim | src/agents/suppliers_sim.py | in_progress P1 | T38 done |

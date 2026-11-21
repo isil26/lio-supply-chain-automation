@@ -3,7 +3,8 @@ import uuid
 from datetime import datetime, timezone
 
 from .guardrails import Guardrails
-from .llm import DeterministicFakeLLM, LLMClient
+from .llm import DeterministicFakeLLM, LLMClient, LLMReplyParser
+from src.llm.client import LLMClient as SharedLLMClient
 from .models import Issue, ReplyParse, Supplier
 from .outbox import DryRunOutbox, MockOutbox, Outbox, SMTPOutbox
 from .store import ChaserStore
@@ -114,7 +115,11 @@ class SupplierChaser:
     ):
         self.store = store
         self.data_root = data_root
-        self.llm = llm or DeterministicFakeLLM()
+        if llm is not None:
+            self.llm = llm
+        else:
+            shared = SharedLLMClient()
+            self.llm = LLMReplyParser(shared) if shared.configured() else DeterministicFakeLLM()
         self.guardrails = guardrails or Guardrails()
         self.inbox = MockSupplierInbox(store)
         self.outbox = outbox

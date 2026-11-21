@@ -28,6 +28,11 @@ class SupplierChaserTest(unittest.TestCase):
         os.environ.pop("CHASER_SENDER", None)
         os.environ.pop("CHASER_REAL_SMTP", None)
 
+    def test_store_uses_wal_and_busy_timeout(self):
+        with self.store.connect() as db:
+            self.assertEqual(db.execute("PRAGMA journal_mode").fetchone()[0].lower(), "wal")
+            self.assertGreaterEqual(db.execute("PRAGMA busy_timeout").fetchone()[0], 30000)
+
     def issue(self, supplier_id="SUP-0019", **overrides):
         payload = {
             "supplier_id": supplier_id,

@@ -43,10 +43,16 @@ def _validate_schema(value: Any, schema: dict[str, Any], path: str = "$") -> Non
         try:
             jsonschema.validate(instance=value, schema=schema)
         except jsonschema.ValidationError as exc:
-            raise LLMCallError(f"{path}: {exc.message}") from exc
+            message = exc.message
+            if exc.validator == "required" and isinstance(exc.validator_value, list):
+                missing = [name for name in exc.validator_value if name not in exc.instance]
+                if "quote" in missing:
+                    message = "quote is required for an extracted value"
+            raise LLMCallError(f"{path}: {message}") from exc
         return
     if "type" in schema:
         kind = schema["type"]
+        kind_names = kind if isinstance(kind, list) else [kind]
         checks = {
             "object": isinstance(value, dict),
             "array": isinstance(value, list),
@@ -56,7 +62,7 @@ def _validate_schema(value: Any, schema: dict[str, Any], path: str = "$") -> Non
             "boolean": isinstance(value, bool),
             "null": value is None,
         }
-        if kind not in checks or not checks[kind]:
+        if not any(name in checks and checks[name] for name in kind_names):
             raise LLMCallError(f"{path} has wrong type; expected {kind}")
 
     if "enum" in schema and value not in schema["enum"]:
@@ -130,7 +136,7 @@ class LLMClient:
 
     def cache_key(self, task: str, prompt: str, images: list | None) -> str:
         digest = hashlib.sha256()
-        digest.update(self.model or "")
+        digest.update((self.model or "").encode("utf-8"))
         digest.update(b"\0")
         digest.update(task.encode("utf-8"))
         digest.update(b"\0")
@@ -180,6 +186,7 @@ class LLMClient:
         *,
         source_text: str = "",
         images: list | None = None,
+        validate_quotes: bool = True,
     ) -> dict[str, Any]:
         if not self.configured():
             raise LLMCallError("No LLM model is configured")
@@ -195,7 +202,8 @@ class LLMClient:
                 cached = json.loads(cache_path.read_text(encoding="utf-8"))
                 result = cached["result"]
                 _validate_schema(result, schema)
-                list(_quoted_fact_candidates(result, source_text))
+                if validate_quotes:
+                    list(_quoted_fact_candidates(result, source_text))
                 self._log(task, cache_key, cached.get("latency_seconds", 0.0),
                           cached.get("input_tokens"), cached.get("output_tokens"), "cache")
                 return result
@@ -215,10 +223,7 @@ class LLMClient:
         payload = {
             "model": self.model,
             "temperature": 0,
-            "response_format": {
-                "type": "json_schema",
-                "json_schema": {"name": task, "schema": schema, "strict": True},
-            },
+            "response_format": {"type": "json_object"},
             "messages": messages,
         }
         headers = {}
@@ -236,7 +241,8 @@ class LLMClient:
             if not isinstance(result, dict):
                 raise LLMCallError("Model response must be a JSON object")
             _validate_schema(result, schema)
-            list(_quoted_fact_candidates(result, source_text))
+            if validate_quotes:
+                list(_quoted_fact_candidates(result, source_text))
             cache_record = {
                 "result": result,
                 "latency_seconds": round(latency, 6),
@@ -261,6 +267,7 @@ class LLMClient:
             "latency_seconds": round(latency, 6),
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
+            "cost_usd": 0.0,
             "status": status,
         }
         if error:

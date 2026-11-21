@@ -2,13 +2,42 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from . import __main__ as orchestrator
-from .__main__ import drop_summary
+from .__main__ import drop_summary, handler
 
 
 class DropSummaryTest(unittest.TestCase):
+    def test_health_endpoint_reports_cycle_and_lock_metrics(self):
+        with TemporaryDirectory() as folder:
+            database = Path(folder) / "health.db"
+            with closing(orchestrator.connect(database)):
+                pass
+            loop = SimpleNamespace(
+                database=database,
+                health={
+                    "lastCycleTime": "2026-11-21T15:43:36+00:00",
+                    "durationMs": 125,
+                    "lockWaitMs": 7,
+                    "errors": [],
+                },
+            )
+            handler_class = handler(loop)
+            request = object.__new__(handler_class)
+            request.headers = SimpleNamespace(
+                get=lambda name, default=None: "127.0.0.1" if name == "Host" else default
+            )
+            request.path = "/api/health"
+            responses = []
+            request.out = lambda payload, status=200: responses.append((payload, status))
+            request.do_GET()
+            payload = responses[0][0]
+            self.assertEqual(payload["duration_ms"], 125)
+            self.assertEqual(payload["lock_wait_ms"], 7)
+            self.assertIn("dataHealth", payload)
+
     def test_new_risks_and_recovery_appear_even_when_shortfall_improves(self):
         known_hold = {"kind": "quality_hold", "title": "Existing lot hold"}
         short_shipment = {"kind": "short_ship", "title": "Only part of the shipment flew"}

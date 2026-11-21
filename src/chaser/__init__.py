@@ -225,8 +225,8 @@ def list_threads(con):
             thread["messages"] = [{"sender": "Supplier Chaser · draft", "side": "out", "text": row["body"], "time": ""}]
         yield thread
 from .agent import SupplierChaser
-from .llm import DeterministicFakeLLM, LLMClient
+from .llm import DeterministicFakeLLM, LLMClient, LLMReplyParser
 from .models import Issue, ReplyParse
 from .store import ChaserStore
 
-__all__ = ["SupplierChaser", "DeterministicFakeLLM", "LLMClient", "Issue", "ReplyParse", "ChaserStore"]
+__all__ = ["SupplierChaser", "DeterministicFakeLLM", "LLMClient", "LLMReplyParser", "Issue", "ReplyParse", "ChaserStore"]

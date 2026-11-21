@@ -1,5 +1,18 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T34 — State hardening (copilot-state)
+
+- SQLite ingest and chaser connections use a 30-second busy timeout; chaser connections enable WAL and foreign keys.
+- Portal sync runs before `Loop.cycle()` acquires the cycle lock, so long sync/OCR work does not block dashboard reads or short HTTP handlers.
+- `GET /api/health` reports last cycle time, cycle duration, lock wait, errors and the existing `dataHealth` badge payload.
+- Verified 7/7 drop regressions, 13/13 chaser tests and 4/4 orchestrator drop/health tests. The broader source suite passed 54 tests and has one unrelated Ollama mock error in `docs.test_docs.PipelineTests.test_loopback_adapter_decodes_the_ollama_chat_response`.
+
+## T38 — Multi-agent runtime (copilot-runtime)
+
+- Added `src/agents/` standard-library runtime: `Agent` ReAct loop, schema-validated closed tools, max-step/cost/wall-clock budgets, malformed-response retry, and human approval rows for gated tools.
+- Added Anthropic and OpenAI-compatible HTTP adapters, `FakeLLM`, SHA-256 cassette record/replay, SQLite `agent_trace` plus dashboard-compatible activity events, and `Team` blackboard/delegation mailbox.
+- Run `python3 -m unittest tests.test_agents_runtime`; 3 tests pass. Tool-layer integration remains with the owner of `src/agents/tools.py`.
+
 ## T16 — Chaser scoring and escalation (copilot-chaser)
 
 - Reply parsing now returns commitment strength and score: `none` (0), `date_only` (1), `date_and_quantity` (2), and `document_or_booking_reference` (3), plus `what_to_ask_next`.

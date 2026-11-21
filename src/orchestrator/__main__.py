@@ -348,6 +348,19 @@ def handler(loop):
             if path.startswith("/api/"):
                 with closing(connect(loop.database)) as con:
                     chaser.schema(con)
+                    if path == "/api/health":
+                        snapshot = dashboard(con)
+                        data_health = snapshot["dataHealth"] if snapshot else None
+                        health = dict(loop.health)
+                        health.update({
+                            "last_cycle_time": health["lastCycleTime"],
+                            "duration_ms": health["durationMs"],
+                            "duration_seconds": round(health["durationMs"] / 1000, 3),
+                            "lock_wait_ms": health["lockWaitMs"],
+                            "lock_wait_seconds": round(health["lockWaitMs"] / 1000, 3),
+                            "dataHealth": data_health,
+                        })
+                        return self.out(health)
                     if path == "/api/dashboard":
                         value = dashboard(con)
                         return self.out(value) if value else self.out({"error": "Building launch snapshot", "sync": get_state(con, "sync")}, 503)

@@ -10,6 +10,8 @@ import urllib.request
 from pathlib import Path
 from typing import Protocol
 
+from src.llm.client import LLMCallError, LLMClient
+
 
 class VisionClient(Protocol):
     cache_key: str
@@ -36,36 +38,54 @@ DEFAULT_URL = "http://127.0.0.1:11434/v1/chat/completions"
 
 
 def _complete(model, instruction, content, *, url=None):
-    url = url or os.getenv("SOONY_LOCAL_URL", DEFAULT_URL)
+    url = url or os.getenv("SOONY_LLM_URL") or os.getenv("SOONY_LOCAL_URL") or DEFAULT_URL
+    model = model or os.getenv("SOONY_LLM_MODEL") or os.getenv("SOONY_LOCAL_MODEL")
+    api_key = os.getenv("SOONY_LLM_API_KEY") or os.getenv("SOONY_LOCAL_API_KEY")
     location = urllib.parse.urlsplit(url)
+    if location.scheme not in {"http", "https"} or location.username is not None:
+        raise ValueError("The model endpoint must use HTTP or HTTPS")
     host = location.hostname
     try:
         local = host == "localhost" or ipaddress.ip_address(host).is_loopback
     except ValueError:
         local = False
-    if location.scheme not in {"http", "https"} or not local or location.username is not None:
-        raise ValueError("The model endpoint must be a loopback HTTP URL")
-    payload = {
-        "model": model,
-        "temperature": 0,
-        "response_format": {"type": "json_object"},
-        "messages": [
-            {"role": "system", "content": instruction},
-            {"role": "user", "content": content},
-        ],
-    }
-    request = urllib.request.Request(
-        url, json.dumps(payload, ensure_ascii=False).encode(), headers={"Content-Type": "application/json"}
+    if not local and os.getenv("SOONY_LLM_ALLOW_REMOTE") != "1":
+        raise ValueError("Remote model endpoints require SOONY_LLM_ALLOW_REMOTE=1")
+
+    if isinstance(content, list):
+        prompt = "\n".join(part.get("text", "") for part in content if isinstance(part, dict) and "text" in part)
+        images = [part for part in content if isinstance(part, dict) and "image_url" in part]
+    else:
+        prompt = str(content)
+        images = None
+
+    def transport(transport_model, transport_url, payload, headers, timeout):
+        request_headers = {"Content-Type": "application/json", **headers}
+        request = urllib.request.Request(
+            transport_url,
+            json.dumps(payload, ensure_ascii=False).encode(),
+            headers=request_headers,
+        )
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+        with opener.open(request, timeout=timeout) as response:
+            envelope = json.load(response)
+        answer = envelope["choices"][0]["message"]["content"]
+        return json.loads(answer)
+
+    client = LLMClient(model=model, url=url, api_key=api_key, transport=transport)
+    return client.complete_json(
+        "document-extraction",
+        {"type": "object", "additionalProperties": True},
+        f"{instruction}\n\n{prompt}",
+        source_text=prompt,
+        images=images,
+        validate_quotes=False,
     )
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
-    with opener.open(request, timeout=90) as response:
-        answer = json.load(response)["choices"][0]["message"]["content"]
-    return json.loads(answer)
 
 
 def local_completion(instruction, text):
     """Compatibility hook used by the supplier chaser."""
-    model = os.getenv("SOONY_LOCAL_MODEL")
+    model = os.getenv("SOONY_LLM_MODEL") or os.getenv("SOONY_LOCAL_MODEL")
     return _complete(model, instruction, text) if model else None
 
 
@@ -131,8 +151,8 @@ def configured_clients():
     provider = os.getenv("SOONY_LLM_PROVIDER", "ollama").strip().lower()
     if provider == "none":
         return None, None
-    if provider != "ollama":
-        raise ValueError("SOONY_LLM_PROVIDER must be ollama or none")
+    if provider not in {"ollama", "openai_compat", "openai-compatible"}:
+        raise ValueError("SOONY_LLM_PROVIDER must be ollama, openai_compat, openai-compatible or none")
     url = os.getenv("SOONY_LLM_URL") or os.getenv("SOONY_LOCAL_URL") or DEFAULT_URL
     text_model = os.getenv("SOONY_LLM_MODEL") or os.getenv("SOONY_LOCAL_MODEL")
     vision_model = os.getenv("SOONY_LLM_VISION_MODEL") or os.getenv("SOONY_VISION_MODEL")
