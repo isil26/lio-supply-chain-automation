@@ -432,3 +432,8 @@ Trace the **Pune sorting** request through [thread 153839FA41](../docs/supplier-
 ## T93-Mail-Events — event-triggered archive updates (codex-mail-archive)
 
 - The user-level macOS LaunchAgent `com.manti.soony-supplier-email-archive` runs the [sync script](../scripts/sync_supplier_email_archive.py) with `--watch --publish`. It subscribes to new mail in the team Gmail All Mail folder via read-only IMAP IDLE, refreshes on arrival, and reconciles again after reconnecting. The listener and its logs are in the private `supplier-email-sync/` backend state directory. Initial reconciliation published three messages. The previous five-minute Codex automation is paused.
+
+## T50-Live-Portal — automatic Mac planning input
+
+- The live Manti worker now polls the documented read-only team inventory about every two minutes using its private token. It stages added or revised files, verifies size and SHA-256, tests the full result in a copied planning database, then switches the live data root and refreshes forecasts, evidence, and recovery options. Removals are reflected in the new snapshot. The verified cache survives code releases and outages. Portal files are no longer needed in Git for routine updates to the live site.
+- Controlled full-case test added, changed and removed a file. Exactly two files were downloaded. The game-card gap went 6,800 to 12,800 and p50 moved Standard 614,650 to 609,550, Collector’s 62,550 to 61,650. One enquiry was captured locally. Restart, a semantically invalid drop and HTTP 401 kept the accepted forecast and produced no duplicate. Source intake runs apart from the encrypted Vercel replay.

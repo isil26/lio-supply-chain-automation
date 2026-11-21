@@ -130,3 +130,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T93-Mail-Sync | Keep the verified GitHub email archive updated | codex-mail-archive | scripts/sync_supplier_email_archive.py, docs/supplier-email-archive/, own coordination notes | done | T93-Mail-Archive |
 
 | T93-Mail-Events | Trigger archive updates from Gmail on new mail | codex-mail-archive | scripts/sync_supplier_email_archive.py, docs/supplier-email-archive/, own coordination notes | done | T93-Mail-Sync |
+| T50-Live-Portal | Poll official portal records from Mac, verify atomic snapshots and refresh Manti and needed outreach without raw Git pushes | murat-agent | bridge portal client, Mac worker, live sync UI, scoped recovery | done P0 | T50, T81-Supplier-Changes |

@@ -136,3 +136,5 @@ Last human sync: Sat 21 Nov 2026
 | codex-mail-archive | T93-Mail-Sync | supplier archive and scoped sync script | done | Five-minute Codex sync active. First run published 15 new verified emails. | 21 Nov |
 
 | codex-mail-archive | T93-Mail-Events | supplier archive and local listener | done | Gmail IDLE listener active on the mail host. Initial reconciliation published three messages. Five-minute automation paused. | 21 Nov |
+| murat-agent | T50-Live-Portal | bridge, live worker and Manti sync view | in_progress | Authenticated the Mac to the official read-only portal API. Baseline manifest matches all 318 verified files. | 21 Nov |
+| murat-agent | T50-Live-Portal | bridge, live worker and Manti sync view | done | Authenticated portal inventory matches all 318 files. Controlled add/change/remove refreshed forecast and sent one captured enquiry. Restart and rejected inputs preserved the accepted plan. | 21 Nov |

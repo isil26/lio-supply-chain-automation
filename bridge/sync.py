@@ -32,4 +32,5 @@ def main():
     with LOG.open("a") as lg:
         for k, p in changes: lg.write(f"{ts} {k} {p}\n"); print(k, p)
     print(f"{len(files)} files, {len(changes)} changes")
-main()
+if __name__ == "__main__":
+    main()
