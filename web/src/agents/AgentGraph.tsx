@@ -50,6 +50,15 @@ const RECORDED_TEXT: Record<string, string> = {
   chaser: "I wrote the email to the printer in Polish. It is not sent.",
 };
 
+// What each role does, used when a recording only reports which roles ran.
+const ROLE_TEXT: Partial<Record<NodeId, string>> = {
+  triage: "Looked at the new file and handed the art book problem to the team.",
+  analyst: "Looked for the gap in the art book stock.",
+  verifier: "Double-checked the findings against the documents.",
+  planner: "Worked out a Plan B for a person to approve.",
+  chaser: "Prepared the supplier email.",
+};
+
 const nodeOf = (agent: string): NodeId | null => {
   const name = agent.toLowerCase();
   return AGENTS.find((id) => name.includes(id)) ?? null;
@@ -91,6 +100,24 @@ export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: Re
   const [picked, setPicked] = useState<number | null>(null);
   const trace = useMemo((): { steps: GraphStep[]; approvals_pending: AgentTraceData["approvals_pending"] } => {
     if (!hostedReplayBuild) return liveTrace;
+    if (recording && !recording.events?.length) {
+      // Summary-only recording: no step events, so play the reported roles in hand-off order.
+      const summary = recording.reported_summary;
+      const order = ["triage", ...(summary?.delegation_targets ?? []).map((name) => name.toLowerCase())]
+        .filter((name, index, all) => AGENTS.includes(name as NodeId) && all.indexOf(name) === index);
+      const status = (name: string) => summary?.roles.find((item) => item.role.toLowerCase().includes(name))?.reported_status ?? "reported";
+      return {
+        steps: order.map((name, index) => ({
+          agent: name[0].toUpperCase() + name.slice(1),
+          tool: "reported_role",
+          result_summary: `${ROLE_TEXT[name as NodeId] ?? "Did its part."} ${/^(completed|done|ok)$/i.test(status(name)) ? "Done in the recorded run." : `Recorded status: ${status(name)}.`}`,
+          status: status(name),
+          citations: [],
+          recordedTarget: order[index + 1],
+        })),
+        approvals_pending: summary?.pending_approvals_reported ? [{ id: "reported-approval", title: "An approval" }] : [],
+      };
+    }
     return {
       steps: recording?.events.map((event) => ({
         agent: event.agent,
@@ -150,6 +177,7 @@ export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: Re
       visited.add(node);
       const target = step.recordedTarget && nodeOf(step.recordedTarget);
       if (hostedReplayBuild) {
+        if (previous === "file") hops.push(["file", node]);
         if (target && target !== node) hops.push([node, target]);
       } else if (node !== previous) hops.push([previous, node]);
       previous = node;
@@ -163,7 +191,7 @@ export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: Re
   const litKeys = new Set(path.map(([a, b]) => hopKey(a, b)));
   const pairLit = (a: NodeId, b: NodeId) => litKeys.has(hopKey(a, b)) || litKeys.has(hopKey(b, a));
   const uniqueHops = [...new Map(path.map((hop) => [hopKey(...hop), hop])).values()];
-  const finalHop: [NodeId, NodeId] | null = !hostedReplayBuild && waitingForYou && active ? [active === "verifier" || active === "chaser" ? active : "chaser", "you"] : null;
+  const finalHop: [NodeId, NodeId] | null = waitingForYou && active ? [active === "verifier" || active === "chaser" ? active : "chaser", "you"] : null;
 
   const focusIndex = picked ?? steps.length - 1;
   const focus = focusIndex >= 0 ? steps[focusIndex] : undefined;
