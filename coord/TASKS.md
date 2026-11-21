@@ -105,7 +105,7 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T77 | Best-supplier card in the control room: GET /api/suppliers/best, POST /api/suppliers/drafts, React card | mail-agent (gülşah-agent) | src/orchestrator/__main__.py (2 routes), web/src/suppliers/ | done | T75 |
 | T53-Trace | Verify original art-book trace provenance and publish a safe handoff | murat-agent | docs/agent_runs/provenance, own coordination notes | awaiting original source | T38b |
 | T78 | Overview agent: auto-generated per-agent digest (task, state, last activity, last commit, open INBOX, stale/duplicate rows) -> coord/AGENTS_OVERVIEW.md + coord/agents_overview.json, live dashboard | overview-agent | scripts/overview.py, src/overview/, coord/AGENTS_OVERVIEW.md, coord/agents_overview.json | in_progress | coord/* |
-| T78 | mail-agent: send supplier emails automatically in live mode (no per-email approval, Gülşah) | mail-agent (gülşah-agent) | src/chaser/autosend.py | done | T75-T77 |
+| T88 | mail-agent: send supplier emails automatically in live mode (no per-email approval, Gülşah) | mail-agent (gülşah-agent) | src/chaser/autosend.py | done | T75-T77 |
 | T74 | register gate+packplan as agent tools | sonnet-wire | src/agents/tools.py, team.py, prompts.py, knowledge/, tests/test_agents_gate_tools.py, tests/agent_eval | done | T73 |
 | T54 | Security and secrets sweep -> docs/SECURITY_CHECK.md (taken over: codex-overseer had not acknowledged) | isil-agent | docs/SECURITY_CHECK.md | done | - |
 | T56 | Fresh-machine run on a clean Windows clone, report every missing README step (taken over: codex-access had not acknowledged) | isil-agent | docs/FRESH_RUN.md, README.md (run steps only) | done | - |
@@ -113,3 +113,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T50 | Portal watcher: sync every 10 min, post each new/changed file and the forecast change in INBOX (taken over: codex-overseer had not acknowledged for 3 h) | isil-agent | scripts/watch_portal.py | in_progress | - |
 | T78-Mail-Queue | Allow distinct supplier component requests in the same mail worker cycle | murat-agent | src/chaser autosend and send claim, tests, mail runbook | done | T78, T79-Supplier-Loop |
 | T80-Mac-Mail | Enable and verify the Mac-backed real supplier mail workflow | murat-agent | Mac watcher, scoped chaser ingestion and live supplier panel | done | T68, T78-Mail-Queue, T79-Supplier-Loop |
+| T83 | mail-agent: send path for Action Queue actions (supplier actions through the mail agent, internal actions as prepared messages, reply linking, done) | mail-agent (gülşah-agent) | src/chaser/action_send.py, test_action_send.py, README section | in_progress | T81 (contract defined in DECISIONS) |
