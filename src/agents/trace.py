@@ -27,6 +27,20 @@ def ensure_trace(db):
       tool TEXT, input_ref TEXT, output_ref TEXT, status TEXT, citation TEXT, created_at REAL
     );
     """)
+    # An older database may already hold these tables with fewer columns (CREATE IF NOT EXISTS never upgrades them).
+    wanted = {
+        "agent_trace": {"agent": "TEXT", "model": "TEXT", "step": "INTEGER", "tool": "TEXT", "args": "TEXT",
+                        "result": "TEXT", "reason": "TEXT", "cost": "REAL", "latency_ms": "REAL",
+                        "input_tokens": "INTEGER DEFAULT 0", "output_tokens": "INTEGER DEFAULT 0",
+                        "created_at": "REAL", "status": "TEXT"},
+        "activity": {"agent": "TEXT", "action": "TEXT", "type": "TEXT", "tool": "TEXT", "input_ref": "TEXT",
+                     "output_ref": "TEXT", "status": "TEXT", "citation": "TEXT", "created_at": "REAL"},
+    }
+    for table, columns in wanted.items():
+        have = {row[1] for row in db.execute(f"PRAGMA table_info({table})")}
+        for name, kind in columns.items():
+            if name not in have:
+                db.execute(f"ALTER TABLE {table} ADD COLUMN {name} {kind}")
 
 
 def record(db, *, agent, model, step, tool=None, args=None, result=None, reason="",
