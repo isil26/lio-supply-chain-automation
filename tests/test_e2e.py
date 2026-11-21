@@ -1,0 +1,185 @@
+"""Offline end-to-end rehearsal using the team's downloaded portal files."""
+
+from contextlib import contextmanager
+import http.client
+import json
+import os
+from pathlib import Path
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+from tempfile import TemporaryDirectory
+from time import monotonic, sleep
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DASHBOARD = "/api/dashboard"
+SCHEMA = {"launch", "readiness", "risks", "activity", "threads", "approval", "options", "drop"}
+# Frozen expectations from docs/NUMBERS.md (post-drop for the component gaps).
+TARGETS = {"STD": 640_000, "CE": 72_000}
+GAPS = {"CMP-GAM-001": 6_800, "CMP-GAM-008": 5_900, "CMP-GAM-010": 3_400}
+
+
+@contextmanager
+def timed(step):
+    started = monotonic()
+    try:
+        yield
+    finally:
+        print(f"{step} ({monotonic() - started:.2f}s)", flush=True)
+
+
+def stop(process):
+    if process.poll() is not None:
+        return
+    # Stop any OCR subprocesses along with the API before deleting its workspace.
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+    except ProcessLookupError:
+        process.wait()
+
+
+class DemoReplayTest(unittest.TestCase):
+    def request(self, path, body=None):
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+        try:
+            if body is None:
+                connection.request("GET", path)
+            else:
+                connection.request("POST", path, json.dumps(body), {"Content-Type": "application/json"})
+            response = connection.getresponse()
+            return response.status, json.load(response)
+        finally:
+            connection.close()
+
+    def dashboard(self, ready):
+        deadline = monotonic() + self.timeout
+        last_status = "server not accepting connections"
+        while monotonic() < deadline:
+            if self.process.poll() is not None:
+                self.fail(f"Replay server exited with code {self.process.returncode}")
+            try:
+                status, snapshot = self.request(DASHBOARD)
+            except (OSError, http.client.HTTPException):
+                sleep(0.25)
+                continue
+            last_status = f"HTTP {status}"
+            self.assertIn(status, {200, 503}, "Unexpected dashboard response")
+            sync = snapshot.get("sync") or {}
+            if sync.get("error"):
+                self.fail("Replay pipeline reported a sync error. Check the local server console.")
+            if status == 200 and ready(snapshot, sync):
+                return snapshot
+            sleep(0.25)
+        self.fail(f"Dashboard did not reach the expected state in {self.timeout:g}s ({last_status})")
+
+    def assert_targets(self, snapshot):
+        self.assertEqual({row["edition"]: row["target"] for row in snapshot["readiness"]}, TARGETS)
+
+    def test_offline_demo(self):
+        with timed("Prepare workspace and start replay"):
+            # Keep the app's repo-relative replay database, copied inputs and caches disposable.
+            workspace = TemporaryDirectory(prefix="soony-e2e-")
+            self.addCleanup(workspace.cleanup)
+            self._start_replay(Path(workspace.name))
+        self._exercise_replay()
+
+    def _start_replay(self, workspace):
+        data = Path(os.environ.get("DEMO_DATA_DIR", ROOT / "data")).resolve()
+        self.assertTrue(data.is_dir(), "Local portal mirror missing. Restore it or set DEMO_DATA_DIR.")
+        self.timeout = float(os.environ.get("DEMO_TIMEOUT_SECONDS", "240"))
+        self.assertTrue(0 < self.timeout < float("inf"), "DEMO_TIMEOUT_SECONDS must be positive and finite")
+        shutil.copytree(ROOT / "src", workspace / "src", ignore=shutil.ignore_patterns("__pycache__"))
+        for relative in ("store/docs_cache.sqlite3", "runtime/tessdata"):
+            source = ROOT / relative
+            if source.exists():
+                link = workspace / relative
+                link.parent.mkdir(parents=True, exist_ok=True)
+                link.symlink_to(source, target_is_directory=source.is_dir())
+
+        env = {key: value for key, value in os.environ.items()
+               if not key.startswith(("CHASER_", "SOONY_IMAP_", "SOONY_LLM_"))
+               and key not in {"SOONY_TOKEN", "SOONY_LOCAL_MODEL", "SOONY_VISION_MODEL", "PYTHONPATH"}}
+        env.update(CHASER_REAL_SMTP="0", SOONY_LLM_PROVIDER="none")
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            self.port = listener.getsockname()[1]
+        self.process = subprocess.Popen(
+            [sys.executable, "-m", "src.orchestrator", "--demo", "--port", str(self.port), "--data", str(data)],
+            cwd=workspace, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, start_new_session=True,
+        )
+        self.addCleanup(stop, self.process)
+
+    def _exercise_replay(self):
+        with timed("Wait for baseline dashboard (HTTP 200)"):
+            baseline = self.dashboard(lambda snapshot, sync: "pendingDrop" in sync)
+
+        with timed("Check dashboard schema, targets and staged drop"):
+            self.assertEqual(SCHEMA - baseline.keys(), set(), "Dashboard keys missing")
+            self.assert_targets(baseline)
+            self.assertEqual(baseline["sync"]["mode"], "replay")
+            self.assertEqual(baseline["sync"]["mailMode"], "dry-run")
+            self.assertGreater(baseline["sync"]["pendingDrop"], 0, "No supplier files staged. Check the local mirror.")
+
+        with timed("Release staged drop (POST /api/sync)"):
+            status, result = self.request("/api/sync", {})
+            self.assertEqual(status, 202)
+            self.assertIs(result.get("ok"), True)
+
+        with timed("Wait for replay banner and verify changed risks or options"):
+            updated = self.dashboard(lambda snapshot, sync: sync.get("pendingDrop") == 0)
+            drop = updated["drop"] or {}
+            self.assertEqual(drop.get("title"), "Replayed portal drop processed")
+            self.assertTrue(drop.get("detail"), "Replay banner detail missing")
+            self.assertTrue(drop.get("changes"), "Replay banner has no source changes")
+            self.assertTrue(
+                self.risk_state(updated) != self.risk_state(baseline)
+                or {option["id"] for option in updated["options"]} != {option["id"] for option in baseline["options"]},
+                "The staged drop did not change any displayed risk or option",
+            )
+
+        with timed("Check post-drop NUMBERS.md invariants"):
+            self.assert_targets(updated)
+            gaps = {row["id"]: row["gap"] for row in updated["risks"]}
+            for material, expected in GAPS.items():
+                with self.subTest(material=material):
+                    self.assertEqual(gaps.get(material), expected, "Post-drop component gap")
+
+        with timed("Approve a pending option and verify persisted state"):
+            option = next((row for row in updated["options"] if row["status"] == "pending"), None)
+            self.assertIsNotNone(option, "No actionable approval option")
+            option_id = option["id"]
+            status, result = self.request(f"/api/decisions/{option_id}/approve", {})
+            self.assertEqual(status, 200)
+            self.assertEqual(result.get("approvalId"), option_id)
+            self.assertEqual(result.get("status"), "approved")
+            approved = self.dashboard(lambda snapshot, sync: True)
+            self.assertEqual({row["id"]: row["status"] for row in approved["options"]}.get(option_id), "approved")
+
+        with timed("Confirm supplier send and verify dry-run transport"):
+            self.assertEqual(approved["sync"]["mailMode"], "dry-run")
+            draft = next((row for row in approved["threads"] if row["status"] == "draft"
+                          and row["qty"] == gaps.get(row["material"])), None)
+            self.assertIsNotNone(draft, "No current supplier draft")
+            thread_id = draft["id"]
+            status, result = self.request(f"/api/threads/{thread_id}/send", {"confirm": True})
+            self.assertEqual(status, 200)
+            self.assertIs(result.get("ok"), True)
+            sent = self.dashboard(lambda snapshot, sync: True)
+            self.assertEqual(sent["sync"]["mailMode"], "dry-run")
+            thread = next(row for row in sent["threads"] if row["id"] == thread_id)
+            self.assertEqual(thread["status"], "awaiting reply")
+            self.assertTrue(any(message["side"] == "out" and message["sender"] == "Supplier Chaser (demo)"
+                                for message in thread["messages"]), "Dry-run message missing from thread")
+
+    @staticmethod
+    def risk_state(snapshot):
+        return {row["id"]: (row["gap"], row["inbound"], row["detail"]) for row in snapshot["risks"]}
