@@ -13,6 +13,7 @@ class ChaserStore:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.path) as db:
+            db.execute("PRAGMA busy_timeout=30000")
             db.executescript("""
                 PRAGMA journal_mode=WAL;
                 PRAGMA foreign_keys=ON;
@@ -91,6 +92,8 @@ class ChaserStore:
     def connect(self):
         db = sqlite3.connect(self.path)
         db.row_factory = sqlite3.Row
+        db.execute("PRAGMA busy_timeout=30000")
+        db.execute("PRAGMA foreign_keys=ON")
         return db
 
     def create_thread(self, payload: dict) -> None:

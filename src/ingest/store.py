@@ -70,6 +70,7 @@ def connect(path=DB):
     path.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(path, timeout=30)
     con.row_factory = sqlite3.Row
+    con.execute("PRAGMA busy_timeout=30000")
     con.executescript("""
         PRAGMA journal_mode=WAL;
         PRAGMA foreign_keys=ON;

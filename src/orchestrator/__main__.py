@@ -192,6 +192,12 @@ class Loop:
         self.stop = threading.Event()
         self.drop_files = []
         self.initialized = False
+        self.health = {
+            "lastCycleTime": None,
+            "durationMs": 0,
+            "lockWaitMs": 0,
+            "errors": [],
+        }
         if args.demo:
             demo_dir = ROOT / "runtime" / "replay"
             demo_dir.mkdir(parents=True, exist_ok=True)
@@ -231,15 +237,19 @@ class Loop:
         temp.replace(dest)
 
     def cycle(self, sync=False):
+        started = time.monotonic()
+        sync_error = None
+        if sync and self.args.online:
+            try:
+                subprocess.run([sys.executable, str(ROOT / "bridge" / "sync.py")], cwd=ROOT,
+                               capture_output=True, text=True, timeout=180, check=True)
+            except (OSError, subprocess.SubprocessError) as exc:
+                sync_error = f"Portal sync failed ({exc.__class__.__name__}). Last local snapshot remains available."
+
+        lock_started = time.monotonic()
         with self.lock, closing(connect(self.database)) as con:
+            self.health["lockWaitMs"] = round((time.monotonic() - lock_started) * 1000)
             chaser.schema(con)
-            sync_error = None
-            if sync and self.args.online:
-                try:
-                    subprocess.run([sys.executable, str(ROOT / "bridge" / "sync.py")], cwd=ROOT,
-                                   capture_output=True, text=True, timeout=180, check=True)
-                except (OSError, subprocess.SubprocessError) as exc:
-                    sync_error = f"Portal sync failed ({exc.__class__.__name__}). Last local snapshot remains available."
             before = get_state(con, "truth")
             events = ingest(con, self.root, ROOT / "bridge" / "state.json" if self.args.online else None)
             successful = [event for event in events if event["action"] != "error"]
@@ -301,6 +311,9 @@ class Loop:
                                         "pendingDrop": len(self.drop_files), "mailMode": "dry-run" if self.args.demo or os.getenv("CHASER_REAL_SMTP") != "1" else "live",
                                         "events": rejected, "warnings": warnings})
             self.initialized = True
+            self.health["lastCycleTime"] = now()
+            self.health["durationMs"] = round((time.monotonic() - started) * 1000)
+            self.health["errors"] = [sync_error] if sync_error else []
             return len(successful)
 
     def promote_drop(self):
@@ -311,10 +324,14 @@ class Loop:
 
     def background(self):
         while not self.stop.is_set():
+            started = time.monotonic()
             try:
                 self.cycle(sync=True)
             except Exception as exc:
                 print(f"Pipeline: {exc}", file=sys.stderr, flush=True)
+                self.health["lastCycleTime"] = now()
+                self.health["durationMs"] = round((time.monotonic() - started) * 1000)
+                self.health["errors"] = [str(exc)]
                 with closing(connect(self.database)) as con, con:
                     previous = get_state(con, "sync", {})
                     save_state(con, "sync", {**previous, "error": str(exc), "failed": True, "pendingDrop": len(self.drop_files)})
