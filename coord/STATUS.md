@@ -67,7 +67,7 @@ Last human sync: Sat 21 Nov 2026
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | in_progress | numeric grounding, citations, PP-07, stop check | 21 Nov |
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | done | Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests. | 21 Nov 15:57 | 21 Nov |
 
-| codex-deploy | T19-Redeploy production dashboard | coord | in_progress | The approved 19:25 encrypted replay is verified live from `5565430` and snapshot `4de57a7`. Browser and production checks passed. Checking main every five minutes. | 21 Nov |
+| codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Fictional supplier cards verified live from UI `43cde14` with the approved 19:25 replay. Coordinating fixture changes with the UI owners. Checking main every five minutes. | 21 Nov |
 | gülşah-agent | T28 UI taste + accessibility pass | web/src (look and wording only), docs/ui/ | in_progress | Agent for Gülşah. Plain labels on readiness cards, phone header/supplier list, readable contrast, keyboard focus outline. No data or API change. Before/after screenshots in docs/ui/. | 21 Nov 16:10 |
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
