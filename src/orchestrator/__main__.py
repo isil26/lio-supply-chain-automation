@@ -22,6 +22,7 @@ from src import chaser
 from src.chaser.reply_plan import demo_reply
 from src.chaser import mail_history, supplier_loop
 from src.decide import authorize, choose, decisions
+from src.decide.actions import recovery_reviews
 from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
@@ -259,6 +260,7 @@ def dashboard(con):
                     for thread in chaser.list_threads(con, states)],
         "mailHistory": mail_history.view(clock),
         "supplierActions": supplier_actions,
+        "recoveryApprovals": recovery_reviews(con, truth, actions, supplier_actions) if live else [],
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": snapshot.get("drop"),
         "sync": snapshot.get("sync"), "dataHealth": health,
@@ -493,6 +495,9 @@ def handler(loop):
                             "backendCommit": os.getenv("SOONY_RELEASE_SHA"),
                         })
                         return self.out(health)
+                    if path == "/api/actions":
+                        value = dashboard(con)
+                        return self.out({"actions": value["recoveryApprovals"]} if value else {"actions": []})
                     if path == "/api/dashboard":
                         value = dashboard(con)
                         if value is not None:

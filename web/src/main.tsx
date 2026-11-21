@@ -353,6 +353,22 @@ function App() {
 
       {!hostedReplayBuild && <BestSupplier/>}
 
+      {data.recoveryApprovals?.length ? <section className="card" id="recovery-approvals" aria-label="Recovery approvals">
+        <h3>Recovery approvals</h3>
+        {data.recoveryApprovals.map((item) => <section className="decision-analysis" key={item.id} id={`review-${item.id}`}>
+          <strong>{item.title}</strong>
+          <p>Awaiting approval · {item.approver}</p>
+          {item.dueAt && <p>Planning target · {etaDate.format(new Date(item.dueAt))} CET</p>}
+          {item.price != null && <p>{euros.format(item.price)} · {item.priceLabel}</p>}
+          <p>{item.detail}</p>
+          <div className="actions">
+            {item.threadId && <a className="ghost-button" href={`?thread=${encodeURIComponent(item.threadId)}${item.replyId == null ? "" : `#message-${item.replyId}`}`}>Supplier quote</a>}
+            {item.evidence && <button className="ghost-button" onClick={() => setSource(item.evidence!)}>Inspection evidence</button>}
+            <button className="ghost-button" onClick={() => setSource({ file: item.policy })}>PP-07</button>
+          </div>
+        </section>)}
+      </section> : null}
+
       {data.network && data.network.suppliers.length > 0 && <section className="card map-card">
         <h3>Supply network</h3>
         <SupplyMap network={data.network}/>
