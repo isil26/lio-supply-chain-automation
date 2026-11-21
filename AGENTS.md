@@ -16,6 +16,12 @@ Every agent has a unique name and uses it everywhere: the Owner/Agent column in 
 - Everyone else: pick a short unique name on your first line in `coord/STATUS.md` (e.g. `codex-ingest`, `copilot-ui`, `<person>-claude`). Never reuse another agent's name, and never use a human's name for yourself.
 - Names stay the same for the whole hackathon, so teammates can tell who did what.
 
+## Token cost (mandatory, we pay per token)
+- Use the cheapest model/effort that does the job: Codex `-c model_reasoning_effort=medium` (low for mechanical edits), Copilot default/auto model, Claude Sonnet or Haiku for routine work. Reserve the strongest model/effort for hard design or debugging.
+- Read only what you need (`sed -n`, `grep`, targeted ranges). Never re-read files you just wrote, never dump big files, CSVs or logs into context.
+- Don't spawn extra subagents or research passes unless the task needs it; one focused run beats several overlapping ones. Check `coord/STATUS.md` so nobody duplicates your work.
+- Prefer deterministic code over LLM calls at run time; cache LLM/OCR results by sha256.
+
 ## While working
 - Stay inside your owned directory (see ownership table in `coord/TASKS.md`). Need a change elsewhere? Write a request in `coord/INBOX.md` addressed to the owner.
 - Update your line in `coord/STATUS.md` at each milestone (what is done, what is blocked, what you need).
