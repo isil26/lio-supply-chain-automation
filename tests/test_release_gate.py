@@ -33,6 +33,25 @@ class ReleaseGateTests(unittest.TestCase):
         self.assertEqual(result["parts"]["STATUE"]["status"], "GO")
         self.assertIn("Incoterms", result["parts"]["STATUE"]["reasons"][0])
 
+    def test_artwork_revision_conflict_via_alias(self):
+        def doc(supplier, po, code, qty, quote, rev):
+            cite = {"file": f"{supplier}.pdf", "page": 1, "quote": quote}
+            return {"kind": "confirmation", "supplier_id": supplier, "fields": {
+                "po": [{"value": po}], "revision": [{"value": rev, "quote": quote, "citation": cite}],
+                "items": [{"value": {"material": code, "quantity": qty}}]}}
+        docs = [doc("SUP-A", "1", "PR-SL-0604", 64000, "Artwork PR-SL-0604: rev. B (x_revB.pdf)", "B"),
+                doc("SUP-B", "2", "STATUE", 50000, "STATUE: druk wg pliku rev. C", "C")]
+        pos = [{"po_number": "1", "material_id": "STATUE", "supplier_id": "SUP-A", "quantity": 64000, "status": "open"},
+               {"po_number": "2", "material_id": "STATUE", "supplier_id": "SUP-B", "quantity": 50000, "status": "open"}]
+        grs = [{"material_id": "STATUE", "supplier_id": "SUP-B", "qty_received": 7000}]
+        result = evaluate(truth(), docs, po_rows=pos, gr_rows=grs)["parts"]["STATUE"]
+        self.assertEqual(result["status"], "HUMAN")
+        self.assertIn("rev B at SUP-A (0 pcs delivered, 64,000 open)", result["reasons"][0])
+        self.assertIn("rev C at SUP-B (7,000 pcs delivered, 50,000 open)", result["reasons"][0])
+        self.assertEqual(len(result["evidence"]), 2)
+        docs[1]["fields"]["revision"][0]["value"] = "B"
+        self.assertEqual(evaluate(truth(), docs, po_rows=pos, gr_rows=grs)["parts"]["STATUE"]["status"], "GO")
+
 
 if __name__ == "__main__":
     unittest.main()
