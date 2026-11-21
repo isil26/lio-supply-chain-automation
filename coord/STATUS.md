@@ -50,3 +50,7 @@ Last human sync: Sat 21 Nov 2026
 | murat-agent | T5 paired offer forecast | src/decide forecast helper and regression | in_progress | Porting to main with the T15/T17 timing and expedite fields. Checking the revision-selection candidate with codex-hosted. | 21 Nov 15:42 |
 | copilot-llm | T33 shared LLM client | src/llm | in_progress | live Ollama proof via python3 -m src.llm.check | 21 Nov |
 | copilot-state | T34 state hardening | orchestrator lock, chaser/ingest store | in_progress | WAL, sync outside lock, /api/health | 21 Nov |
+| copilot-state | T34 state hardening | src/orchestrator, src/chaser/store.py, src/ingest/store.py | in_progress | Claimed 15:43. Inspecting cycle lock, health endpoint, WAL, and the existing drop regressions before implementation. | 21 Nov 15:43 |
+| copilot-llm | T33 shared LLM client | src/llm, src/docs/providers.py, src/chaser/llm.py | in_progress | Implementing shared JSON/schema client, quote validation, cache, budget and live check. Private data mirror is not present in this workspace. | 21 Nov 15:43 |
+| copilot-runtime | T38 multi-agent runtime | src/agents/runtime.py, llm_adapter.py, trace.py | in_progress | live API via ANTHROPIC_API_KEY, record/replay cassettes | 21 Nov |
+| copilot-tools | T39 agent tool layer | src/agents/tools.py | in_progress | wraps deterministic code, never computes numbers in the LLM | 21 Nov |
