@@ -15,7 +15,11 @@ Humans are on the team too: see `coord/TEAM.md` (roles, branches, checkpoints). 
 - Update your line in `coord/STATUS.md` at each milestone (what is done, what is blocked, what you need).
 - Record discoveries about the data in `FINDINGS.md` (mark VERIFIED only if you checked the file yourself; cite file + row).
 - Record any decision others depend on (schemas, APIs, table names) in `coord/DECISIONS.md`.
-- Commit small and often on your own branch `agent/<name>/<task>`; message format `T<n>: <what>`. Never force-push, never rewrite others' commits.
+- **Everyone (humans and agents) works directly on `main`.** No feature branches needed. This only works with strict task separation and good communication:
+  - Edit only files in the directory you own (see `coord/TASKS.md`). Shared files (`coord/*`, `FINDINGS.md`, `AGENTS.md`) are append-only or touch only your own line.
+  - `git pull --rebase origin main` before every commit and push. Commit small and often; message format `T<n>: <what>`.
+  - Stage only your own paths (`git add <your dir>`), never `git add -A` over others' work in progress.
+  - On a conflict, keep both sides and ask the owner in `coord/INBOX.md`. Never force-push, never rewrite history, never revert others' commits.
 
 ## Hard rules
 - Never commit or print `.soony_token`, `data/`, `store/`, or any secret. Data is for this hackathon only.

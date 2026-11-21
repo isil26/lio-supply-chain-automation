@@ -14,7 +14,7 @@ Humans: Nick Federspiel, Murat, Gülsah, Leo, Isil Özyigit (team "Manti"). Fill
 1. **Before you start anything:** `git pull`, read `coord/STATUS.md` + `coord/INBOX.md`.
 2. **Claim** work in `coord/TASKS.md` (owner = your name or your agent's name). Humans and agents use the same board.
 3. **Ask another person/agent** via `coord/INBOX.md` (one line). Urgent: Discord #lio.
-4. **Branches:** `<name>/<task>` (e.g. `leo/T6-ui`), small PRs into `main`, at least one teammate glances at it. Don't push straight to main except coord/ files and FINDINGS.md (pull --rebase first).
+4. **Everyone works on `main`.** No branches or PRs. It works because each person or agent owns separate directories (see `coord/TASKS.md`). `git pull --rebase origin main` before every commit/push, commit small and often, stage only your own paths, never force-push.
 5. **Sync points:** every 2 hours post one line in STATUS.md per person. Deadline checkpoints: Sat 23:00 pipeline end-to-end on real data; Sun 06:00 feature freeze; Sun 09:00 demo video recorded; Sun 12:00 SUBMIT.
 6. **Data drops:** whoever notices runs `python3 bridge/sync.py`, then logs the change in FINDINGS.md.
 7. **Agents:** if you run your own Claude/Codex/Copilot, tell it to read `AGENTS.md` first, and make sure its task is claimed on the board so we don't duplicate.
