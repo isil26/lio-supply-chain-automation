@@ -78,10 +78,10 @@ function SupplierActions({ actions, select, mailView, onEvidence }: {
       } as Record<string, string>)[action.transport.status] ?? "Transport unverified"} · {action.transport.messageId}</p>}
       {action.dueAt && <p>Reply check · {etaDate.format(new Date(action.dueAt))} CET</p>}
       {action.threadId && (action.replyId != null ?
-        <a className="ghost-button" href={`?${mailView ? "mail=1&" : ""}thread=${encodeURIComponent(action.threadId)}#message-${action.replyId}`}>Matched reply</a> :
-        <button className="ghost-button" onClick={() => select(action.threadId!)}>Open supplier thread</button>)}
+        <button className="ghost-button" onClick={() => select(action.threadId!)}>Show the supplier's reply</button> :
+        <button className="ghost-button" onClick={() => select(action.threadId!)}>Show the emails</button>)}
       {action.dispatchThread && action.dispatchThread !== action.threadId &&
-        <button className="ghost-button" onClick={() => select(action.dispatchThread!)}>Open follow-up dispatch</button>}
+        <button className="ghost-button" onClick={() => select(action.dispatchThread!)}>Show the follow-up email</button>}
       {action.evidence && <button className="ghost-button" onClick={() => onEvidence(action.evidence!)}>Shipment evidence</button>}
       {action.policy && <button className="ghost-button" onClick={() => onEvidence({ file: action.policy })}>PP-07</button>}
     </div>)}
@@ -232,6 +232,9 @@ function App() {
     url.searchParams.set("thread", id);
     url.hash = "";
     window.history.replaceState(null, "", url);
+    // Open the supplier emails right here and scroll to them, instead of only changing the link.
+    setThreadsOpen(true);
+    window.setTimeout(() => document.querySelector(".thread-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   };
 
   const approveReply = async (message: SupplierMessage) => {
@@ -347,13 +350,13 @@ function App() {
         if (!hostedReplayBuild) return <ActionList options={listed}
           reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
-          onDecide={(id, review) => void decide(id, review)} onEvidence={setSource}
+          onDecide={(id, review) => void decide(id, review)} onEvidence={setSource} onOpenThread={selectThread}
           autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []} autoBy={data.autoApprove?.setBy}
           onAutoLimit={isStaticMode() ? undefined : (limit) => void setAutoApprove(limit).then(refresh).catch((err) => setError(err instanceof Error ? err.message : "Auto-approve could not be set"))}/>;
         // Practice mode: same rules as the live slider (routine, priced, not human-only), applied in this browser.
         const routine = (option: typeof listed[number]) => {
           const mode = (option.approvalMode?.mode ?? "ONE_CLICK").toUpperCase();
-          return mode === "AUTO" || mode === "ONE_CLICK";
+          return mode === "AUTO"; // same as the backend: only routine actions with an AUTO verdict
         };
         const autoIds = listed.filter((option) => (option.status ?? "pending") === "pending" && !practice.decisions[option.id]
           && routine(option) && practice.limit > 0 && option.price != null && option.price <= practice.limit).map((option) => option.id);
@@ -362,7 +365,7 @@ function App() {
         return <ActionList options={options} reviews={data.recoveryApprovals} busy={false} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
           onDecide={(id, review) => setPractice((value) => ({ ...value, decisions: { ...value.decisions, [id]: review ? "review" : "approved" } }))}
-          onEvidence={setSource} autoLimit={practice.limit} autoIds={autoIds} autoBy={data.autoApprove?.setBy}
+          onEvidence={setSource} onOpenThread={selectThread} autoLimit={practice.limit} autoIds={autoIds} autoBy={data.autoApprove?.setBy}
           onAutoLimit={(limit) => setPractice((value) => ({ ...value, limit }))}
           practiceNote="Practice mode: clicks here only change your screen. Nothing is sent or bought."/>;
       })()}
@@ -459,7 +462,7 @@ function App() {
                     proposed: "Proposed", pending: "Pending details", approved: "Approved for follow-up", review: "Under review",
                     no_launch_cover: "Excluded from launch coverage", supplier_hold: "Stock release blocked",
                   }[plan.status]}</strong>
-                  <p><a style={{ color: "var(--text)" }} href={`?${mailView ? "mail=1&" : ""}thread=${encodeURIComponent(selectedThread.id)}#reply-${plan.id}`}>Decision {plan.id}</a></p>
+                  <p className="muted">Decision {plan.id}</p>
                   {plan.shipmentId && plan.reportedEta && <p>{plan.shipmentId} · Reported ETA {etaDate.format(new Date(plan.reportedEta))} CET</p>}
                   {plan.editions?.map((edition) => <p key={edition.title}>
                     {edition.title} median packed · {formatNumber(edition.before)} → {formatNumber(edition.after)}

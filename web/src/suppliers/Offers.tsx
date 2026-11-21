@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { hostedReplayBuild, isStaticMode } from "../api";
 import sample from "./offers-sample.json";
 import "./offers.css";
@@ -57,7 +57,9 @@ export function Offers() {
   // and keep Approve / Decline in this browser only (nothing is sent).
   const example = hostedReplayBuild || isStaticMode();
   const [data, setData] = useState<Data | null>(example ? exampleData() : null);
-  const [reviewer, setReviewer] = useState("");
+  const [reviewer, setReviewerState] = useState(() => { try { return localStorage.getItem("soony-reviewer") ?? ""; } catch { return ""; } });
+  const setReviewer = (name: string) => { setReviewerState(name); try { localStorage.setItem("soony-reviewer", name); } catch { /* private mode */ } };
+  const nameRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [tab, setTab] = useState<string | null>(null);
@@ -85,6 +87,11 @@ export function Offers() {
         return { ...old, deals, best: deals.filter((d) => d.best) };
       });
       setNote(`Example only: in the live app this ${action === "approve" ? "asks the supplier in " + country(deal) + " to reserve the units (the purchase order needs the " + deal.signer + ")" : "sends the supplier in " + country(deal) + " a polite no-thanks"}. Nothing was sent here.`);
+      return;
+    }
+    if (!reviewer.trim()) {
+      setNote("Type your name in “Reviewed by” first, so the supplier email shows who approved it.");
+      nameRef.current?.focus();
       return;
     }
     setBusy(deal.id + action);
@@ -131,7 +138,7 @@ export function Offers() {
       </div>}
 
       {!example && data.deals.some(d => d.material === current && d.eligible && (d.status === "pending" || d.status === "changed")) &&
-        <label>Reviewed by <input value={reviewer} maxLength={80} autoComplete="name" onChange={event => setReviewer(event.target.value)} /></label>}
+        <label className="offers-reviewer">Reviewed by <input ref={nameRef} placeholder="Your name" value={reviewer} maxLength={80} autoComplete="name" onChange={event => setReviewer(event.target.value)} /></label>}
 
       {tabNote && <p className="offers-tabnote">{tabNote}</p>}
 
@@ -157,7 +164,6 @@ export function Offers() {
                   {d.conditions && <p className="offers-cond">{d.conditions}</p>}
                   {!example && d.required_by && <p className="muted small-text">Required by {when(d.required_by)}</p>}
                   {d.excerpt && <details><summary>{example ? "What they said" : "Their words"}</summary><p>{d.excerpt}</p></details>}
-                  {!example && d.thread_id && <a href={`?mail=1&thread=${encodeURIComponent(d.thread_id)}`}>Open supplier thread</a>}
                 </th>
                 <td className="num">{d.quantity?.toLocaleString("en-US") ?? "–"}<span className="muted"> / {d.needed.toLocaleString("en-US")}</span></td>
                 <td className="num">{d.offer_kind === "freight" ? "Freight service" : unit(d)}{d.list_price != null && d.unit_price != null && d.unit_price > d.list_price && <span className="muted"> (contract {d.list_price})</span>}</td>
@@ -170,8 +176,8 @@ export function Offers() {
                   <p className="offers-status">{!example && d.status === "approved" ? "Reservation approved" : STATUS[d.status]}{d.decided_by && d.status !== "pending" && d.status !== "changed" ? ` (${d.decided_by})` : ""}</p>
                   {!example && (!!d.eligible || d.offer_state === "approval_required") && <p className="muted small-text">{d.order_quantity?.toLocaleString("en-US")} units · {eur(d.total_eur)} · {d.offer_kind === "freight" ? "Booking authorization" : "PO signer"} {d.signer}{d.expires_at ? ` · Expires ${when(d.expires_at)}` : ""}</p>}
                   {d.eligible && (d.status === "pending" || d.status === "changed") ? <div className="offers-actions">
-                    <button className="primary-button" disabled={busy !== null || (!example && !reviewer.trim())} onClick={() => void decide(d, "approve")}>{busy === d.id + "approve" ? "…" : example ? "Approve" : "Request reservation"}</button>
-                    <button className="ghost-button" disabled={busy !== null || (!example && !reviewer.trim())} onClick={() => void decide(d, "decline")}>{busy === d.id + "decline" ? "…" : "Decline"}</button>
+                    <button className="primary-button" disabled={busy !== null} onClick={() => void decide(d, "approve")}>{busy === d.id + "approve" ? "…" : example ? "Approve" : "Request reservation"}</button>
+                    <button className="ghost-button" disabled={busy !== null} onClick={() => void decide(d, "decline")}>{busy === d.id + "decline" ? "…" : "Decline"}</button>
                   </div> : null}
                   {!d.eligible && <p className="muted small-text">{d.review_reason ?? "No eligible offer for this delivery window."}</p>}
                   {!example && !!d.history?.length && <details><summary>Decision history ({d.history.length})</summary>

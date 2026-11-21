@@ -16,6 +16,7 @@ type Props = {
   autoBy?: string | null;
   onAutoLimit?: (limitEur: number) => void;
   practiceNote?: string;
+  onOpenThread?: (threadId: string) => void;
 };
 
 // Slider stops for the auto-approve limit (EUR); 0 = off.
@@ -40,7 +41,7 @@ function badge(mode: Mode) {
 
 const STATUS: Record<string, string> = { approved: "Approved", review: "Under review", blocked: "Blocked", sent: "Sent", replied: "Replied", done: "Done" };
 
-export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit, practiceNote }: Props) {
+export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit, practiceNote, onOpenThread }: Props) {
   const shortName = (name?: string | null) => name ? name.replace(/^((?:Dr\.|Prof\.)\s+)?.*\s(\S+)$/, (_, title = "", last) => `${title}${last}`) : "";
   const nearest = STOPS.reduce((best, stop, i) => Math.abs(stop - autoLimit) < Math.abs(STOPS[best] - autoLimit) ? i : best, 0);
   const [stop, setStop] = useState(nearest);
@@ -65,6 +66,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
       price: review?.price ?? option.price,
       why: review?.detail ?? option.recommendation,
       evidence: review?.evidence ?? evidence,
+      threadId: review?.threadId ?? null,
       thread: review?.threadId ? `?thread=${encodeURIComponent(review.threadId)}${review.replyId == null ? "" : `#message-${review.replyId}`}` : null,
       status: option.status ?? "pending",
     };
@@ -77,6 +79,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
       id: review.id, option: undefined as unknown as Approval, mode: { mode: "REVIEW", approver: review.approver }, copies: 0, gain: null,
       title: review.title, who: review.approver, due: review.dueAt ?? null, price: review.price ?? null, why: review.detail,
       evidence: review.evidence ?? undefined,
+      threadId: review.threadId ?? null,
       thread: review.threadId ? `?thread=${encodeURIComponent(review.threadId)}${review.replyId == null ? "" : `#message-${review.replyId}`}` : null,
       status: "pending",
     });
@@ -129,7 +132,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
             {b.hint && <p className="muted">{b.hint}</p>}
             <div className="ac-links">
               {card.evidence && <button className="link-button" onClick={() => onEvidence(card.evidence!)}>Source</button>}
-              {card.thread && <a className="link-button" href={card.thread}>Supplier reply</a>}
+              {card.threadId && onOpenThread && <button className="link-button" onClick={() => onOpenThread(card.threadId!)}>Supplier reply</button>}
             </div>
           </div>}
         </li>;
