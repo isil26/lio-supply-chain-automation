@@ -8,8 +8,9 @@ Safety that stays on:
   - recipients must be on the supplier allowlist (allowlist.py), checked again in send();
   - every body must pass the guardrails (no binding commitment, no maximum price, no deadline
     slack, no mention of other suppliers) or it is skipped and logged;
-  - at most CHASER_AUTO_MAX_PER_CYCLE emails per cycle (default 6) and one email per supplier
-    address per CHASER_AUTO_COOLDOWN_MIN minutes (default 60);
+  - no cap per cycle (Gülşah, 21 Nov: suppliers are simulated). Set CHASER_AUTO_MAX_PER_CYCLE to cap;
+  - anti-spam only: one email per supplier address per CHASER_AUTO_COOLDOWN_MIN minutes (default 30),
+    and never the same text twice to the same address;
   - emails are information requests; purchase commitments still follow PP-07.
 Turn it off with CHASER_AUTO_SEND=0.
 """
@@ -57,14 +58,22 @@ def run(con, *, send=None, now=None, prepare=True):
                 compare(con, row[0], save=True)
         except Exception as exc:
             activity(con, "Mail Agent", f"Negotiation planning skipped ({exc.__class__.__name__}).", "warning")
-    limit = int(os.getenv("CHASER_AUTO_MAX_PER_CYCLE", "6"))
-    busy = _recent_addresses(con, int(os.getenv("CHASER_AUTO_COOLDOWN_MIN", "60")), now)
+    limit = int(os.getenv("CHASER_AUTO_MAX_PER_CYCLE", "0")) or None
+    busy = _recent_addresses(con, int(os.getenv("CHASER_AUTO_COOLDOWN_MIN", "30")), now)
     drafts = con.execute("SELECT id, supplier, address, body FROM chases WHERE status = 'draft' ORDER BY rowid").fetchall()
     results = []
     for chase_id, supplier, address, body in drafts:
-        if len([r for r in results if r["result"] == "sent"]) >= limit:
+        if limit and len([r for r in results if r["result"] == "sent"]) >= limit:
             break
         if address.lower() in busy:
+            continue
+        repeat = con.execute("""SELECT 1 FROM messages m JOIN chases c ON c.id = m.chase_id
+                                WHERE m.side = 'out' AND lower(c.address) = ? AND m.body = ? LIMIT 1""",
+                             (address.lower(), body)).fetchone()
+        if repeat:  # same text already went to this supplier: drop the duplicate draft
+            with con:
+                con.execute("UPDATE chases SET status = 'duplicate' WHERE id = ?", (chase_id,))
+            results.append({"id": chase_id, "supplier": supplier, "result": "duplicate"})
             continue
         check = Guardrails().validate_draft(body)
         if not check.ok:
