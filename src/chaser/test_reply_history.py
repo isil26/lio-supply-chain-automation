@@ -8,6 +8,7 @@ from email.message import EmailMessage
 from unittest.mock import patch
 
 from src import chaser
+from src.chaser.reply_plan import plan_reply
 from src.decide import authorize, decisions
 from src.ingest.store import connect, get_state, save_state
 
@@ -75,6 +76,16 @@ class ReplyHistoryTests(unittest.TestCase):
             plan_after = next(chaser.list_threads(con, decisions(con)))["messages"][-1]["parsed"]["reply_plan"]
             self.assertEqual(plan_after["id"], plan["id"])
             self.assertEqual(plan_after["status"], "approved")
+
+    def test_ambiguous_hold_reply_leaves_offer_pending_without_an_eta_request(self):
+        thread = {"material": "PART", "supplier_id": "SUP-TEST", "qty": 80}
+        offer = {"id": "offer", "kind": "partial", "supplier_id": "SUP-TEST", "material": "PART"}
+        for text in ("We cannot hold 80.", "We can hold 80 or we can hold 20."):
+            with self.subTest(text=text):
+                plan = plan_reply({}, thread, text, options=[offer])
+                self.assertNotIn("holdUnits", plan)
+                self.assertNotIn("shipmentId", plan)
+                self.assertIn("hold expiry", plan["nextAction"])
 
     def test_rejected_smtp_attempt_does_not_become_a_sent_email(self):
         with closing(connect(self.path)) as con, patch("src.chaser.smtplib.SMTP") as smtp:

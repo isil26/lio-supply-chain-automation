@@ -213,6 +213,23 @@ class DemoReplayTest(unittest.TestCase):
             self.assertEqual((approved["id"], approved["status"]), (plan["id"], "approved"))
             self.assertEqual(reviewed["readiness"], sent["readiness"])
 
+        with timed("Link an art-book hold reply to the current offer without pricing a PO"):
+            offer = next(row for row in updated["options"] if row["kind"] == "partial" and row["material"] == "CMP-GAM-008")
+            art_thread = next(row for row in updated["threads"] if row["status"] == "draft"
+                              and row["supplier_id"] == offer["supplier_id"] and row["material"] == offer["material"])
+            art_id = art_thread["id"]
+            self.assertEqual(self.request(f"/api/threads/{art_id}/send", {"confirm": True})[0], 200)
+            self.assertEqual(self.request(f"/api/threads/{art_id}/demo-reply", {})[0], 200)
+            art_state = self.dashboard(lambda snapshot, sync: True)
+            received = next(row for row in art_state["threads"] if row["id"] == art_id)["messages"][-1]
+            plan = received["parsed"]["reply_plan"]
+            self.assertEqual((plan["offerId"], plan["holdUnits"]), (offer["id"], 5900))
+            self.assertEqual(plan["evidence"], ["can hold 5,900", "freight price to follow"])
+            self.assertIn("Delivered price pending", plan["afterState"])
+            self.assertIn("PO decision remains outstanding", plan["nextAction"])
+            self.assertEqual(plan["status"], "proposed")
+            self.assertEqual(art_state["readiness"], updated["readiness"])
+
     @staticmethod
     def risk_state(snapshot):
         return {row["id"]: (row["gap"], row["inbound"], row["detail"]) for row in snapshot["risks"]}
