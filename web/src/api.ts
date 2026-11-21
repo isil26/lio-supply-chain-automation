@@ -175,8 +175,9 @@ export type DashboardData = {
   recordedAgentRun?: RecordedAgentRun | null;
   approval: Approval | null;
   options?: Approval[];
-  drop: { title: string; detail: string; time: string } | null;
-  sync?: { error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string; mailMode?: "live" | "dry-run" };
+  drop: { title: string; detail: string; time: string; source?: "portal" } | null;
+  sync?: { error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string; mailMode?: "live" | "dry-run";
+    portal?: { status?: "verified" | "unavailable"; checkedAt?: string; appliedAt?: string; snapshot?: string | null; error?: string | null } };
   documentReviews?: SourceReview[];
   dataHealth?: { filesSeen: number; filesParsed: number; needsReview: number; errors: number; lastSyncAgeSeconds: number | null };
   model?: string;

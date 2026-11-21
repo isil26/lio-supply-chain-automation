@@ -237,6 +237,31 @@ def _withdrawn_offers(con, truth):
             }
 
 
+def portal_shortfalls(previous, current, events):
+    """Track new material gaps from a portal drop already accepted by the engine."""
+    parts = current["parts"]
+    shipping_changes = {change["material"] for change in current.get("shipmentChanges", [])}
+    issues = {item["material"]: item for item in previous.get("portalShortfalls", [])
+              if parts.get(item["material"], {}).get("shortfall", 0) > item["priorGap"]
+              and item["material"] not in shipping_changes}
+    if not events or not previous.get("parts"):
+        return list(issues.values())
+    changed_files = {event["source"] for event in events}
+    for material, part in parts.items():
+        before = previous["parts"].get(material, {}).get("shortfall", 0)
+        if part["shortfall"] <= before or material in shipping_changes:
+            continue
+        evidence = [source for source in part["evidence"] if source["file"] in changed_files]
+        issues[material] = {
+            "shipmentId": f"portal-gap-{material}", "material": material, "supplier": None,
+            "title": f'New portal shortfall: {part["label"]}', "kind": "portal_gap",
+            "threadId": None, "replyId": None, "evidence": evidence, "reference": None,
+            "replyTo": None, "parentId": None, "lostUnits": part["shortfall"] - before,
+            "priorGap": issues.get(material, {}).get("priorGap", before), "eta": None,
+        }
+    return list(issues.values())
+
+
 def _contact_allowed(contact, deadline):
     if contact.get("qualification_status") != "qualified" or contact.get("status") not in {"active", "at_risk"}:
         return False
@@ -312,7 +337,7 @@ def advance(con, truth, *, clock=None):
         con.execute("BEGIN IMMEDIATE")
         now_plan = get_state(con, STATE, {})
         claimed.update(now_plan.get("claimed", []))
-        changes = [*truth.get("shipmentChanges", []), *_withdrawn_offers(con, truth)]
+        changes = [*truth.get("shipmentChanges", []), *truth.get("portalShortfalls", []), *_withdrawn_offers(con, truth)]
         for change in sorted(changes, key=lambda item: (-item["lostUnits"], item["shipmentId"])):
             material = change["material"]
             part = truth["parts"].get(material, {})
@@ -329,8 +354,9 @@ def advance(con, truth, *, clock=None):
                 "id": f"recovery-{change['shipmentId']}", "title": change["title"], "status": "escalated",
                 "owner": "Procurement / DC-HAM", "threadId": change["threadId"], "replyId": change["replyId"],
                 "facts": [], "eta": change["eta"], "evidence": next(iter(change["evidence"]), None),
-                "detail": (("The withdrawn offer has been excluded from recovery. " if change["kind"] == "offer_withdrawn"
-                            else "The forecast now uses the revised shipment. ")
+                "detail": ({"offer_withdrawn": "The withdrawn offer has been excluded from recovery. ",
+                            "portal_gap": "The verified portal drop increased the material shortfall. "}
+                           .get(change["kind"], "The forecast now uses the revised shipment. ")
                            + f"{gap:,} {material} units remain uncovered at cutoff."),
             }
             actions.append(action)

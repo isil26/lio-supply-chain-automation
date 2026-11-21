@@ -16,8 +16,10 @@ from email.message import EmailMessage
 from email.utils import make_msgid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from urllib.parse import unquote, urlsplit
 
+from bridge.live import PortalError, PortalMirror
 from src import chaser
 from src.chaser.reply_plan import demo_reply
 from src.chaser import mail_history, recovery, supplier_loop
@@ -56,6 +58,10 @@ def drop_summary(previous, current, previous_options, options):
         old = previous["parts"].get(part)
         if old and old["shortfall"] != row["shortfall"]:
             updates.append(f'{part}: {old["shortfall"]:,} to {row["shortfall"]:,} short')
+    for pid, row in current["editions"].items():
+        prior = previous["editions"].get(pid, {}).get("p50")
+        if prior is not None and row.get("p50") != prior:
+            updates.insert(0, f'{row.get("edition", pid)} median forecast: {prior:,} → {row["p50"]:,}')
     return " · ".join(updates)
 
 
@@ -348,6 +354,18 @@ class Loop:
         else:
             self.root = args.data
             self.database = args.db
+        self.portal = None
+        self.portal_state = {}
+        self.next_portal_check = 0
+        self.rejected_portal = None
+        if not args.demo and not args.online:
+            workspace = self.database.parent / "portal-sync"
+            if (workspace / ".soony_token").is_file() or (workspace / "current").is_file():
+                self.portal = PortalMirror(workspace, self.root)
+                try:
+                    self.root = self.portal.current() or self.root
+                except PortalError as error:
+                    self.portal_state = {"status": "unavailable", "error": str(error)}
         self.agents = AutonomyLoop(self.database) if os.getenv("SOONY_AGENTS") == "1" else None
 
     @staticmethod
@@ -356,6 +374,35 @@ class Loop:
         temp = dest.with_name("." + dest.name + ".partial")
         shutil.copyfile(source, temp)
         temp.replace(dest)
+
+    def portal_candidate(self, check):
+        if not check or self.portal is None or time.monotonic() < self.next_portal_check:
+            return self.root
+        self.next_portal_check = time.monotonic() + 120
+        checked = now()
+        try:
+            candidate = self.portal.refresh()
+            if candidate == self.rejected_portal:
+                raise PortalError("The new portal drop needs source review. Using the previous snapshot.")
+        except (PortalError, OSError) as error:
+            reason = str(error) if isinstance(error, PortalError) else "The private portal cache is unavailable."
+            self.portal_state.update(status="unavailable", checkedAt=checked, error=reason)
+            return self.root
+        self.portal_state.update(status="verified", checkedAt=checked, error=None)
+        return candidate
+
+    def validate_portal(self, con, root):
+        """Try a new drop in a copy of the operational store before using it."""
+        if json.loads(self.portal.manifest(root).read_text()) == dict(con.execute("SELECT source,sha FROM files")):
+            return
+        with TemporaryDirectory(dir=self.portal.workspace, prefix=".validate-") as temp:
+            with closing(connect(Path(temp) / "candidate.db")) as trial:
+                con.backup(trial)
+                ingest(trial, root, self.portal.manifest(root))
+                if get_state(trial, "sourceChecks")["rejections"]:
+                    raise PortalError("The new portal drop contains a source the engine cannot read.")
+                extract(trial, root, output=self.portal.workspace / "store" / "docs.jsonl")
+                readiness(trial, root)
 
     def cycle(self, sync=False):
         started = time.monotonic()
@@ -366,20 +413,36 @@ class Loop:
                                capture_output=True, text=True, timeout=180, check=True)
             except (OSError, subprocess.SubprocessError) as exc:
                 sync_error = f"Portal sync failed ({exc.__class__.__name__}). Last local snapshot remains available."
+        root = self.portal_candidate(sync)
 
         lock_started = time.monotonic()
         with self.lock, closing(connect(self.database)) as con:
             self.health["lockWaitMs"] = round((time.monotonic() - lock_started) * 1000)
             chaser.schema(con)
             before = get_state(con, "truth")
-            events = ingest(con, self.root, ROOT / "bridge" / "state.json" if self.args.online else None)
+            new_portal = self.portal is not None and root != self.root
+            if new_portal:
+                try:
+                    self.validate_portal(con, root)
+                except (OSError, ValueError, KeyError, IndexError, sqlite3.Error) as error:
+                    reason = str(error) if isinstance(error, PortalError) else "The new portal drop could not be evaluated."
+                    self.portal_state.update(status="unavailable", error=reason)
+                    self.rejected_portal = root
+                    new_portal, root = False, self.root
+            manifest = ROOT / "bridge" / "state.json" if self.args.online else None
+            if self.portal and self.portal.manifest(root).is_file() and root.is_relative_to(self.portal.snapshots):
+                manifest = self.portal.manifest(root)
+            events = ingest(con, root, manifest)
             successful = [event for event in events if event["action"] != "error"]
             checks = get_state(con, "sourceChecks")
             with con:
                 if successful:
                     save_state(con, "pendingEvents", [*get_state(con, "pendingEvents", []), *successful])
-            extracted = extract(con, self.root)
-            handwriting = reconcile_handwriting(con, self.root)
+            if self.portal and manifest:
+                extracted = extract(con, root, output=self.portal.workspace / "store" / "docs.jsonl")
+            else:
+                extracted = extract(con, root)
+            handwriting = reconcile_handwriting(con, root)
             mail_ready = True
             mail_changed = False
             if not self.args.demo:
@@ -394,17 +457,20 @@ class Loop:
                 last_mail = get_state(con, "forecastMailWatermark", 0)
                 mail_changed = recovery.pending_revision(con, last_mail, mail_watermark)
             successful = get_state(con, "pendingEvents", [])
-            if (not self.initialized or before is None or successful or extracted or handwriting
+            if (not self.initialized or before is None or new_portal or successful or extracted or handwriting
                     or mail_changed or get_state(con, "pendingRecompute", False)):
                 previous_options = get_state(con, "options", [])
                 with con:
                     save_state(con, "pendingRecompute", True)
                 if self.args.demo:
-                    truth = readiness(con, self.root)
+                    truth = readiness(con, root)
                 else:
-                    truth = readiness(con, self.root, reconcile_shipments=lambda lots, deadline:
+                    truth = readiness(con, root, reconcile_shipments=lambda lots, deadline:
                                       recovery.reconcile(con, lots, deadline, before or {}))
-                options = choose(con, truth, self.root)
+                    if self.portal:
+                        truth["portalShortfalls"] = recovery.portal_shortfalls(
+                            before or {}, truth, successful if new_portal else ())
+                options = choose(con, truth, root)
                 for option in options:
                     if option.get("approval_block"):
                         option["evaluated_at"] = now()
@@ -427,8 +493,15 @@ class Loop:
                         if self.args.demo and before:
                             title = "Replayed portal drop processed"
                         drop = {"id": now(), "title": title, "detail": detail, "time": now(), "changes": changed, "drafts": draft_count}
+                        if self.portal and manifest:
+                            drop["source"] = "portal"
                         save_state(con, "drop", drop)
                         chaser.activity(con, "Data Bridge", detail)
+            if new_portal:
+                self.portal.accept(root)
+                self.root = root
+                self.rejected_portal = None
+                self.portal_state["appliedAt"] = now()
             if not self.args.demo:
                 if mail_watermark != last_mail:
                     with con:
@@ -456,9 +529,12 @@ class Loop:
                 previous = get_state(con, "sync", {})
                 save_state(con, "sync", {"time": previous.get("time") if failed or rejected else now(), "error": sync_error,
                                         "failed": failed, "filesSeen": checks["filesSeen"],
-                                        "mode": "replay" if self.args.demo else "portal" if self.args.online else "local",
+                                        "mode": "replay" if self.args.demo else "portal" if self.args.online or self.portal else "local",
                                         "pendingDrop": len(self.drop_files), "mailMode": "dry-run" if self.args.demo or os.getenv("CHASER_REAL_SMTP") != "1" else "live",
-                                        "events": rejected, "warnings": warnings})
+                                        "events": rejected, "warnings": warnings,
+                                        **({"portal": {**previous.get("portal", {}), **self.portal_state,
+                                                       "snapshot": root.parent.name[:12] if self.portal and manifest else None}}
+                                           if self.portal else {})})
             self.initialized = True
             self.health["lastCycleTime"] = now()
             self.health["durationMs"] = round((time.monotonic() - started) * 1000)
@@ -563,7 +639,7 @@ def handler(loop):
                     if path == "/api/documents":
                         return self.out(list(documents(con)))
                     if path.startswith("/api/source/"):
-                        return self.file(loop.root, unquote(path[len("/api/source/"):]))
+                        return self.file(loop.root, unquote(path[len("/api/source/"):]), source=True)
                 return self.out({"error": "Unknown API endpoint"}, 404)
             if path == "/live" or (path == "/" and not (DIST / "index.html").is_file()):
                 return self.file(CONTROL_ROOM, "control-room.html")
@@ -571,7 +647,7 @@ def handler(loop):
                 return self.file(DIST, "index.html")
             return self.file(DIST, unquote(path).lstrip("/"))
 
-        def file(self, base, relative):
+        def file(self, base, relative, *, source=False):
             target = (base / relative).resolve()
             if relative.startswith(".") or not target.is_relative_to(base.resolve()) or not target.is_file():
                 return self.out({"error": "File unavailable. Build the dashboard in web/ if needed."}, 404)
@@ -581,7 +657,7 @@ def handler(loop):
             self.send_header("Content-Type", content)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("X-Content-Type-Options", "nosniff")
-            if base == loop.root:
+            if source:
                 self.send_header("Content-Security-Policy", "sandbox")
                 if content in {"text/html", "application/javascript", "image/svg+xml"}:
                     self.send_header("Content-Disposition", "attachment")

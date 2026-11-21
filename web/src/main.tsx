@@ -294,10 +294,19 @@ function App() {
       </header>
 
       {data.sync?.error && <div className="notice alert" role="alert">{data.sync.error}</div>}
+      {data.sync?.portal?.error && <div className="notice alert" role="alert">
+        {data.sync.portal.error} {data.sync.portal.snapshot ? "Showing the last verified portal snapshot." : "Showing the bundled snapshot."}
+      </div>}
+      {data.sync?.portal?.status === "verified" && data.sync.portal.checkedAt && data.sync.portal.snapshot && (
+        <p className="muted">Portal checked {etaDate.format(new Date(data.sync.portal.checkedAt))} · {formatNumber(health?.filesSeen)} files verified</p>
+      )}
       {error && <div className="notice alert">{error}<button className="link-button" onClick={() => setError("")}>Dismiss</button></div>}
       {dropVisible && data.drop && (pendingDrop || isStaticMode() || hostedReplayBuild) && <div className="notice">
         <span>New supplier files</span>
         <button className="primary-button small" onClick={() => void runSync(hostedReplayBuild && !pendingDrop)} disabled={syncBusy}>{syncBusy ? "Updating…" : hostedReplayBuild && !pendingDrop ? "Reset" : "Update"}</button>
+      </div>}
+      {data.drop?.source === "portal" && data.sync?.portal?.snapshot && <div className="notice" role="status">
+        <span>{data.drop.title} · {data.drop.detail}</span>
       </div>}
 
       <section className="hero">

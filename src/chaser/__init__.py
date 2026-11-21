@@ -84,7 +84,8 @@ def draft(con, truth, options=None):
         for part in truth["parts"].values():
             if not part["shortfall"]:
                 continue
-            if any(change["material"] == part["material"] for change in truth.get("shipmentChanges", [])):
+            if any(change["material"] == part["material"] for source in ("shipmentChanges", "portalShortfalls")
+                   for change in truth.get(source, [])):
                 continue  # The recovery loop owns targeted outreach for this disruption.
             candidates = {row["supplier_id"] for row in part["suppliers"] if row["supplier"].get("status") == "active"}
             candidates.update(event["supplier"] for event in truth["issues"]
