@@ -8,27 +8,40 @@ import "./offers.css";
 // reserve; Decline sends a polite no-thanks. Both emails go out through the mail agent.
 
 type Deal = {
-  id: string; supplier: string; material: string; needed: number; quantity: number | null;
+  id: string; supplier_id?: string; eta_text?: string | null; supplier: string; material: string; needed: number; quantity: number | null;
   unit_price: number | null; currency: string | null; price_eur: number | null; total_eur: number | null;
   eta: string | null; p_on_time: number | null; score: number | null; best: number; eligible: number;
   proof: string | null; incoterm: string | null; payment_terms: string | null; moq: number | null;
   list_price: number | null; conditions: string | null; excerpt: string | null; signer: string;
   status: "pending" | "approved" | "declined" | "changed" | "superseded"; decided_by: string | null; decided_at: string | null;
 };
-type Data = { deals: Deal[]; best: Deal[] };
+type Data = { deals: Deal[]; best: Deal[]; notes?: Record<string, string>; as_of?: string };
 
-const STATUS: Record<Deal["status"], string> = { pending: "Waiting for you", approved: "Approved", declined: "Declined", changed: "Changed, decide again", superseded: "Superseded by supplier update" };
+// Suppliers are named by country; two Chinese suppliers never share a product tab.
+const COUNTRY: Record<string, string> = {
+  "SUP-0010": "South Korea", "SUP-0011": "USA", "SUP-0018": "India",
+  "SUP-0019": "China", "SUP-0028": "Poland", "SUP-0029": "China",
+};
+const PRODUCT: Record<string, string> = {
+  "CMP-GAM-001": "Game cards", "CMP-GAM-010": "Statues", "CMP-GAM-008": "Art books",
+  "CMP-GAM-004": "Cover sleeves", "CMP-GAM-003": "Card cases", "CMP-GAM-007": "Collector's boxes",
+};
+function country(d: Deal) { return (d.supplier_id && COUNTRY[d.supplier_id]) || d.supplier; }
+function product(material: string) { return PRODUCT[material] ?? material; }
+
+const STATUS: Record<Deal["status"], string> = { pending: "Open", approved: "Approved", declined: "Declined", changed: "Changed, decide again", superseded: "Superseded by supplier update" };
 
 function eur(value: number | null) { return value == null ? "–" : `€${Math.round(value).toLocaleString("en-US")}`; }
 function when(iso: string | null) {
   if (!iso) return "no date";
   return new Date(iso).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });
 }
+function arrives(d: Deal) { return d.eta_text ?? when(d.eta); }
 function unit(d: Deal) { return d.unit_price == null ? "no price" : `${d.unit_price} ${d.currency ?? ""}`; }
 
 function exampleData(): Data {
-  const deals = (sample as { deals: Deal[] }).deals;
-  return { deals, best: deals.filter((d) => d.best) };
+  const data = sample as unknown as Data;
+  return { ...data, best: data.deals.filter((d) => d.best) };
 }
 
 export function Offers() {
@@ -38,6 +51,7 @@ export function Offers() {
   const [data, setData] = useState<Data | null>(example ? exampleData() : null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [tab, setTab] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -59,9 +73,9 @@ export function Offers() {
       setData((old) => {
         if (!old) return old;
         const deals = old.deals.map((d) => d.id === deal.id ? { ...d, status, decided_by: "you" } as Deal : d);
-        return { deals, best: deals.filter((d) => d.best) };
+        return { ...old, deals, best: deals.filter((d) => d.best) };
       });
-      setNote(`Example only: in the live app this ${action === "approve" ? "asks " + deal.supplier + " to reserve the units (the purchase order needs the " + deal.signer + ")" : "sends " + deal.supplier + " a polite no-thanks"}. Nothing was sent here.`);
+      setNote(`Example only: in the live app this ${action === "approve" ? "asks the supplier in " + country(deal) + " to reserve the units (the purchase order needs the " + deal.signer + ")" : "sends the supplier in " + country(deal) + " a polite no-thanks"}. Nothing was sent here.`);
       return;
     }
     setBusy(deal.id + action);
@@ -69,8 +83,8 @@ export function Offers() {
       const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ by: "Control room" }) });
       if (!response.ok) throw new Error(String(response.status));
       setNote(action === "approve"
-        ? `${deal.supplier} approved. They are asked to reserve it; the purchase order needs the ${deal.signer}.`
-        : `${deal.supplier} declined. A polite email is on its way.`);
+        ? `${country(deal)} approved. They are asked to reserve it; the purchase order needs the ${deal.signer}.`
+        : `${country(deal)} declined. A polite email is on its way.`);
       await load();
     } catch {
       setNote("That did not work. Refresh and try again.");
@@ -80,20 +94,35 @@ export function Offers() {
   }
 
   if (!data) return null;
-  const rows = data.deals;
+  const materials = [...new Set(data.deals.map((d) => d.material))];
+  const current = tab && materials.includes(tab) ? tab : materials[0];
+  const rows = data.deals.filter((d) => d.material === current);
+  const best = data.best.filter((d) => d.material === current);
+  const tabNote = current ? data.notes?.[current] : undefined;
 
   return (
     <section className="card offers" aria-labelledby="offers-title">
       <h3 id="offers-title">Supplier offers</h3>
-      <p className="card-sub">{example ? "Example with sample replies, not live prices. " : ""}Every offer the suppliers sent, with price and timing. You decide; the mail agent tells the supplier.</p>
+      <p className="card-sub">{example ? `What the 6 suppliers answered by email${data.as_of ? ` (${data.as_of})` : ""}.` : "What the suppliers answered by email."}</p>
       {note && <p className="offers-note" role="status">{note}</p>}
-      {rows.length === 0 && <p className="empty">No offers yet. They appear here as suppliers reply.</p>}
+      {data.deals.length === 0 && <p className="empty">No offers yet. They appear here as suppliers reply.</p>}
 
-      {data.best.length > 0 && <div className="offers-best">
-        {data.best.map((d) => (
+      {materials.length > 0 && <div className="offers-tabs" role="tablist" aria-label="Products">
+        {materials.map((m) => {
+          const all = data.deals.filter((d) => d.material === m);
+          return <button key={m} role="tab" aria-selected={m === current} className={m === current ? "is-on" : ""} onClick={() => setTab(m)}>
+            {product(m)} <span className="muted">{all[0].needed.toLocaleString("en-US")} short · {all.length} supplier{all.length === 1 ? "" : "s"}</span>
+          </button>;
+        })}
+      </div>}
+
+      {tabNote && <p className="offers-tabnote">{tabNote}</p>}
+
+      {best.length > 0 && <div className="offers-best">
+        {best.map((d) => (
           <div className="offers-best-item" key={d.id}>
-            <p className="offers-label">Best offer · {d.material}</p>
-            <p className="offers-best-line"><strong>{d.supplier}</strong> · {d.quantity?.toLocaleString("en-US") ?? "?"} units · {unit(d)} · arrives {when(d.eta)}</p>
+            <p className="offers-label">Best offer · {product(d.material)}</p>
+            <p className="offers-best-line"><strong>{country(d)}</strong> · {d.quantity?.toLocaleString("en-US") ?? "?"} units · {unit(d)} · arrives {arrives(d)}</p>
             <p className="muted">Total {eur(d.total_eur)} · PO signer: {d.signer} · {STATUS[d.status]}</p>
           </div>
         ))}
@@ -102,28 +131,29 @@ export function Offers() {
       {rows.length > 0 && <div className="offers-scroll">
         <table className="offers-table">
           <thead>
-            <tr><th scope="col">Supplier</th><th scope="col">Part</th><th scope="col">Units</th><th scope="col">Unit price</th><th scope="col">Total</th><th scope="col">Arrives</th><th scope="col">On time</th><th scope="col">Proof</th><th scope="col">Terms</th><th scope="col">Decision</th></tr>
+            <tr><th scope="col">Supplier</th><th scope="col">Units in time</th><th scope="col">Unit price</th><th scope="col">Total</th><th scope="col">Arrives</th><th scope="col">On time</th><th scope="col">Proof</th><th scope="col">Terms</th><th scope="col">Decision</th></tr>
           </thead>
           <tbody>
             {rows.map((d) => (
               <tr key={d.id} className={d.best ? "is-best" : d.eligible ? "" : "is-backup"}>
-                <th scope="row">{d.supplier}{d.best ? <span className="offers-tag">Best</span> : null}
-                  {d.excerpt && <details><summary>Their words</summary><p>{d.excerpt}</p>{d.conditions && <p className="muted">{d.conditions}</p>}</details>}
+                <th scope="row">{country(d)}{d.best ? <span className="offers-tag">Best</span> : null}
+                  {d.conditions && <p className="offers-cond">{d.conditions}</p>}
+                  {d.excerpt && <details><summary>{example ? "What they said" : "Their words"}</summary><p>{d.excerpt}</p></details>}
                 </th>
-                <td>{d.material}</td>
                 <td className="num">{d.quantity?.toLocaleString("en-US") ?? "–"}<span className="muted"> / {d.needed.toLocaleString("en-US")}</span></td>
                 <td className="num">{unit(d)}{d.list_price != null && d.unit_price != null && d.unit_price > d.list_price && <span className="muted"> (contract {d.list_price})</span>}</td>
                 <td className="num">{eur(d.total_eur)}</td>
-                <td>{when(d.eta)}</td>
+                <td>{arrives(d)}</td>
                 <td className="num">{d.p_on_time == null ? "–" : `${Math.round(d.p_on_time * 100)}%`}</td>
                 <td>{d.proof ?? "–"}</td>
                 <td>{[d.incoterm, d.payment_terms, d.moq ? `min ${d.moq.toLocaleString("en-US")}` : null].filter(Boolean).join(" · ") || "–"}</td>
                 <td>
-                  <p className="offers-status">{STATUS[d.status]}{d.decided_by && d.status !== "pending" && d.status !== "changed" ? ` by ${d.decided_by}` : ""}</p>
-                  {(d.status === "pending" || d.status === "changed") && <div className="offers-actions">
+                  <p className="offers-status">{STATUS[d.status]}{d.decided_by && d.status !== "pending" && d.status !== "changed" ? ` (${d.decided_by})` : ""}</p>
+                  {d.eligible && (d.status === "pending" || d.status === "changed") ? <div className="offers-actions">
                     <button className="primary-button" disabled={busy !== null} onClick={() => void decide(d, "approve")}>{busy === d.id + "approve" ? "…" : "Approve"}</button>
                     <button className="ghost-button" disabled={busy !== null} onClick={() => void decide(d, "decline")}>{busy === d.id + "decline" ? "…" : "Decline"}</button>
-                  </div>}
+                  </div> : null}
+                  {!d.eligible && d.status === "pending" && <p className="muted small-text">Nothing to approve: cannot deliver in time</p>}
                 </td>
               </tr>
             ))}
