@@ -15,6 +15,7 @@ import {
 import { AgentTrace } from "./agents/AgentTrace";
 import { AgentGraph } from "./agents/AgentGraph";
 import { BestSupplier } from "./suppliers/BestSupplier";
+import { Offers } from "./suppliers/Offers";
 import { MantiLogo, SupplyMap } from "./SupplyMap";
 import { BehindScenes } from "./BehindScenes";
 import { ArrivalTimeline } from "./ArrivalTimeline";
@@ -352,6 +353,7 @@ function App() {
 
       <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>
 
+      {!hostedReplayBuild && <Offers/>}
       {!hostedReplayBuild && <BestSupplier/>}
 
       {data.recoveryApprovals?.length ? <section className="card" id="recovery-approvals" aria-label="Recovery approvals">

@@ -1,0 +1,23 @@
+.offers { display: grid; gap: 14px; }
+.offers-note { margin: 0; font-size: 14px; color: var(--accent); }
+.offers-best { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.offers-best-item { border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; }
+.offers-best-item p { margin: 0; }
+.offers-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.offers-best-line { font-size: 16px; margin: 4px 0 !important; }
+.offers-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.offers-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 860px; }
+.offers-table th, .offers-table td { text-align: left; vertical-align: top; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+.offers-table thead th { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.offers-table tbody th { font-weight: 600; }
+.offers-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.offers-table tr.is-best { background: var(--accent-soft); }
+.offers-table tr.is-backup { opacity: .75; }
+.offers-tag { margin-left: 6px; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.offers-table details summary { cursor: pointer; font-weight: 400; color: var(--muted); font-size: 13px; }
+.offers-table details summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.offers-table details p { font-weight: 400; margin: 4px 0; max-width: 280px; }
+.offers-status { margin: 0 0 6px; font-size: 13px; }
+.offers-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.offers-actions button { padding: 6px 12px; font-size: 13px; }
+.offers-table td:nth-child(2) { white-space: nowrap; }
