@@ -126,6 +126,8 @@ export type SupplierAction = {
 export type Approval = {
   id: string;
   modeled_impact?: Record<string, { medianDelta?: number; expectedDelta?: number }>;
+  latest_action?: string | null;
+  approvalMode?: { mode?: string; approver?: string; reason?: string; escalateTo?: string | null; slaMinutes?: number; blockedBy?: string[] } | null;
   title: string;
   kind?: string;
   recommendation: string;
@@ -183,6 +185,8 @@ export type DashboardData = {
   model?: string;
   dataQuality?: { documents?: number; extractionErrors?: number; [key: string]: unknown };
   network?: Network;
+  autoApprove?: { limitEur?: number; setAt?: string; setBy?: string | null };
+  autoApproved?: string[];
   autoSend?: boolean;
   inboundTimeline?: {
     deadline: string;
@@ -500,3 +504,11 @@ export const dashboardApi: DashboardApi = hostedReplayBuild
     : forcedStatic
       ? new StaticDashboardApi()
       : new HttpDashboardApi();
+
+// Team rule: approve open actions that cost up to this amount automatically (0 = off). Backend applies the
+// approval engine's limits: quality releases, unpriced and escalated actions are never auto-approved.
+export async function setAutoApprove(limitEur: number) {
+  return json<{ ok: boolean; limitEur: number; approved: string[] }>("/api/auto-approve", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ limitEur }),
+  });
+}

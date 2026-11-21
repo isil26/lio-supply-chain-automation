@@ -19,6 +19,8 @@ import { Offers } from "./suppliers/Offers";
 import { MantiLogo, SupplyMap } from "./SupplyMap";
 import { BehindScenes } from "./BehindScenes";
 import { ArrivalTimeline } from "./ArrivalTimeline";
+import { ActionList } from "./ActionList";
+import { setAutoApprove } from "./api";
 import "./styles.css";
 
 const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon" | "sun" | "check" | "arrow" }) => {
@@ -171,6 +173,19 @@ function App() {
   const pendingDrop = (data.sync?.pendingDrop ?? 0) > 0;
   const riskEvidence = (risk: Risk) => risk.sources?.[0] ?? (risk.evidence[0] ? { quote: risk.evidence[0] } : null);
 
+  const decide = async (id: string, review: boolean) => {
+    setDecisionBusy(true);
+    try {
+      if (review) await dashboardApi.reviewDecision(id);
+      else await dashboardApi.approveDecision(id);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Decision could not be updated");
+    } finally {
+      setDecisionBusy(false);
+    }
+  };
+
   const approve = async (review = false) => {
     if (!approval?.id) return;
     setDecisionBusy(true);
@@ -309,80 +324,47 @@ function App() {
         <span>{data.drop.title} · {data.drop.detail}</span>
       </div>}
 
-      <section className="hero">
-        <h2>{onTrack ? "On track for Sunday" : <><span className="big-number">{formatNumber(totalShort)}</span> copies short on Sunday</>}</h2>
-        {!onTrack && shortEur != null && <p className="hero-eur">≈ {euro(shortEur)} at stake <span>{useMiss ? `(Soony's numbers: ${data.readiness.map((r) => `€${r.missCostEur} per ${r.edition === "CE" ? "Collector's" : "Standard"} copy`).join(", ")})` : "(at standard cost)"}</span></p>}
-        {!onTrack && saved > 0 && <p className="hero-save">One action can save <strong>{formatNumber(Math.min(saved, totalShort))}</strong> of them <span aria-hidden="true">→</span> <a href="#next-step">{approval?.title}</a></p>}
-        <div className="editions">
-          {editions.map((item) => <div className="edition" key={item.edition}>
-            <div className="edition-row"><span>{item.edition === "CE" ? "Collector's" : "Standard"}</span><strong>{item.short ? `−${formatNumber(item.short)}` : "✓"}</strong></div>
-            <div className="bar" aria-label={`${formatNumber(item.expected)} of ${formatNumber(item.target)}`}>
-              <i className="packed" style={{ width: `${(item.packed / item.target) * 100}%` }}/>
-              <i className="expected" style={{ width: `${(Math.min(item.expected, item.target) / item.target) * 100}%` }}/>
-            </div>
-          </div>)}
+      <section className="strip" aria-label="Launch status">
+        <div className="strip-main">
+          <strong className="strip-number">{onTrack ? "On track" : formatNumber(totalShort)}</strong>
+          <span>{onTrack ? "for Sunday 20:00" : "copies short on Sunday"}</span>
         </div>
-        <p className="legend"><i className="dot packed"/>packed <i className="dot expected"/>expected by Sunday <i className="dot track"/>missing</p>
+        {!onTrack && shortEur != null && <div className="strip-item"><strong>≈ {euro(shortEur)}</strong><span>at stake{useMiss ? "" : " (standard cost)"}</span></div>}
+        {editions.map((item) => <div className="strip-item" key={item.edition}>
+          <strong>{item.short ? `−${formatNumber(item.short)}` : "✓"}</strong>
+          <span>{item.edition === "CE" ? "Collector's" : "Standard"}</span>
+          <i className="strip-bar"><i style={{ width: `${(Math.min(item.expected, item.target) / item.target) * 100}%` }}/></i>
+        </div>)}
       </section>
+
+      <ActionList options={(data.options ?? []).filter((option) => option.status !== "blocked" || option.approvalMode)}
+        reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={hostedReplayBuild}
+        costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
+        onDecide={(id, review) => void decide(id, review)} onEvidence={setSource}
+        autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []}
+        onAutoLimit={isStaticMode() ? undefined : (limit) => void setAutoApprove(limit).then(refresh).catch((err) => setError(err instanceof Error ? err.message : "Auto-approve could not be set"))}/>
 
       {data.inboundTimeline && <ArrivalTimeline timeline={data.inboundTimeline}/>}
 
-      <div className="columns">
-        <section className="card">
-          <h3>Missing parts</h3>
-          {missing.length ? <ol className="missing">
-            {missing.map((risk) => {
-              const evidence = riskEvidence(risk);
-              return <li key={`${risk.rank}-${risk.id ?? risk.component}`}>
-                <span className="part-name"><strong>{shortName(risk.component)}</strong>{(risk.inbound ?? 0) > 0 && <small>{formatNumber(risk.inbound)} still on the way</small>}</span>
-                <span className="missing-right"><b>{formatNumber(gapOf(risk))}</b>{evidence && <button className="link-button" onClick={() => setSource(evidence)}>Why?</button>}</span>
-              </li>;
-            })}
-          </ol> : <p className="empty">None</p>}
-        </section>
-
-        <section className="card decision" id="next-step">
-          <h3>Next step</h3>
-          {approval ? <>
-            <p className="decision-title">{approval.title}</p>
-            {saved > 0 && <p className="price">+{formatNumber(saved)} <span className="price-unit">copies</span></p>}
-            {saved > 0 && savedEur != null && savedEur > 0 && <p className="saved-eur">≈ {euro(savedEur)} saved{useMiss ? "" : " at standard cost"}</p>}
-            {approval.price != null && (saved > 0 ? <p className="muted">€{Math.round(approval.price).toLocaleString("en-US")}</p> : <p className="price">€{Math.round(approval.price).toLocaleString("en-US")}</p>)}
-            {approval.price == null && saved > 0 && <p className="muted small-text">Approver: {approval.owner}</p>}
-            {!hostedReplayBuild && <div className="actions">
-              <button className="primary-button" onClick={() => void approve(false)} disabled={decisionBusy || approval.status === "approved"}>{approval.status === "approved" ? <><Icon name="check"/> Approved</> : "Approve"}</button>
-              <button className="ghost-button" onClick={() => void approve(true)} disabled={decisionBusy}>Review</button>
-            </div>}
-            <details className="more">
-              <summary>Details</summary>
-              <p>{approval.recommendation}</p>
-              <p>Approver: {approval.owner}</p>
-              {timing && <p>{Math.round(timing.p_on_time * 100)}% chance it arrives in time, based on {timing.sample_count} past orders.</p>}
-            </details>
-          </> : <p className="empty">Nothing to decide</p>}
-        </section>
-      </div>
+      <section className="card">
+        <h3>Missing parts</h3>
+        {missing.length ? <ol className="missing">
+          {missing.map((risk) => {
+            const evidence = riskEvidence(risk);
+            return <li key={`${risk.rank}-${risk.id ?? risk.component}`}>
+              <span className="part-name"><strong>{shortName(risk.component)}</strong>{(risk.inbound ?? 0) > 0 && <small>{formatNumber(risk.inbound)} still on the way</small>}</span>
+              <span className="missing-right"><b>{formatNumber(gapOf(risk))}</b>{evidence && <button className="link-button" onClick={() => setSource(evidence)}>Why?</button>}</span>
+            </li>;
+          })}
+        </ol> : <p className="empty">None</p>}
+      </section>
 
       <Offers/>
       <BestSupplier/>
 
       <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>
 
-      {data.recoveryApprovals?.length ? <section className="card" id="recovery-approvals" aria-label="Recovery approvals">
-        <h3>Recovery approvals</h3>
-        {data.recoveryApprovals.map((item) => <section className="decision-analysis" key={item.id} id={`review-${item.id}`}>
-          <strong>{item.title}</strong>
-          <p>Awaiting approval · {item.approver}</p>
-          {item.dueAt && <p>Planning target · {etaDate.format(new Date(item.dueAt))} CET</p>}
-          {item.price != null && <p>{euros.format(item.price)} · {item.priceLabel}</p>}
-          <p>{item.detail}</p>
-          <div className="actions">
-            {item.threadId && <a className="ghost-button" href={`?thread=${encodeURIComponent(item.threadId)}${item.replyId == null ? "" : `#message-${item.replyId}`}`}>Supplier reply</a>}
-            {item.evidence && <button className="ghost-button" onClick={() => setSource(item.evidence!)}>Source evidence</button>}
-            <button className="ghost-button" onClick={() => setSource({ file: item.policy })}>PP-07</button>
-          </div>
-        </section>)}
-      </section> : null}
+      {/* Recovery approvals are part of the Actions list above (ActionList). */}
 
       {recoveryActions?.length ? <section className="card" id="supplier-recovery">
         <h3>Supplier recovery</h3>
