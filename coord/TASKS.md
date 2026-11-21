@@ -56,7 +56,7 @@ More unclaimed work: see coord/OPEN_TASKS.md (T19-T31). Claim by copying the row
 | T45 | Project knowledge pack per role (domain, data map, policy, pitfalls, negotiation, style, few-shot examples) + role cards docs/AGENT_ROLES.md; loader load_pack(role); no computed numbers in the pack | copilot-know | src/agents/knowledge, docs/AGENT_ROLES.md | done P1 | - |
 | T46 | Guard harness: numeric grounding, citation check, PP-07 policy check, stop/oscillation check, language check, golden eval scenarios + report docs/AGENT_EVAL.md (merges with T43) | copilot-harness | src/agents/harness.py, tests/agent_eval | done P1 | T40 |
 | T47 | Wire pack + harness into prompts/runtime: agents load their pack, every run is evaluated by the harness, violations block proposals and show in UI | open P1 | src/agents | T45, T46, T38b |
-| T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | in_progress | T19-Vercel |
+| T19-Redeploy | Refresh the protected Soony production replay and coordinate future deploy requests | codex-deploy | coord | done | T19-Vercel |
 
 Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T50 | (assigned by nick) | codex-overseer | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |

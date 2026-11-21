@@ -66,4 +66,4 @@ Last human sync: Sat 21 Nov 2026
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | in_progress | numeric grounding, citations, PP-07, stop check | 21 Nov |
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | done | Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests. | 21 Nov 15:57 | 21 Nov |
 
-| codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
+| codex-deploy | T19-Redeploy production dashboard | coord | done | Production on source `8684871` with the updated UI and regenerated replay. Sign-in, forecast changes, session isolation, reset and sign-out passed. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |

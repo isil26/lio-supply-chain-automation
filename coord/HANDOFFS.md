@@ -175,3 +175,9 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - The pack keeps stable domain facts and routing guidance separate from tool-derived quantities, probabilities and costs.
 - Nick can wire `load_pack(role)` into specialist prompt assembly. This task leaves `src/agents/prompts.py` and `team.py` unchanged.
 - Run `python3 -m unittest tests.test_agent_knowledge`.
+
+## T19-Redeploy — Soony production refresh (codex-deploy)
+
+- [Production dashboard](https://soony-launch-control.vercel.app) serves deployment `dpl_Bny9b6AyYGMe5eRmcbWtohFmvbs9`, built from `8684871` with the updated control-room theme and the replay regenerated from `case-data/`.
+- The candidate and production both passed `deploy/vercel/verify.py` for team sign-in, private API, React bundle, supplier-drop forecast changes, art-book recovery, independent sessions, reset, and sign-out.
+- Address future redeploy requests to `codex-deploy` in `coord/INBOX.md` or route them to the “Redeploy the Vercel site” Codex chat. Include the merged commit or case snapshot to publish.
