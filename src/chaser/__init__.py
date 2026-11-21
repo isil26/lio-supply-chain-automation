@@ -10,7 +10,9 @@ import ssl
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from email.policy import default
-from email.utils import format_datetime, make_msgid, parseaddr
+from email.utils import format_datetime, make_msgid, parseaddr, parsedate_to_datetime
+
+from . import supplier_loop
 
 
 
@@ -66,6 +68,7 @@ def schema(con):
 
     if "transport" not in {row[1] for row in con.execute("PRAGMA table_info(messages)")}:
         con.execute("ALTER TABLE messages ADD COLUMN transport TEXT")
+    supplier_loop.schema(con)
 
 
 def activity(con, agent, action, kind="analysis"):
@@ -85,6 +88,8 @@ def draft(con, truth, options=None):
             candidates.update(event["supplier"] for event in truth["issues"]
                               if event["material"] == part["material"] and event.get("supplier"))
             for supplier_id in sorted(candidates):
+                if supplier_loop.managed(supplier_id, part["material"]):
+                    continue
                 supplier = profiles.get(supplier_id, {})
                 if not supplier.get("contact_email"):
                     continue
@@ -121,6 +126,8 @@ def draft_documents(con, truth, options):
             item = inbound.get(option.get("shipment_id"))
             if option.get("kind") != "inbound" or not item or item["mode"] != "air":
                 continue
+            if supplier_loop.managed(item["supplier"], item["material"]):
+                continue
             supplier = profiles.get(item.get("supplier"), {})
             gap = truth["parts"].get(item["material"], {}).get("shortfall", 0)
             if not supplier.get("contact_email") or not gap:
@@ -143,7 +150,7 @@ def draft_documents(con, truth, options):
     return created
 
 
-def send(con, chase_id, demo=False):
+def send(con, chase_id, demo=False, *, managed=False):
     schema(con)
     if not demo:
         from .mailenv import load_team_mail_env
@@ -159,7 +166,16 @@ def send(con, chase_id, demo=False):
     with con:
         con.execute("BEGIN IMMEDIATE")
         chase = con.execute("SELECT * FROM chases WHERE id=?", (chase_id,)).fetchone()
-        if not chase or chase["status"] != "draft":
+        if not chase:
+            raise ValueError("Only a current draft can be sent")
+        if supplier_loop.managed(chase["supplier_id"], chase["material"]):
+            if (not managed or chase["status"] != "loop draft"
+                    or not supplier_loop.eligible_draft(con, chase_id, "demo" if demo else "live")):
+                raise ValueError("This case requires a current supplier-loop draft")
+            from .guardrails import Guardrails
+            if not Guardrails().validate_draft(chase["body"]).ok:
+                raise ValueError("Supplier-loop request failed the information-only check")
+        elif chase["status"] != "draft":
             raise ValueError("Only a current draft can be sent")
         message_id = make_msgid(domain=parseaddr(sender)[1].split("@")[-1])
         if not demo:
@@ -242,13 +258,17 @@ def receive(con, message, *, simulated=False, matched_thread_id=None):
     parent = (message.get("In-Reply-To", "") or "").strip()
     subject = message.get("Subject", "")
     ref = re.search(r"\[SOONY-([A-F0-9]+)\]", subject)
-    chase = con.execute("""SELECT * FROM chases WHERE lower(address)=? AND
+    parent_chase = con.execute("""SELECT c.* FROM chases c JOIN messages m ON m.chase_id=c.id
+                   WHERE m.external_id=? AND m.side='out' AND lower(c.address)=?""", (parent, sender)).fetchone()
+    chase = parent_chase or con.execute("""SELECT * FROM chases WHERE lower(address)=? AND
                (message_id=? OR id=?) AND status NOT IN ('draft')""",
                         (sender, parent, matched_thread_id or (ref[1] if ref else ""))).fetchone()
     if not chase:
         return False
+    if supplier_loop.managed(chase["supplier_id"], chase["material"]) and not parent_chase:
+        return False
     sent = con.execute("SELECT sender,transport FROM messages WHERE external_id=? AND chase_id=? AND side='out'",
-                       (chase["message_id"], chase["id"])).fetchone()
+                       (parent if parent_chase else chase["message_id"], chase["id"])).fetchone()
     if sent:
         sent_transport = json.loads(sent["transport"] or "{}")
         dry_run = sent_transport.get("mode") == "dry_run" or sent["sender"].endswith("(demo)")
@@ -267,9 +287,15 @@ def receive(con, message, *, simulated=False, matched_thread_id=None):
     envelope = {"from": str(message.get("From") or sender), "to": str(message.get("To") or ""),
                 "subject": str(subject), "messageId": message_id, "inReplyTo": parent,
                 "mode": "simulated" if simulated else "inbox", "status": "received"}
+    try:
+        date = parsedate_to_datetime(str(message["Date"] or ""))
+        if date.tzinfo:
+            envelope["authoredAt"] = date.isoformat()
+    except (TypeError, ValueError, AttributeError):
+        pass
     with con:
         inserted = con.execute("""INSERT OR IGNORE INTO messages(chase_id,external_id,side,sender,body,time,transport)
-            VALUES(?,?,?,?,?,?,?)""", (chase["id"], message_id, "in", sender, body, now(),
+            VALUES(?,?,?,?,?,?,?)""", (chase["id"], message_id, "in", sender, body, datetime.now(timezone.utc).isoformat(),
                                         json.dumps(envelope))).rowcount
         if inserted:
             from src.ingest.store import get_state
@@ -323,6 +349,8 @@ def expire(con):
         con.execute("BEGIN IMMEDIATE")
         stale = list(con.execute("SELECT id,supplier,material,status FROM chases WHERE status IN ('awaiting reply','sending') AND due_at<=?", (now(),)))
         for chase in stale:
+            if con.execute("SELECT 1 FROM supplier_loop_actions WHERE active=1 AND json_extract(payload,'$.dispatchThread')=?", (chase["id"],)).fetchone():
+                continue
             con.execute("UPDATE chases SET status='escalated' WHERE id=?", (chase["id"],))
             activity(con, "Supplier Chaser", f'{chase["supplier"]}, {chase["material"]}: escalated to Procurement after one hour without a verified reply.', "warning")
     return len(stale)
@@ -333,6 +361,8 @@ def list_threads(con, decision_states=None):
     decision_states = decision_states or {}
     for row in con.execute("SELECT * FROM chases ORDER BY CASE status WHEN 'reply to verify' THEN 0 WHEN 'draft' THEN 2 ELSE 1 END, qty DESC, supplier"):
         thread = dict(row)
+        if thread["status"] == "draft" and supplier_loop.managed(row["supplier_id"], row["material"]):
+            thread["status"] = "superseded draft"
         thread["messages"] = []
         dry_run_thread = False
         for message in con.execute("""SELECT id,sender,side,body AS text,time,parsed,transport
@@ -351,7 +381,7 @@ def list_threads(con, decision_states=None):
             if plan:
                 plan["status"] = decision_states.get(plan.get("id"), "proposed" if plan.get("editions") or plan.get("holdUnits") else "pending")
             thread["messages"].append(entry)
-        if not thread["messages"] and thread["status"] == "draft":
+        if not thread["messages"] and thread["status"] in {"draft", "loop draft", "superseded draft"}:
             thread["messages"] = [{
                 "sender": "Supplier Chaser", "side": "out", "text": row["body"], "time": "",
                 "transport": {"mode": "draft", "status": "draft", "to": row["address"], "subject": row["subject"]},

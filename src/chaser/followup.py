@@ -55,6 +55,7 @@ def wait_hours(now, deadline):
 def due_reminders(con, now=None, *, save=False):
     """Threads that need a reminder now. With save=True, store reminder drafts for review."""
     import sqlite3
+    from .supplier_loop import managed
     now = _aware(now) if now else datetime.now(timezone.utc)
     con.row_factory = sqlite3.Row
     rows = con.execute("""
@@ -69,7 +70,7 @@ def due_reminders(con, now=None, *, save=False):
     out = []
     for row in rows:
         row = dict(row)
-        if not row.get("last_out"):
+        if managed(row["supplier_id"], row["material"]) or not row.get("last_out"):
             continue
         waited = (now - _aware(row["last_out"])).total_seconds() / 3600
         need = wait_hours(now, row["deadline"])
