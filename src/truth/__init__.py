@@ -142,7 +142,7 @@ def receipt_comparisons(booked, scanned):
         yield unmatched, ambiguous
 
 
-def readiness(con, data_root):
+def readiness(con, data_root, *, reconcile_shipments=None):
     tab = {table: list(rows(con, table)) for table in (
         "launch", "product", "shift", "site", "packout", "bom", "stock", "receipt", "shipment", "route",
         "po", "component", "supplier", "supply", "plan_part", "plan_inbound",
@@ -470,16 +470,24 @@ def readiness(con, data_root):
             confirmed_qty = actual
             evidence = [*evidence, citation, *balance]
         statuses = {row["status"] for row in feeds if row["status"]}
-        authoritative_cancel = "erp/" in head["source"]["file"] and head["status"] in CANCELLED
-        if authoritative_cancel or (statuses and statuses <= CANCELLED) or head["status"] in {"delivered", "received"}:
+        explicit_cancel = head["status"] in {"cancelled", "canceled"} and (
+            "erp/" in head["source"]["file"] or statuses <= {"cancelled", "canceled"})
+        terminal = ("erp/" in head["source"]["file"] and head["status"] in CANCELLED
+                    or statuses and statuses <= CANCELLED or head["status"] in {"delivered", "received"})
+        if terminal and (not explicit_cancel or reconcile_shipments is None):
             continue
         # Only shipment-specific quantities count. A PO quantity can span multiple shipments.
         eta, route = shipment_time(dict(head, etas=[row["eta"] for row in feeds], flight_evidence=reference in shipped), route_map, shift_start)
         if route:
             evidence.append(route["source"])
-        inbound.append({"id": shipment_id, "reference": reference, "material": material, "quantity": float(confirmed_qty),
+        if explicit_cancel and not confirmed_qty:
+            confirmed_qty = plan_row.get("quantity") or 0
+        inbound.append({"id": shipment_id, "reference": reference, "material": material,
+                        "quantity": float(confirmed_qty),
                         "mode": head.get("mode") or plan_row.get("mode") or "road", "eta": head.get("eta"),
-                        "earliest": eta, "held": bool(hold), "supplier": head.get("supplier_id"), "evidence": evidence})
+                        "earliest": eta, "held": bool(hold), "supplier": head.get("supplier_id"), "evidence": evidence,
+                        **({"sourceUpdatedAt": head.get("updated_at"), "sourceCancelled": explicit_cancel}
+                           if reconcile_shipments else {})})
 
     for item in inbound:
         if item["supplier"] in old_revision_suppliers.get(item["material"], ()):
@@ -490,6 +498,13 @@ def readiness(con, data_root):
             issue(f'{item["reference"]}: {item["quantity"]:,.0f} {item["material"]} to rev {revision_hold[item["material"]]["old_revision"]} '
                   f'must not be accepted ({revision_hold[item["material"]]["ecn"]})', item["material"], item["evidence"],
                   "high", "revision_hold_inbound", supplier=item["supplier"])
+
+    shipment_state = {}
+    if reconcile_shipments:
+        inbound, shipment_state = reconcile_shipments(inbound, deadline)
+        for change in shipment_state["shipmentChanges"]:
+            issue(change["title"], change["material"], change["evidence"], "critical", "shipment_change",
+                  supplier=change["supplier"], shipment=change["shipmentId"])
 
     required = defaultdict(float)
     for pid, items in needs.items():
@@ -507,7 +522,7 @@ def readiness(con, data_root):
         candidates = qualified[part]
         evidence = [*bom_sources[part], *stock_sources[part], *[item["source"] for item in candidates]]
         passing = [item for item in inbound if item["material"] == part and item["earliest"] and
-                   item["earliest"] < deadline and not item["held"] and item["quantity"] > 0]
+                   item["earliest"] < deadline and not item["held"] and not item.get("missesPackout") and item["quantity"] > 0]
         by_launch = sum(item["quantity"] for item in passing)
         material_stock = available[part]
         bundled_with = embedded.get(part)
@@ -516,7 +531,7 @@ def readiness(con, data_root):
             units_per_parent = max(needs[pid][part] / needs[pid][parent] for pid in needs if part in needs[pid])
             material_stock = available[parent] * units_per_parent
             by_launch = sum(item["quantity"] for item in inbound if item["material"] == parent and item["earliest"] and
-                            item["earliest"] < deadline and not item["held"]) * units_per_parent
+                            item["earliest"] < deadline and not item["held"] and not item.get("missesPackout")) * units_per_parent
             evidence.append(dependency)
             issue(f'{part} is supplied fitted into {parent}', part, [*bom_sources[part], dependency], "watch", "embedded")
         if snapshot != "0001-01-01":
@@ -562,7 +577,7 @@ def readiness(con, data_root):
     for item in inbound:
         item["earliest"] = item["earliest"].isoformat() if item["earliest"] else None
     return {"name": re.search(r"([^.\n]+?) goes on sale", notes)[1] if re.search(r"([^.\n]+?) goes on sale", notes) else "Launch",
-            "deadline": deadline.isoformat(), "site": site, "snapshot": snapshot,
+            "deadline": deadline.isoformat(), "site": site, "snapshot": snapshot, **shipment_state,
             "editions": editions, "parts": parts, "inbound": inbound, "issues": issues, "notices": translations,
             "shifts": [[start.isoformat(), end.isoformat()] for start, end in shifts],
             "source": {"file": ctx, "quote": launch_time[0] if launch_time else "Launch cut-off from shift plan"},

@@ -130,3 +130,5 @@ Last human sync: Sat 21 Nov 2026
 | supply-rescue | T81-Supplier-Rescue | supplier correspondence, authorization notes, internal agent knowledge | in_progress | Checking premium split freight and local statue sorting against the Hamburg pack deadline. | 21 Nov |
 
 | codex-mail-archive | T93-Mail-Archive | docs/supplier-email-archive/ and own coordination notes | done | Published 8 chains, 56 verified Gmail messages. Archive indexed in docs/supplier-email-archive/. | 21 Nov |
+| murat-agent | T81-Supplier-Changes | scoped truth, chaser, orchestrator and Manti actions | in_progress | Closing the gap between an observed shipment cancellation or revision, the forecast, and nonbinding recovery mail. | 21 Nov |
+| murat-agent | T81-Supplier-Changes | truth, chaser, orchestrator and Manti actions | done | Controlled 28,000-card cancellation moves the shortfall to 34,800 and retires the dock review. One original-supplier enquiry, Boise skipped on verified evidence, zero duplicate sends after restart. | 21 Nov |

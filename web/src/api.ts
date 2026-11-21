@@ -101,7 +101,7 @@ export type SupplierThread = {
 
 export type SupplierAction = {
   id: string;
-  case: "game_card" | "karton";
+  case: "game_card" | "karton" | "recovery";
   kind: string;
   title: string;
   detail: string;
@@ -112,6 +112,7 @@ export type SupplierAction = {
   dispatchThread?: string;
   owner?: string;
   policy?: string;
+  evidence?: Source | null;
   facts: string[];
   dueAt?: string;
   eta?: string;

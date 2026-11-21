@@ -50,7 +50,9 @@ FACTOR_LABELS = {"on_time": "on-time chance", "cover": "quantity covered", "pric
 CURRENCY = r"(EUR|USD|CNY|RMB|INR|PLN|KRW|€|\$|¥|zł|₩)"
 SYMBOLS = {"€": "EUR", "$": "USD", "¥": "CNY", "RMB": "CNY", "ZŁ": "PLN", "₩": "KRW"}
 NUMBER = r"(\d{1,3}(?:[ ,.]\d{3})+|\d+)(?:[.,](\d{1,2}))?"
-PRICE_RES = (re.compile(CURRENCY + r"\s*" + NUMBER, re.I), re.compile(NUMBER + r"\s*" + CURRENCY, re.I))
+# Keep a currency prefix on a new line from attaching to the previous ETA's offset.
+PRICE_RES = (re.compile(CURRENCY + r"[^\S\r\n]*" + NUMBER, re.I),
+             re.compile(NUMBER + r"[^\S\r\n]*" + CURRENCY, re.I))
 QTY_RES = (
     re.compile(r"(?:qty|quantity|available|ilość|수량|数量)\s*[:：=]?\s*(\d{1,3}(?:[,. ]\d{3})+|\d+)", re.I),
     re.compile(r"(\d{1,3}(?:[,. ]\d{3})+|\d+)\s*(?:units|pcs|pieces|szt|개|件|个)", re.I),
@@ -158,6 +160,8 @@ def parse_offer(body, attachments=()):
 def quotes_from_db(con, material=None):
     """Latest inbound reply per supplier thread, as quotes (attachments included)."""
     import sqlite3
+    from .recovery import hamburg_eta, superseded_threads
+
     con.row_factory = sqlite3.Row
     rows = con.execute("""
         SELECT c.id, c.supplier_id, c.supplier, c.address, c.language, c.material, c.qty,
@@ -173,6 +177,7 @@ def quotes_from_db(con, material=None):
         latest[(row["supplier_id"], row["material"])] = row
     rows = list(latest.values())
     quotes = []
+    superseded = superseded_threads(con)
     for row in rows:
         if material and row["material"] != material:
             continue
@@ -184,6 +189,10 @@ def quotes_from_db(con, material=None):
             attachments = []
             constraint = None
         offer = parse_offer(row["body"], attachments)
+        if row["id"] in superseded:
+            constraint = "no_launch_cover"
+        if reported := hamburg_eta(row["body"]):
+            offer["eta"] = reported
         reply_hours = None
         try:
             if row["out_time"] and row["in_time"]:
@@ -446,6 +455,10 @@ def draft_counter(quote, asks, units=None):
 
 def save_draft(con, quote, draft, deadline, units=None):
     """Store as a normal draft chase: it shows up for review and only a person can send it."""
+    from .recovery import claimed_threads
+
+    if quote.thread_id in claimed_threads(con):
+        return False
     from .supplier_loop import managed
 
     if managed(quote.supplier_id, quote.material):

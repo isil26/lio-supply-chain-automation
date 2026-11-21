@@ -222,6 +222,7 @@ def answer_body(language, reply, deadline):
 def answer_replies(con, *, save=False):
     """Draft an answer for every supplier reply that we have not answered yet."""
     import sqlite3
+    from .recovery import claimed_threads
     from .supplier_loop import managed
 
     con.row_factory = sqlite3.Row
@@ -232,9 +233,10 @@ def answer_replies(con, *, save=False):
           AND coalesce(json_extract(m.transport, '$.mode'), '') <> 'simulated'
     """).fetchall()
     out = []
+    owned = claimed_threads(con)
     for row in rows:
         row = dict(row)
-        if managed(row["supplier_id"], row["material"]):
+        if row["id"] in owned or managed(row["supplier_id"], row["material"]):
             continue  # the launch-critical loop (supplier_loop.py) answers these itself
         ref = hashlib.sha256(f"answer:{row['reply_id']}".encode()).hexdigest()[:10].upper()
         if con.execute("SELECT 1 FROM chases WHERE id=?", (ref,)).fetchone():
