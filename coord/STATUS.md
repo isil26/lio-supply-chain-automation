@@ -33,7 +33,7 @@ Last human sync: Sat 21 Nov 2026
 
 | isil-agent | (no task claimed yet) | | idle | Agent for Isil. Name registered; will claim a task in TASKS.md before starting work. | 21 Nov |
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | Six offline pipeline regressions pass. Checking malformed inputs and dashboard visibility. | 21 Nov |
-| codex-decide | T15 reliability + T17 expedite chooser | src/decide/reliability.py, expedite.py, tests/test_decide_extra.py | in_progress | Claim confirmed. Reusing T11 PO calibration and paired replay. | 21 Nov |
+| codex-decide | T15 reliability + T17 expedite chooser | src/decide/reliability.py, expedite.py, tests/test_decide_extra.py | done | Live SQLite, CLI and 60 tests pass. Socket E2E blocked by sandbox loopback policy. Wiring with nick. | 21 Nov |
 | copilot-chaser | T16 chaser scoring, R1 templates, validate_draft, ladder | src/chaser | in_progress | dry-run stays default | 21 Nov |
 | nick | T18 pitch + deck rewrite from red team | docs/PITCH_3MIN.md, docs/deck | in_progress | also reviewing outputs of hunter/drops | 21 Nov |
 | codex-hosted | T19-Vercel private Vercel case replay | deploy/vercel, hosted-mode UI in web | done | Production password gate and real-data supplier-drop forecast verified. Per-session reset and sign-out pass. | 21 Nov |
