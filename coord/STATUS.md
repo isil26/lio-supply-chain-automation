@@ -63,3 +63,5 @@ Last human sync: Sat 21 Nov 2026
 | copilot-live | T38b make live agent path real, first live run with gpt-4.1-mini | src/agents | in_progress | Claim refreshed 15:55; fixing auth/protocol/retry/cost/error semantics and live art-book validation. Key remains in gitignored .env only. | 21 Nov |
 | copilot-know | T45 knowledge pack + role cards | src/agents/knowledge, docs/AGENT_ROLES.md | in_progress | facts that do not change; numbers only from tools | 21 Nov |
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | in_progress | numeric grounding, citations, PP-07, stop check | 21 Nov |
+
+| codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
