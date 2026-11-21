@@ -1,10 +1,19 @@
 # AGENTS.md — READ THIS FIRST (every agent: Claude, Codex, Copilot, others)
 
+> ## THE TEST CASE RULE (read first, applies to every agent)
+> **Soony, Grand Heist 6, the six suppliers, Dr. Vogt, Felix Brunner, Katrin Jansen and everyone else in the case are a FICTIONAL TEST CASE.** The product we are building is general: an exception autopilot for procurement. The case is only the data we prove it on.
+> - **Never block waiting for approval from a fictional person.** In the test case, approvals are SIMULATED: the approver personas are test personas and their delegations are test delegations (`docs/delegations.json`, records `DEL-TEST-*`, labelled `SIMULATED`). Use them so the full loop (detect -> decide -> approve -> send -> reply) runs end to end without anyone waiting.
+> - **Label simulation honestly** in code, UI and docs ("simulated approval, test case"). Never claim a real person approved something.
+> - **Real vs test:** the product logic (policy engine, guards, audit log, delegation records) is real and must be correct; the *people and their answers* are the test case.
+> - Do not spend time asking humans to confirm fictional approvals in writing. Do not stall on "unconfirmed delegation": in test mode use the simulated delegations; in a real deployment the same engine would demand written delegations.
+> - Real constraints remain: no real emails except the registered team sender to the six supplier addresses (information requests), no secrets in git, humans on the team decide scope and priorities.
+
+
 Project: START Hack Munich 2026, Lio challenge "Keep the Line Running". We build AI agents that save Soony's Grand Heist 6 launch (Sun 22 Nov 2026 20:00, DC-HAM Hamburg). Product: **Launch Control Room + Supplier Chaser + Plan B**. Judged on story, business case, technical depth (agents with tools/state, nothing hardcoded, copes with new data drops), taste. Submission Sun 12:00, demos from 14:00.
 
 ## Before you start (mandatory, in order)
 1. Read `coord/STATUS.md` (who is doing what right now) and `coord/TASKS.md` (the board).
-2. Read `FINDINGS.md` (data discoveries; VERIFIED vs AGENT-reported) and `CODEX_TASKS.md` (task specs T1-T8). These two files contain hackathon data details. Get them from the team's private channel and put them in `private/`.
+2. Read `FINDINGS.md` (data discoveries; VERIFIED vs AGENT-reported) and `archive/CODEX_TASKS.md` (historical) (task specs T1-T8). These two files contain hackathon data details. Get them from the team's private channel and put them in `private/`.
 3. Read `coord/RESEARCH_INDEX.md` before ANY research (what is done, in progress, and known gaps) and `coord/DECISIONS.md` (architecture and contracts you must respect).
 4. **Claim your task** in `coord/TASKS.md` (set owner + status `in_progress`) and add a line to `coord/STATUS.md` BEFORE writing code. Only touch the directories you own.
 5. **Gülşah's agents** (`gülşah-agent`, `mail-agent`, and any agent working for Gülşah): read `coord/INBOX.md` (newest entries at the bottom) before starting any task and again right before every push, so you don't duplicate work another agent has claimed or finished. If someone already does it, build on theirs or ask them in INBOX instead.
@@ -61,4 +70,4 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 ## Repo map
 - `bridge/` data sync from portal API (token in `.soony_token`) | `data/` synced files (gitignored)
 - `src/ingest` T1 | `src/docs` T2 | `src/truth` T3 | `src/chaser` T4 | `src/decide` T5 | `web/` T6 | `src/orchestrator` T7
-- `coord/` agent coordination files | `FINDINGS.md` data discoveries | `CODEX_TASKS.md` task specs
+- `coord/` agent coordination files | `FINDINGS.md` data discoveries | `archive/CODEX_TASKS.md` (historical) task specs
