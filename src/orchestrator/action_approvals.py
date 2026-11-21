@@ -130,8 +130,8 @@ def approve(con, action, actor, note, *, demo):
         mark_action(con, action["id"], "reviewed", actor, note)
         return {"status": "reviewed"}
     verdict = _mail_decision(ev, ())
-    # A human click must remain a human decision when it covered a delegatable request.
-    if ev["mode"] == approvals.AUTO:
+    # Keep the original route in the approval audit. T83 receives the completed human decision.
+    if ev["mode"] in {approvals.AUTO, approvals.ESCALATE}:
         verdict["mode"] = approvals.ONE_CLICK
     return delivery.on_approve(con, action, actor, demo=demo, decision=verdict)
 
