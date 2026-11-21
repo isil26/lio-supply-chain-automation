@@ -26,6 +26,8 @@
 
 - On the combined integration commit, a fresh local replay with Tesseract English and no prebuilt OCR cache still showed both shipment alerts. The offer parsed, but a missing `handwritten_quantity` on the art-book receipt kept its stock at the recorded balance. The decision engine therefore omitted the recovery option. T9 has the repro in the inbox.
 
+- On main at `7c7a7f1`, the T9 OCR fallback and the T10 React client pass together. A fresh replay and a replay seeded with a pre-fix OCR cache both produce the art-book option. Build React, start `python3 -m src.orchestrator --demo` with the team snapshot, open the default route, then click **Process drop**. The **Secure art book stock** card appears with the server price.
+
 ## T5/T7/T8 — Decisions, integrated demo and submission (Codex)
 
 - `python3 -m src.orchestrator --demo` serves the live control room at `http://127.0.0.1:8787/live`. Use **Replay supplier drop**. `--online` polls the authenticated portal. `--once` prints the current snapshot. The API uses the T1 canonical store plus T2 document evidence.
