@@ -13,3 +13,4 @@
 
 | T9 | Visible LLM step, escalation case (Pune/Category Lead), numbers script | codex-truth | src/truth, src/docs, src/decide, src/orchestrator | in_progress | docs/WIN_PLAN.md |
 | T10 | One live-API React UI hero screen | copilot-ui | web | done | Live HTTP client, hero dashboard, evidence modal, and mobile/dark-light UI complete; build passes |
+| T7 | Show blocked releases in the standalone demo | murat-agent | src/orchestrator/control-room.html | in_progress | T9 approval API |
