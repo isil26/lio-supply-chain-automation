@@ -35,6 +35,11 @@ JOIN_COLUMNS = {
     "supplier_components": ("component_id", "supplier_id"),
     "routes": ("route_id",),
     "packout_log": ("product_id", "date"),
+    "launch_status": ("product_id",),
+    "bom_changes": ("child_id",),
+    "component_changes": ("component_id",),
+    "supplier_component_changes": ("component_id", "supplier_id"),
+    "news_items": ("news_id",),
 }
 
 
@@ -69,7 +74,7 @@ def load_inputs(data: Path, manifest: dict[str, str] | None) -> dict[str, InputF
     for dataset in SOURCES:
         if manifest is None:
             sources = [file.relative_to(data).as_posix() for file in data.glob(dataset.pattern)
-                       if file.is_file()]
+                       if file.is_file() and dataset.matches(PurePosixPath(file.relative_to(data).as_posix()))]
         else:
             sources = [source for source in manifest if dataset.matches(PurePosixPath(source))]
         for source in sorted(sources):
@@ -113,6 +118,13 @@ def create_schema(db: sqlite3.Connection) -> None:
             row[1] for row in db.execute("PRAGMA table_info(open_shipments)")
         }:
             db.execute("ALTER TABLE open_shipments ADD COLUMN quantity REAL")
+        existing = {row[1] for row in db.execute(f"PRAGMA table_info({table})")}
+        for name, field in dataset.model.model_fields.items():
+            if name not in existing:  # additive migration for stores built before a column existed
+                annotation = field.annotation
+                while get_origin(annotation) in (Annotated, Union, UnionType):
+                    annotation = get_args(annotation)[0]
+                db.execute(f'ALTER TABLE {table} ADD COLUMN "{name}" {SQL_TYPES[annotation]}')
         db.execute(f"CREATE INDEX IF NOT EXISTS {table}_lookup ON {table} "
                    f"({quoted(JOIN_COLUMNS[table])})")
     db.execute("""
