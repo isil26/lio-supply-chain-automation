@@ -1,4 +1,4 @@
-# 3-minute pitch + demo script (T8, owner: Claude) — numbers re-derived from data, assumptions marked [A]
+# 3-minute pitch + demo script (T8, owner: nick). ALL NUMBERS come from docs/NUMBERS.md (single source). Assumptions marked [A]
 
 ## Story in one line
 "SAP says Soony is fine. Our agents read the PDFs, scans and emails SAP never sees — and found the launch is short, hours before the trucks leave."
@@ -14,11 +14,11 @@
    |---|---|---|---|
    | Art book (CE) | 0 | ~5,900 | goods receipt booked 80,000 vs 8,000 ordered; delivery note has handwritten correction |
    | Statue (CE) | 0 | ~3,400 | 5,600-unit lot failed quality inspection (9/125 defects, limit 3) but booked unrestricted |
-   | Game card 128 GB | 34,800 | ~6,800 | counts what is really inbound by air/sea with realistic ETAs and short-ship evidence |
+   | Game card 128 GB | 34,800 | 6,800 | air lot flew 28,000 of 48,000 planned (supplier shipping advice); a second lot is held at the supplier dock pending EXW/forwarder. Realistic ETAs, not tracker dates |
    | Case | 32,000 | 0 | 350,000 already at Hamburg terminal; tracker wrongly says "in transit" |
    | Lid magnet | 100,800 | 0 | supplier fits magnets inside the box (contract/OC footer) — BOM line double-counts |
    Click any number -> source file, page, quote (provenance).
-2. **Forecast.** P(finish both editions by 20:00) from a Monte Carlo over 30-minute shift buckets: what runs out first, and when.
+2. **Forecast.** Monte Carlo over 30-minute shift buckets: today we expect about 614,650 of 640,000 Standard and 62,550 of 72,000 Collector's; game card 128 GB stops both lines first. State it as a scenario frequency, not a prediction.
 3. **New data drop live** (replay mode): a supplier express offer lands (art book overrun stock, 8,000 pcs, loaded within 4 h, ~9 h drive). Gauge and options update.
 4. **Agent acts.** Supplier Chaser drafts the request in the supplier's language, shows the approval gate (PP-07 limits: buyer < €50k, category lead < €500k, head of procurement < €2M). Human approves; mock supplier replies messily; agent parses and updates state.
 5. **Decision card with a price** for Dr. Vogt (e.g. art book hold, quote ~EUR 12.4k in current build) vs cost of a missed copy.
