@@ -26,18 +26,32 @@ class ReminderTest(unittest.TestCase):
         self.assertEqual(wait_hours("2026-11-18T00:00:00+00:00", DEADLINE), 12)
         self.assertEqual(wait_hours("2026-11-22T17:00:00+00:00", DEADLINE), 2)
 
-    def test_reminder_drafted_once_then_call(self):
+    def test_only_sent_reminders_advance_the_schedule_and_escalate_once(self):
         con = db()
         self.assertEqual(due_reminders(con, "2026-11-21T09:00:00+00:00"), [])  # too early
         first = due_reminders(con, "2026-11-21T20:00:00+00:00", save=True)
         self.assertEqual(first[0]["action"], "remind")
         status = con.execute("SELECT status, language FROM chases WHERE id=?", (first[0]["draft_id"],)).fetchone()
         self.assertEqual(tuple(status), ("draft", "pl"))
-        con.execute("UPDATE chases SET status='sent' WHERE id=?", (first[0]["draft_id"],))
-        second = due_reminders(con, "2026-11-21T20:00:00+00:00", save=True)
-        self.assertEqual(second[0]["reminders_so_far"], 1)
-        third = due_reminders(con, "2026-11-21T20:00:00+00:00", save=True)
-        self.assertEqual(third[0]["action"], "call")
+        self.assertEqual(due_reminders(con, "2026-11-21T20:01:00Z", save=True)[0]["draft_id"], first[0]["draft_id"])
+        self.assertEqual(con.execute("SELECT count(*) FROM chases WHERE status='draft'").fetchone()[0], 1)
+
+        def confirm_sent(item, when):
+            with con:
+                con.execute("UPDATE chases SET status='awaiting reply' WHERE id=?", (item["draft_id"],))
+                con.execute("""INSERT INTO messages(chase_id,side,sender,body,time,transport)
+                            VALUES(?,'out','us','reminder',?,'{"mode":"smtp","status":"smtp_accepted"}')""",
+                            (item["draft_id"], when))
+
+        confirm_sent(first[0], "2026-11-21T20:10:00Z")
+        self.assertEqual(due_reminders(con, "2026-11-21T20:11:00Z", save=True), [])
+        second, = due_reminders(con, "2026-11-22T08:00:00Z", save=True)
+        self.assertEqual((second["reminders_so_far"], second["action"]), (1, "remind"))
+        confirm_sent(second, "2026-11-22T08:10:00Z")
+        for _ in range(2):
+            final, = due_reminders(con, "2026-11-22T15:00:00Z", save=True)
+            self.assertEqual(final["action"], "review")
+        self.assertEqual(con.execute("SELECT count(*) FROM activity WHERE action LIKE '%alternative supply%'").fetchone()[0], 1)
 
     def test_reply_stops_reminders(self):
         con = db()
@@ -124,9 +138,9 @@ class AnswerRepliesTest(unittest.TestCase):
 
     def test_replies_with_unchanged_shipping_evidence_do_not_repeat_the_same_question(self):
         self.thread("AAA", "SUP-0018", "CMP-GAM-010", "en",
-                    "We are checking the package details for NHMU8536079.")
+                    "This enquiry concerns package details for NHMU8536079.")
         self.assertEqual(len(answer_replies(self.con, save=True)), 1)
         self.con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES(?,?,?,?,?,?)",
-                         ("AAA", "duplicate-facts", "in", "supplier", "For NHMU8536079, package details are still being checked.",
+                         ("AAA", "duplicate-facts", "in", "supplier", "For NHMU8536079, the enquiry concerns package details.",
                           "2026-11-21T10:00:00+00:00"))
         self.assertEqual(answer_replies(self.con, save=True), [])

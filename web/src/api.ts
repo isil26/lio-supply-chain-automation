@@ -90,6 +90,8 @@ export type SupplierMessage = {
 
 export type SupplierThread = {
   id: string;
+  mailPlan?: { state: "approval" | "waiting" | "unavailable" | "review"; owner: string; nextAction: string;
+    evidence: string; replyId: number; sourceThread: string; simulated: boolean; checkAt?: string };
   supplier: string;
   subject: string;
   status: string;
