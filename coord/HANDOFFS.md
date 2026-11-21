@@ -1,5 +1,12 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T40 — Multi-agent team (copilot-agents)
+
+- Added `src/agents/team.py` and `src/agents/prompts.py`: Triage delegates at most 3 rounds to Analyst, Verifier, Planner and Chaser; each specialist has a closed role whitelist and the existing runtime/schema gates remain enforced.
+- The Verifier rejects claims without matching source quotes. Planner options persist as pending approval; Chaser can draft and escalate but `send_email` remains approval-gated and dry-run-only.
+- Run fake scenarios with `python3 -m src.agents.team --scenario art_book --fake`, or replace `--fake` with live HTTP/Anthropic configuration.
+- Verified 13 focused agent/runtime/tool/supplier tests; all three fake CLI scenarios run. Live key validation was not available.
+
 ## T33 — Shared LLM client (copilot-llm)
 
 - Added `src/llm/client.py` for Ollama and OpenAI-compatible chat-completions endpoints, legacy `SOONY_LOCAL_*` compatibility, JSON-schema validation, source-quote validation, SHA-256 disk cache, strict timeout, per-cycle budget and `store/llm_log.jsonl` cost/latency events.
