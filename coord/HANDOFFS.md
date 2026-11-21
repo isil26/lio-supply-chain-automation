@@ -24,6 +24,8 @@
 - Use the decision ID returned by the API. A review request persists the review status. Use the returned thread ID for send. An empty send request returns 409. A confirmed request with `{"confirm":true}` uses the simulated transport in replay mode. Post a simulated reply to `/api/threads/{id}/demo-reply` with `{"text":"..."}`.
 - Replayed all five actual supplier PDFs against the kickoff baseline. The ingestion cycle captured all five additions and a repeat cycle processed zero changes. Commit `0f53e76` on main surfaces the new exceptions and a recovery option in the existing dashboard detail field. The T6 React walkthrough remains open.
 
+- On the combined integration commit, a fresh local replay with Tesseract English and no prebuilt OCR cache still showed both shipment alerts. The offer parsed, but a missing `handwritten_quantity` on the art-book receipt kept its stock at the recorded balance. The decision engine therefore omitted the recovery option. T9 has the repro in the inbox.
+
 ## T5/T7/T8 — Decisions, integrated demo and submission (Codex)
 
 - `python3 -m src.orchestrator --demo` serves the live control room at `http://127.0.0.1:8787/live`. Use **Replay supplier drop**. `--online` polls the authenticated portal. `--once` prints the current snapshot. The API uses the T1 canonical store plus T2 document evidence.
