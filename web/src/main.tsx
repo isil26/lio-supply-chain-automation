@@ -329,7 +329,10 @@ function App() {
           <strong className="strip-number">{onTrack ? "On track" : formatNumber(totalShort)}</strong>
           <span>{onTrack ? "for Sunday 20:00" : "copies short on Sunday"}</span>
         </div>
-        {!onTrack && shortEur != null && <div className="strip-item"><strong>≈ {euro(shortEur)}</strong><span>at stake{useMiss ? "" : " (standard cost)"}</span></div>}
+        {!onTrack && shortEur != null && <div className="strip-item"><strong>≈ {euro(shortEur)}</strong>
+          <span>at stake{!useMiss ? " (standard cost)" : data.readiness.some((row) => row.missCostConfirmed === false)
+            ? " (Standard estimate unconfirmed)" : ""}</span>
+        </div>}
         {editions.map((item) => <div className="strip-item" key={item.edition}>
           <strong>{item.short ? `−${formatNumber(item.short)}` : "✓"}</strong>
           <span>{item.edition === "CE" ? "Collector's" : "Standard"}</span>

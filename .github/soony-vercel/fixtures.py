@@ -46,8 +46,6 @@ def stage(source, fixture_dir):
         '{example ? "Example with sample replies." : "From the latest supplier replies."} In live mode the mail agent sends these emails by itself, only to the case suppliers.',
         '{example ? "Fictional suppliers illustrate how availability and delivery affect the ranking." : "From the latest supplier replies."}',
     )
-    replace(source / "web/src/main.tsx", '"Standard"} copy`).join',
-            '"Standard"} copy${r.missCostConfirmed === false ? " (unconfirmed)" : ""}`).join')
 
 
 def case_markers(node):
@@ -77,7 +75,7 @@ def audit(repo, output):
         for marker in set(case_markers(raw)) - safe:
             if marker in bundle or json.dumps(marker, ensure_ascii=False)[1:-1] in bundle:
                 raise SystemExit("A case-derived supplier fixture value appears in the public bundle.")
-    for marker in ("Fictional offers for this example", "(unconfirmed)"):
+    for marker in ("Fictional offers for this example", "Standard estimate unconfirmed"):
         if marker not in bundle:
             raise SystemExit("The hosted fixture labels or cost note are missing.")
     allowed = {"app.html", "login.html", "index.cjs", "live.cjs", ".vc-config.json", "replay.enc"}
