@@ -492,3 +492,7 @@ At 20:24:41 CET Karton replied that it would now approach Warta for pickup and D
 
 - The public asset audit rejected a concurrent fixture change that included case-derived supplier values. The hosted package uses the audited fictional examples. The private live app keeps its names and countries, and the hosted app keeps the outdated Best supplier card hidden. [Build that blocked the public bundle](https://github.com/isil26/lio-supply-chain-automation/actions/runs/44943496722)
 - The action-first status strip carries the Standard estimate caveat directly. The spending cap can narrow an existing written delegation. The offline rehearsal verifies that setting the cap alone approves zero actions.
+
+## T12 — Replay delegation regression (codex-e2e)
+
+The replay cap correctly approves the information-only Boise Semi game-card stock enquiry under simulated delegation DEL-TEST-001. The regression asserts the exact eligible option, the persisted approval and simulation label. The test keeps simulated delegations active in a temporary copy so the case dates do not turn the approval check into an empty assertion. The existing dock-slot one-click and supplier dry-run checks still run. The replay passed against real handlers in-process. The managed sandbox denied the loopback socket used by the standard demo check.
