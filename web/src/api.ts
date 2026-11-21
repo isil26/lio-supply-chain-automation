@@ -23,6 +23,8 @@ export type Readiness = {
   firstStop?: string;
   status: string;
   tone: "amber" | "red";
+  productId?: string;
+  stdCostEur?: number | null;
 };
 
 export type Risk = {
@@ -172,6 +174,11 @@ export type DashboardData = {
   model?: string;
   dataQuality?: { documents?: number; extractionErrors?: number; [key: string]: unknown };
   network?: Network;
+  autoSend?: boolean;
+  inboundTimeline?: {
+    deadline: string;
+    lots: { id: string; reference?: string; material: string; label?: string; quantity: number; mode?: string; earliest: string; held: boolean; lagHours?: [number, number, number] }[];
+  };
 };
 
 type SourceReview = { file: string; reason: string };

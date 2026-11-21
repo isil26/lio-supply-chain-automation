@@ -83,7 +83,7 @@ function curve(from: Node, to: Node) {
 const reducedMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const STEP_MS = 1100;
 
-export function AgentGraph({ recording, onEvidence }: { recording?: RecordedAgentRun | null; onEvidence: (source: Source) => void }) {
+export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: RecordedAgentRun | null; onEvidence: (source: Source) => void; autoSend?: boolean }) {
   const recorded = hostedReplayBuild || isStaticMode();
   const [run, setRun] = useState<AgentRun | null>(null);
   const [liveTrace, setTrace] = useState<AgentTraceData>({ steps: [], approvals_pending: [] });
@@ -239,7 +239,7 @@ export function AgentGraph({ recording, onEvidence }: { recording?: RecordedAgen
         {waitingForYou && picked === null && <div className="ag-you">
           <strong>Your turn</strong>
           {hostedReplayBuild ? <span>{trace.approvals_pending[0]?.title} was pending in the recording.</span>
-            : <span>{done.has("chaser") ? "The supplier email is waiting for your OK." : `${trace.approvals_pending[0]?.title ?? "A Plan B is waiting for your OK"}.`} Nothing is sent without you.</span>}
+            : <span>{done.has("chaser") ? "The supplier email is waiting for your OK." : `${trace.approvals_pending[0]?.title ?? "A Plan B is waiting for your OK"}.`} {autoSend ? "Routine supplier emails go out on their own. Anything that costs money waits for you." : "Nothing is sent without you."}</span>}
         </div>}
         <div className="ag-actions">
           {picked !== null && <button className="ag-btn" onClick={() => setPicked(null)}>Back to latest</button>}

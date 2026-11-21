@@ -13,7 +13,8 @@ const CATALOG: Agent[] = [
   { name: "Decision Copilot", title: "Planner", does: "Lists the fixes, puts a price on each and checks who has to sign.", icon: "scale" },
   { name: "Supplier Chaser", title: "Messenger", does: "Writes to each supplier in their own language and reads the replies.", icon: "mail" },
 ];
-const YOU: Agent = { name: "You", title: "Approver", does: "Nothing is sent or bought until a person approves it.", icon: "person" };
+const youAgent = (autoSend?: boolean): Agent => ({ name: "You", title: "Approver", icon: "person",
+  does: autoSend ? "Routine supplier emails go out on their own. Anything that costs money waits for your OK." : "Nothing is sent or bought until a person approves it." });
 
 const ICONS = {
   inbox: <><path d="M4 13h4l1.5 3h5L16 13h4"/><path d="M5 13 7 5h10l2 8v6H5z"/></>,
@@ -32,15 +33,16 @@ function Glyph({ name }: { name: keyof typeof ICONS }) {
 const short = (text: string) => { const first = text.split(/(?<=\.)\s|\s·\s/)[0]; return first.length > 120 ? `${first.slice(0, 117)}…` : first; };
 const tidy = (text: string) => text.replace(/soony\/|suppliers\/SUP-\d+_[^/]+\//g, "").replace(/_/g, " ");
 
-export function BehindScenes({ activity, recording, onClose, onEvidence }: {
-  activity: Activity[]; recording?: RecordedAgentRun | null; onClose: () => void; onEvidence: (s: Source) => void;
+export function BehindScenes({ activity, recording, onClose, onEvidence, autoSend }: {
+  activity: Activity[]; recording?: RecordedAgentRun | null; onClose: () => void; onEvidence: (s: Source) => void; autoSend?: boolean;
 }) {
+  const YOU = useMemo(() => youAgent(autoSend), [autoSend]);
   const agents = useMemo(() => {
     const seen = new Set(CATALOG.map((a) => a.name));
     const extra = [...new Set(activity.map((a) => a.agent))].filter((n) => !seen.has(n))
       .map((name): Agent => ({ name, title: "Agent", does: "Reports its work to the activity log.", icon: "agent" }));
     return [...CATALOG.filter((a) => activity.some((x) => x.agent === a.name)), ...extra, YOU];
-  }, [activity]);
+  }, [activity, YOU]);
 
   const byAgent = useMemo(() => {
     const map = new Map<string, Activity[]>();

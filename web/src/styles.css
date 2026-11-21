@@ -275,3 +275,30 @@ button:disabled { opacity: .5; cursor: default; }
 .hero-save a:hover { text-decoration: underline; }
 .price-unit { font-size: 20px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
 .part-name { display: flex; flex-direction: column; } .part-name small { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+/* Euro view */
+.hero-eur { margin: 6px 0 0; font-size: 17px; color: var(--text); }
+.hero-eur span { color: var(--muted); font-size: 14px; }
+.saved-eur { margin: 2px 0 6px; color: var(--muted); font-size: 14px; }
+
+/* Arrival timeline */
+.timeline-card { margin-bottom: 20px; }
+.tl-headline { margin: 10px 0 0; font-size: 16px; line-height: 1.5; color: var(--muted); }
+.tl-headline strong { color: var(--text); font-weight: 600; }
+.tl-track { position: relative; height: 64px; margin: 22px 0 6px; }
+.tl-track::before { content: ""; position: absolute; left: 0; right: 0; top: 30px; height: 4px; border-radius: 4px; background: var(--track); }
+.tl-tick { position: absolute; top: 44px; width: 1px; height: 6px; background: var(--line); }
+.tl-tick i { position: absolute; top: 8px; left: 0; transform: translateX(-50%); font-style: normal; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.tl-range { position: absolute; top: 28px; height: 8px; border-radius: 6px; background: var(--expected); opacity: .55; }
+.tl-ok { position: absolute; top: 28px; height: 8px; border-radius: 6px; background: var(--accent); }
+.tl-land { position: absolute; top: 6px; transform: translateX(-50%); font-size: 16px; color: var(--text); }
+.tl-land b { font-weight: 400; }
+.tl-typical { position: absolute; top: 22px; width: 3px; height: 20px; border-radius: 2px; background: var(--text); transform: translateX(-1px); }
+.tl-cutoff { position: absolute; top: 0; bottom: 18px; width: 0; border-left: 2px dashed var(--text); }
+.tl-cutoff em { position: absolute; top: -4px; left: 6px; font-style: normal; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.tl-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; margin-top: 18px; color: var(--muted); font-size: 13px; }
+.tl-legend .k { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.k.ok { background: var(--accent); } .k.late { background: var(--expected); opacity: .55; }
+.tl-chance { margin-left: auto; color: var(--text); }
+.tl-later { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+@media (max-width: 600px) { .tl-chance { margin-left: 0; } .tl-cutoff em { left: auto; right: 6px; } }
