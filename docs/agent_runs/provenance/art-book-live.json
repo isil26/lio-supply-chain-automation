@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "scenario": "art_book",
+  "coverage": "summary_only",
+  "run_id": null,
+  "steps": [],
+  "proposed_calls": [],
+  "verified_handoffs": [],
+  "approvals_pending": [],
+  "timing": {
+    "started_at": null,
+    "finished_at": null,
+    "duration_ms": null
+  },
+  "verified_event_count": 0,
+  "reported_summary": {
+    "source": "published_summary",
+    "mode": "live",
+    "model": "gpt-4.1-mini",
+    "aggregate_usage": {
+      "cost_usd": 0.057892,
+      "input_tokens": 130117,
+      "output_tokens": 3653,
+      "attribution": "summary_reported_database_scope_unverified"
+    },
+    "roles": [
+      {
+        "role": "triage",
+        "reported_status": "completed"
+      },
+      {
+        "role": "analyst",
+        "reported_status": "completed"
+      },
+      {
+        "role": "verifier",
+        "reported_status": "completed"
+      },
+      {
+        "role": "planner",
+        "reported_status": "completed"
+      },
+      {
+        "role": "chaser",
+        "reported_status": "completed"
+      }
+    ],
+    "delegation_targets": [
+      "analyst",
+      "verifier",
+      "planner",
+      "chaser"
+    ],
+    "pending_approvals_reported": true,
+    "supplier_email_sent_reported": false
+  },
+  "unavailable": [
+    "original_run_identifier_and_trace_boundaries",
+    "provider_tool_request_and_call_identifiers",
+    "correlated_tool_execution_results_and_statuses",
+    "ordered_handoff_records_and_timestamps",
+    "run_and_per_event_timing",
+    "per_call_usage_and_cost",
+    "independent_approval_or_outbound_audit"
+  ],
+  "sources": [
+    {
+      "kind": "published_summary",
+      "path": "docs/agent_runs/art_book_live.json",
+      "revision": "706e77274cedff065a68f94984ea9000f7f553fc",
+      "sha256": "5031ccb4ad78f5f242a43ad4d1b7e90db58cd9bc3e39047b14f075392a1a3e9d"
+    },
+    {
+      "kind": "published_summary_notes",
+      "path": "docs/agent_runs/README.md",
+      "revision": "706e77274cedff065a68f94984ea9000f7f553fc",
+      "sha256": "a1466958318b333faf8ae47e0fed935ad8a73b4ebba0de4b3be3674351e68371"
+    },
+    {
+      "kind": "derived_display_snapshot",
+      "path": "web/public/snapshot/agent_run.json",
+      "revision": "f759e6711fe6c367b07da7631bf1a1fa789e718d",
+      "sha256": "4cac98a1998377a3e95e2d2b7b5a341e94c8b9b581c3cc72255be6bb0c888690"
+    },
+    {
+      "kind": "display_exporter",
+      "path": "scripts/export_agent_run.py",
+      "revision": "f759e6711fe6c367b07da7631bf1a1fa789e718d",
+      "sha256": "4708c1eee4451cfa21464ce52d89677a734759753f65e2219d1963bd0d4e0bc3"
+    }
+  ]
+}

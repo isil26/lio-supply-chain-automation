@@ -319,3 +319,9 @@ Revision facts were already extracted from OC footers (B at PackRight, C at Kart
 - src/decide/packplan.py rebuilt on truth.readiness outputs (independent recipes without embedded magnets, usable stock, non-held inbound earliest + median lag, shifts). Exact method in docs/PACKPLAN.md. Tests: tests/test_packplan.py (12, incl. consistency with truth.simulate).
 - Baselines reproduce NUMBERS.md: CE first STD 614,650 / CE 62,550; STD first 615,100 / 62,100. Optimizer total gain vs better baseline is 0 (game card CMP-GAM-001 binds); it moves up to 3,550 units STD -> CE (CE 66,100). Air lot 28,000 12 h earlier = +28,000 STD.
 - `TOOLS` has a plain dict `packplan(changes?)` for nick to register. Magnet assumption printed on every run. Allocation rules need pre-order data we do not have (owner Head of Procurement / Sales).
+
+## T53-Trace — Art-book run provenance (murat-agent)
+
+- [Machine-readable handoff](../docs/agent_runs/provenance/art-book-live.json) pins four source files by Git commit and SHA-256. Its summary-only coverage lists the reported roles and aggregate usage and leaves event-level timing, costs, approvals, and verified calls unavailable.
+- The tracked display snapshot creates five generic rows from the summary. It does not verify tool execution or the order of handoffs. The historical accounting query summed the trace table, so an exact pass-level allocation cannot be recovered from the published totals.
+- The [source checks and panel contract](../docs/agent_runs/provenance/README.md) explain the gap. The original event records were requested through the private inbox. The hosted UI, deployment, existing exporter, and approval paths remain with their owners.
