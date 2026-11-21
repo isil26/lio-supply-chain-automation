@@ -120,6 +120,8 @@ function App() {
   const [syncBusy, setSyncBusy] = useState(false);
   const [replyBusy, setReplyBusy] = useState(false);
   const [meta, setMeta] = useState<{ exported?: string; mode?: string }>({});
+  // Jury site (recording): Approve, Review and the auto-approve slider work in this browser only. Nothing is sent.
+  const [practice, setPractice] = useState<{ decisions: Record<string, string>; limit: number }>({ decisions: {}, limit: 0 });
 
   const refresh = async () => {
     try {
@@ -340,12 +342,30 @@ function App() {
         </div>)}
       </section>
 
-      <ActionList options={(data.options ?? []).filter((option) => option.status !== "blocked" || option.approvalMode)}
-        reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={hostedReplayBuild}
-        costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
-        onDecide={(id, review) => void decide(id, review)} onEvidence={setSource}
-        autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []} autoBy={data.autoApprove?.setBy}
-        onAutoLimit={isStaticMode() ? undefined : (limit) => void setAutoApprove(limit).then(refresh).catch((err) => setError(err instanceof Error ? err.message : "Auto-approve could not be set"))}/>
+      {(() => {
+        const listed = (data.options ?? []).filter((option) => option.status !== "blocked" || option.approvalMode);
+        if (!hostedReplayBuild) return <ActionList options={listed}
+          reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={false}
+          costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
+          onDecide={(id, review) => void decide(id, review)} onEvidence={setSource}
+          autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []} autoBy={data.autoApprove?.setBy}
+          onAutoLimit={isStaticMode() ? undefined : (limit) => void setAutoApprove(limit).then(refresh).catch((err) => setError(err instanceof Error ? err.message : "Auto-approve could not be set"))}/>;
+        // Practice mode: same rules as the live slider (routine, priced, not human-only), applied in this browser.
+        const routine = (option: typeof listed[number]) => {
+          const mode = (option.approvalMode?.mode ?? "ONE_CLICK").toUpperCase();
+          return mode === "AUTO" || mode === "ONE_CLICK";
+        };
+        const autoIds = listed.filter((option) => (option.status ?? "pending") === "pending" && !practice.decisions[option.id]
+          && routine(option) && practice.limit > 0 && option.price != null && option.price <= practice.limit).map((option) => option.id);
+        const options = listed.map((option) => practice.decisions[option.id] ? { ...option, status: practice.decisions[option.id] }
+          : autoIds.includes(option.id) ? { ...option, status: "approved" } : option);
+        return <ActionList options={options} reviews={data.recoveryApprovals} busy={false} readOnly={false}
+          costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
+          onDecide={(id, review) => setPractice((value) => ({ ...value, decisions: { ...value.decisions, [id]: review ? "review" : "approved" } }))}
+          onEvidence={setSource} autoLimit={practice.limit} autoIds={autoIds} autoBy={data.autoApprove?.setBy}
+          onAutoLimit={(limit) => setPractice((value) => ({ ...value, limit }))}
+          practiceNote="Practice mode: clicks here only change your screen. Nothing is sent or bought."/>;
+      })()}
 
       {data.inboundTimeline && <ArrivalTimeline timeline={data.inboundTimeline}/>}
 
@@ -381,9 +401,6 @@ function App() {
 
       <details className="card agents" open={threadsOpen} onToggle={(event) => setThreadsOpen(event.currentTarget.open)}>
         <summary><h3>Agents</h3><span className="muted">{drafts} emails ready · {reviews} files to check</span></summary>
-        {hostedReplayBuild && <div className="actions">
-          <a href="https://soony-manti-live.vercel.app/?mail=1" className="ghost-button">Open verified supplier mailbox</a>
-        </div>}
         {data.mailHistory && <div className="actions">
           <button className="ghost-button" aria-pressed={!mailView} onClick={() => openMail(false)}>{data.sync?.mailMode === "live" ? "Live supplier threads" : "Demo threads"}</button>
           <button className="ghost-button" aria-pressed={mailView} onClick={() => openMail(true)}>Verified team mailbox</button>

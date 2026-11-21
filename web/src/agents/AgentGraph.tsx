@@ -195,8 +195,9 @@ export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: Re
 
   const focusIndex = picked ?? steps.length - 1;
   const focus = focusIndex >= 0 ? steps[focusIndex] : undefined;
-  const status = running ? "Live" : playing ? (recorded ? "Replaying a recorded run" : "Playing the last run")
-    : steps.length ? (hostedReplayBuild ? "Recording replayed" : "Run finished")
+  const illustrated = hostedReplayBuild && !!recording && !recording.events?.length;
+  const status = running ? "Live" : playing ? (illustrated ? "Illustration of the recorded roles" : recorded ? "Replaying a recorded run" : "Playing the last run")
+    : steps.length ? (illustrated ? "Illustration of the recorded roles" : hostedReplayBuild ? "Recording replayed" : "Run finished")
     : hostedReplayBuild ? (recording ? "Reported run summary" : "Recording unavailable") : "Waiting for a new file";
   const replay = () => { setPicked(null); setShown(0); };
   const pickNode = (id: NodeId) => {
@@ -256,7 +257,7 @@ export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: Re
 
       <aside className="ag-side" aria-live="polite">
         {focus ? <>
-          <span className="ag-kicker">{focus.agent} · step {focusIndex + 1} of {trace.steps.length}</span>
+          <span className="ag-kicker">{focus.agent} · {illustrated ? "role" : "step"} {focusIndex + 1} of {trace.steps.length}</span>
           <p className="ag-text">{sentence(focus)}</p>
           {(focus.citations ?? []).length > 0 && <div className="ag-chips">
             {(focus.citations ?? []).slice(0, 2).map((citation, index) => <button key={`${citation.file}-${index}`} className="ag-chip" onClick={() => onEvidence(citation)} title={citation.quote}>📄 {citation.file?.split("/").pop() ?? "Evidence"}</button>)}
@@ -266,7 +267,7 @@ export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: Re
           : "When a new supplier file arrives, the agents start here."}</p>}
         {waitingForYou && picked === null && <div className="ag-you">
           <strong>Your turn</strong>
-          {hostedReplayBuild ? <span>{trace.approvals_pending[0]?.title} was pending in the recording.</span>
+          {hostedReplayBuild ? <span>{illustrated ? "The recorded run reported an approval waiting for a person." : `${trace.approvals_pending[0]?.title} was pending in the recording.`}</span>
             : <span>{done.has("chaser") ? "The supplier email is waiting for your OK." : `${trace.approvals_pending[0]?.title ?? "A Plan B is waiting for your OK"}.`} {autoSend ? "Routine supplier emails go out on their own. Anything that costs money waits for you." : "Nothing is sent without you."}</span>}
         </div>}
         <div className="ag-actions">
@@ -277,5 +278,6 @@ export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: Re
     </div>
     <p className="ag-legend"><span><i className="done"/>done</span><span><i className="now"/>happening now</span><span><i className="idle"/>possible path</span>
       {!hostedReplayBuild && finished && run?.harness?.ok !== false && <span className="ag-check">✓ Every number checked against a document</span>}</p>
+    {illustrated && <p className="ag-note">The recording lists which agents ran, not each step, so this order is an illustration.</p>}
   </section>;
 }

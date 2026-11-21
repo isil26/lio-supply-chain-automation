@@ -350,5 +350,6 @@ button:disabled { opacity: .5; cursor: default; }
 .ac-auto { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
 .ac-auto input { width: 160px; accent-color: var(--accent); }
 .ac-auto b { min-width: 52px; color: var(--text); font-variant-numeric: tabular-nums; }
+.ac-practice { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--text); font-size: 13px; }
 @media (max-width: 760px) { .ac-head { flex-wrap: wrap; } .ac-auto input { width: 120px; } }
 .ac-status.auto { color: var(--accent); background: var(--accent-soft); }

@@ -67,3 +67,4 @@
   .ag-body { grid-template-columns: 1fr; }
   .ag-check { margin-left: 0; }
 }
+.ag-note { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
