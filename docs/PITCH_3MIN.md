@@ -1,12 +1,11 @@
 # 3-minute pitch + demo script (T8, owner: nick). ALL NUMBERS come from docs/NUMBERS.md (single source). Assumptions marked [A]
 
 ## Story in one line
-"SAP says Soony is fine. Our agents read the PDFs, scans and emails SAP never sees — and found the launch is short, hours before the trucks leave."
+"SAP shows the Collector's Edition fine. It isn't: an 80,000-vs-8,000 art-book booking and a failed statue lot are invisible to it. Our agents read the paper SAP never sees."
 
-## 0:00-0:30 Problem (hook)
-- Sun 22 Nov 20:00, 640,000 Standard + 72,000 numbered Collector's Editions, one DC, 6 suppliers in 5 countries, no plan B site.
-- Procurement's words: "We find out at the dock." Half the truth is in PDFs, paper scans, Polish/Korean/Chinese emails.
-- Sentence to land: SAP knows POs and nothing else.
+## 0:00-0:30 Problem (hook), spoken (about 80 words)
+"Sunday, 8 p.m. Soony's Grand Heist launches: 640,000 standard boxes, 72,000 numbered Collector's Editions, one warehouse in Hamburg. Procurement told us: 'We find out at the dock.' SAP shows the Collector's Edition fine. It isn't. A goods receipt booked 80,000 art books where 8,000 were ordered, and a handwritten correction on the delivery note says so. A statue lot failed inspection but still counts as stock. We read the paper SAP never sees. Watch."
+(Do NOT say "SAP says Soony is fine": SAP already shows game card, case and magnet gaps; what it hides is art book and statues. Game card 128 GB is the first line stop.)
 
 ## 0:30-2:15 Live demo (one storyline, start the demo early)
 1. **SAP view vs reality** (control room). Naive BOM netting on SAP stock says only game cards, cases and lid magnets look short. Our system says different (verified independently from raw CSVs):
