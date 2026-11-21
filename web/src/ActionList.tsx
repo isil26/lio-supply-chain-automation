@@ -40,14 +40,8 @@ function badge(mode: Mode) {
   return { cls: "", text: "", hint: mode?.reason };
 }
 
-// "Are you sure?" text: what this click will and will not do (Gülşah, 21 Nov).
-function consequence(option: Approval | undefined) {
-  if (!option) return "";
-  const cost = option.price ? ` Cost on the card: ${euro(option.price)}.` : "";
-  if (option.request_only) return `This records the team's go-ahead. It does not email anyone or place an order by itself. Still needed: ${option.threshold || option.owner}.${cost}`;
-  return `This records the team's approval. ${option.owner ? `${option.owner} acts on it next.` : ""}${cost}`;
-}
-const sensitive = (option: Approval | undefined) => !!option && ((option.price ?? 0) > 0 || !!option.supplier_id || (option.approvalMode?.mode ?? "").toUpperCase() !== "AUTO");
+// The person approving is the decision-maker (Gülşah, 22 Nov): the confirm box shows the message their click sends.
+const costLine = (option: Approval | undefined) => option?.price ? `Cost: ${euro(option.price)}.` : "";
 // Who is approving: the signed-in user once the login exists ("soony-user"), until then the name given in Offers.
 const currentUser = () => { try { return localStorage.getItem("soony-user") || localStorage.getItem("soony-reviewer") || undefined; } catch { return undefined; } };
 
@@ -156,35 +150,33 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
           <div className="ac-buttons">
             {decided ? <span className={`ac-status ${automatic ? "auto" : ""}`}>{decisionLabel}</span>
               : !readOnly && card.option && card.mode?.mode !== "NEVER" && <button className="primary-button small" disabled={busy}
-                  onClick={() => sensitive(card.option) || onPreview ? ask(card.id) : onDecide(card.id, false, currentUser())}>Approve</button>}
+                  onClick={() => onPreview ? ask(card.id) : onDecide(card.id, false, currentUser())}>Approve</button>}
             {!decided && !readOnly && card.option && <button className="ghost-button small" disabled={busy} onClick={() => onDecide(card.id, true)}>Review</button>}
             <button className="link-button" onClick={() => setOpen(open === card.id ? "" : card.id)} aria-expanded={open === card.id}>{open === card.id ? "Less" : "Why"}</button>
           </div>
           {confirming === card.id && !decided && <div className="ac-confirm" role="alertdialog" aria-label={`Confirm: ${card.title}`}>
             <strong>Are you sure?</strong>
-            {preview === "loading" ? <p className="muted">Loading the email this sends…</p>
+            {preview === "loading" ? <p className="muted">Loading the message this sends…</p>
               : preview ? <>
-                <p>{preview.note}</p>
-                {preview.mode !== "none" && <Email mail={preview} label={preview.mode === "send" ? "This email goes out when you approve" : "The ongoing email with the supplier"}/>}
-                <p className="muted">{preview.mode === "send"
-                  ? `It asks for a hold and a quote; it is not an order.${card.option?.threshold ? ` Before any PO: ${card.option.threshold}` : ""}`
-                  : consequence(card.option)}</p>
-              </> : <p>{consequence(card.option)}</p>}
+                <p>{preview.note} {costLine(card.option)}</p>
+                {preview.mode !== "none" && <Email mail={preview.mode === "internal" ? { ...preview, to: `${preview.recipientName} (via ${preview.to})` } : preview}
+                  label={preview.mode === "conversation" ? "The ongoing email with the supplier" : "This message goes out when you approve"}/>}
+              </> : <p>{costLine(card.option)}</p>}
             <div className="ac-confirm-buttons">
               <button className="primary-button small" disabled={busy || preview === "loading"} autoFocus
                 onClick={() => { setConfirming(""); onDecide(card.id, false, currentUser()); }}>
-                {preview && preview !== "loading" && preview.mode === "send" ? "Yes, approve and send" : "Yes, approve"}</button>
+                {preview && preview !== "loading" && (preview.mode === "send" || preview.mode === "internal") ? "Yes, approve and send" : "Yes, approve"}</button>
               <button className="ghost-button small" onClick={() => setConfirming("")}>Cancel</button>
             </div>
           </div>}
           {decided && <div className="ac-effect" aria-live="polite">
             <p className="ac-effect-head">What happened</p>
             <ul>{(card.effect?.lines ?? [automatic
-              ? "Approved automatically under a written delegation. Nothing was ordered by this step."
-              : card.status === "review" ? "Sent back for review. Nothing was sent or ordered."
-              : "Approved earlier. The click recorded the team's go-ahead; it did not email anyone or place an order."])
+              ? "Approved automatically under a written delegation."
+              : card.status === "review" ? "Sent back for review."
+              : "Approved."])
               .map((line, i) => <li key={i}>{line}</li>)}</ul>
-            {card.effect?.email && <Email mail={card.effect.email} label={card.effect.email.status === "ongoing" ? "The ongoing email with the supplier" : "The email that went out"}/>}
+            {card.effect?.email && <Email mail={card.effect.email} label={card.effect.email.status === "ongoing" ? "The ongoing email with the supplier" : card.effect.email.status === "sent" ? "The message that went out" : "The message"}/>}
             {card.effect?.threadId && onOpenThread && <button className="link-button" onClick={() => onOpenThread(card.effect!.threadId!)}>Open the email conversation</button>}
           </div>}
           {open === card.id && <div className="ac-why">

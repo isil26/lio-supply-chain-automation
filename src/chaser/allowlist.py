@@ -21,6 +21,7 @@ def check_recipient(address):
         raise PermissionError(f"refusing real send: invalid recipient {address!r}")
     domains = _split(os.getenv("CHASER_ALLOWED_DOMAINS", DEFAULT_DOMAINS))
     exact = _split(os.getenv("CHASER_ALLOWED_RECIPIENTS"))
-    if email in exact or email.rsplit("@", 1)[1] in domains:
+    own = {parseaddr(os.getenv(key, ""))[1].lower() for key in ("CHASER_SENDER", "CHASER_INTERNAL_TO")} - {""}
+    if email in exact or email in own or email.rsplit("@", 1)[1] in domains:  # own: internal decisions to the team mailbox
         return email
     raise PermissionError(f"refusing real send: {email} is not on the supplier allowlist")

@@ -128,7 +128,7 @@ export type SupplierAction = {
 export type MailView = { to?: string | null; subject?: string | null; body?: string | null; status?: string };
 export type DecisionEffect = { at: string; by?: string | null; sent: boolean; lines: string[]; threadId?: string | null; email?: MailView | null };
 /** The email an Approve click causes (GET /api/decisions/<id>/preview, src/chaser/option_mail.py). */
-export type MailPreview = MailView & { mode: "send" | "conversation" | "none"; supplier?: string; note: string; sentAt?: string | null };
+export type MailPreview = MailView & { mode: "send" | "internal" | "conversation" | "none"; supplier?: string; recipientName?: string; note: string; sentAt?: string | null };
 
 export type Approval = {
   id: string;
