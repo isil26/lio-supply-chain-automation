@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import re
+import subprocess
+import zipfile
+from datetime import date
 from pathlib import Path
 
 from src.docs import documents
@@ -62,12 +66,79 @@ def _supplier_quantities(material, supplier_id, po_rows, gr_rows):
     return delivered, open_quantity
 
 
-def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr_rows=()):
+MEMO_QUOTE = ("No copy leaves Hamburg with a part that is not released. "
+              "Quality & Compliance has the last word, not the pack-out plan.")
+MEMO_FILE = "soony/context/memo_launch_priorities.docx"
+
+
+def _csv_rows(path, rel):
+    try:
+        with open(path, newline="", encoding="utf-8") as handle:
+            return [dict(row, _src={"file": rel, "row": index})
+                    for index, row in enumerate(csv.DictReader(handle), start=2)]
+    except (OSError, csv.Error, UnicodeDecodeError):
+        return []
+
+
+def load_drop(data_root):
+    """Read the 21 Nov drop files straight from data/ (tolerant: missing file = no rule).
+
+    Used while the store does not carry the new CSV/JSON files yet. Row numbers are
+    file line numbers (header = line 1), like the ingestion citations.
+    """
+    root = Path(data_root)
+    drop = {"bom_delta": _csv_rows(root / "soony/master/bom_delta_2026-11-21.csv",
+                                   "soony/master/bom_delta_2026-11-21.csv"),
+            "component_updates": _csv_rows(root / "soony/master/components_update_2026-11-21.csv",
+                                           "soony/master/components_update_2026-11-21.csv"),
+            "profiles": {}, "org_category_lead_from": None, "memo": None}
+    for path in root.glob("suppliers/SUP-*/profile.json"):
+        try:
+            text = path.read_text(encoding="utf-8")
+            supplier = json.loads(text)["supplier"]
+        except (OSError, ValueError, KeyError):
+            continue
+        qualification = supplier.get("qualification")
+        if not isinstance(qualification, dict):
+            continue
+        lines = text.splitlines()
+        line = next((i for i, value in enumerate(lines, 1) if '"validUntil"' in value), 1)
+        quote = " ".join(value.strip() for value in lines[line - 3:line + 1])
+        drop["profiles"][supplier.get("supplierId")] = {
+            "name": supplier.get("name"), "qualification": qualification,
+            "source": {"file": str(path.relative_to(root)), "row": line, "quote": quote}}
+    try:
+        text = subprocess.run(["gs", "-q", "-sDEVICE=txtwrite", "-o", "-",
+                               str(root / "soony/context/org_chart_v2.pdf")],
+                              capture_output=True, text=True, timeout=30).stdout
+        match = re.search(r"(Arjun Krishnan \(from (\d{4}-\d\d-\d\d)\))", text)
+        if match:
+            drop["org_category_lead_from"] = match.group(2)
+            drop["org_source"] = {"file": "soony/context/org_chart_v2.pdf", "page": 1,
+                                  "quote": "Category Lead Collector's Items: " + match.group(1)}
+    except (OSError, subprocess.SubprocessError):
+        pass
+    try:
+        with zipfile.ZipFile(root / MEMO_FILE) as archive:
+            xml = archive.read("word/document.xml").decode("utf-8")
+        plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", xml.replace("</w:p>", "\n"))).replace("&amp;", "&")
+        if MEMO_QUOTE in plain:
+            drop["memo"] = {"file": MEMO_FILE, "quote": MEMO_QUOTE}
+    except (OSError, KeyError, zipfile.BadZipFile):
+        pass
+    return drop
+
+
+def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr_rows=(), drop=None, as_of=None):
     """Evaluate a readiness result without mutating the store.
 
     ``truth`` is the existing readiness JSON; the optional rows are supplied by
-    the orchestrator so rules remain driven by current ingested data.
+    the orchestrator so rules remain driven by current ingested data. ``drop`` (see
+    :func:`load_drop`) adds the 21 Nov rules: ECN revision changes, critical flags and
+    the supplier qualification expiry; ``as_of`` (ISO date) defaults to the deadline date.
     """
+    drop = drop or {}
+    as_of = (as_of or str(truth.get("deadline") or "")[:10] or date.today().isoformat())[:10]
     docs = list(docs)
     po_rows, gr_rows = list(po_rows), list(gr_rows)
     po_lines = po_rows
