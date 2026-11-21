@@ -258,9 +258,9 @@ def handler(loop):
                     if path.startswith("/api/source/"):
                         return self.file(loop.root, unquote(path[len("/api/source/"):]))
                 return self.out({"error": "Unknown API endpoint"}, 404)
-            if path in {"/", "/live"}:
+            if path == "/live" or (path == "/" and not (DIST / "index.html").is_file()):
                 return self.file(CONTROL_ROOM, "control-room.html")
-            if path == "/react":
+            if path in {"/", "/react"}:
                 return self.file(DIST, "index.html")
             return self.file(DIST, unquote(path).lstrip("/"))
 
