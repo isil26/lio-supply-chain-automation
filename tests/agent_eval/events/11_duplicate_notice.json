@@ -1,0 +1,1 @@
+{"synthetic":true,"id":"synthetic-duplicate","title":"Duplicate notice","text":"Duplicate copy of an already received and processed supplier notice. No new facts or deadlines.","changed_files":["synthetic/duplicate_notice.txt"],"expected_category":"noise","expected_decision":"ignore"}

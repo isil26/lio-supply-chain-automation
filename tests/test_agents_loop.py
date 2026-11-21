@@ -21,8 +21,22 @@ class _FakeTeam:
     def run_event(self, event):
         with sqlite3.connect(self.path) as con:
             con.execute(
-                "INSERT INTO agent_trace(agent,result,cost,created_at) VALUES('triage','ok',0.01,?)",
-                (time.time(),),
+                "INSERT INTO agent_trace(agent,tool,args,result,reason,cost,latency_ms,created_at,status) "
+                "VALUES(?,?,?,?,?,?,?,?,?)",
+                ("triage", "search_documents",
+                 '{"query":"unseen notice"}',
+                 '{"citations":[{"file":"tests/fixtures/unseen_german_notice.txt","quote":"Lieferverzogerung"}]}',
+                 "searched review evidence", 0.01, 12.0, time.time(), "completed"),
+            )
+            con.execute(
+                "CREATE TABLE IF NOT EXISTS agent_approvals "
+                "(id INTEGER PRIMARY KEY, agent TEXT, tool TEXT, args TEXT, status TEXT)"
+            )
+            con.execute(
+                "INSERT INTO agent_approvals(agent,tool,args,status) VALUES(?,?,?,?)",
+                ("chaser", "request_review",
+                 '{"file":"tests/fixtures/unseen_german_notice.txt","reason":"human review required"}',
+                 "pending"),
             )
         return {"harness": {"ok": True, "violations": []}}
 
@@ -42,6 +56,17 @@ class AgentLoopTests(unittest.TestCase):
                 time.sleep(0.01)
             self.assertEqual(loop.runs()[0]["status"], "completed")
             self.assertEqual(loop.trace(first["run"])["trace"][0]["agent"], "triage")
+            trace = loop.trace(first["run"])
+            self.assertEqual(len(trace["steps"]), 1)
+            self.assertEqual(trace["steps"][0]["agent"], "triage")
+            self.assertEqual(trace["steps"][0]["tool"], "search_documents")
+            self.assertIn("args_summary", trace["steps"][0])
+            self.assertIn("result_summary", trace["steps"][0])
+            self.assertIn("citations", trace["steps"][0])
+            self.assertEqual(len(trace["approvals_pending"]), 1)
+            listed = loop.runs()[0]
+            self.assertEqual(listed["step_count"], 1)
+            self.assertIn("harness", listed)
 
     def test_stop_is_a_kill_switch(self):
         with tempfile.TemporaryDirectory() as directory:

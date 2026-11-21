@@ -1,0 +1,2 @@
+Unbekannte Lieferverzogerung zur Prufung
+Unseen supplier notice: unknown delivery delay requiring human review; no launch fact is asserted.

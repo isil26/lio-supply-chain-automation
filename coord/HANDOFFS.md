@@ -1,5 +1,25 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T41b — Agent trace projection and German notice guard (copilot-loop2)
+- `/api/agents/trace` now exposes UI-ready `steps` plus `approvals_pending`, while retaining the raw trace for compatibility. Each step includes agent, tool, args/result summaries, reason, cost, latency, citations and status. `/api/agents/runs` exposes event summary text, step count, harness result and total run cost.
+- The worker snapshots only rows created for each run, then normalizes trace and pending approval state. The German-notice fixture under `tests/fixtures/unseen_german_notice.txt` gives the scenario a real reviewable file; empty claims are ignored rather than turned into false citation violations.
+- Validation: `tests.test_agents_loop` and `tests.test_agents_harness` pass (13 tests), and `scripts/demo_check.sh` passes. The live port 8794 smoke was attempted but loopback server startup was denied by the non-interactive tool sandbox, so no live result or live cost is claimed.
+
+## T69 — Supplier claims and money on the table (copilot-claims)
+
+- Added `src/decide/claims.py` for deterministic late-delivery damages, commenced-week caps, Hwaseong claim deadlines, price drift, Boise freight/DDP exposure, pins/cancellation leakage and the Hwaseong LTA renewal deadline.
+- Added `docs/CLAIMS.md` with supplier totals and per-line source evidence. CLI: `python3 -m src.decide.claims`.
+- Added `tests/test_claims.py`; `python3 -m unittest tests.test_claims -v` passes 4 tests.
+- Key totals: Hwaseong USD 274,912; Dongguan CNY 7,894.95; PackRight CNY 6,684.58. PackRight fixed-price potential drift is CNY 347,627.10; Boise revision-allowed drift exposure is USD 531,091; freight/duties are unquantified; leakage is 78,000 pins plus 32,500 cancelled units.
+- Known gaps: invoices and 12-month claim notices are absent, and no FX conversion or legal force-majeure/set-off analysis is asserted.
+
+## T67 — Event taxonomy + materiality triage (copilot-triage)
+
+- Added `src/agents/triage_policy.py`: deterministic category/materiality pass, 35-65 ambiguous LLM second pass with quote validation, and `event_decisions` SQLite persistence. Dashboard read helper: `dashboard_decisions(db_path)`.
+- Added 12 clearly synthetic labelled events under `tests/agent_eval/events/` and `tests/test_triage_policy.py`.
+- Nick integration: import `classify_event`, pass the event and truth summary before starting the expensive team, then use `dashboard_decisions()` for the dashboard. Synthetic and live modes remain separate; no synthetic data is written under `data/`.
+- Validation: `python3 -m unittest tests.test_triage_policy -v` — 4 tests pass. `python3 -m src.agents.triage_policy --eval` — 12/12 decision/category eval, cost `$0.0000` for deterministic synthetic run.
+
 ## T47c — Replay harness calibration (copilot-fix3)
 
 - Calibrated `stop_check` to count only tool-call rows, allow 45 tool calls, retain repeated-signature and Pending Plan B oscillation checks, and identify rule evidence. Evaluator live/replay runs now delete prior `agent_trace` rows from the isolated database.
@@ -238,6 +258,12 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - The pack keeps stable domain facts and routing guidance separate from tool-derived quantities, probabilities and costs.
 - Nick can wire `load_pack(role)` into specialist prompt assembly. This task leaves `src/agents/prompts.py` and `team.py` unchanged.
 - Run `python3 -m unittest tests.test_agent_knowledge`.
+
+## T71 — Live agent visualization (copilot-viz)
+
+- Expanded `web/src/agents/AgentTrace.tsx` into a projector-ready live visualization: Triage through Briefer graph, external-world and human-gate nodes, incoming-drop/triage/agent chain lane, live counters, five-guard harness panel, terminal-style tool stream and citation chips.
+- Added recorded-run playback with 1x/2x/4x speed and a fixed-screen Present mode. Existing replay, mock and HTTP adapters remain intact; no shared component restyling or secrets were added.
+- `npm --prefix web run build` and `VITE_STATIC=1 npm --prefix web run build` pass.
 
 ## T19-Redeploy — Soony production refresh (codex-deploy)
 

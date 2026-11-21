@@ -70,12 +70,15 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
                         parsed = {}
                     for citation in (
                         [parsed] if isinstance(parsed, dict)
-                        and (parsed.get("file") or parsed.get("source_file") or parsed.get("quote"))
+                        and (parsed.get("quote") or parsed.get("citations"))
                         else []
                     ):
-                        claims.append({"text": str(citation.get("quote") or ""),
+                        quote = str(citation.get("quote") or "").strip()
+                        if not quote:
+                            continue
+                        claims.append({"text": quote,
                                        "file": citation.get("file") or citation.get("source_file"),
-                                       "quote": citation.get("quote")})
+                                       "quote": quote})
                 live_outputs = {"text": final_text or synthetic.get("text", ""), "claims": claims,
                                 "actions": [], "drafts": []}
                 if os.getenv("SOONY_AGENT_MODE") == "replay":

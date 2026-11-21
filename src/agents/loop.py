@@ -18,6 +18,77 @@ def _json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
 
 
+def _json_object(value: Any) -> dict:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def _citations(value: Any) -> list[dict]:
+    found = []
+    if isinstance(value, dict):
+        if value.get("file") or value.get("source_file") or value.get("source"):
+            found.append({
+                "file": value.get("file") or value.get("source_file") or value.get("source"),
+                "page": value.get("page"),
+                "quote": value.get("quote"),
+                "sheet": value.get("sheet"),
+                "row": value.get("row"),
+            })
+        for key in ("citations", "citation", "evidence", "sources"):
+            found.extend(_citations(value.get(key)))
+    elif isinstance(value, list):
+        for item in value:
+            found.extend(_citations(item))
+    elif isinstance(value, str):
+        try:
+            found.extend(_citations(json.loads(value)))
+        except json.JSONDecodeError:
+            pass
+    unique = []
+    for item in found:
+        if item and item not in unique:
+            unique.append(item)
+    return unique
+
+
+def _trace_steps(rows: list[dict]) -> list[dict]:
+    steps = []
+    for row in rows:
+        args = _json_object(row.get("args"))
+        result = _json_object(row.get("result"))
+        result_text = str(row.get("result") or "")
+        try:
+            parsed_result = json.loads(result_text)
+        except (json.JSONDecodeError, TypeError):
+            parsed_result = row.get("result")
+        citations = _citations(parsed_result)
+        result_summary = result_text
+        if len(result_summary) > 240:
+            result_summary = result_summary[:237] + "..."
+        args_summary = json.dumps(args, ensure_ascii=False, sort_keys=True) if args else ""
+        if len(args_summary) > 240:
+            args_summary = args_summary[:237] + "..."
+        steps.append({
+            "agent": row.get("agent") or "unknown",
+            "tool": row.get("tool") or "",
+            "args_summary": args_summary,
+            "result_summary": result_summary,
+            "reason": row.get("reason") or "",
+            "cost": float(row.get("cost") or 0),
+            "latency": float(row.get("latency_ms") or 0),
+            "citations": citations,
+            "status": row.get("status") or "completed",
+        })
+    return steps
+
+
 class AutonomyLoop:
     """Run one bounded agent team per distinct event without blocking the pipeline."""
 
@@ -70,6 +141,14 @@ class AutonomyLoop:
                 )"""
             )
             con.execute("CREATE INDEX IF NOT EXISTS idx_agent_runs_hash ON agent_runs(event_hash)")
+            con.execute(
+                """CREATE TABLE IF NOT EXISTS agent_trace (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, agent TEXT, model TEXT, step INTEGER,
+                    tool TEXT, args TEXT, result TEXT, reason TEXT, cost REAL, latency_ms REAL,
+                    input_tokens INTEGER DEFAULT 0, output_tokens INTEGER DEFAULT 0,
+                    created_at REAL, status TEXT
+                )"""
+            )
 
     def _event_hash(self, event: dict) -> str:
         return hashlib.sha256(_json(event).encode("utf-8")).hexdigest()
@@ -165,14 +244,18 @@ class AutonomyLoop:
         limit = max(1, min(int(limit), 100))
         with self._connect() as con:
             rows = con.execute(
-                "SELECT id,event,status,cost,started,finished,harness_report,reason "
+                "SELECT id,event,status,cost,started,finished,harness_report,trace_json,reason "
                 "FROM agent_runs ORDER BY COALESCE(started,0) DESC LIMIT ?", (limit,)
             ).fetchall()
         result = []
         for row in rows:
             item = dict(row)
-            item["event"] = json.loads(item["event"])
+            event = json.loads(item["event"])
+            item["event"] = event.get("summary") or event.get("kind") or "agent run"
             item["harness"] = json.loads(item.pop("harness_report") or "{}")
+            trace = json.loads(item.pop("trace_json") or "[]")
+            item["step_count"] = len(trace)
+            item["summary"] = item.pop("reason") or ""
             result.append(item)
         return result
 
@@ -187,5 +270,28 @@ class AutonomyLoop:
         item = dict(row)
         item["event"] = json.loads(item["event"])
         item["harness"] = json.loads(item.pop("harness_report") or "{}")
-        item["trace"] = json.loads(item.pop("trace_json") or "[]")
+        raw_trace = json.loads(item.pop("trace_json") or "[]")
+        item["steps"] = _trace_steps(raw_trace)
+        item["trace"] = raw_trace
+        item["summary"] = item.pop("reason") or ""
+        item["step_count"] = len(item["steps"])
+        with self._connect() as con:
+            approvals = []
+            tables = {row[0] for row in con.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )}
+            if "agent_approvals" in tables:
+                for approval in con.execute(
+                    "SELECT id,agent,tool,args,status FROM agent_approvals WHERE status='pending' ORDER BY id"
+                ):
+                    args = _json_object(approval["args"])
+                    approvals.append({
+                        "id": str(approval["id"]),
+                        "title": args.get("title") or args.get("file") or approval["tool"],
+                        "detail": args.get("detail") or args.get("reason") or args.get("rationale")
+                                  or "Human decision required before action.",
+                        "agent": approval["agent"],
+                        "tool": approval["tool"],
+                    })
+        item["approvals_pending"] = approvals
         return item

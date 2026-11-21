@@ -1,0 +1,1 @@
+{"synthetic":true,"id":"synthetic-flight-cancellation","title":"Carrier cancels flight","text":"The carrier cancelled the booked game-card flight, removing 48,000 units from the Sunday 20:00 plan.","changed_files":["synthetic/flight_cancellation.txt"],"expected_category":"logistics","expected_decision":"act"}

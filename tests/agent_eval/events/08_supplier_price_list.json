@@ -1,0 +1,1 @@
+{"synthetic":true,"id":"synthetic-price-list","title":"Supplier price list","text":"A supplier price list repeats existing calendar-year prices with no quantity or delivery change.","changed_files":["synthetic/price_list.txt"],"expected_category":"supplier","expected_decision":"watch"}

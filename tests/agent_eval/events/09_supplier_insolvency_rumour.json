@@ -1,0 +1,1 @@
+{"synthetic":true,"id":"synthetic-insolvency","title":"Supplier insolvency rumour","text":"A rumour says SUP-0019 is insolvent. The single-source supplier provides CMP-GAM-005 pins, creating a possible launch hold.","changed_files":["synthetic/insolvency_rumour.txt"],"expected_category":"supplier","expected_decision":"escalate"}
