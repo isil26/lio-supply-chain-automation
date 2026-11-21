@@ -11,6 +11,7 @@ const operations = new Map([
   ['/', 'home'], ['/login', 'login'], ['/logout', 'logout'],
   ['/api/dashboard', 'dashboard'], ['/api/sync', 'sync'], ['/api/replay/reset', 'reset'],
   ['/api/session', 'session'],
+  ['/api/uploads', 'uploads'],
 ]);
 let replay;
 
@@ -184,6 +185,20 @@ module.exports = async function control(request, response) {
   }
   if (!user && !(trustedGateway && method === 'GET')) return respond(response, 401, { error: 'Team login required' });
   if (op === 'session' && method === 'GET') return respond(response, 200, { user });
+  if (op === 'uploads') {
+    if (!user) return respond(response, 401, { error: 'Team login required' });
+    const uploadUpstream = upstream || process.env.SOONY_UPLOAD_UPSTREAM;
+    if (!uploadUpstream) {
+      return method === 'GET' ? respond(response, 200, { status: 'unavailable' }) :
+        respond(response, 503, { error: 'Upload processing is unavailable.' });
+    }
+    const nonce = trustedGateway ? request.headers['x-soony-upload-session'] : session?.nonce;
+    if (typeof nonce !== 'string' || !/^[A-Za-z0-9_-]{22,64}$/.test(nonce)) {
+      return respond(response, 403, { error: 'Upload session required.' });
+    }
+    const token = upstream ? process.env.SOONY_LIVE_UPSTREAM_TOKEN : process.env.SOONY_UPLOAD_UPSTREAM_TOKEN;
+    return forwardLive(request, response, uploadUpstream, '/api/uploads', token, user, nonce);
+  }
   if (target) return forwardLive(request, response, upstream, target, process.env.SOONY_LIVE_UPSTREAM_TOKEN, user);
   if (op === 'home' && method === 'GET') {
     return respond(response, 200, readFileSync(join(__dirname, 'app.html')), 'text/html; charset=utf-8');

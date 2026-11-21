@@ -1,4 +1,4 @@
-const API_PATH = /^\/api\/(?:dashboard|actions(?:\/[a-f0-9]{24}\/(?:approve|dismiss|done))?|health|truth|documents|sync|auto-approve|deals(?:\/[a-f0-9]{12,16}\/(?:approve|decline)|\/[a-f0-9]{12,16}\/english)?|suppliers\/(?:best|drafts)|agents\/(?:runs|trace|run|stop)|threads\/[A-F0-9]+\/(?:send|demo-reply)|reply-decisions\/[0-9]{1,12}\/approve|decisions\/[a-f0-9]+\/(?:approve|review|preview)|source\/.+)$/;
+const API_PATH = /^\/api\/(?:dashboard|actions(?:\/[a-f0-9]{24}\/(?:approve|dismiss|done))?|health|truth|documents|sync|uploads|auto-approve|deals(?:\/[a-f0-9]{12,16}\/(?:approve|decline)|\/[a-f0-9]{12,16}\/english)?|suppliers\/(?:best|drafts)|agents\/(?:runs|trace|run|stop)|threads\/[A-F0-9]+\/(?:send|demo-reply)|reply-decisions\/[0-9]{1,12}\/approve|decisions\/[a-f0-9]+\/(?:approve|review|preview)|source\/.+)$/;
 const VIEWS = /^\/(?:live|react|game-cards|assets\/[\w.-]+)?$/;
 
 function liveTarget(url, localDashboard = false) {
@@ -15,25 +15,25 @@ function liveTarget(url, localDashboard = false) {
   return path;
 }
 
-async function jsonBody(request) {
+async function jsonBody(request, limit) {
   if (!request.headers['content-type']?.startsWith('application/json')) return null;
-  if (Number(request.headers['content-length']) > 4096) return null;
+  if (Number(request.headers['content-length']) > limit) return null;
   if (request.body !== undefined && request.body !== null) {
     const input = Buffer.isBuffer(request.body) || typeof request.body === 'string'
       ? request.body : JSON.stringify(request.body);
-    return Buffer.byteLength(input) <= 4096 ? input : null;
+    return Buffer.byteLength(input) <= limit ? input : null;
   }
   const parts = [];
   let bytes = 0;
   for await (const chunk of request) {
     bytes += Buffer.byteLength(chunk);
-    if (bytes > 4096) return null;
+    if (bytes > limit) return null;
     parts.push(Buffer.from(chunk));
   }
   return Buffer.concat(parts);
 }
 
-async function forwardLive(request, response, base, target, token, user) {
+async function forwardLive(request, response, base, target, token, user, uploadSession) {
   const method = request.method;
   if (method !== 'GET' && (method !== 'POST' || !target.startsWith('/api/'))) {
     response.statusCode = 405;
@@ -42,10 +42,11 @@ async function forwardLive(request, response, base, target, token, user) {
   const headers = {};
   if (user) headers['X-Soony-User'] = Buffer.from(user).toString('base64url');
   if (token) headers.Authorization = 'Bearer ' + token;
-  const body = method === 'POST' ? await jsonBody(request) : undefined;
+  if (uploadSession) headers['X-Soony-Upload-Session'] = uploadSession;
+  const body = method === 'POST' ? await jsonBody(request, uploadSession ? 1_400_000 : 4096) : undefined;
   if (body === null) {
     response.statusCode = 400;
-    return response.end(JSON.stringify({ error: 'Send a JSON request of 4 KB or less.' }));
+    return response.end(JSON.stringify({ error: uploadSession ? 'Invalid upload chunk size or type.' : 'Send a JSON request of 4 KB or less.' }));
   }
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   try {

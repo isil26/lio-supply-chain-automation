@@ -46,3 +46,13 @@ python3 deploy/vercel/verify.py "$TEAM_REPLAY_URL" "$TEAM_USERNAME" "$TEAM_PASSW
 ```
 
 Use `--recording verified_events` after original events have been recovered, verified, and redacted.
+
+## Upload case data
+
+The team deployment uses its existing live gateway settings for uploads. Both the planning service and the Vercel relay must run a release with the upload route. The route uses the dashboard sign-in to isolate each visitor's data.
+
+To enable uploads on a protected replay deployment, set `SOONY_UPLOAD_UPSTREAM` to the upload gateway's HTTPS address and `SOONY_UPLOAD_UPSTREAM_TOKEN` to its gateway token.
+
+Choose one case file or a ZIP in **Upload case data**. ZIPs can wrap the existing `soony/` and `suppliers/` folders in a parent folder. Use a recognized export name for a standalone update, such as `goods_receipts_update.csv`. Files can be up to 64 MB. The app reports how many files it imported and shows the recalculated forecast. Successful uploads build on the current upload scenario. **Return to launch dashboard** ends the scenario.
+
+Uploads run the normal ingest, OCR, readiness, and action preparation pipeline in a private dry-run workspace. Invalid updates preserve the previous accepted result. The scenario is temporary and expires after an hour of inactivity.

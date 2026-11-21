@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   dashboardApi,
@@ -20,6 +20,7 @@ import { MantiLogo, SupplyMap } from "./SupplyMap";
 import { BehindScenes } from "./BehindScenes";
 import { ArrivalTimeline } from "./ArrivalTimeline";
 import { ActionList, PastList } from "./ActionList";
+import { UploadData, type UploadResult } from "./UploadData";
 import { setAutoApprove } from "./api";
 import "./styles.css";
 import "./workspace.css";
@@ -89,25 +90,28 @@ function SupplierActions({ actions, select, mailView, onEvidence }: {
   </section>;
 }
 
-function EvidenceModal({ source, onClose }: { source: Source; onClose: () => void }) {
+function EvidenceModal({ source, onClose, scenario }: { source: Source; onClose: () => void; scenario: boolean }) {
   const file = source.source_file ?? source.file ?? "";
   const [raw, setRaw] = useState("");
   useEffect(() => {
-    if (!file || hostedReplayBuild || isStaticMode()) return;
+    if (!file || hostedReplayBuild || isStaticMode() || scenario) return;
     dashboardApi.getSource(file).then(setRaw).catch(() => setRaw(""));
-  }, [file]);
+  }, [file, scenario]);
   return <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
     <section className="evidence-modal" role="dialog" aria-modal="true" aria-label="Source evidence" onMouseDown={(event) => event.stopPropagation()}>
       <header><div><p className="section-label">SOURCE EVIDENCE</p><h2>{file}</h2></div><button onClick={onClose} aria-label="Close">×</button></header>
       <div className="evidence-location">{source.page ? `Page ${source.page}` : source.row ? `Row ${source.row}` : "Source location"}{source.confidence != null ? ` · ${Math.round(source.confidence * 100)}% confidence` : ""}</div>
       {source.quote && <blockquote>{source.quote}</blockquote>}
-      {!hostedReplayBuild && !isStaticMode() && raw ? <a className="source-link" href={`/api/source/${file.split("/").map(encodeURIComponent).join("/")}`} target="_blank" rel="noreferrer">Open original source <Icon name="arrow"/></a> : null}
+      {!hostedReplayBuild && !isStaticMode() && !scenario && raw ? <a className="source-link" href={`/api/source/${file.split("/").map(encodeURIComponent).join("/")}`} target="_blank" rel="noreferrer">Open original source <Icon name="arrow"/></a> : null}
     </section>
   </div>;
 }
 
 function App() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [baseData, setData] = useState<DashboardData | null>(null);
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const data = uploadResult ? { ...uploadResult.dashboard, currentUser: baseData?.currentUser } : baseData;
+  const practiceMode = hostedReplayBuild || uploadResult !== null;
   const [error, setError] = useState("");
   const [dark, setDark] = useState(true);
   const [archive, setArchive] = useState(location.hash === "#activity");
@@ -133,6 +137,13 @@ function App() {
   const [meta, setMeta] = useState<{ exported?: string; mode?: string }>({});
   // Jury site (recording): Approve, Review and the auto-approve slider work in this browser only. Nothing is sent.
   const [practice, setPractice] = useState<{ decisions: Record<string, string>; limit: number }>({ decisions: {}, limit: 0 });
+  const showUpload = useCallback((result: UploadResult | null) => {
+    setUploadResult(result);
+    setPractice({ decisions: {}, limit: 0 });
+    setMailView(false);
+    setSource(null);
+    setBehind(false);
+  }, []);
 
   const refresh = async () => {
     try {
@@ -332,7 +343,7 @@ function App() {
       <header className="topbar">
         <div className="workspace-crumb">Workspace <span>/</span> <strong>{data.launch.name}</strong></div>
         <div className="top-actions">
-          <button className="behind-button" onClick={() => setBehind(true)}><i className="live"/>See what the agents do</button>
+          {!uploadResult && <button className="behind-button" onClick={() => setBehind(true)}><i className="live"/>See what the agents do</button>}
           {isStaticMode() && <button className="ghost-button" onClick={() => void resetDemo()}>Reset</button>}
           {data.currentUser && <form method="post" action="/logout"><span>{data.currentUser} </span><button className="ghost-button" type="submit">Sign out</button></form>}
           <button className="icon-button" onClick={() => setDark((value) => !value)} title="Toggle theme" aria-label="Toggle theme"><Icon name={dark ? "sun" : "moon"}/></button>
@@ -363,7 +374,7 @@ function App() {
       </section>
       <div className="forecast-context">{archive ? "Current forecast" : onTrack ? "On track" : formatNumber(totalShort)+" boxes below target"}{!archive && shortEur!=null && !onTrack ? ` · ${euro(shortEur)} ${useMiss?"at stake":"at standard cost"}`:""}{data.readiness.some(r=>r.missCostConfirmed===false) && " · Standard loss estimate is unconfirmed."}</div>
       <div className={`decision-layout ${archive?"archived":""}`}>
-        <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={openDealThread}/>
+        {!uploadResult && <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={openDealThread}/>}
         <aside className="decision-side">{archive ? <section className="card"><h3>Activity feed</h3><ul className="activity scroll-feed">{data.activity.map(a=><li key={a.id}><strong>{a.agent}</strong> {a.action}<small>{a.time}</small></li>)}</ul></section> : <>
           <section className="card"><h3>Decision deadlines <small>{deadlines.length}</small></h3><div className="deadline-scroll" tabIndex={0} aria-label="Upcoming decisions">{deadlines.length?deadlines.map(d=><button key={d.id} onClick={()=>setRequestedAction({id:d.id})}><span><strong>{d.title}</strong><small>{d.owner}</small></span><time>{Number.isFinite(d.at)?etaDate.format(new Date(d.at))+" CET":d.due || "Time unconfirmed"}</time></button>):<p className="empty">No decisions due.</p>}</div></section>
           {approval && <section className="card insight-tile"><h3>Recommended action</h3><strong>{approval.title}</strong><p>{approval.recommendation}</p><button className="link-button" onClick={()=>setRequestedAction({id:approval.id})}>Review action</button></section>}
@@ -371,7 +382,8 @@ function App() {
       </div>
       {archive && <section className="card archived"><h3>Past actions</h3><PastList rows={past} onOpenThread={id=>selectThread(id,false)}/></section>}
       <div className="workspace-tools" hidden={archive}>
-      {dropVisible && data.drop && (pendingDrop || isStaticMode() || hostedReplayBuild) && <div className="notice">
+      {!isStaticMode() && <UploadData onResult={showUpload}/>}
+      {dropVisible && !uploadResult && data.drop && (pendingDrop || isStaticMode() || hostedReplayBuild) && <div className="notice">
         <span>{pendingDrop ? "Supplier files are ready to apply." : "Supplier update replay"}</span>
         <button className="primary-button small" onClick={() => void runSync(hostedReplayBuild && !pendingDrop)} disabled={syncBusy}>{syncBusy ? "Updating…" : hostedReplayBuild && !pendingDrop ? "Reset" : "Update"}</button>
       </div>}
@@ -395,7 +407,7 @@ function App() {
 
       {(() => {
         const listed = (data.options ?? []).filter((option) => option.status !== "blocked" || option.approvalMode);
-        if (!hostedReplayBuild) return <ActionList requestedAction={requestedAction} options={listed}
+        if (!practiceMode) return <ActionList requestedAction={requestedAction} options={listed}
           reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
           onDecide={(id, review, by) => void decide(id, review, data.currentUser ?? (by || reviewer || undefined))} onEvidence={setSource} onOpenThread={selectThread}
@@ -436,10 +448,9 @@ function App() {
         </ol> : <p className="empty">The current plan covers every required component.</p>}
       </section>
 
+      {!uploadResult && <BestSupplier/>}
 
-      <BestSupplier/>
-
-      <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>
+      {!uploadResult && <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>}
 
       {/* Recovery approvals are part of the Actions list above (ActionList). */}
 
@@ -526,15 +537,15 @@ function App() {
                   {plan.evidence && <blockquote>{plan.evidence.join(" · ")}</blockquote>}
                   <p>{plan.nextAction}</p>
                   {plan.editions && <small>Supplier scenario for review. This decision has no purchasing or stock execution.</small>}
-                  {message.id && plan.status === "proposed" && !hostedReplayBuild && !mailView && <div className="actions">
+                  {message.id && plan.status === "proposed" && !practiceMode && !mailView && <div className="actions">
                     <button className="ghost-button" disabled={decisionBusy} onClick={() => void approveReply(message)}>Approve follow-up</button>
                   </div>}
                 </section>}
               </div>;
             })}
             <div className="actions">
-              {!hostedReplayBuild && !mailView && (selectedThread.status === "draft" || selectedThread.status === "loop draft") && <button className="primary-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : data.sync?.mode === "replay" ? "Approve dry-run email" : "Approve & send"}</button>}
-              {!hostedReplayBuild && !mailView && data.sync?.mode === "replay" && ["awaiting reply", "reply to verify"].includes(selectedThread.status) &&
+              {!practiceMode && !mailView && (selectedThread.status === "draft" || selectedThread.status === "loop draft") && <button className="primary-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : data.sync?.mode === "replay" ? "Approve dry-run email" : "Approve & send"}</button>}
+              {!practiceMode && !mailView && data.sync?.mode === "replay" && ["awaiting reply", "reply to verify"].includes(selectedThread.status) &&
                 (data.supplierActions?.some((action) => action.case === "game_card" && action.threadId === selectedThread.id) ? <>
                   <button className="ghost-button" onClick={() => void demoReply("on-time")} disabled={replyBusy}>Simulate on-time ETA</button>
                   <button className="ghost-button" onClick={() => void demoReply("complete")} disabled={replyBusy}>Simulate complete reply</button>
@@ -546,12 +557,12 @@ function App() {
         <ul className="activity">
           {data.activity.slice(0, 5).map((item) => <li key={item.id}><strong>{item.agent}</strong> {item.time && <time>{item.time} · </time>}{item.action}</li>)}
         </ul>
-        <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>
+        {!uploadResult && <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>}
       </details>
       </div>
     </section>
     {behind && <BehindScenes activity={data.activity} recording={data.recordedAgentRun} autoSend={data.autoSend} onClose={() => setBehind(false)} onEvidence={setSource}/>}
-    {source && <EvidenceModal source={source} onClose={() => setSource(null)}/>}
+    {source && <EvidenceModal source={source} onClose={() => setSource(null)} scenario={uploadResult !== null}/>}
   </main>;
 }
 

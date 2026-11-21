@@ -69,12 +69,12 @@ def documents(connection):
         yield doc
 
 
-def extract(connection, root, *, output=None):
+def extract(connection, root, *, output=None, use_models=True):
     """Run T2 and load results for callers passing an existing SQLite connection."""
     data = Path(root).resolve()
     repo = data.parent
     output = output or repo / "store" / "docs.jsonl"
-    vision, translator = configured_clients()
+    vision, translator = configured_clients() if use_models else (None, None)
     result = run_pipeline(data, repo / "bridge" / "state.json", output, vision=vision, translator=translator)
     load_table(connection, output)
     return result["documents"] - result["cache_hits"]
