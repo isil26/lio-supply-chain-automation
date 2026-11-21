@@ -63,6 +63,10 @@ def browser_test(url, password, bypass):
         page.goto(url)
         page.get_by_label("Team password").fill(password)
         page.get_by_role("button", name="Sign in", exact=True).click()
+        actions = page.get_by_role("region", name="Actions", exact=True)
+        expect(actions.get_by_role("listitem").first).to_be_visible()
+        expect(actions.get_by_role("slider")).to_have_count(0)
+        expect(actions.get_by_role("button", name=re.compile(r"^(Approve|Review)$"))).to_have_count(0)
         offers = page.get_by_role("region", name="Supplier offers")
         expect(offers.get_by_text("Fictional offers for this example", exact=False)).to_be_visible()
         for material in ("Game cards", "Statues", "Art books", "Cover sleeves"):

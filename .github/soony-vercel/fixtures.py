@@ -70,8 +70,7 @@ def audit(repo, output):
         marker for fixture in FIXTURES.values()
         for marker in case_markers(json.loads((fixtures / fixture).read_text()))
     }
-    # Supplier offers are published as is (Gülşah, 21 Nov 20:52): their names and summaries are allowed.
-    safe |= set(case_markers(json.loads((repo / "web/src/suppliers/offers-sample.json").read_text())))
+    # Only the separately staged fictional fixtures can supply public example values.
     for fixture in FIXTURES:
         raw = json.loads((repo / "web/src/suppliers" / fixture).read_text())
         for marker in set(case_markers(raw)) - safe:
