@@ -72,3 +72,4 @@ Last human sync: Sat 21 Nov 2026
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
 | copilot-wire | T47 wire knowledge pack + harness into live agents, iterate live to pass harness | src/agents | in_progress | budget $1 gpt-4.1-mini | 21 Nov |
+| gülşah-agent | T26 real email loop (safe) | src/chaser/allowlist.py, docs/REAL_EMAIL.md | review | Supplier-only recipient allowlist on both real send paths + Gmail setup guide; 17 chaser tests pass. Waits on team Gmail + portal Mail sender registration. Branch claude/project-thread-u1r8na. | 21 Nov |

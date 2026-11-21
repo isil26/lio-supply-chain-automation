@@ -40,6 +40,8 @@ class SMTPOutbox:
         password = os.environ.get("CHASER_SMTP_PASSWORD")
         if not host:
             raise RuntimeError("CHASER_SMTP_HOST is required for real SMTP")
+        from .allowlist import check_recipient
+        check_recipient(recipient)
         message = EmailMessage()
         message["From"] = sender
         message["To"] = recipient

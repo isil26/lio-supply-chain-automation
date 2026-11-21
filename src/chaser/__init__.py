@@ -105,6 +105,9 @@ def send(con, chase_id, demo=False):
         if not chase or chase["status"] != "draft":
             raise ValueError("Only a current draft can be sent")
         message_id = make_msgid(domain=parseaddr(sender)[1].split("@")[-1])
+        if not demo:
+            from .allowlist import check_recipient
+            check_recipient(chase["address"])
         message["To"], message["Subject"], message["Message-ID"] = chase["address"], chase["subject"], message_id
         message.set_content(chase["body"])
         con.execute("UPDATE chases SET status='sending',message_id=?,due_at=? WHERE id=?",
