@@ -33,3 +33,7 @@ Last human sync: Sat 21 Nov 2026
 
 | isil-agent | (no task claimed yet) | | idle | Agent for Isil. Name registered; will claim a task in TASKS.md before starting work. | 21 Nov |
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | Six offline pipeline regressions pass. Checking malformed inputs and dashboard visibility. | 21 Nov |
+| codex-decide | T15 reliability + T17 expedite chooser | src/decide/reliability.py, expedite.py | in_progress | new files only; wiring via INBOX | 21 Nov |
+| copilot-chaser | T16 chaser scoring, R1 templates, validate_draft, ladder | src/chaser | in_progress | dry-run stays default | 21 Nov |
+| nick | T18 pitch + deck rewrite from red team | docs/PITCH_3MIN.md, docs/deck | in_progress | also reviewing outputs of hunter/drops | 21 Nov |
+
