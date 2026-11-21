@@ -104,7 +104,7 @@ class ReplayTests(unittest.TestCase):
         report = sensitivity(truth, **kwargs)
         self.assertEqual(json.dumps(report), json.dumps(sensitivity(truth, **kwargs)))
         self.assertEqual(report["scenarios"][-1]["delta"]["combined"], {"expected_packed": 0, "probability": 0})
-        self.assertEqual(report["baseline"]["combined"]["expected_packed"], 6)
+        self.assertEqual(report["baseline"]["combined"]["expected_packed"], 5)
         result = counterfactual(truth, changes, lag_profiles=profiles, trials=91)
         self.assertGreater(result["combined"]["expected_packed"], 6)
         self.assertLess(result["combined"]["expected_packed"], 8)

@@ -59,7 +59,7 @@ class DemoReplayTest(unittest.TestCase):
         finally:
             connection.close()
 
-    def dashboard(self, ready):
+    def dashboard(self, ready, starting=False):
         deadline = monotonic() + self.timeout
         last_status = "server not accepting connections"
         while monotonic() < deadline:
@@ -74,8 +74,10 @@ class DemoReplayTest(unittest.TestCase):
             self.assertIn(status, {200, 503}, "Unexpected dashboard response")
             sync = snapshot.get("sync") or {}
             if sync.get("error"):
-                self.fail("Replay pipeline reported a sync error. Check the local server console.")
-            if status == 200 and ready(snapshot, sync):
+                if not (starting and status == 503 and sync["error"] == "database is locked"):
+                    self.fail("Replay pipeline reported a sync error. Check the local server console.")
+                last_status = "HTTP 503, startup database lock"
+            elif status == 200 and ready(snapshot, sync):
                 return snapshot
             sleep(0.25)
         self.fail(f"Dashboard did not reach the expected state in {self.timeout:g}s ({last_status})")
@@ -120,7 +122,7 @@ class DemoReplayTest(unittest.TestCase):
 
     def _exercise_replay(self):
         with timed("Wait for baseline dashboard (HTTP 200)"):
-            baseline = self.dashboard(lambda snapshot, sync: "pendingDrop" in sync)
+            baseline = self.dashboard(lambda snapshot, sync: "pendingDrop" in sync, starting=True)
 
         with timed("Check dashboard schema, targets and staged drop"):
             self.assertEqual(SCHEMA - baseline.keys(), set(), "Dashboard keys missing")

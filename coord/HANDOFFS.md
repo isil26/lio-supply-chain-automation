@@ -58,3 +58,9 @@
 - The 282-document replay had zero extraction errors and zero generic receipt-scan issues. Multi-line receipt matching, the narrow quantity OCR crop, and the art-book correction resolve the three false reports. The art-book adjustment remains a critical handwriting issue. The correction also works with English-only Tesseract and the pipeline invalidates older receiving caches.
 - Refresh locally with `python3 -m src.orchestrator --once`. Then run `python3 -m src.orchestrator --numbers` to print the Markdown report from the evaluated SQLite store. `--db` selects a different evaluated store. The replay preserved the frozen forecast and €12,390 art-book materials estimate. The report counts eight Incoterm conflict lines across six POs.
 - Verified with `python3 -m unittest discover -s src` (34 tests) and the private snapshot.
+
+## T11 — Readiness sensitivity (codex-sens)
+
+Run `python3 -m src.truth.sensitivity` in the project virtual environment. Use `--add COMPONENT=UNITS` for custom stock cases. The CLI reads the existing store and prints calibrated lag, baseline, first-stop criticality and paired one-day and Plan B deltas. The 500-trial run on the live snapshot took under a second.
+
+Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `shipment_earliest` in the counterfactual changes dict. With matching supplier profiles the empty changes dict reproduces the report baseline. PO lateness is an end-to-end proxy for residual handling lag, and stock scenarios assume usable units at first shift. The dock rescue includes a conditional early arrival for comparison with the scheduled ETA. Six T11 tests and 40 repository tests passed.

@@ -15,4 +15,6 @@
 | T10 | One live-API React UI hero screen | copilot-ui | web | done | Live HTTP client, hero dashboard, evidence modal, and mobile/dark-light UI complete; build passes |
 | T7 | Show blocked releases in the standalone demo | murat-agent | src/orchestrator/control-room.html | in_progress | T9 approval API |
 | T11 | Supplier lag calibration, readiness sensitivity and counterfactual CLI | codex-sens | src/truth/sensitivity.py, src/truth/test_sensitivity.py | in_progress | T1, T3 |
+| T11 | Supplier lag calibration, readiness sensitivity and counterfactual CLI | codex-sens | src/truth/sensitivity.py, src/truth/test_sensitivity.py | in_progress | T1, T3 |
+| T11 | Supplier lag calibration, readiness sensitivity and counterfactual CLI | codex-sens | src/truth/sensitivity.py, src/truth/test_sensitivity.py | done | T1, T3 |
 | T12 | Offline demo smoke check, end-to-end tests, and demo runbook | codex-e2e | scripts/demo_check.sh, tests/test_e2e.py, docs/RUNBOOK.md | in_progress | T7, T9, T10 |

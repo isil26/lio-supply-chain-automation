@@ -350,6 +350,8 @@ def _print_markdown(truth, profiles, report):
     print(f'{baseline["runs"]} paired trials. Combined P(on time) requires every edition to meet target. '
           'Stock scenarios assume usable units at the first shift. Supplier and shipment shifts preserve existing holds.\n')
     print("## Supplier lag calibration\n")
+    print("Empirical lag uses the positive part of actual minus promised delivery for completed PO lines. "
+          "Suppliers with fewer than five observations use the triangular mode prior.\n")
     print("| Supplier | Method | PO lines | P50 / P90 lag (h) | Evidence |")
     print("|---|---|---:|---:|---|")
     suppliers = {item.get("supplier") for item in truth["inbound"]}
@@ -361,11 +363,13 @@ def _print_markdown(truth, profiles, report):
               f'{profile.get("sample_count", 0)} | {quantiles} | {_citations(profile.get("evidence", []))} |')
 
     print("\n## Baseline\n")
-    print("| Scope | Expected packed | P10 / P50 / P90 | P(on time) |")
-    print("|---|---:|---:|---:|")
+    print("| Scope | Expected packed | P10 / P50 / P90 | P(on time) | Target evidence |")
+    print("|---|---:|---:|---:|---|")
+    targets = {pid: edition.get("evidence", [])[:1] for pid, edition in truth["editions"].items()}
     for scope, row in [("Combined", baseline["combined"]), *baseline["editions"].items()]:
+        evidence = targets[scope] if scope in targets else [source for refs in targets.values() for source in refs]
         print(f'| {scope} | {row["expected_packed"]:,.1f} | {row["p10"]:,} / {row["p50"]:,} / {row["p90"]:,} | '
-              f'{row["probability"]:.1%} |')
+              f'{row["probability"]:.1%} | {_citations(evidence)} |')
 
     print("\n## First material stop criticality\n")
     print("| Component | Share of trials |")

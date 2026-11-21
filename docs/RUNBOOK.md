@@ -50,7 +50,8 @@ python3 -m src.orchestrator --demo --port 8787
 In another terminal or browser, wait for the dashboard before the session begins. On macOS, use the following commands.
 
 ```sh
-curl -fsS -o /dev/null http://127.0.0.1:8787/api/dashboard
+curl -fsS --retry 120 --retry-connrefused --retry-delay 2 --retry-max-time 240 \
+  -o /dev/null http://127.0.0.1:8787/api/dashboard
 open http://127.0.0.1:8787/
 ```
 
@@ -71,6 +72,7 @@ open http://127.0.0.1:8787/
 | --- | --- |
 | Portal down or Wi-Fi unavailable | Keep the last complete mirror and switch to offline replay. If the input mirror is incomplete, use the cached standby or the recording. |
 | OCR cold start, dashboard returns HTTP 503 | Keep the process running while the first pass builds the snapshot. Verify `tesseract --list-langs`, warm the cache with `--once`, then start replay before stage time. For a slower preflight use `DEMO_TIMEOUT_SECONDS=480 scripts/demo_check.sh`. |
+| Temporary SQLite lock at startup | Give the replay one background refresh interval (45 seconds by default) to retry. Use the prewarmed standby if the page stays unavailable. |
 | Port busy (`Address already in use`) | Start replay with another loopback port such as `--port 8789`. Update the browser and curl URLs to match. The smoke check selects an ephemeral port. |
 | Token missing or rejected | Use the existing mirror for offline replay. For a portal update, provision a fresh team token through the private channel and rerun `python3 bridge/sync.py`. |
 | Drop already applied or missing | Start a fresh `--demo` process. If preflight still reports zero staged files, restore the complete cached mirror with the held-back supplier documents. |
