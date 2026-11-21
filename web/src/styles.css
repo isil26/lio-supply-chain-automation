@@ -340,6 +340,14 @@ button:disabled { opacity: .5; cursor: default; }
 .ac-why { grid-column: 1 / -1; padding: 12px 14px; border-radius: 10px; background: var(--bg); font-size: 14px; line-height: 1.5; }
 .ac-why p { margin: 0 0 6px; }
 .ac-links { display: flex; gap: 16px; }
+.ac-confirm { grid-column: 1 / -1; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent-soft); font-size: 14px; line-height: 1.5; }
+.ac-confirm p { margin: 4px 0 8px; }
+.ac-confirm label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ac-confirm input { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; min-width: 0; flex: 1 1 160px; max-width: 260px; }
+.ac-confirm-buttons { display: flex; gap: 8px; margin-top: 10px; }
+.ac-effect { grid-column: 1 / -1; padding: 10px 14px; border-radius: 10px; border-left: 3px solid var(--accent); background: var(--bg); font-size: 14px; line-height: 1.5; }
+.ac-effect-head { margin: 0 0 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.ac-effect ul { margin: 0 0 4px; padding-left: 18px; }
 .ac-more { margin-top: 10px; }
 @media (max-width: 760px) {
   .ac-item { grid-template-columns: 1fr auto; }

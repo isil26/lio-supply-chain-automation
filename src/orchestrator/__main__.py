@@ -29,7 +29,7 @@ from src.decide.actions import action_queue, mark_action, recovery_reviews, sour
 from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
-from src.orchestrator import action_approvals
+from src.orchestrator import action_approvals, decision_effects
 from src.orchestrator.numbers import numbers_report
 from src.truth import LOCAL, readiness
 from src.agents.loop import AutonomyLoop
@@ -248,6 +248,11 @@ def auto_approve(con, demo=False):
             label = "Simulated approval" if verdict["simulated"] else "Auto-approve"
             chaser.activity(con, label, f'{option["title"]}: approved under delegation {delegation} '
                            f'from {verdict["approver"]} (routine, cap €{limit:,.0f}).')
+        try:
+            decision_effects.record(con, option, "approved", None, auto=('Simulated approval' if verdict['simulated'] else 'Auto-approved') + f' under delegation {delegation} '
+                                    f'from {verdict["approver"]} (routine, under €{limit:,.0f}).')
+        except Exception:
+            pass
     if approved:
         with con:
             save_state(con, "autoApproved", sorted(set(get_state(con, "autoApproved", []) or []) | set(approved)))
@@ -309,6 +314,7 @@ def dashboard(con, *, include_action_history=False):
                for option in chosen]
     for option in actions:
         option["approvalMode"] = approval_mode(option, demo=demo)
+    decision_effects.attach(con, actions)  # what an Approve click did (shown under the card)
     for option in actions:
         if option["id"] in obsolete_dock:
             option.update(status="blocked", approval_block={"reason": obsolete_dock[option["id"]],
@@ -879,7 +885,13 @@ def handler(loop):
                             message = ("Review requested. Release remains blocked." if status == "blocked"
                                        else f"{status}. Purchasing remains subject to its approval chain.")
                             chaser.activity(con, "Procurement", f'{decision["title"]}: {message}')
-                        return self.out({"ok": True, "approvalId": match[1], "status": status})
+                        by = body.get("by")[:80].strip() if isinstance(body.get("by"), str) else None
+                        try:
+                            queue = (dashboard(con, include_action_history=True) or {}).get("actions", [])
+                            effect = decision_effects.record(con, decision, status, by or None, queue)
+                        except Exception as exc:  # never fail an approval because the summary could not be built
+                            effect = {"lines": [f"{status.capitalize()}."], "error": exc.__class__.__name__}
+                        return self.out({"ok": True, "approvalId": match[1], "status": status, "effect": effect})
                     reply_action = re.fullmatch(r"/api/reply-decisions/([0-9]{1,12})/approve", path)
                     if reply_action:
                         decision = chaser.reply_decision(con, int(reply_action[1]))
