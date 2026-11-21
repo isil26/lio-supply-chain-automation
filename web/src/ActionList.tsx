@@ -66,11 +66,12 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
   const [showAll, setShowAll] = useState(false);
   const [open, setOpen] = useState<string>("");
   const [confirming, setConfirming] = useState<string>("");
-  const [preview, setPreview] = useState<MailPreview | null | "loading">(null);
+  // Live approval needs a successful preview: nobody confirms a message they could not see (codex-deploy, 22 Nov).
+  const [preview, setPreview] = useState<MailPreview | null | "loading" | "failed">(null);
   const ask = (id: string) => {
     if (confirming === id) { setConfirming(""); return; }
     setConfirming(id); setPreview(onPreview ? "loading" : null);
-    onPreview?.(id).then(setPreview).catch(() => setPreview(null));
+    onPreview?.(id).then((value) => setPreview(value ?? "failed")).catch(() => setPreview("failed"));
   };
   const byId = new Map((reviews ?? []).map((review) => [review.id, review]));
 
@@ -157,15 +158,16 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
           {confirming === card.id && !decided && <div className="ac-confirm" role="alertdialog" aria-label={`Confirm: ${card.title}`}>
             <strong>Are you sure?</strong>
             {preview === "loading" ? <p className="muted">Loading the message this sends…</p>
+              : preview === "failed" ? <p role="alert">The message this click would send could not be loaded, so approving is paused. Refresh the page and try again.</p>
               : preview ? <>
                 <p>{preview.note} {costLine(card.option)}</p>
                 {preview.mode !== "none" && <Email mail={preview.mode === "internal" ? { ...preview, to: `${preview.recipientName} (via ${preview.to})` } : preview}
                   label={preview.mode === "conversation" ? "The ongoing email with the supplier" : "This message goes out when you approve"}/>}
               </> : <p>{costLine(card.option)}</p>}
             <div className="ac-confirm-buttons">
-              <button className="primary-button small" disabled={busy || preview === "loading"} autoFocus
+              <button className="primary-button small" disabled={busy || preview === "loading" || preview === "failed"} autoFocus
                 onClick={() => { setConfirming(""); onDecide(card.id, false, currentUser()); }}>
-                {preview && preview !== "loading" && (preview.mode === "send" || preview.mode === "internal") ? "Yes, approve and send" : "Yes, approve"}</button>
+                {preview && typeof preview === "object" && (preview.mode === "send" || preview.mode === "internal") ? "Yes, approve and send" : "Yes, approve"}</button>
               <button className="ghost-button small" onClick={() => setConfirming("")}>Cancel</button>
             </div>
           </div>}
