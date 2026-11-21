@@ -298,7 +298,7 @@ def supplier_report(con, *, save, kind="all"):
     deadline = truth.get("deadline") or (row[0] if row else None)
     if not deadline:
         return {"materials": [], "reminders": [], "deadline": None}
-    report = compare(con, deadline, save=save and kind in ("all", "negotiate"))
+    report = compare(con, deadline, save=save and kind in ("all", "negotiate"), use_thread_deadlines=True)
     report["reminders"] = due_reminders(con, save=save and kind in ("all", "remind"))
     report["deadline"] = deadline
     return report
@@ -700,11 +700,16 @@ def handler(loop):
                         ):
                             return self.out({"error": "Supplier evidence changed. Review the current recovery action.",
                                              "status": "blocked"}, 409)
+                        if not isinstance(body.get("revision"), str) or not body["revision"]:
+                            return self.out({"error": "Refresh the offer before recording a decision."}, 409)
                         try:
                             row = supplier_deals.decide(con, deal[1], deal[2], str(body.get("by") or "team member")[:80],
-                                                        (str(body["note"])[:500] if body.get("note") else None))
+                                                        (str(body["note"])[:500] if body.get("note") else None),
+                                                        revision=body["revision"])
                         except KeyError:
                             return self.out({"error": "Unknown offer. Refresh the page."}, 404)
+                        except ValueError as exc:
+                            return self.out({"error": str(exc)}, 409)
                         return self.out({"ok": True, "deal": row})
                     if path == "/api/suppliers/drafts":  # T77 mail-agent: create drafts only, never sends
                         return self.out(supplier_report(con, save=True, kind=body.get("kind", "all")))

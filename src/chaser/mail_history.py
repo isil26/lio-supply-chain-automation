@@ -101,11 +101,11 @@ def sync(inbox, sent_folder, *, source_db, history_db, sender):
                     continue
                 external_id = str(message["Message-ID"])
                 history.execute("""INSERT OR IGNORE INTO chases
-                   (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,message_id)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,message_id,parent_thread_id)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                    (thread["id"], thread["supplier_id"], thread["supplier"], thread["address"], thread["language"],
                     thread["subject"], "awaiting reply", thread["material"], thread["qty"], thread["body"],
-                    thread["deadline"], external_id))
+                    thread["deadline"], external_id, thread.get("parent_thread_id")))
                 metadata = {"from": str(message["From"]), "to": str(message["To"]), "subject": str(message["Subject"]),
                             "messageId": external_id, "inReplyTo": str(message.get("In-Reply-To") or ""),
                             "mode": "gmail", "status": "gmail_sent"}

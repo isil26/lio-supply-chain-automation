@@ -408,6 +408,14 @@ function App() {
           : data.mailHistory?.status === "unavailable" ? "Mailbox check unavailable. Previously verified messages remain visible."
           : "Waiting for a read-only mailbox check."}{data.mailHistory?.checkedAt && <> · Checked {etaDate.format(new Date(data.mailHistory.checkedAt))} CET</>}</p>}
         {supplierActions && supplierActions.length > 0 && <SupplierActions actions={supplierActions} select={selectThread} mailView={mailView} onEvidence={setSource}/>}
+        {visibleThreads?.some(t => t.mailPlan?.state === "approval" && t.mailPlan.sourceThread === t.id) &&
+          <section aria-label="Email approval requests">
+            <h4>Approval requests from supplier mail</h4>
+            {visibleThreads.filter(t => t.mailPlan?.state === "approval" && t.mailPlan.sourceThread === t.id).map(t =>
+              <button key={t.id} className="ghost-button" onClick={() => selectThread(t.id)}>
+                {t.supplier} · {t.material} · {t.mailPlan!.owner}{t.mailPlan!.simulated ? " · Simulation" : ""}
+              </button>)}
+          </section>}
         <div className="agents-body">
           <div className="thread-list">
             {visibleThreads?.map((thread) => <button key={thread.id} className={thread.id === selectedThread?.id ? "thread selected" : "thread"} onClick={() => selectThread(thread.id)}>
@@ -415,6 +423,12 @@ function App() {
             </button>)}
           </div>
           {selectedThread && <div className="thread-detail">
+            {selectedThread.mailPlan && <section className="decision-impact" aria-label="Current email plan">
+              <strong>{{approval: "Approval needed", waiting: "Awaiting supplier update", unavailable: "Alternative supply needed", review: "Buyer review needed"}[selectedThread.mailPlan.state]}</strong>
+              <p>{selectedThread.mailPlan.owner} · {selectedThread.mailPlan.nextAction}</p>
+              {selectedThread.mailPlan.checkAt && <small>Review by {etaDate.format(new Date(selectedThread.mailPlan.checkAt))} CET</small>}
+              <details><summary>Supplier evidence</summary><p>{selectedThread.mailPlan.evidence}</p></details>
+            </section>}
             {selectedThread.messages.map((message, index) => {
               const envelope = message.transport;
               const plan = message.parsed?.reply_plan;

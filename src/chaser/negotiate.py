@@ -14,7 +14,7 @@ How "best" is decided (see score_material):
   4. Offers below a minimum on-time chance are backups only. That floor rises with time pressure.
   5. If no single supplier covers the need on time, split the order across the best ones.
   6. For the pick(s), choose what to negotiate: price, an earlier date, an early partial
-     shipment, or free express. Each ask is a draft that a person must approve and send.
+     shipment, or a firm expedited freight quote. Each ask is a draft that a person must approve and send.
 
 Negotiation drafts are normal `draft` chases. They pass the guardrails: no binding
 commitments, no maximum price, no deadline slack, no mention of other suppliers.
@@ -28,6 +28,7 @@ import json
 import os
 import re
 import statistics
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
@@ -57,7 +58,16 @@ QTY_RES = (
     re.compile(r"(?:qty|quantity|available|ilość|수량|数量)\s*[:：=]?\s*(\d{1,3}(?:[,. ]\d{3})+|\d+)", re.I),
     re.compile(r"(\d{1,3}(?:[,. ]\d{3})+|\d+)\s*(?:units|pcs|pieces|szt|개|件|个)", re.I),
 )
-DATE_RE = re.compile(r"\b(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}))?\b")
+DATE_TEXT = (r"(\d{4}-\d{2}-\d{2}|\d{1,2} [A-Za-z]{3,9} \d{4}|[A-Za-z]{3,9} \d{1,2},? \d{4})"
+             r"(?:(?:T| (?:at )?)(\d{2}:\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{2}:?\d{2}|CEST|CET|UTC)?)?")
+DATE_RE = re.compile(r"\b" + DATE_TEXT, re.I)
+# Only a labelled arrival is evidence for pursuing faster freight. A quote's expiry or
+# production date is useful context but does not establish where the goods will be.
+ARRIVAL_RE = re.compile(
+    r"(?:\b(?:ETA|delivery|arrival|handoff|hand-off|arrive|deliver|dostawa|dostawy)\b|到货|交付|도착|납품)"
+    r"(?:\s+(?:date|at|to|on|in|by|for|is|will|be|expected|scheduled|planned|termin|w|do|na|"
+    r"Hamburg|DC-HAM|the|packing|line|site|factory)){0,9}\s*[:：=]?\s*"
+    r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?" + DATE_TEXT, re.I)
 SHIPPING_DOC = re.compile(r"\b(?:AWB|air ?waybill|B/L|bill of lading|booking|tracking|packing list|"
                           r"\d{3}-\d{8}|[A-Z]{4}\d{7})\b", re.I)
 
@@ -86,6 +96,10 @@ class Quote:
     eligible: bool = False
     reasons: list[str] = field(default_factory=list)
     constraint: str | None = None
+    reply_id: int | None = None
+    deadline: datetime | None = None
+    stated_arrival: datetime | None = None
+    automation_blocked: bool = False
 
     def price_eur(self, fx):
         if self.unit_price is None or not self.currency or self.currency not in fx:
@@ -127,16 +141,45 @@ def _unit_context(body, start, end):
 
 # --------------------------------------------------------------------------- reading replies
 
+def _date(match):
+    day, clock, seconds, zone = match.groups()
+    offset = {"Z": "+00:00", "UTC": "+00:00", "CET": "+01:00", "CEST": "+02:00"}
+    zone = (zone or "UTC").upper()
+    if not day[:4].isdigit():
+        for pattern in ("%d %b %Y", "%d %B %Y", "%b %d %Y", "%B %d %Y"):
+            try:
+                day = datetime.strptime(day.replace(",", ""), pattern).date().isoformat()
+                break
+            except ValueError:
+                continue
+    try:
+        return datetime.fromisoformat(f"{day}T{clock or '23:59'}:{seconds or '00'}{offset.get(zone, zone)}")
+    except ValueError:
+        return None
+
+
+def is_late_offer(body, deadline, attachments=()):
+    """True when a supplier offers positive quantity and a specific arrival after cutoff."""
+    offer = parse_offer(body, attachments)
+    return bool(offer["quantity"] and offer["stated_arrival"] and offer["stated_arrival"] > _aware(deadline))
+
+
 def parse_offer(body, attachments=()):
     """Quantity, ETA, unit price and proof level from a reply body plus attachment text."""
+    from .recovery import unquoted
+
+    body = unquoted("\n".join(line for line in body.splitlines() if not line.lstrip().startswith(">")))
     text = body + "\n" + "\n".join(a.get("text", "") for a in attachments)
     out = {"quantity": None, "eta": None, "unit_price": None, "currency": None, "commitment": 0}
-    for pattern in QTY_RES:
-        if hit := pattern.search(body) or pattern.search(text):
-            out["quantity"] = _int(hit[1])
-            break
-    if hit := DATE_RE.search(body) or DATE_RE.search(text):
-        out["eta"] = datetime.fromisoformat(hit[1] + "T" + (hit[2] or "23:59")).replace(tzinfo=timezone.utc)
+    quantities = {_int(hit[1]) for pattern in QTY_RES for hit in pattern.finditer(text)}
+    if len(quantities) == 1:
+        out["quantity"] = quantities.pop()
+    arrivals = {_date(match) for match in ARRIVAL_RE.finditer(text)}
+    out["stated_arrival"] = next(iter(arrivals)) if len(arrivals) == 1 else None
+    if out["stated_arrival"]:
+        out["eta"] = out["stated_arrival"]
+    elif not arrivals and (hit := DATE_RE.search(body) or DATE_RE.search(text)):
+        out["eta"] = _date(hit)
     prices = []
     for pattern in PRICE_RES:
         for hit in pattern.finditer(text):
@@ -157,30 +200,36 @@ def parse_offer(body, attachments=()):
     return out
 
 
-def quotes_from_db(con, material=None):
+def quotes_from_db(con, material=None, *, use_thread_deadlines=False, simulated=False):
     """Latest inbound reply per supplier thread, as quotes (attachments included)."""
     import sqlite3
-    from .recovery import hamburg_eta, superseded_threads
+    from .mail_plan import contexts
+    from .recovery import CANCELLED, CANCEL_NEGATED, WITHDRAWN, hamburg_eta, superseded_threads, unquoted
+    from .reply_plan import supply_constraint
 
     con.row_factory = sqlite3.Row
+    # The mail planner resolves the most recent substantive reply per conversation,
+    # including its parent thread, supplier-authored time and live/replay provenance.
+    states = contexts(con, simulated=simulated)
+    evidence = {state["replyId"]: state["root"] for state in states.values()}
     rows = con.execute("""
-        SELECT c.id, c.supplier_id, c.supplier, c.address, c.language, c.material, c.qty,
-               m.body, m.parsed, m.time AS in_time,
-               (SELECT min(time) FROM messages WHERE chase_id = c.id AND side = 'out') AS out_time
-        FROM chases c JOIN messages m ON m.chase_id = c.id AND m.side = 'in'
-        WHERE m.id = (SELECT max(id) FROM messages WHERE chase_id = c.id AND side = 'in')
-        ORDER BY m.id
-    """).fetchall()
+        SELECT c.id, c.supplier_id, c.supplier, c.address, c.language, c.material, root.qty, root.deadline,
+               m.id AS reply_id, m.body, m.parsed, coalesce(json_extract(m.transport,'$.authoredAt'),m.time) AS in_time,
+               (SELECT min(time) FROM messages WHERE chase_id = root.id AND side = 'out') AS out_time
+        FROM json_each(?) e JOIN messages m ON m.id=cast(e.key AS integer)
+        JOIN chases c ON c.id=m.chase_id JOIN chases root ON root.id=e.value
+        WHERE (? IS NULL OR c.material=?)
+        ORDER BY julianday(in_time), m.id
+    """, (json.dumps(evidence), material, material)).fetchall()
     # One supplier can answer in several threads (request, reminder, negotiation): keep its newest reply.
     latest = {}
     for row in rows:
-        latest[(row["supplier_id"], row["material"])] = row
+        window = _aware(row["deadline"]) if use_thread_deadlines else None
+        latest[(row["supplier_id"], row["material"], window)] = row
     rows = list(latest.values())
     quotes = []
     superseded = superseded_threads(con)
     for row in rows:
-        if material and row["material"] != material:
-            continue
         try:
             parsed = json.loads(row["parsed"] or "{}")
             attachments = parsed.get("attachments", [])
@@ -188,11 +237,18 @@ def quotes_from_db(con, material=None):
         except (ValueError, AttributeError):
             attachments = []
             constraint = None
-        offer = parse_offer(row["body"], attachments)
+        content = unquoted(row["body"])
+        constraint = constraint or supply_constraint(content).get("disposition")
+        offer = parse_offer(content, attachments)
+        # Do not allocate by a quote-expiry, PO issue or unrelated dispatch date.
+        offer["eta"] = offer["stated_arrival"]
+        cancelled = (CANCELLED.search(content) and not CANCEL_NEGATED.search(content)) or WITHDRAWN.search(content)
+        if cancelled:
+            constraint = "cancelled"
         if row["id"] in superseded:
             constraint = "no_launch_cover"
         if reported := hamburg_eta(row["body"]):
-            offer["eta"] = reported
+            offer["stated_arrival"] = offer["eta"] = reported
         reply_hours = None
         try:
             if row["out_time"] and row["in_time"]:
@@ -202,7 +258,8 @@ def quotes_from_db(con, material=None):
         quotes.append(Quote(row["id"], row["supplier_id"], row["supplier"], row["address"], row["language"],
                             row["material"], int(row["qty"]), offer["quantity"], offer["eta"],
                             offer["unit_price"], offer["currency"], offer["commitment"], reply_hours,
-                            constraint=constraint))
+                            constraint=constraint, reply_id=row["reply_id"], deadline=_aware(row["deadline"]),
+                            stated_arrival=offer["stated_arrival"], automation_blocked=bool(states[row["id"]]["plan"])))
     return quotes
 
 
@@ -274,11 +331,11 @@ def score_material(quotes, deadline, *, now=None, model=None, fx=None):
             try:
                 p = model.p_on_time(q.supplier_id, q.eta, deadline)
                 found = model.discounted_eta(q.supplier_id, q.eta, deadline=deadline)
-                q.eta_p90 = found.eta_p90
+                q.eta_p90 = max(q.eta, found.eta_p90) if found.eta_p90 else None
                 q.track = model.p_on_time(q.supplier_id, deadline, deadline)  # share of deliveries with no delay
             except Exception:
                 p = None
-        q.p_on_time = 0.0 if q.eta is None else (p if p is not None else (1.0 if q.eta <= deadline else 0.0))
+        q.p_on_time = 0.0 if q.eta is None or q.eta > deadline else (p if p is not None else 1.0)
         eur = q.price_eur(fx)
         late_eta = q.eta_p90 or q.eta
         buffer_h = (deadline - late_eta).total_seconds() / 3600 if late_eta else None
@@ -319,6 +376,8 @@ def _reasons(q, eur, buffer_h, floor, adjusted):
     r = []
     if q.constraint == "no_launch_cover":
         r.append("supplier explicitly ruled out covering this request by launch")
+    elif q.constraint == "cancelled":
+        r.append("supplier cancelled the shipment or withdrew the offer")
     elif q.constraint == "supplier_hold":
         r.append("supplier release is blocked pending the stated terms")
     f = q.facts or {}
@@ -366,10 +425,13 @@ def split_order(ranked, need):
 
 # --------------------------------------------------------------------------- negotiation
 
-def negotiation_asks(q, ranked, context, deadline, fx=None, ask_pct=DEFAULT_ASK_PCT, units=None):
+def negotiation_asks(q, ranked, context, deadline, fx=None, ask_pct=DEFAULT_ASK_PCT, units=None, *, now=None):
     """Which levers to pull with this supplier, with target values."""
     fx = fx or fx_rates()
     deadline = _aware(deadline)
+    now = _aware(now) or datetime.now(timezone.utc)
+    if now >= deadline:
+        return []
     asks = []
     own = q.price_eur(fx)
     if own is not None:
@@ -386,8 +448,11 @@ def negotiation_asks(q, ranked, context, deadline, fx=None, ask_pct=DEFAULT_ASK_
             asks.append({"lever": "price", "target": target, "from": q.unit_price, "currency": q.currency})
     if q.eta is not None:
         buffer_h = (deadline - (q.eta_p90 or q.eta)).total_seconds() / 3600
-        if buffer_h < 24:
-            wanted = min(q.eta, deadline) - timedelta(hours=24)
+        latest = min(q.eta, deadline)
+        if buffer_h < 24 and latest > now:
+            wanted = latest - timedelta(hours=24)
+            if wanted <= now:
+                wanted = latest
             asks.append({"lever": "earlier", "target": hamburg_time(wanted)})
             if q.quantity and q.quantity > (units or q.needed) * 0.5:
                 early = max(1, int((units or q.quantity) * 0.5))
@@ -407,7 +472,12 @@ TEMPLATES = {
            "price": "- a delivered unit price of {target:g} {currency} instead of {from:g} {currency};",
            "earlier": "- dispatch so the goods reach Hamburg by {target};",
            "partial": "- if the full quantity is not possible earlier, a first partial shipment of {units:,} units by {target};",
-           "express": "- express or air transport at no extra cost;",
+           "express": "- a firm quote for express transport, showing the total extra freight charge, currency and quote validity;",
+           "expedite": "For up to {units:,} units needed on the packing line by {target}, what is the earliest feasible "
+                       "full or partial delivery by expedited transport? Please give the quantity, carrier, pickup and "
+                       "packing-line handoff times with time zones, and the timing for the balance. Please quote the "
+                       "incremental all-in freight charge and currency above the current terms, quote validity and "
+                       "latest release time. Please await written instructions before booking.",
            "moq": "- to accept {units:,} units for this order, below your usual minimum order size;",
            "close": "Could you let us know what is possible?\n\nThis is a request for information only, not an order.\n\nSoony launch team"},
     "pl": {"subject": "Weryfikacja oferty {material}",
@@ -415,7 +485,12 @@ TEMPLATES = {
            "price": "- cenę {target:g} {currency} za sztukę z dostawą zamiast {from:g} {currency};",
            "earlier": "- wysyłkę tak, aby towar dotarł do Hamburga do {target};",
            "partial": "- jeśli pełna ilość nie jest możliwa wcześniej, pierwszą dostawę częściową {units:,} szt. do {target};",
-           "express": "- transport ekspresowy lub lotniczy bez dodatkowych kosztów;",
+           "express": "- wiążącą wycenę transportu ekspresowego z pełną dopłatą, walutą i ważnością oferty;",
+           "expedite": "Potrzebujemy do {units:,} szt. na linii pakowania do {target}. Jaka jest najwcześniejsza "
+                       "możliwa pełna lub częściowa dostawa ekspresowa? Prosimy o ilość, przewoźnika, godziny odbioru "
+                       "i przekazania na linię ze strefą czasową oraz termin reszty. Prosimy o pełną dopłatę ponad obecne "
+                       "warunki, walutę, ważność wyceny i najpóźniejszą godzinę zwolnienia. Prosimy wstrzymać "
+                       "rezerwację do pisemnej dyspozycji.",
            "moq": "- akceptację {units:,} szt. w tym zamówieniu, poniżej zwykłej minimalnej ilości;",
            "close": "Prosimy o informację, co jest możliwe.\n\nTo jest wyłącznie zapytanie informacyjne, a nie zamówienie.\n\nZespół startowy Soony"},
     "ko": {"subject": "{material} 제안 재검토 요청",
@@ -423,7 +498,11 @@ TEMPLATES = {
            "price": "- 개당 {from:g} {currency} 대신 {target:g} {currency}(도착 기준) 단가;",
            "earlier": "- {target}까지 함부르크에 도착하도록 출고;",
            "partial": "- 전체 수량이 어렵다면 {target}까지 {units:,}개 1차 부분 출하;",
-           "express": "- 추가 비용 없는 특송 또는 항공 운송;",
+           "express": "- 특송 추가 운임 총액, 통화 및 견적 유효 시각;",
+           "expedite": "{target}까지 포장라인에 최대 {units:,}개가 필요합니다. 긴급 운송으로 전량 또는 일부를 "
+                       "가장 빨리 인도할 수 있는 시점을 알려 주십시오. 수량, 운송사, 시간대를 포함한 픽업 및 포장라인 "
+                       "인도 시각, 잔량 일정을 부탁드립니다. 기존 조건 대비 모든 비용을 포함한 확정 추가 운임과 "
+                       "통화, 견적 유효 시각 및 최종 출하 지시 시한을 알려 주십시오. 서면 지시 전에는 예약하지 마십시오.",
            "moq": "- 이번 주문에 한해 통상 최소 주문 수량보다 적은 {units:,}개 수락;",
            "close": "가능한 사항을 알려 주시기 바랍니다.\n\n이 메일은 정보 요청이며 발주가 아닙니다.\n\nSoony 출시 담당팀"},
     "zh": {"subject": "{material} 报价复核请求",
@@ -431,55 +510,81 @@ TEMPLATES = {
            "price": "- 到货单价 {target:g} {currency}，而非 {from:g} {currency}；",
            "earlier": "- 安排发运，使货物于 {target} 前到达汉堡；",
            "partial": "- 如无法提前交付全部数量，请于 {target} 前先分批发运 {units:,} 件；",
-           "express": "- 不加收费用的快递或空运；",
+           "express": "- 加急运输的正式报价，列明全部新增运费、币种及报价有效期；",
+           "expedite": "包装线需要在 {target} 前收到最多 {units:,} 件。请问采用加急运输，全部或首批最早何时能交付？"
+                       "请列明数量、承运人、带时区的提货及包装线交接时间，以及余量交期。请提供比原条款新增的全包运费、"
+                       "币种、报价有效期及最迟放行时间。请在收到书面指示后再订舱。",
            "moq": "- 本次订单接受 {units:,} 件，低于贵司通常的最小起订量；",
            "close": "请告知可行方案。\n\n本邮件仅为信息询问，并非订单。\n\nSoony 上市团队"},
 }
 
 
-def draft_counter(quote, asks, units=None):
+def draft_counter(quote, asks, units=None, *, deadline=None):
     if not asks:
         return None
     t = TEMPLATES.get(quote.language, TEMPLATES["en"])
-    head = {"material": quote.material, "qty": units or quote.quantity or quote.needed}
+    head = {"material": quote.material, "qty": quote.quantity or units or quote.needed}
     lines = [t["open"].format(**head)] + [t[a["lever"]].format(**a) for a in asks] + ["", t["close"]]
     body = "\n".join(lines)
     check = Guardrails().validate_draft(body)
     if not check.ok:
         raise ValueError("negotiation draft failed guardrails: " + "; ".join(check.errors))
     key = json.dumps(asks, sort_keys=True)
+    if deadline is not None:
+        key += _aware(deadline).astimezone(timezone.utc).isoformat()
     ref = hashlib.sha256(f"{quote.thread_id}:negotiate:{key}".encode()).hexdigest()[:10].upper()
     return {"id": ref, "subject": f"[SOONY-{ref}] " + t["subject"].format(**head), "body": body,
             "levers": [a["lever"] for a in asks]}
 
 
+def _reserve_window(con, quote, ref, deadline, planned_at):
+    """One negotiation per supplier, part and requested window, including pre-upgrade drafts."""
+    table_sql = """CREATE TABLE IF NOT EXISTS negotiations (
+        supplier_id TEXT NOT NULL, material TEXT NOT NULL, chase_id TEXT NOT NULL, time TEXT NOT NULL,
+        deadline TEXT NOT NULL, PRIMARY KEY (supplier_id, material, deadline))"""
+    con.execute(table_sql)
+    # Begin a write transaction before checking the old schema, so two first-run
+    # workers cannot both try to migrate the table.
+    con.execute("UPDATE negotiations SET time=time WHERE 0")
+    if "deadline" not in {col[1] for col in con.execute("PRAGMA table_info(negotiations)")}:
+        con.execute("ALTER TABLE negotiations RENAME TO negotiations_legacy")
+        con.execute(table_sql)
+        con.execute("""INSERT INTO negotiations
+            SELECT n.supplier_id, n.material, n.chase_id, n.time, coalesce(strftime('%Y-%m-%dT%H:%M:%fZ', c.deadline),'')
+            FROM negotiations_legacy n LEFT JOIN chases c ON c.id=n.chase_id""")
+        con.execute("DROP TABLE negotiations_legacy")
+    return con.execute("""INSERT OR IGNORE INTO negotiations (supplier_id,material,chase_id,time,deadline)
+                          VALUES(?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ',?))""",
+                       (quote.supplier_id, quote.material, ref, planned_at, _aware(deadline).isoformat())).rowcount
+
+
 def save_draft(con, quote, draft, deadline, units=None):
-    """Store as a normal draft chase: it shows up for review and only a person can send it."""
+    """Create at most one negotiation per supplier and part, with its inbound evidence."""
     from .followup import human_owned_thread
+    from .mail_plan import blocks_automation
     from .recovery import claimed_threads
 
     if quote.thread_id in claimed_threads(con) or human_owned_thread(con, quote.thread_id):
         return False
     from .supplier_loop import managed
 
-    if managed(quote.supplier_id, quote.material):
+    if managed(quote.supplier_id, quote.material) or blocks_automation(con, quote.thread_id):
         return False
-    con.execute("""CREATE TABLE IF NOT EXISTS negotiations (
-        supplier_id TEXT NOT NULL, material TEXT NOT NULL, chase_id TEXT NOT NULL, time TEXT NOT NULL,
-        PRIMARY KEY (supplier_id, material))""")
-    if con.execute("SELECT 1 FROM negotiations WHERE supplier_id=? AND material=?",
-                   (quote.supplier_id, quote.material)).fetchone():
-        return False  # one negotiation email per supplier and part, so we never haggle in a loop
     with con:
+        planned_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        if not _reserve_window(con, quote, draft["id"], deadline, planned_at):
+            return False
         inserted = con.execute("""INSERT OR IGNORE INTO chases
             (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
             VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
                                (draft["id"], quote.supplier_id, quote.supplier, quote.address, quote.language,
                                 draft["subject"], "draft", quote.material, units or quote.quantity or quote.needed,
-                                draft["body"], deadline if isinstance(deadline, str) else deadline.isoformat())).rowcount
+                                draft["body"], _aware(deadline).isoformat())).rowcount
         if inserted:
-            con.execute("INSERT OR IGNORE INTO negotiations VALUES(?,?,?,?)",
-                        (quote.supplier_id, quote.material, draft["id"], datetime.now(timezone.utc).isoformat(timespec="seconds")))
+            columns = {column[1] for column in con.execute("PRAGMA table_info(chases)")}
+            if {"parent_thread_id", "based_on_reply_id"} <= columns:
+                con.execute("UPDATE chases SET parent_thread_id=?, based_on_reply_id=? WHERE id=?",
+                            (quote.thread_id, quote.reply_id, draft["id"]))
             con.execute("INSERT INTO activity(time,agent,action,type) VALUES(?,?,?,?)",
                         (datetime.now(timezone.utc).isoformat(timespec="seconds"), "Mail Agent",
                          f"{quote.supplier}: drafted a negotiation email ({', '.join(draft['levers'])}) for review.", "info"))
@@ -488,21 +593,24 @@ def save_draft(con, quote, draft, deadline, units=None):
 
 # --------------------------------------------------------------------------- report
 
-def compare(con, deadline, material=None, *, save=False, model=None, now=None):
+def compare(con, deadline, material=None, *, save=False, model=None, now=None, use_thread_deadlines=False, simulated=False):
     """Best supplier, split plan and negotiation drafts per material, as JSON-able data."""
+    now = _aware(now) or datetime.now(timezone.utc)
     fx = fx_rates()
     model = model if model is not None else _reliability()
-    quotes = quotes_from_db(con, material)
+    groups = defaultdict(list)
+    for quote in quotes_from_db(con, material, use_thread_deadlines=use_thread_deadlines, simulated=simulated):
+        cutoff = quote.deadline if use_thread_deadlines else _aware(deadline)
+        groups[quote.material, cutoff].append(quote)
     report = {"fx_eur_assumed": fx, "materials": []}
-    for mat in sorted({q.material for q in quotes}):
-        ranked, context, weights = score_material([q for q in quotes if q.material == mat], deadline,
-                                                  now=now, model=model or None, fx=fx)
-        need = ranked[0].needed
+    for (mat, cutoff), candidates in sorted(groups.items()):
+        ranked, context, weights = score_material(candidates, cutoff, now=now, model=model or None, fx=fx)
+        need = max(q.needed for q in ranked)
         plan = split_order(ranked, need)
         picks = {row["thread_id"]: row["units"] for row in plan["allocation"]}
         top = sorted(weights, key=weights.get, reverse=True)[:3]
         entry = {
-            "material": mat, "need": need, "context": context, "weights": weights,
+            "material": mat, "deadline": cutoff.isoformat(), "need": need, "context": context, "weights": weights,
             "why": f"{context['mode']}: weighing " + ", ".join(FACTOR_LABELS[k] for k in top) + " most",
             "pick": ranked[0].supplier if ranked[0].eligible else None,
             "plan": plan,
@@ -512,13 +620,20 @@ def compare(con, deadline, material=None, *, save=False, model=None, now=None):
             "negotiations": [],
         }
         for q in ranked:
-            if q.thread_id not in picks:
+            if cutoff <= now or q.constraint or q.automation_blocked:
                 continue
-            asks = negotiation_asks(q, ranked, context, deadline, fx, units=picks[q.thread_id])
-            draft = draft_counter(q, asks, units=picks[q.thread_id])
+            units = picks.get(q.thread_id)
+            if units:
+                asks = negotiation_asks(q, ranked, context, cutoff, fx, units=units, now=now)
+            elif plan["uncovered"] and q.quantity and q.stated_arrival and q.stated_arrival > cutoff:
+                units = min(plan["uncovered"], q.quantity)
+                asks = [{"lever": "expedite", "units": units, "target": hamburg_time(cutoff)}]
+            else:
+                continue
+            draft = draft_counter(q, asks, units=units, deadline=cutoff)
             if not draft:
                 continue
-            saved = save_draft(con, q, draft, deadline, picks[q.thread_id]) if save else False
+            saved = save_draft(con, q, draft, cutoff, units) if save and not simulated else False
             entry["negotiations"].append({"supplier": q.supplier, "asks": asks, "draft_id": draft["id"],
                                           "subject": draft["subject"], "body": draft["body"], "saved": saved})
         report["materials"].append(entry)

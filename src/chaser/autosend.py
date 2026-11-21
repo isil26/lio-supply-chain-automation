@@ -69,6 +69,7 @@ def run(con, *, send=None, now=None, prepare=True):
     """Prepare and send drafts. Returns a list of {id, supplier, result}."""
     from . import activity as _activity
     from . import send as chaser_send
+    from . import deals, mail_plan
     from .supplier_loop import managed
 
     def activity(con, agent, text, kind):
@@ -85,11 +86,10 @@ def run(con, *, send=None, now=None, prepare=True):
             activity(con, "Mail Agent", f"Reminder planning skipped ({exc.__class__.__name__}).", "warning")
         try:
             from .followup import answer_replies
-            answer_replies(con, save=True)
+            answer_replies(con, save=True, now=now)
         except Exception as exc:
             activity(con, "Mail Agent", f"Reply answering skipped ({exc.__class__.__name__}).", "warning")
         try:
-            from . import deals
             row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
             if row:
                 deals.sync(con, row[0], now=now)
@@ -99,7 +99,7 @@ def run(con, *, send=None, now=None, prepare=True):
             from .negotiate import compare
             row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
             if row:
-                compare(con, row[0], save=True)
+                compare(con, row[0], save=True, now=now, use_thread_deadlines=True)
         except Exception as exc:
             activity(con, "Mail Agent", f"Negotiation planning skipped ({exc.__class__.__name__}).", "warning")
     limit = int(os.getenv("CHASER_AUTO_MAX_PER_CYCLE", "0")) or None
@@ -111,8 +111,19 @@ def run(con, *, send=None, now=None, prepare=True):
     """).fetchall()
     results = []
     for chase_id, supplier, address, body, supplier_id, material, status in drafts:
-        if status == "draft" and managed(supplier_id, material):
-            continue
+        if status == "draft":
+            try:
+                decision = deals.check_draft(con, chase_id)
+                if not decision:
+                    if managed(supplier_id, material):
+                        continue
+                    draft = con.execute("SELECT * FROM chases WHERE id=?", (chase_id,)).fetchone()
+                    mail_plan.check_draft(con, draft)
+            except ValueError:
+                with con:
+                    con.execute("UPDATE chases SET status='superseded draft' WHERE id=? AND status='draft'", (chase_id,))
+                results.append({"id": chase_id, "supplier": supplier, "result": "superseded"})
+                continue
         if limit and len([r for r in results if r["result"] == "sent"]) >= limit:
             break
         address = address.strip().lower()
