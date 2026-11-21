@@ -81,6 +81,37 @@ class ActionSendTest(unittest.TestCase):
         for text in ("Ask DC-HAM for a window.", "2026-11-22T09:00", "EUR 1,200"):
             self.assertIn(text, row["body"])
 
+    # ---- T94 approval modes ----
+    def test_auto_needs_written_delegation(self):
+        con = db()
+        unconfirmed = {"mode": "AUTO", "approver": "Dr. Vogt", "delegation": {"id": "D1", "from": "Dr. Vogt", "confirmed": False}}
+        row = actions.auto_dispatch(con, SUPPLIER, demo=True, decision=unconfirmed)
+        self.assertEqual((row["mode"], row["status"]), ("ONE-CLICK", "awaiting approval"))
+        self.assertEqual(con.execute("SELECT count(*) FROM messages").fetchone()[0], 0)
+        row = actions.on_approve(con, SUPPLIER, "Felix", demo=True, decision=unconfirmed)   # a person clicks
+        self.assertEqual((row["status"], row["approved_by"]), ("sent", "Felix"))
+
+    def test_auto_with_confirmed_delegation_sends_and_logs_it(self):
+        confirmed = {"mode": "auto", "approver": "Felix", "delegation": {"id": "D7", "from": "Felix", "confirmed": True}}
+        row = actions.auto_dispatch(db(), SUPPLIER, demo=True, decision=confirmed)
+        self.assertEqual((row["mode"], row["status"]), ("AUTO", "sent"))
+        self.assertEqual(row["approved_by"], "delegation of Felix, record D7")
+
+    def test_binding_email_is_never_auto(self):
+        binding = dict(SUPPLIER, id="po", draft=dict(SUPPLIER["draft"], body="We accept your offer, purchase order follows."))
+        confirmed = {"mode": "AUTO", "delegation": {"id": "D7", "from": "Felix", "confirmed": True}}
+        row = actions.auto_dispatch(db(), binding, demo=True, decision=confirmed)
+        self.assertEqual((row["mode"], row["status"]), ("ONE-CLICK", "awaiting approval"))
+
+    def test_never_and_escalate(self):
+        con = db()
+        row = actions.on_approve(con, INTERNAL, "Isil", demo=True, decision={"mode": "NEVER", "reason": "quality release"})
+        self.assertEqual(row["status"], "blocked")
+        row = actions.on_approve(con, dict(SUPPLIER, id="esc"), "Isil", demo=True,
+                                 decision={"mode": "ESCALATE", "escalateTo": "Jonas Lindqvist (CPO)", "sla": "same hour"})
+        self.assertEqual((row["status"], row["recipient"], row["sla"]), ("escalated", "Jonas Lindqvist (CPO)", "same hour"))
+        self.assertEqual(con.execute("SELECT count(*) FROM messages").fetchone()[0], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
