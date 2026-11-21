@@ -1,0 +1,39 @@
+{
+  "exportedAt": "2026-11-21T17:12:00+01:00",
+  "source": "Soony vendor master (SAP XK03 extract v2)",
+  "supplier": {
+    "vendorNo": 18,
+    "supplierId": "SUP-0018",
+    "name": "Pune Diecast Works",
+    "legalName": "Pune Diecast Works Pvt. Ltd.",
+    "category": "Collector's Items",
+    "address": {
+      "city": "Pune",
+      "country": "IN",
+      "geo": {
+        "lat": 18.5204,
+        "lng": 73.8567
+      }
+    },
+    "terms": {
+      "currency": "INR",
+      "payment": "NET30",
+      "incoterm": "FOB Nhava Sheva"
+    },
+    "since": "2026-08-01",
+    "status": "watch",
+    "qualification": {
+      "status": "conditional",
+      "releasedOn": "2026-08-01",
+      "validUntil": "2026-10-30",
+      "extendedBy": null
+    },
+    "contact": {
+      "name": "Rohan Deshmukh",
+      "email": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "phone": "+91 20 2600 1100",
+      "language": "en"
+    },
+    "notes": "PPAP documents received 2026-09-14, review by Supplier Quality open. First lot: see incoming inspection report."
+  }
+}

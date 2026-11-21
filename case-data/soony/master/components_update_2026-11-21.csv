@@ -1,0 +1,5 @@
+component_id,field,old,new,changed_by
+CMP-GAM-004,drawing_rev,B,C,Sofia Marchetti
+CMP-GAM-009,drawing_rev,A,B,Sofia Marchetti
+CMP-GAM-010,critical,N,Y,Mei Lin
+CMP-GAM-001,abc_class,A,A,Felix Brunner

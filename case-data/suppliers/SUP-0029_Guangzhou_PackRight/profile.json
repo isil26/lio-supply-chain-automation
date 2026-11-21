@@ -1,0 +1,36 @@
+{
+  "exportedAt": "2026-11-21T17:12:00+01:00",
+  "source": "Soony vendor master (SAP XK03 extract v2)",
+  "supplier": {
+    "vendorNo": 29,
+    "supplierId": "SUP-0029",
+    "name": "Guangzhou PackRight",
+    "legalName": "Guangzhou PackRight Packaging Co., Ltd.",
+    "category": "Print & Packaging",
+    "address": {
+      "city": "Guangzhou",
+      "country": "CN",
+      "geo": {
+        "lat": 23.1291,
+        "lng": 113.2644
+      }
+    },
+    "terms": {
+      "currency": "CNY",
+      "payment": "NET30",
+      "incoterm": "FOB Yantian"
+    },
+    "since": "2019-09-01",
+    "status": "at risk",
+    "qualification": {
+      "status": "qualified"
+    },
+    "contact": {
+      "name": "Lin Hui",
+      "email": "lin.hui.packright@suppliers.juliansibbing.de",
+      "phone": "+86 20 8200 1100",
+      "language": "zh"
+    },
+    "notes": "Supply notice of 2026-11-21: magnet sub-supplier cannot export, licence pending. Collector's box deliveries from December at risk. Risk owner: P. Winter."
+  }
+}
