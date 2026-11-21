@@ -1,6 +1,6 @@
 # Supplier Chaser email archive
 
-Team Gmail snapshot taken on **21 Nov 2026 at 20:24:48 CET**. It contains **8 email chains and 79 messages** across 6 suppliers (41 sent messages and 38 supplier replies).
+Team Gmail snapshot taken on **21 Nov 2026 at 20:28:24 CET**. It contains **8 email chains and 80 messages** across 6 suppliers (42 sent messages and 38 supplier replies).
 
 Each JSON file contains the original-language bodies, sender and recipient, email timestamps, Message-IDs and reply headers. Files group messages by the `[SOONY-…]` tag in the email subject. The `chase_id` field links a message to its internal Supplier Chaser record when available. Use `in_reply_to` and `references` to trace replies within a chain.
 
@@ -12,7 +12,7 @@ Each JSON file contains the original-language bodies, sender and recipient, emai
 | Sleeves (`CMP-GAM-004`) | Karton Nowak (`SUP-0028`) | [06E83D9DBA](06E83D9DBA.json) | 8 | 21 Nov 19:53:58 CET |
 | Sleeves (`CMP-GAM-004`) | Guangzhou PackRight (`SUP-0029`) | [C8BDCDDABE](C8BDCDDABE.json) | 4 | 21 Nov 19:43:59 CET |
 | Art books (`CMP-GAM-008`) | Karton Nowak (`SUP-0028`) | [6F967080CF](6F967080CF.json) | 14 | 21 Nov 20:24:41 CET |
-| Statues (`CMP-GAM-010`) | Pune Diecast Works (`SUP-0018`) | [153839FA41](153839FA41.json) | 17 | 21 Nov 20:12:59 CET |
+| Statues (`CMP-GAM-010`) | Pune Diecast Works (`SUP-0018`) | [153839FA41](153839FA41.json) | 18 | 21 Nov 20:27:54 CET |
 | Statues (`CMP-GAM-010`) | Dongguan Precision Housings (`SUP-0019`) | [9D6AD72E97](9D6AD72E97.json) | 8 | 21 Nov 20:05:57 CET |
 
 New Gmail messages trigger an archive refresh while the mail host is online. Use the [live supplier mailbox](https://soony-manti-live.vercel.app/?mail=1) for attachment files.
