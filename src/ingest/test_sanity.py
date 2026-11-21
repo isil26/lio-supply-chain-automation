@@ -28,11 +28,11 @@ class IngestionSanityTest(unittest.TestCase):
         self.manifest = {}
         self.write(LEGACY, (
             "EBELN;EBELP;LIFNR;MATNR;MENGE;NETPR;BEDAT;ZZSTAT;ERNAM\r\n"
-            '4500318401;00010;19;cmp-gam-003;44000;1,5200;08/12/2024;GL;"André"\r\n'
+            '4500000001;00010;19;cmp-gam-003;44000;1,5200;08/12/2024;GL;"André"\r\n'
         ).encode("cp1252"))
         self.write(MODERN, (
             "Material ID\tVendor ID\tPO Number\tLine Number\tOrder Date\tQty\tStatus\n"
-            "CMP-GAM-003\tSUP-0019\t4500318526\t1\t2025-07-04\t20000\tOpen\n"
+            "CMP-GAM-003\tSUP-0019\t4500000001\t1\t2025-07-04\t20000\tOpen\n"
         ).encode("utf-16"))
         self.write(SHIPMENTS, b"shipment_id,status,eta\nSHP-1,arrived_port,2026-11-19\n")
         self.write(PROFILE, b"Supplier Name,Supplier ID\nFixture Supplier,0019\n")
@@ -89,7 +89,7 @@ class IngestionSanityTest(unittest.TestCase):
         self.assertEqual(first["tables"]["purchase_orders"]["rows"], 2)
         self.assertEqual(self.query("""
             SELECT po_line, supplier_id, unit_price, order_date, status, status_raw, buyer
-            FROM purchase_orders WHERE po_number = '4500318401'
+            FROM purchase_orders WHERE po_number = '4500000001'
         """), [(1, "SUP-0019", 1.52, "2024-08-12", "delivered", "GL", "André")])
         self.assertEqual(self.query("""
             SELECT status, source_sheet, source_row, supplier_id, eta FROM open_shipments

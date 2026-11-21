@@ -8,7 +8,7 @@ The Supplier Chaser drafts multilingual supplier outreach, requires human approv
 python3 -m src.chaser.run draft \
   --supplier-id SUP-0019 \
   --component CMP-GAM-006 \
-  --po 4500318744 \
+  --po 4500000001 \
   --need "confirmed launch quantity and delivery ETA" \
   --deadline "2026-11-22T20:00:00+01:00"
 

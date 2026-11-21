@@ -32,7 +32,7 @@ class SupplierChaserTest(unittest.TestCase):
         payload = {
             "supplier_id": supplier_id,
             "component": "CMP-GAM-006",
-            "PO": "4500318744",
+            "PO": "4500000001",
             "what_we_need": "confirmed quantity and launch ETA",
             "deadline": DEADLINE,
         }
