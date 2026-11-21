@@ -173,7 +173,17 @@ function drawThreads(){
   for(const message of thread.messages){
     const line=node("article");
     line.append(node("strong",message.sender),node("p",message.text));
-    if(message.parsed && Object.keys(message.parsed).length) line.append(label(Object.entries(message.parsed).map(([key,value])=>key+" "+value.value).join(" · ")));
+    const fields=Object.entries(message.parsed || {}).filter(([key])=>key!=="reply_plan");
+    if(fields.length) line.append(label(fields.map(([key,value])=>key+" "+value.value).join(" · ")));
+    const replyPlan=message.parsed?.reply_plan;
+    if(replyPlan){
+      line.append(node("strong",replyPlan.simulated?"Simulated supplier reply · Review needed":"Supplier reply · Review needed"));
+      for(const edition of replyPlan.editions || []){
+        line.append(label(edition.title+" median packed · "+edition.before.toLocaleString()+" → "+edition.after.toLocaleString()));
+        line.append(label("Upper forecast (p90) · "+edition.upperBefore.toLocaleString()+" → "+edition.upperAfter.toLocaleString()));
+      }
+      line.append(node("p",replyPlan.nextAction));
+    }
     messages.append(line);
   }
   $("threads").append(messages);
@@ -188,7 +198,7 @@ function drawThreads(){
     const reply=node("textarea");
     reply.placeholder="Enter a simulated supplier reply";
     reply.setAttribute("aria-label","Simulated supplier reply");
-    $("threads").append(reply,button("Import demo reply",()=>action("/api/threads/"+thread.id+"/demo-reply",{text:reply.value})));
+    $("threads").append(reply,button("Import demo reply",()=>action("/api/threads/"+thread.id+"/demo-reply",reply.value.trim()?{text:reply.value}:{})));
   }
 }
 function drawActivity(){

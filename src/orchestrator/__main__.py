@@ -18,6 +18,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from src import chaser
+from src.chaser.reply_plan import demo_reply
 from src.decide import authorize, choose, decisions
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
@@ -201,8 +202,8 @@ def dashboard(con):
                       for pid, row in truth["editions"].items()],
         "risks": risks, "activity": dashboard_activity(con, blocked, clock, docs=docs, reviews=reviews), "documentReviews": reviews,
         "threads": [{**thread, "initials": "".join(word[0] for word in thread["supplier"].split()[:2]),
-                     "messages": [dict(msg, time=clock(msg["time"])) for msg in thread["messages"]]}
-                    for thread in chaser.list_threads(con)],
+                     "messages": [dict(msg, timestamp=msg["time"], time=clock(msg["time"])) for msg in thread["messages"]]}
+                    for thread in chaser.list_threads(con, states)],
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": snapshot.get("drop"),
         "sync": snapshot.get("sync"), "dataHealth": health,
@@ -228,32 +229,36 @@ class Loop:
             "errors": [],
         }
         if args.demo:
-            demo_dir = ROOT / "runtime" / "replay"
-            demo_dir.mkdir(parents=True, exist_ok=True)
-            demo_id = str(time.time_ns())
-            self.root = demo_dir / demo_id / "data"
-            self.database = demo_dir / demo_id / "soony.db"
+            saved_replay = getattr(args, "replay_dir", None)
+            session = saved_replay or ROOT / "runtime" / "replay" / str(time.time_ns())
+            self.root = session / "data"
+            self.database = session / "soony.db"
             baseline = args.data
             pending = {source.relative_to(baseline).as_posix() for source in baseline.rglob("*")
                        if source.is_file() and ("shipping_advice" in source.name.casefold() or "oferta_" in source.name.casefold())}
             for source in baseline.rglob("*"):
                 if source.is_file():
                     key = source.relative_to(baseline).as_posix()
-                    if key in pending:
-                        self.drop_files.append((source, self.root / key))
+                    dest = self.root / key
+                    if key in pending and not dest.exists():
+                        self.drop_files.append((source, dest))
                     else:
-                        self.copy(source, self.root / key)
+                        self.copy(source, dest)
             cache = ROOT / "store" / "docs_cache.sqlite3"
             if cache.is_file():
                 replay_store = self.root.parent / "store"
                 replay_store.mkdir(exist_ok=True)
-                with closing(sqlite3.connect(cache)) as source, closing(sqlite3.connect(replay_store / cache.name)) as dest:
-                    source.backup(dest)
+                replay_cache = replay_store / cache.name
+                if not replay_cache.exists():
+                    with closing(sqlite3.connect(cache)) as source, closing(sqlite3.connect(replay_cache)) as dest:
+                        source.backup(dest)
             language_data = ROOT / "runtime" / "tessdata"
             if language_data.is_dir():
                 replay_runtime = self.root.parent / "runtime"
                 replay_runtime.mkdir(exist_ok=True)
-                (replay_runtime / "tessdata").symlink_to(language_data, target_is_directory=True)
+                languages = replay_runtime / "tessdata"
+                if not languages.is_symlink():
+                    languages.symlink_to(language_data, target_is_directory=True)
         else:
             self.root = args.data
             self.database = args.db
@@ -400,6 +405,7 @@ def handler(loop):
                             "lock_wait_ms": health["lockWaitMs"],
                             "lock_wait_seconds": round(health["lockWaitMs"] / 1000, 3),
                             "dataHealth": data_health,
+                            "backendCommit": os.getenv("SOONY_RELEASE_SHA"),
                         })
                         return self.out(health)
                     if path == "/api/dashboard":
@@ -407,6 +413,7 @@ def handler(loop):
                         if value is not None and loop.agents:
                             value["agents"] = {
                                 "enabled": loop.agents.enabled,
+                                "mode": os.getenv("SOONY_AGENT_MODE", "live"),
                                 "status": "offline (deterministic mode)" if not loop.agents.enabled else "running",
                                 "runs": loop.agents.runs(5),
                             }
@@ -491,6 +498,13 @@ def handler(loop):
                                        else f"{status}. Purchasing remains subject to its approval chain.")
                             chaser.activity(con, "Procurement", f'{decision["title"]}: {message}')
                         return self.out({"ok": True, "approvalId": match[1], "status": status})
+                    reply_action = re.fullmatch(r"/api/reply-decisions/([0-9]{1,12})/approve", path)
+                    if reply_action:
+                        decision = chaser.reply_decision(con, int(reply_action[1]))
+                        if not decision:
+                            return self.out({"error": "No actionable reply decision"}, 404)
+                        status = authorize(con, decision, "approve")
+                        return self.out({"ok": True, "status": status})
                     match = re.fullmatch(r"/api/threads/([A-F0-9]+)/(send|demo-reply)", path)
                     if match and match[2] == "send":
                         if body.get("confirm") is not True:
@@ -506,12 +520,16 @@ def handler(loop):
                     if match and loop.args.demo:
                         message = con.execute("SELECT * FROM chases WHERE id=?", (match[1],)).fetchone()
                         reply_text = body.get("text")
-                        if not message or message["status"] != "awaiting reply" or not isinstance(reply_text, str) or not reply_text.strip():
-                            raise ValueError("A sent demo thread and reply text are required")
+                        if not message or message["status"] != "awaiting reply":
+                            raise ValueError("A sent demo thread is required")
+                        if reply_text is None:
+                            reply_text = demo_reply(get_state(con, "truth", {}), message)
+                        if not isinstance(reply_text, str) or not reply_text.strip():
+                            raise ValueError("Reply text must be nonempty")
                         reply = EmailMessage()
                         reply["From"], reply["Subject"], reply["In-Reply-To"] = message["address"], message["subject"], message["message_id"]
                         reply.set_content(reply_text)
-                        parsed = chaser.receive(con, reply)
+                        parsed = chaser.receive(con, reply, simulated=True)
                         if loop.agents and parsed:
                             loop.agents.submit({
                                 "kind": "reply",
@@ -545,6 +563,7 @@ def main():
     parser.add_argument("--db", type=Path, default=DB)
     parser.add_argument("--data", type=Path, default=ROOT / "data")
     parser.add_argument("--port", type=int, default=8787)
+    parser.add_argument("--replay-dir", type=Path, help="reuse a private local replay workspace")
     parser.add_argument("--interval", type=float, default=45)
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--online", action="store_true", help="poll the private portal")
@@ -552,6 +571,12 @@ def main():
     modes.add_argument("--numbers", action="store_true", help="print the evaluated store snapshot as the deck's Markdown tables")
     parser.add_argument("--once", action="store_true", help="evaluate once and print the result")
     args = parser.parse_args()
+    if args.replay_dir and not args.demo:
+        parser.error("--replay-dir requires --demo")
+    if args.replay_dir:
+        args.replay_dir = args.replay_dir.resolve()
+        if args.replay_dir.is_relative_to(args.data.resolve()) or args.data.resolve().is_relative_to(args.replay_dir):
+            parser.error("the replay workspace and original inputs must be separate")
     if args.interval <= 0:
         parser.error("--interval must be positive")
     if args.online and args.data.resolve() != (ROOT / "data").resolve():

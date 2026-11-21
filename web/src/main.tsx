@@ -9,6 +9,7 @@ import {
   type Risk,
   type Source,
   type SupplierThread,
+  type SupplierMessage,
 } from "./api";
 import { AgentTrace } from "./agents/AgentTrace";
 import { MantiLogo, SupplyMap } from "./SupplyMap";
@@ -65,7 +66,8 @@ function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
   const [dark, setDark] = useState(true);
-  const [threadId, setThreadId] = useState("");
+  const [threadId, setThreadId] = useState(() => new URLSearchParams(window.location.search).get("thread") || "");
+  const [threadsOpen, setThreadsOpen] = useState(() => new URLSearchParams(window.location.search).has("thread"));
   const [dropVisible, setDropVisible] = useState(true);
   const [decisionBusy, setDecisionBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
@@ -138,14 +140,30 @@ function App() {
     }
   };
 
+  const selectThread = (id: string) => {
+    setThreadId(id);
+    const url = new URL(window.location.href);
+    url.searchParams.set("thread", id);
+    url.hash = "";
+    window.history.replaceState(null, "", url);
+  };
+
+  const approveReply = async (message: SupplierMessage) => {
+    if (!message.id) return;
+    setDecisionBusy(true);
+    try {
+      await dashboardApi.approveReply(message.id);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Reply decision could not be approved");
+    } finally { setDecisionBusy(false); }
+  };
+
   const demoReply = async () => {
     if (!selectedThread) return;
     setReplyBusy(true);
     try {
-      await dashboardApi.replyThread(
-        selectedThread.id,
-        "Confirmed: we can prepare the requested allocation and follow the documented approval route.",
-      );
+      await dashboardApi.replyThread(selectedThread.id);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Demo reply could not be added");
@@ -264,28 +282,66 @@ function App() {
         <SupplyMap network={data.network}/>
       </section>}
 
-      <details className="card agents">
+      <details className="card agents" open={threadsOpen} onToggle={(event) => setThreadsOpen(event.currentTarget.open)}>
         <summary><h3>Agents</h3><span className="muted">{drafts} emails ready · {reviews} files to check</span></summary>
         <div className="agents-body">
           <div className="thread-list">
-            {data.threads.map((thread) => <button key={thread.id} className={thread.id === selectedThread?.id ? "thread selected" : "thread"} onClick={() => setThreadId(thread.id)}>
+            {data.threads.map((thread) => <button key={thread.id} className={thread.id === selectedThread?.id ? "thread selected" : "thread"} onClick={() => selectThread(thread.id)}>
               <strong>{thread.supplier}</strong><span>{thread.status}</span>
             </button>)}
           </div>
           {selectedThread && <div className="thread-detail">
-            {selectedThread.messages.slice(-2).map((message, index) => <div className={`message ${message.side}`} key={index}>
-              <span>{message.sender}</span><p>{message.text}</p>
-            </div>)}
+            {selectedThread.messages.map((message, index) => {
+              const envelope = message.transport;
+              const plan = message.parsed?.reply_plan;
+              const status = envelope ? ({
+                draft: "Draft",
+                attempting: "Sending attempt",
+                smtp_accepted: "Accepted by SMTP",
+                dry_run: "Dry-run email",
+                failed: "Send failed",
+                delivery_uncertain: "Delivery uncertain",
+                received: envelope.mode === "simulated" ? "Simulated supplier reply" : "Received in inbox",
+              }[envelope.status]) : "Historical message · Transport unverified";
+              return <div className={`message ${message.side}`} key={message.id ?? index}>
+                <span>{status}{message.timestamp && <> · <time dateTime={message.timestamp}>{etaDate.format(new Date(message.timestamp))} CET</time></>}</span>
+                <div><strong>{envelope?.from ?? message.sender}</strong>{envelope?.to && <> → {envelope.to}</>}</div>
+                {envelope?.subject && <p><strong>{envelope.subject}</strong></p>}
+                <p style={{ whiteSpace: "pre-wrap" }}>{message.text}</p>
+                {envelope?.messageId && envelope.status !== "draft" && <details>
+                  <summary>Message evidence</summary>
+                  <p>Message-ID {envelope.messageId}</p>
+                  {envelope.inReplyTo && <p>In reply to {envelope.inReplyTo}</p>}
+                </details>}
+                {plan && <section className="decision-analysis" id={`reply-${plan.id}`} aria-label="Supplier reply decision">
+                  <strong>{plan.simulated ? "Simulated decision" : "Reply decision"} · {{
+                    proposed: "Proposed", pending: "Pending details", approved: "Approved for follow-up", review: "Under review",
+                  }[plan.status]}</strong>
+                  <p><a href={`?thread=${encodeURIComponent(selectedThread.id)}#reply-${plan.id}`}>Decision {plan.id}</a></p>
+                  {plan.shipmentId && plan.reportedEta && <p>{plan.shipmentId} · Reported ETA {etaDate.format(new Date(plan.reportedEta))} CET</p>}
+                  {plan.editions?.map((edition) => <p key={edition.title}>
+                    {edition.title} median packed · {formatNumber(edition.before)} → {formatNumber(edition.after)}
+                    <br/>Upper forecast (p90) · {formatNumber(edition.upperBefore)} → {formatNumber(edition.upperAfter)}
+                  </p>)}
+                  {plan.evidence && <blockquote>{plan.evidence.join(" · ")}</blockquote>}
+                  <p>{plan.nextAction}</p>
+                  {plan.editions && <small>Supplier scenario for review. This decision has no purchasing or stock execution.</small>}
+                  {message.id && plan.status === "proposed" && !hostedReplayBuild && <div className="actions">
+                    <button className="ghost-button" disabled={decisionBusy} onClick={() => void approveReply(message)}>Approve follow-up</button>
+                  </div>}
+                </section>}
+              </div>;
+            })}
             <div className="actions">
               {!hostedReplayBuild && selectedThread.status === "draft" && <button className="primary-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : "Approve & send"}</button>}
-              {!hostedReplayBuild && (selectedThread.status === "awaiting reply" || selectedThread.status === "sent") && <button className="ghost-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Simulate reply"}</button>}
+              {!hostedReplayBuild && data.sync?.mode === "replay" && selectedThread.status === "awaiting reply" && <button className="ghost-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Simulate reply"}</button>}
             </div>
           </div>}
         </div>
         <ul className="activity">
           {data.activity.slice(0, 5).map((item) => <li key={item.id}><strong>{item.agent}</strong> {item.action}</li>)}
         </ul>
-        <AgentTrace onEvidence={setSource}/>
+        <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>
       </details>
     </section>
     {source && <EvidenceModal source={source} onClose={() => setSource(null)}/>}
