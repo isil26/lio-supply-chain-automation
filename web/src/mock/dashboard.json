@@ -1,0 +1,62 @@
+{
+  "launch": {
+    "name": "Grand Heist 6",
+    "deadline": "2026-11-22T20:00:00+01:00",
+    "location": "DC-HAM"
+  },
+  "readiness": [
+    { "edition": "STD", "percent": 78, "packed": 512000, "target": 640000, "status": "At risk", "tone": "amber" },
+    { "edition": "CE", "percent": 64, "packed": 46800, "target": 72000, "status": "Critical", "tone": "red" }
+  ],
+  "risks": [
+    { "rank": 1, "component": "CE lid magnet", "supplier": "Boise Semi", "shortfall": "18.4k units", "severity": "Critical", "evidence": ["SAP stock snapshot", "Supplier OA 4500318579"] },
+    { "rank": 2, "component": "Game box", "supplier": "Karton Nowak", "shortfall": "11.7k units", "severity": "High", "evidence": ["Production notice 2026-11", "Open shipment tracker"] },
+    { "rank": 3, "component": "Memory module", "supplier": "Hwaseong Memory", "shortfall": "6.2k units", "severity": "Watch", "evidence": ["PO 4500318534", "Goods receipt DN-261109"] }
+  ],
+  "activity": [
+    { "id": "a1", "agent": "Truth Agent", "action": "Reconciled 4 receiving scans against SAP", "time": "2m ago", "type": "analysis" },
+    { "id": "a2", "agent": "Chaser", "action": "Follow-up sent to Boise Semi", "time": "8m ago", "type": "sent" },
+    { "id": "a3", "agent": "Truth Agent", "action": "Detected tracker / confirmation mismatch", "time": "14m ago", "type": "warning" },
+    { "id": "a4", "agent": "Decision Copilot", "action": "Prepared air-freight recommendation", "time": "21m ago", "type": "analysis" }
+  ],
+  "threads": [
+    {
+      "id": "boise",
+      "supplier": "Boise Semi",
+      "subject": "CE lid magnet — revised allocation",
+      "status": "Awaiting reply",
+      "initials": "BS",
+      "messages": [
+        { "sender": "M. Vogt", "side": "out", "text": "Please confirm whether 18.4k lid magnets can ship on an expedited line.", "time": "09:42" },
+        { "sender": "Boise Semi", "side": "in", "text": "We are checking current press capacity. We can confirm allocation by 11:30 CET.", "time": "10:06" }
+      ]
+    },
+    {
+      "id": "karton",
+      "supplier": "Karton Nowak",
+      "subject": "Production downtime and game boxes",
+      "status": "Escalated",
+      "initials": "KN",
+      "messages": [
+        { "sender": "Chaser", "side": "out", "text": "We require written recovery timing for PO 4500318542.", "time": "09:18" },
+        { "sender": "Karton Nowak", "side": "in", "text": "Line 3 is recovering. Final recovery plan follows after maintenance sign-off.", "time": "09:51" }
+      ]
+    }
+  ],
+  "approval": {
+    "title": "Approve split air-freight line",
+    "recommendation": "Release 9.2k CE lid magnets by air; hold STD allocation unchanged.",
+    "price": 184000,
+    "currency": "EUR",
+    "owner": "Dr. Maren Vogt",
+    "threshold": "Requires VP approval",
+    "impact": "Raises CE readiness to 91%",
+    "risk": "Low residual line risk",
+    "deadline": "Decision needed by 12:30 CET"
+  },
+  "drop": {
+    "title": "New data drop",
+    "detail": "Karton Nowak recovery notice and 3 goods receipts processed",
+    "time": "14:02"
+  }
+}
