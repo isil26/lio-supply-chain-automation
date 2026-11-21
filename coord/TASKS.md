@@ -76,3 +76,7 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T25 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T31 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T28 | UI taste + accessibility pass (wording, contrast, keyboard focus, phone layout) | gülşah-agent | web/src/main.tsx, web/src/styles.css, docs/ui/ | in_progress | builds on leo-claude's Metricalist theme |
+| T63 | Document Reader agent (LLM + vision): scans, handwriting, multilingual notices, quote-validated facts, coverage rating, review queue, provisional facts need approval | copilot-reader | src/agents/reader.py | in_progress P1 | T33 |
+| T64 | Reply Interpreter agent: supplier reply -> commitment strength, next ladder step, escalate | open P1 | src/agents | T47 |
+| T65 | Briefer agent: one-screen brief for Dr. Vogt from verified facts only (no new numbers), harness-checked | open P1 | src/agents | T47 |
+| T66 | Per-role model routing: cheap model for extraction/parsing, stronger for Planner; cost table; configurable via env | open P2 | src/agents | T47 |
