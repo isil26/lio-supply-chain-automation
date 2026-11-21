@@ -273,7 +273,8 @@ def receive(con, message, *, simulated=False):
             from .reply_plan import plan_reply
 
             fields = parse_reply(body)
-            plan = plan_reply(get_state(con, "truth", {}), chase, body, simulated=simulated)
+            plan = plan_reply(get_state(con, "truth", {}), chase, body,
+                              options=get_state(con, "options", []), simulated=simulated)
             plan["id"] = hashlib.sha256(f'reply:{chase["id"]}:{message_id}'.encode()).hexdigest()[:16]
             fields["reply_plan"] = plan
             con.execute("UPDATE messages SET parsed=? WHERE external_id=?",
@@ -339,7 +340,7 @@ def list_threads(con, decision_states=None):
                 entry["transport"] = {"mode": "simulated", "status": "received"}
             plan = (entry["parsed"] or {}).get("reply_plan")
             if plan:
-                plan["status"] = decision_states.get(plan.get("id"), "proposed" if plan.get("editions") else "pending")
+                plan["status"] = decision_states.get(plan.get("id"), "proposed" if plan.get("editions") or plan.get("holdUnits") else "pending")
             thread["messages"].append(entry)
         if not thread["messages"] and thread["status"] == "draft":
             thread["messages"] = [{
@@ -353,7 +354,7 @@ def reply_decision(con, message_id):
     row = con.execute("SELECT parsed FROM messages WHERE side='in' AND id=?", (message_id,)).fetchone()
     if row and row["parsed"]:
         plan = json.loads(row["parsed"]).get("reply_plan")
-        if plan and plan.get("editions"):
+        if plan and (plan.get("editions") or plan.get("holdUnits")):
             return dict(plan, request_only=True)
     return None
 

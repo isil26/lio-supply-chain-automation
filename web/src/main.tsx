@@ -323,6 +323,10 @@ function App() {
                     {edition.title} median packed · {formatNumber(edition.before)} → {formatNumber(edition.after)}
                     <br/>Upper forecast (p90) · {formatNumber(edition.upperBefore)} → {formatNumber(edition.upperAfter)}
                   </p>)}
+                  {plan.offerId && <p>Related recovery option {plan.offerId}</p>}
+                  {plan.beforeState && <p>Before · {plan.beforeState}</p>}
+                  {plan.afterState && <p>After · {plan.afterState}</p>}
+                  {plan.materialEstimate != null && <p>Materials estimate · {euros.format(plan.materialEstimate)}</p>}
                   {plan.evidence && <blockquote>{plan.evidence.join(" · ")}</blockquote>}
                   <p>{plan.nextAction}</p>
                   {plan.editions && <small>Supplier scenario for review. This decision has no purchasing or stock execution.</small>}

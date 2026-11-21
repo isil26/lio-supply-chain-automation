@@ -63,7 +63,7 @@ class Host:
                 shutil.rmtree(public)
             web = staging / "web"
             dependency_key = hashlib.sha256((web / "package-lock.json").read_bytes()).hexdigest()
-            dependencies = self.home / "web-deps" / dependency_key
+            dependencies = self.home / "web-deps" / dependency_key / "node_modules"
             if not dependencies.is_dir():
                 subprocess.run(["npm", "ci", "--prefer-offline", "--no-audit", "--no-fund"], cwd=web,
                                env=self.env, check=True, timeout=180)

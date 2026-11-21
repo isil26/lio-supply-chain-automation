@@ -56,6 +56,12 @@ export type ReplyPlan = {
   shipmentId?: string;
   reportedEta?: string;
   evidence?: string[];
+  offerId?: string;
+  holdUnits?: number;
+  holdRequested?: number;
+  beforeState?: string;
+  afterState?: string;
+  materialEstimate?: number | null;
   editions?: {
     title: string; before: number; after: number; upperBefore: number; upperAfter: number;
     pBefore: number; pAfter: number;

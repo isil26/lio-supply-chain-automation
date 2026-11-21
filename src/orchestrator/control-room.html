@@ -182,6 +182,8 @@ function drawThreads(){
         line.append(label(edition.title+" median packed · "+edition.before.toLocaleString()+" → "+edition.after.toLocaleString()));
         line.append(label("Upper forecast (p90) · "+edition.upperBefore.toLocaleString()+" → "+edition.upperAfter.toLocaleString()));
       }
+      if(replyPlan.beforeState) line.append(label("Before · "+replyPlan.beforeState));
+      if(replyPlan.afterState) line.append(label("After · "+replyPlan.afterState));
       line.append(node("p",replyPlan.nextAction));
     }
     messages.append(line);

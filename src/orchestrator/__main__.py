@@ -523,7 +523,7 @@ def handler(loop):
                         if not message or message["status"] != "awaiting reply":
                             raise ValueError("A sent demo thread is required")
                         if reply_text is None:
-                            reply_text = demo_reply(get_state(con, "truth", {}), message)
+                            reply_text = demo_reply(get_state(con, "truth", {}), message, get_state(con, "options", []))
                         if not isinstance(reply_text, str) or not reply_text.strip():
                             raise ValueError("Reply text must be nonempty")
                         reply = EmailMessage()
