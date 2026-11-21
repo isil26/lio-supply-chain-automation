@@ -113,3 +113,52 @@ class AutoSendTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SendModeTest(unittest.TestCase):
+    """IMPORTANT.md section 6: AUTO only for information requests; binding wording needs one click."""
+
+    def test_information_request_is_auto(self):
+        con = db([("A", "a@suppliers.juliansibbing.de", "Could you confirm the quantity and the date? This is not an order.")])
+        sent = []
+        results = autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
+        self.assertEqual(sent, ["A"])
+        self.assertEqual(results[0]["mode"], "AUTO")
+        log = con.execute("SELECT action FROM activity ORDER BY id DESC LIMIT 1").fetchone()[0]
+        self.assertIn("AUTO (information request)", log)
+
+    def test_binding_email_waits_for_a_click_then_sends(self):
+        con = db([("B", "b@suppliers.juliansibbing.de", "We would like to go ahead. Please reserve this quantity on these terms.")])
+        sent = []
+        results = autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
+        self.assertEqual(sent, [])
+        self.assertEqual(results[0]["result"], "held")
+        self.assertEqual(con.execute("SELECT status FROM chases WHERE id='B'").fetchone()[0], autosend.HELD)
+        self.assertEqual([h["id"] for h in autosend.held(con)], ["B"])
+        with self.assertRaises(ValueError):
+            autosend.approve(con, "B", " ")
+        autosend.approve(con, "B", "Felix")
+        self.assertEqual(con.execute("SELECT status FROM chases WHERE id='B'").fetchone()[0], "draft")
+        results = autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
+        self.assertEqual(sent, ["B"])
+        self.assertEqual(results[0]["mode"], "ONE-CLICK")
+        log = con.execute("SELECT action FROM activity ORDER BY id DESC LIMIT 1").fetchone()[0]
+        self.assertIn("ONE-CLICK approved by Felix", log)
+
+    def test_offer_table_click_counts_as_the_click(self):
+        from . import deals
+        con = db([("C", "c@suppliers.juliansibbing.de", "Bitte: Please reserve this quantity on these terms.")])
+        deals.schema(con)
+        con.execute("INSERT INTO deals(id,supplier_id,supplier,material,status,decided_by,email_id,updated_at)"
+                    " VALUES('d1','S','Sup C','CMP-GAM-001','approved','Gülşah','C','x')")
+        sent = []
+        results = autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
+        self.assertEqual(sent, ["C"])
+        self.assertEqual(autosend.mode(con, "C", "Please reserve")["approved_by"], "Gülşah")
+
+    def test_binding_detection_in_four_languages(self):
+        for text in ("Please reserve 5,900 units.", "Prosimy o rezerwację tej ilości.", "이 조건으로 수량을 확보해 주시기 바랍니다.", "请按此条件预留数量"):
+            self.assertTrue(autosend.binding(text), text)
+        for text in ("This is an information request, not an order.", "이 메일은 정보 요청이며 발주가 아닙니다.",
+                     "Prosimy o potwierdzenie ilości i daty.", "请确认数量和日期。这不是订单。"):
+            self.assertIsNone(autosend.binding(text), text)
