@@ -44,6 +44,21 @@
       "references": [],
       "body_content_type": "text/plain",
       "body": "您好，\n\n感谢您的回复。\n\n我们理解无法按时交付全部数量。请告知在 22 Nov 20:00 CET 前可以分批发运多少件，以及其余数量的最早日期。 为安排提货，请提供可提货日期和时间、提货地址、箱数或托盘数以及毛重。\n\n本邮件仅为信息询问，并非订单。\n\nSoony 上市团队\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:43:53+00:00",
+      "from": "Lin Hui <lin.hui.packright@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-439B4461E3] 汉堡 CTA 透明游戏卡盒周末提箱及加急卡车询价 | NHSU4471921",
+      "message_id": "<010201a1ffa2faea-7ba1573c-9551-4b24-bd2a-0d543620d6ec-000000@eu-west-1.amazonses.com>",
+      "chase_id": null,
+      "in_reply_to": "<179529010109.34154.15129113750515236642@gmail.com>",
+      "references": [
+        "<179529010109.34154.15129113750515236642@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n我方记录显示，采购订单 4500318738 第 00020 行的 350,000 个 PR-CC-0312（CMP-GAM-003）已装载于 NHSU4471921，并于 11 月 19 日在汉堡卸船。货物在 FOB 盐田条件下交给 Nordhav 后，我方无法确认 11 月 22 日 20:00 CET 前可分批提取的数量、其余货物的可提日期，或德国段的提货地址、箱数/托盘数及毛重。\n\n请向 Nordhav 查询集装箱拆箱、分批放行和提货安排；只有其能够确认 CTA 的实际可提状态及相关操作数据。\n\nDear Sir or Madam,\n\nOur records show that the full quantity of 350,000 units of PR-CC-0312 (CMP-GAM-003) under PO 4500318738 line 00020 was loaded in container NHSU4471921 and discharged in Hamburg on 19 November. After handover to Nordhav under FOB Yantian terms, we cannot confirm the quantity available for partial collection before 20:00 CET on 22 November, the availability date of any balance, or the German collection address, carton/pallet count and gross weight.\n\nPlease obtain the container deconsolidation, partial-release and collection arrangements from Nordhav. Only Nordhav can confirm the actual CTA availability and the relevant operational data.\n\nBest regards,\n\nLin Hui  \nGuangzhou PackRight Packaging Co., Ltd.\n"
     }
   ]
 }
