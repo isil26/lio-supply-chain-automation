@@ -10,6 +10,7 @@ from src.ingest.store import now, rows
 from src.truth import MODEL_RUNS, field_sources, value
 from src.truth.sensitivity import counterfactual
 from .expedite import choose as score_expedite
+from .inbound import inbound_options
 from .offers import select_offers
 from .reliability import SupplierReliability
 
@@ -213,6 +214,10 @@ def choose(con, truth, data_root=None):
                        None, "Buyer review", "No offer quantity is recommended pending supplier confirmation.",
                        "The cited documents do not establish a single active revision.", evidence,
                        request_only=True, material=material, supplier_id=supplier)
+
+    # T67: freight landing before the cut-off whose dock handling decides pack-out.
+    for item in inbound_options(con, truth, docs, trials=trials):
+        option(**item)
 
     for issue in truth["issues"]:
         if issue["kind"] == "quality_hold" and truth["parts"].get(issue["material"], {}).get("shortfall"):
