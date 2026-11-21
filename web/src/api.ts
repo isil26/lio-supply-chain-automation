@@ -198,6 +198,7 @@ export class StaticDashboardApi implements DashboardApi {
     } catch {
       this.before = clone(mockData) as DashboardData;
     }
+    this.normalize(this.before);
     try {
       this.after = await this.loadJson("/snapshot/after.json");
     } catch {
@@ -213,6 +214,7 @@ export class StaticDashboardApi implements DashboardApi {
         ...this.after.activity,
       ];
     }
+    this.normalize(this.after);
 
     const saved = window.localStorage.getItem(STATIC_STORAGE_KEY);
     if (saved) {
@@ -227,6 +229,14 @@ export class StaticDashboardApi implements DashboardApi {
 
   private persist() {
     if (this.state) window.localStorage.setItem(STATIC_STORAGE_KEY, JSON.stringify(this.state));
+  }
+
+  private normalize(data: DashboardData) {
+    if (data.approval && !data.approval.id) data.approval.id = "static-plan-b";
+    data.threads.forEach((thread, index) => {
+      if (index === 0 && /awaiting reply/i.test(thread.status ?? "")) thread.status = "draft";
+      if (!thread.status) thread.status = index === 0 ? "draft" : "awaiting reply";
+    });
   }
 
   async getDashboard(): Promise<DashboardData> {
@@ -314,7 +324,8 @@ export class StaticDashboardApi implements DashboardApi {
 
 const search = new URLSearchParams(window.location.search);
 const forcedMock = search.get("mock") === "1";
-const forcedStatic = search.get("static") === "1" || import.meta.env.VITE_STATIC === "1";
+const viteEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
+const forcedStatic = search.get("static") === "1" || viteEnv?.VITE_STATIC === "1";
 const staticApi = new StaticDashboardApi();
 const httpApi = new HttpDashboardApi();
 let staticMode = forcedStatic || forcedMock;

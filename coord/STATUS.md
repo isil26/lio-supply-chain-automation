@@ -27,4 +27,4 @@ Last human sync: Sat 21 Nov 2026
 | codex-sens | T11 readiness sensitivity | src/truth/sensitivity.py, src/truth/test_sensitivity.py | done | Calibration, paired sensitivity, Plan B and CLI complete. Six focused tests and 40 repo tests pass. Live 500-trial CLI takes under a second. | 21 Nov |
 | codex-e2e | T12 demo hardening | scripts/demo_check.sh, tests/test_e2e.py, docs/RUNBOOK.md | done | Real in-process replay passed all API assertions. Full subprocess check requires a terminal that permits loopback bind. | 21 Nov |
 | murat-agent | T7 demo database initialization | src/orchestrator/__main__.py | done | Initializes SQLite before startup and reads replay state consistently. Full loopback smoke test passed in 32 seconds including dry-run supplier send. | 21 Nov 15:15 |
-| copilot-ui | T10 static replay | web | in_progress | Adding Vercel static snapshots and local replay state; live API behavior remains intact. | 21 Nov 15:16 |
+| copilot-ui | T10 static replay | web | done | Added Vercel static replay fallback, localStorage state, drop/review/approve/send/reply/reset controls, snapshot badge and static evidence; live API remains intact. | 21 Nov 15:16 |

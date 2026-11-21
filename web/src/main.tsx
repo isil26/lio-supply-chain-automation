@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   dashboardApi,
+  isStaticMode,
   type DashboardData,
   type Risk,
   type Source,
@@ -52,7 +53,7 @@ function EvidenceModal({ source, onClose }: { source: Source; onClose: () => voi
   const file = source.source_file ?? source.file ?? "";
   const [raw, setRaw] = useState("");
   useEffect(() => {
-    if (!file) return;
+    if (!file || isStaticMode()) return;
     dashboardApi.getSource(file).then(setRaw).catch(() => setRaw(""));
   }, [file]);
   return <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -60,7 +61,7 @@ function EvidenceModal({ source, onClose }: { source: Source; onClose: () => voi
       <header><div><p className="section-label">SOURCE EVIDENCE</p><h2>{file}</h2></div><button onClick={onClose} aria-label="Close">×</button></header>
       <div className="evidence-location">{source.page ? `Page ${source.page}` : source.row ? `Row ${source.row}` : "Source location"}{source.confidence != null ? ` · ${Math.round(source.confidence * 100)}% confidence` : ""}</div>
       {source.quote && <blockquote>{source.quote}</blockquote>}
-      {raw ? <a className="source-link" href={`/api/source/${file.split("/").map(encodeURIComponent).join("/")}`} target="_blank" rel="noreferrer">Open original source <Icon name="arrow"/></a> : null}
+      {!isStaticMode() && raw ? <a className="source-link" href={`/api/source/${file.split("/").map(encodeURIComponent).join("/")}`} target="_blank" rel="noreferrer">Open original source <Icon name="arrow"/></a> : null}
     </section>
   </div>;
 }
@@ -75,6 +76,8 @@ function App() {
   const [sendBusy, setSendBusy] = useState(false);
   const [source, setSource] = useState<Source | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
+  const [replyBusy, setReplyBusy] = useState(false);
+  const [meta, setMeta] = useState<{ exported?: string; mode?: string }>({});
 
   const refresh = async () => {
     try {
@@ -88,6 +91,7 @@ function App() {
 
   useEffect(() => {
     void refresh();
+    void dashboardApi.getMeta().then(setMeta).catch(() => setMeta({}));
     const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, []);
@@ -129,6 +133,32 @@ function App() {
     }
   };
 
+  const demoReply = async () => {
+    if (!selectedThread) return;
+    setReplyBusy(true);
+    try {
+      await dashboardApi.replyThread(
+        selectedThread.id,
+        "Confirmed: we can prepare the requested allocation and follow the documented approval route.",
+      );
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo reply could not be added");
+    } finally {
+      setReplyBusy(false);
+    }
+  };
+
+  const resetDemo = async () => {
+    try {
+      await dashboardApi.resetDemo();
+      setDropVisible(true);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo could not be reset");
+    }
+  };
+
   const runSync = async () => {
     setSyncBusy(true);
     try {
@@ -156,6 +186,10 @@ function App() {
     <section className="workspace">
       <header className="topbar">
         <div><p className="eyebrow">SOONY OPERATIONS / GLOBAL LAUNCH</p><h1>Launch Control Room</h1></div>
+        {isStaticMode() && <button className="static-badge" onClick={() => void resetDemo()} title="Reset demo">
+          Static replay snapshot · {meta.exported ?? "frozen"}
+        </button>}
+        {isStaticMode() && <button className="reset-demo" onClick={() => void resetDemo()}>Reset demo</button>}
         <div className="launch-status"><span className="live-dot"/><div><strong>{data.launch.name}</strong><small>{data.launch.location} · 22 NOV · 20:00 CET</small></div></div>
       </header>
 
@@ -163,7 +197,7 @@ function App() {
       {dropVisible && data.drop && <div className="drop-banner">
         <div className="drop-icon"><Icon name="arrow"/></div>
         <div><strong>{data.drop.title}</strong><span>{data.drop.detail}</span></div>
-        <button className="sync-button" onClick={() => void runSync()} disabled={syncBusy}>{syncBusy ? "Syncing…" : "Process drop"}</button>
+        <button className="sync-button" onClick={() => void runSync()} disabled={syncBusy}>{syncBusy ? "Syncing…" : isStaticMode() ? "Release data drop" : "Process drop"}</button>
         <button onClick={() => { setDropVisible(false); void dashboardApi.dismissDrop(); }} aria-label="Dismiss data drop">×</button>
       </div>}
 
@@ -236,6 +270,7 @@ function App() {
               <div className="thread-actions">
                 <span className={`workflow-state ${selectedThread.status.split(" ").join("-")}`}>{selectedThread.status === "draft" ? "Draft" : selectedThread.status === "awaiting reply" ? "Sent" : selectedThread.status}</span>
                 {selectedThread.status === "draft" && <button className="approve-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : "Approve & send"}<Icon name="arrow"/></button>}
+                {(selectedThread.status === "awaiting reply" || selectedThread.status === "sent") && <button className="review-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Demo reply"}</button>}
               </div>
             </div>}
           </div>

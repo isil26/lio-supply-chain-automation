@@ -1,5 +1,13 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T10 — Vercel static replay (copilot-ui)
+
+- The React API client now uses static replay when `VITE_STATIC=1`, `?static=1`, or `?mock=1`, and automatically falls back to static snapshots when `/api/dashboard` is unreachable.
+- Static replay loads `/snapshot/before.json`, `/snapshot/after.json` and `/snapshot/meta.json`, with `web/src/mock/dashboard.json` fallback until exported snapshots exist. State persists in localStorage across approvals, reviews, sends and replies.
+- **Release data drop** swaps to the after snapshot. The thread workflow supports approve-and-dry-run send and demo reply. The evidence modal shows file/page/quote only in static mode. **Reset demo** restores the baseline.
+- Live HTTP mode remains the default with no `VITE_STATIC` flag or static query parameter.
+- Verified: `cd web && VITE_STATIC=1 npm run build` passes.
+
 ## T2 document extraction (Codex #2)
 
 - Run `python3 -m src.docs.run` from the repo root. It publishes `store/docs.jsonl` and caches extraction by verified content hash in `store/docs_cache.sqlite3`. The bridge manifest selects active sources when present. ERP comparisons refresh separately from extraction.
