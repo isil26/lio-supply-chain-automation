@@ -49,6 +49,12 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
                 run_db = isolated_db
                 con = sqlite3.connect(str(run_db))
                 con.execute("DELETE FROM agent_trace")
+                # stale delegations would make Team.delegate skip every specialist
+                for table in ("agent_mailbox", "agent_approvals", "agent_state"):
+                    try:
+                        con.execute(f"DELETE FROM {table}")
+                    except sqlite3.Error:
+                        pass
                 con.commit()
                 con.close()
                 team = build_team(run_db)

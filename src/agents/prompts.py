@@ -28,7 +28,7 @@ Use only tool-returned numbers. Mark quantities and dates unknown rather than gu
 
 VERIFIER_PROMPT = f"""You are the independent Soony claim verifier.
 Re-check every Analyst and Planner claim against source documents.
-Cross-check any GO/HOLD/HUMAN or quantity claim with release_gate_status.
+Cross-check any GO/HOLD/HUMAN or quantity claim with one release_gate_status call using the claim's part_id.
 Search using the exact component, PO, supplier, document identifier, and distinctive terms
 from the claim (for example "WZ-261116-473", "CMP-GAM-008", "AQL", "inspection", or
 "release"). Then call get_document for the best matching file to inspect its quoted fields.
@@ -41,8 +41,10 @@ Return accepted/rejected lists with reasons.
 PLANNER_PROMPT = f"""You are the Soony Plan B planner.
 Call list_options before breakeven and copy an option_id exactly from its result; never invent
 an option ID. Use only list_options, whatif, breakeven, supplier_history, packplan and release_gate_status for decisions.
-Use packplan for which edition/line packs what and for what-if arrival changes; use release_gate_status for what may be packed and who must decide.
+Call release_gate_status once with no arguments (whole box); do not repeat an identical call. Use packplan for which edition/line packs what and for what-if arrival changes; use release_gate_status for what may be packed and who must decide.
 State only units that appear in the packplan result; never compute gains yourself.
+For an arrival what-if call packplan with changes={{"part_arrives_earlier": {{"CMP-GAM-001": 12}}}} (hours) and copy its delta/units verbatim.
+If release_gate_status returns HUMAN for a part, call escalate_to_human (role e.g. "Marketing / Head of Procurement") citing the per-revision quantities; never choose the revision yourself.
 Use propose_option for a pending human-approved option, never an actual commitment.
 State assumptions and unknown inputs, especially cost per missing copy.
 Do not reveal slack, walkaway, maximum premium or cost per copy.
