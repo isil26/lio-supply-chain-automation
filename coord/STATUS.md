@@ -67,7 +67,7 @@ Last human sync: Sat 21 Nov 2026
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | in_progress | numeric grounding, citations, PP-07, stop check | 21 Nov |
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | done | Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests. | 21 Nov 15:57 | 21 Nov |
 
-| codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Manti redesign and protected supply map verified live from `136aec9`. The hosted package gates Agent Team pending T53. Checking main every 10 minutes. | 21 Nov |
+| codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Manti with Behind the scenes verified live from `952b5ed`. Hosted mode shows the pipeline activity walkthrough and awaits T53 for AI reasoning. Checking main every 10 minutes. | 21 Nov |
 | gülşah-agent | T28 UI taste + accessibility pass | web/src (look and wording only), docs/ui/ | in_progress | Agent for Gülşah. Plain labels on readiness cards, phone header/supplier list, readable contrast, keyboard focus outline. No data or API change. Before/after screenshots in docs/ui/. | 21 Nov 16:10 |
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
@@ -97,5 +97,11 @@ Last human sync: Sat 21 Nov 2026
 | copilot-loop2 | T41b trace endpoint, German notice citation | src/agents, /api/agents routes | done | Offline loop/harness tests pass (13), `scripts/demo_check.sh` passes. Live port 8794 verification is blocked in this session because loopback server startup requires interactive approval. No live cost incurred. | 21 Nov 16:48 |
 | copilot-viz | T71 live agent visualization + Present mode | web/src/agents | done | Added animated graph, event lane, stream replay, harness panel, human gate, counters and Present mode; normal/static builds pass | 21 Nov 16:52 |
 | nick | stopped working on T71 visualization (handed over) | - | released | continuing on agent quality, Vogt prep, review | 21 Nov |
+| copilot-planner | T47d planner option ids + summary + chaser draft reach | src/agents | done | list_options/real IDs, grounded summary, chaser draft approval, per-step cost; focused tests pass. Live run blocked by non-interactive permission. | 21 Nov |
+| copilot-gate | T72 Release Gate | src/decide/release_gate.py, src/agents/tools.py, src/orchestrator | done | cited pure gate, CLI, read-only tool and GET /api/release-gate; focused tests pass | 21 Nov 17:06 |
+| copilot-pack | T73 pack-out optimizer + numbered allocation | src/decide/packplan.py | in_progress | implementing exact 30-minute pack plan, Pareto frontier, and CE allocation rules | 21 Nov |
+| copilot-gate2 | T72b artwork revision extraction -> gate HUMAN on sleeve | src/docs/parsers.py, release_gate.py | in_progress | no web work | 21 Nov |
+| sonnet-pack | T73 re-owned: fix pack-out optimizer inconsistency | src/decide/packplan.py | in_progress | copilot quota exhausted | 21 Nov |
+| sonnet-gate | T72b re-owned: artwork revision extraction | src/docs/parsers.py, release_gate.py | in_progress | copilot quota exhausted | 21 Nov |
 | copilot-planner | T47d planner option ids + summary + chaser draft reach | src/agents | in_progress | no web/viz work | 21 Nov |
 | gülşah-agent | T71 live agent map | web/src/agents/AgentGraph.tsx, agentGraph.css | done | New "Agents at work" card under Missing parts/Next step. Gülşah picked the graph. Live: polls runs+trace every 2 s, new runs replay from step 1. Hosted: replays /snapshot/agent_run.json in plain words. Old AgentTrace and Behind the scenes untouched. Build passes. Vercel needs a redeploy to show it. | 21 Nov |
