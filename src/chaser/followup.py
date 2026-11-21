@@ -75,9 +75,10 @@ def due_reminders(con, now=None, *, save=False):
                           WHERE r.subject LIKE '%(SOONY-' || c.id || ')%')
     """).fetchall()
     out = []
+    handoffs = quality_handoffs(con)
     for row in rows:
         row = dict(row)
-        if managed(row["supplier_id"], row["material"]) or not row.get("last_out"):
+        if _root(row) in handoffs or managed(row["supplier_id"], row["material"]) or not row.get("last_out"):
             continue
         waited = (now - _aware(row["last_out"])).total_seconds() / 3600
         need = wait_hours(now, row["deadline"])
@@ -157,6 +158,15 @@ def attachment_evidence(message, limit=4000):
 CANNOT = re.compile(r"\b(?:cannot|can't|can’t|unable|not possible|impossible|no way to)\b|nie (?:możemy|będziemy|jest możliwe)"
                     r"|无法|不能|不可能|불가|어렵", re.I)
 PICKUP = re.compile(r"\bEXW\b|ex[- ]works|forwarder|pick[- ]?up|collect(?:ion)?|odbi[oó]r|spedytor|自提|提货|픽업|포워더", re.I)
+THREAD = re.compile(r"\[SOONY-([A-F0-9]+)\]", re.I)
+SORT = re.compile(r"\b(?:visual sort|inspection|quarantin\w*|signed disposition)\b|检验|선별|sortowani\w*", re.I)
+CRITERIA = re.compile(r"\b(?:acceptance (?:standards?|criteria)|reference (?:photos?|photographs)|sorting criteria)\b"
+                      r"|验收标准|검사 기준|kryteri\w+ akceptacji", re.I)
+ARRIVAL = re.compile(
+    r"\b(?:arrival|handoff)\b[^.\n]{0,80}?\b(\d{1,2}\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|"
+    r"May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+    r"(?:\s+\d{4})?)\b", re.I)
+FREIGHT_REF = re.compile(r"\b(?:[A-Z]{4}\d{7}|\d{3}-\d{8}|SHP-[A-Z0-9-]+)\b")
 ANSWER = {
     "en": {"open": "Hello,\n\nThank you for your reply.",
            "cannot": "We understand the full quantity is not possible in time. Could you tell us how many units you could ship before {deadline} as a part shipment, and the earliest date for the rest?",
@@ -219,10 +229,78 @@ def answer_body(language, reply, deadline):
     return body, kinds
 
 
+def _root(row):
+    token = THREAD.search(row["subject"])
+    return (row["supplier_id"], row["material"], token[1].upper() if token else row["id"])
+
+
+def quality_handoffs(con):
+    """A verified request for internal acceptance criteria belongs to Supplier Quality."""
+    from .recovery import unquoted
+
+    roots = {}
+    for row in con.execute("""
+        SELECT c.id,c.supplier,c.supplier_id,c.material,c.subject,m.body,m.external_id
+        FROM messages m JOIN chases c ON c.id=m.chase_id
+        WHERE m.side='in' AND json_extract(m.transport,'$.mode')='inbox'
+          AND EXISTS (
+            SELECT 1 FROM messages p WHERE p.chase_id=c.id AND p.side='out'
+              AND json_extract(p.transport,'$.status') IN ('smtp_accepted','gmail_sent')
+              AND (p.external_id=json_extract(m.transport,'$.inReplyTo')
+                   OR (lower(m.sender)=lower(c.address) AND julianday(p.time)<=julianday(m.time)
+                       AND instr(upper(json_extract(m.transport,'$.subject')), '[SOONY-' || upper(c.id) || ']')>0))
+          )
+        ORDER BY m.id
+    """):
+        body = unquoted(row["body"])
+        if SORT.search(body) and CRITERIA.search(body):
+            roots[_root(row)] = row
+    return roots
+
+
+def human_owned_thread(con, thread):
+    row = con.execute("SELECT id,supplier_id,material,subject FROM chases WHERE id=?", (thread,)).fetchone()
+    return bool(row and _root(row) in quality_handoffs(con))
+
+
+def _late_freight(body, deadline):
+    # This only settles the identified freight question. It does not infer
+    # that a separate local sort or another available shipment is also late.
+    from .recovery import hamburg_eta
+
+    if len(set(FREIGHT_REF.findall(body))) != 1 or not (match := ARRIVAL.search(body)):
+        return False
+    text = match[1]
+    cutoff = _aware(deadline)
+    if (alternate := hamburg_eta(body)) and alternate < cutoff:
+        return False
+    for form in ("%d %B %Y", "%d %b %Y", "%d %B", "%d %b"):
+        try:
+            date = datetime.strptime(text, form)
+            year = date.year if "%Y" in form else cutoff.year
+            return date.replace(year=year).date() > cutoff.date()
+        except ValueError:
+            continue
+    return False
+
+
+def _answer_id(root, body, content):
+    from .negotiate import parse_offer
+
+    offer = parse_offer(content)
+    evidence = (*sorted(set(FREIGHT_REF.findall(content))), offer["quantity"], offer["eta"],
+                offer["unit_price"], offer["currency"], offer["commitment"])
+    return hashlib.sha256(repr((root, body, evidence)).encode()).hexdigest()[:10].upper()
+
+
+def _legacy_answer_id(reply):
+    return hashlib.sha256(f"answer:{reply}".encode()).hexdigest()[:10].upper()
+
+
 def answer_replies(con, *, save=False):
     """Draft an answer for every supplier reply that we have not answered yet."""
     import sqlite3
-    from .recovery import claimed_threads
+    from .recovery import claimed_threads, unquoted
     from .supplier_loop import managed
 
     con.row_factory = sqlite3.Row
@@ -234,14 +312,41 @@ def answer_replies(con, *, save=False):
     """).fetchall()
     out = []
     owned = claimed_threads(con)
+    handoffs = quality_handoffs(con)
+    if save:
+        with con:
+            # Preserve legacy physical threads and sent mail. Only retire queued
+            # drafts that can be identified as a generic reply to this handoff.
+            for root, trigger in handoffs.items():
+                for history in con.execute("""
+                    SELECT c.id,c.supplier_id,c.material,c.subject,c.language,c.deadline,m.external_id,m.body
+                    FROM chases c JOIN messages m ON m.chase_id=c.id WHERE m.side='in'
+                      AND c.supplier_id=? AND c.material=?
+                """, root[:2]):
+                    if _root(history) == root:
+                        content = unquoted(history["body"])
+                        body, _ = answer_body(history["language"], content, history["deadline"])
+                        con.execute("UPDATE chases SET status='superseded draft' WHERE id IN (?,?) AND status='draft'",
+                                    (_legacy_answer_id(history["external_id"]), _answer_id(root, body, content)))
+                details = (f"{trigger['supplier']}: Supplier Quality owns the local sort acceptance criteria "
+                           f"requested in SOONY-{root[2]}. Routine freight follow-ups paused for this thread.")
+                con.execute("""INSERT INTO activity(time,agent,action,type)
+                    SELECT ?, 'Mail Agent', ?, 'warning' WHERE NOT EXISTS(
+                        SELECT 1 FROM activity WHERE agent='Mail Agent' AND action=?)""",
+                            (datetime.now(timezone.utc).isoformat(timespec="seconds"), details, details))
     for row in rows:
         row = dict(row)
         if row["id"] in owned or managed(row["supplier_id"], row["material"]):
             continue  # the launch-critical loop (supplier_loop.py) answers these itself
-        ref = hashlib.sha256(f"answer:{row['reply_id']}".encode()).hexdigest()[:10].upper()
-        if con.execute("SELECT 1 FROM chases WHERE id=?", (ref,)).fetchone():
+        root = _root(row)
+        content = unquoted(row["reply"])
+        if root in handoffs or _late_freight(content, row["deadline"]):
             continue
-        body, kinds = answer_body(row["language"], row["reply"], row["deadline"])
+        body, kinds = answer_body(row["language"], content, row["deadline"])
+        ref = _answer_id(root, body, content)
+        legacy = _legacy_answer_id(row["reply_id"])
+        if con.execute("SELECT 1 FROM chases WHERE id IN (?,?)", (ref, legacy)).fetchone():
+            continue
         subject = row["subject"] if row["subject"].lower().startswith("re:") else "Re: " + row["subject"]
         item = {"thread_id": row["id"], "supplier": row["supplier"], "draft_id": ref, "asks": kinds, "body": body}
         if save:

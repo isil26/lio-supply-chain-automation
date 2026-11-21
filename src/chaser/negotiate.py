@@ -455,9 +455,10 @@ def draft_counter(quote, asks, units=None):
 
 def save_draft(con, quote, draft, deadline, units=None):
     """Store as a normal draft chase: it shows up for review and only a person can send it."""
+    from .followup import human_owned_thread
     from .recovery import claimed_threads
 
-    if quote.thread_id in claimed_threads(con):
+    if quote.thread_id in claimed_threads(con) or human_owned_thread(con, quote.thread_id):
         return False
     from .supplier_loop import managed
 
