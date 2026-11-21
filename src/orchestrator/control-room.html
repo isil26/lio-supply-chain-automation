@@ -132,7 +132,7 @@ function drawOptions(){
     label(item.priceLabel ?? item.price_label ?? "Cost estimate"),label(item.impact),label(item.risk),label(item.threshold));
   const actions=node("div",undefined,"actions");
   const approve=button(item.status==="approved"?"Approved":"Approve next step",()=>action("/api/decisions/"+item.id+"/approve",{},"Approval recorded."),true);
-  const review=button(reviewed?"Review requested":"Request review",()=>action("/api/decisions/"+item.id+"/review",{},"Review requested."));
+  const review=button(reviewed?"Review requested":"Request review",()=>action("/api/decisions/"+item.id+"/review",{},blocked?"Review requested. Release remains blocked.":"Review requested."));
   approve.disabled=item.status==="approved";
   review.disabled=item.status==="approved" || reviewed;
   if(!blocked) actions.append(approve);

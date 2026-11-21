@@ -70,3 +70,8 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - `scripts/demo_check.sh` starts offline replay on a free loopback port in a disposable workspace and runs `tests/test_e2e.py` with unittest. It times dashboard readiness, the staged drop, the NUMBERS.md assertions, approval and dry-run send. No application wiring is needed.
 - `docs/RUNBOOK.md` covers setup, the stage sequence, the cached dashboard, offline replay and the local recording.
 - Real data passed all assertions through the in-process HTTP handler, with SQLite initialized before polling. Baseline took 95.71 seconds and the drop 0.94 seconds. The sandbox denied loopback bind, so run the shell preflight from the demo laptop terminal. The startup SQLite race and bind restriction are both recorded in the inbox for nick.
+
+## T7 standalone blocked approval controls (murat-agent)
+
+- On `/live`, select the blocked PPAP decision. The release stays blocked, and Request review records the escalation without releasing stock.
+- Verified persistent review and the separate art-book quote action in a disposable demo replay. The integrated controls retain the T9 implementation and add explicit feedback after the blocked review request.
