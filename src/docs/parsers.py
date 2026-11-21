@@ -67,7 +67,7 @@ def order(facts, raw, page, confidence):
         if footer:
             quote = "\n".join(footer)
             facts.add("conditions", " ".join(quote.split()), page, quote, confidence)
-            search(facts, "revision", r"\brev(?:ision)?[. :]+([A-Z]\b)", quote, page, confidence)
+            search(facts, "revision", r"\brev(?:ision)?[. :_]*([A-Z])(?![A-Za-z])", quote, page, confidence)
     search(facts, "dock_hold", r"(The shipment is packed and on hold[\s\S]*?own forwarder\.)",
            suffix, page, confidence)
     for match in re.finditer(rf"AWB\s+([\d-]+):\s+({QUANTITY})\s+pcs flown", flat, re.I):

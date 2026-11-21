@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 from src.docs import documents
@@ -24,14 +25,52 @@ def _field_citations(doc, name):
 def _field_values(doc, name):
     return [field.get("value") for field in doc.get("fields", {}).get(name, [])]
 
+_CODE = r"[A-Z]{2,4}-[A-Z0-9-]+"
 
-def evaluate(truth, docs=(), component_rows=(), supplier_rows=()):
+
+def _revision_applies(doc, material, po_lines):
+    """True when the footer's revision statement concerns ``material``.
+
+    The footer names a supplier alias (PR-SL-0604) or the material itself; an alias is
+    resolved through the ERP line of the same PO with the same quantity.
+    """
+    items = [item["value"] for item in doc.get("fields", {}).get("items", []) if isinstance(item.get("value"), dict)]
+    quote = " ".join(field.get("quote") or (field.get("citation") or {}).get("quote") or ""
+                     for field in doc.get("fields", {}).get("revision", []))
+    pos = {str(field.get("value")) for field in doc.get("fields", {}).get("po", [])}
+    named = set(re.findall(rf"({_CODE})\s*:[^.]*?\brev", quote, re.I)) | set(
+        re.findall(rf"Artwork\s+({_CODE})", quote, re.I))
+    for item in items:
+        code = item.get("material")
+        if named and code not in named:
+            continue
+        if code == material:
+            return True
+        for line in po_lines:
+            if (str(line.get("po_number")) in pos and line.get("material_id") == material
+                    and int(line.get("quantity") or 0) == int(item.get("quantity") or 0)):
+                return True
+    return False
+
+
+def _supplier_quantities(material, supplier_id, po_rows, gr_rows):
+    delivered = sum(int(row.get("qty_received") or 0) for row in gr_rows
+                    if row.get("material_id") == material and row.get("supplier_id") == supplier_id)
+    open_quantity = sum(int(row.get("quantity") or 0) for row in po_rows
+                        if row.get("material_id") == material and row.get("supplier_id") == supplier_id
+                        and str(row.get("status", "")).casefold() not in ("delivered", "cancelled", "closed"))
+    return delivered, open_quantity
+
+
+def evaluate(truth, docs=(), component_rows=(), supplier_rows=(), po_rows=(), gr_rows=()):
     """Evaluate a readiness result without mutating the store.
 
     ``truth`` is the existing readiness JSON; the optional rows are supplied by
     the orchestrator so rules remain driven by current ingested data.
     """
     docs = list(docs)
+    po_rows, gr_rows = list(po_rows), list(gr_rows)
+    po_lines = po_rows
     component_rows = {row.get("component_id"): row for row in component_rows}
     suppliers = {row.get("supplier_id"): row for row in supplier_rows}
     results = {}
@@ -59,24 +98,27 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=()):
                 block("HOLD", issue.get("title", "Quality hold on received lot"), issue.get("evidence", []))
 
         # A revision conflict is a human decision, not an assertion that either
-        # supplier is wrong. Quantities come from the confirmation line items.
-        revisions = []
+        # supplier is wrong. Quantities come from the supplier's POs and GRs.
         revision_evidence = []
+        by_supplier = {}
         for doc in docs:
-            if doc.get("kind") != "confirmation":
+            if doc.get("kind") != "confirmation" or not doc.get("fields", {}).get("revision"):
                 continue
-            matching = [item.get("value") for item in doc.get("fields", {}).get("items", [])
-                        if isinstance(item.get("value"), dict) and item["value"].get("material") == material]
-            if not matching:
+            if not _revision_applies(doc, material, po_lines):
                 continue
+            supplier_id = doc.get("supplier_id") or ""
             for value in _field_values(doc, "revision"):
-                revisions.append((str(value), sum(int(item.get("quantity") or 0) for item in matching)))
-                revision_evidence.extend(_field_citations(doc, "revision"))
-        unique_revisions = {revision for revision, _ in revisions}
-        if len(unique_revisions) > 1:
-            quantities = ", ".join(f"rev {revision}: {quantity:,}" for revision, quantity in revisions)
-            block("HUMAN", f"Artwork revision conflict ({quantities}); Marketing must confirm the released revision.",
-                  revision_evidence)
+                by_supplier.setdefault(supplier_id, str(value).upper())
+            revision_evidence.extend(_field_citations(doc, "revision"))
+        if len(set(by_supplier.values())) > 1:
+            parts = []
+            for supplier_id, revision in sorted(by_supplier.items(), key=lambda kv: kv[1]):
+                delivered, open_quantity = _supplier_quantities(material, supplier_id, po_rows, gr_rows)
+                name = (suppliers.get(supplier_id) or {}).get("name") or supplier_id
+                parts.append(f"rev {revision} at {name} ({delivered:,} pcs delivered, {open_quantity:,} open)")
+            block("HUMAN", "Artwork revision conflict: " + ", ".join(parts) + "; Marketing must confirm which "
+                  "revision is released; PackRight prints to the revision in the component master at PO date, "
+                  "Karton to the last revision released in writing.", revision_evidence)
 
         if material == "CMP-MAG-005" and part.get("embedded_in"):
             block("HUMAN", f"BOM lists {material}, but supplier data says it is fitted into {part['embedded_in']}; Engineering must confirm whether this line is double-counted.",
@@ -132,7 +174,8 @@ def evaluate(truth, docs=(), component_rows=(), supplier_rows=()):
 def release_gate(con, data_root=None):
     root = Path(data_root) if data_root else ROOT / "data"
     truth = readiness(con, root)
-    return evaluate(truth, documents(con), rows(con, "component"), rows(con, "supplier"))
+    return evaluate(truth, documents(con), rows(con, "component"), rows(con, "supplier"),
+                    rows(con, "po"), rows(con, "receipt"))
 
 
 def main(argv=None):
