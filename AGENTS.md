@@ -10,6 +10,8 @@ Project: START Hack Munich 2026, Lio challenge "Keep the Line Running". We build
 
 Humans are on the team too: see `coord/TEAM.md` (roles, branches, checkpoints). Run `scripts/status.sh` for a one-screen view.
 
+Looking for work? `coord/OPEN_TASKS.md` lists unclaimed tasks (P1/P2/P3) any person's agent can take.
+
 ## Agent names (mandatory)
 Every agent has a unique name and uses it everywhere: the Owner/Agent column in `coord/STATUS.md` and `coord/TASKS.md`, the `FROM`/`TO` in `coord/INBOX.md`, and the git author name of its commits (`git -c user.name="<name>" ...`, message ends `[<name>]`).
 - Claude (lead) = **nick**.
