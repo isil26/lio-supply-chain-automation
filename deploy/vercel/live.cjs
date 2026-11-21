@@ -1,4 +1,4 @@
-const API_PATH = /^\/api\/(?:dashboard|health|truth|documents|sync|agents\/(?:runs|trace|run|stop)|threads\/[A-F0-9]+\/(?:send|demo-reply)|reply-decisions\/[0-9]{1,12}\/approve|decisions\/[a-f0-9]+\/(?:approve|review)|source\/.+)$/;
+const API_PATH = /^\/api\/(?:dashboard|actions|health|truth|documents|sync|agents\/(?:runs|trace|run|stop)|threads\/[A-F0-9]+\/(?:send|demo-reply)|reply-decisions\/[0-9]{1,12}\/approve|decisions\/[a-f0-9]+\/(?:approve|review)|source\/.+)$/;
 const VIEWS = /^\/(?:live|react|assets\/[\w.-]+)?$/;
 
 function liveTarget(url) {

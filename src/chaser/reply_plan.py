@@ -18,6 +18,7 @@ NO_COVER = re.compile(
     r"[^\n.]{0,150}?\b(?:by|before)\b[^\n.]{0,55}?\b(?:deadline|cut[- ]?off)\b", re.I,
 )
 HELD_FOR_TERMS = re.compile(r"\bon hold pending\b[^\n.!?]{1,160}", re.I)
+HELD_FOR_EXW = re.compile(r"\b(?:we need|release requires)[^\n.!?]{0,100}\b(?:accept|confirm)\w*\b[^\n.!?]{0,60}\bEXW\b[^\n.!?]{0,75}", re.I)
 SUPPLY_TERMS = re.compile(r"\b(?:units?|pieces?|stock|goods|parts?|quantity|made available|cannot deliver|unable to deliver)\b", re.I)
 RELEASE_TERMS = re.compile(r"\b(?:written confirmation|forwarder|freight|EXW|incoterm|collection|pickup|release)\b", re.I)
 
@@ -31,7 +32,7 @@ def supply_constraint(body):
             "nextAction": "Exclude this offer from launch coverage. Keep the shortfall open and review other recovery options.",
             "evidence": [refusal[0]],
         }
-    if (hold := HELD_FOR_TERMS.search(body)) and RELEASE_TERMS.search(hold[0]):
+    if (hold := HELD_FOR_TERMS.search(body) or HELD_FOR_EXW.search(body)) and RELEASE_TERMS.search(hold[0]):
         return {
             "disposition": "supplier_hold",
             "beforeState": "Awaiting confirmation that the supplier can release the stock.",

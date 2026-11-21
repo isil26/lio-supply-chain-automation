@@ -185,6 +185,7 @@ class ReplyHistoryTests(unittest.TestCase):
         cases = {
             "We cannot make 80 units available in Hamburg before the launch deadline.": "no_launch_cover",
             "The 80 units are on hold pending written confirmation of EXW.": "supplier_hold",
+            "We need either written confirmation accepting EXW or nomination of your forwarder.": "supplier_hold",
             "Our 80 units cannot be made available by the 22 November cut-off.": "no_launch_cover",
         }
         for text, disposition in cases.items():

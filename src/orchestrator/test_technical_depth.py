@@ -112,13 +112,18 @@ class RecoveryReviewTests(unittest.TestCase):
                      "parts": {"CMP-GAM-008": {"shortfall": 5900}}}
             option = {"id": "offer", "kind": "partial", "material": "CMP-GAM-008",
                       "supplier_id": "SUP-0028", "status": "review", "price": 999}
-            action = {"kind": "review_cover", "optionId": "offer", "replyId": 4, "threadId": "KARTON"}
+            action = {"case": "karton", "kind": "review_cover", "optionId": "offer", "reportedUnits": 5900,
+                      "replyId": 4, "threadId": "KARTON"}
             ready, = recovery_reviews(con, truth, [option], [action])
             self.assertEqual((ready["price"], ready["owner"], ready["dueAt"]),
                              (12390, "Paul Winter", "2026-11-21T20:00:00+01:00"))
             unrelated, = recovery_reviews(con, truth, [option], [{**action, "threadId": "UNRELATED"}])
             self.assertIsNone(unrelated["price"])
             self.assertEqual(recovery_reviews(con, truth, [{**option, "status": "approved"}], [action]), [])
+            con.execute("CREATE TABLE decisions(id TEXT, status TEXT, payload TEXT)")
+            con.execute("INSERT INTO decisions VALUES (?,?,?)", ("offer", "review", json.dumps(option)))
+            stale, = recovery_reviews(con, truth, [], [action])
+            self.assertIn("Revalidate it before approving", stale["detail"])
 
 
 class ExportTests(unittest.TestCase):
