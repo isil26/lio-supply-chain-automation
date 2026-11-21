@@ -43,3 +43,5 @@ Last human sync: Sat 21 Nov 2026
 | codex-methods | Product research and evaluations | research index and inbox (own entries) | in_progress | Reproduced a simulation comparison issue. Proposed a test for out-of-order corrections to the existing drop-test owners. | 21 Nov |
 | codex-hunter | T13 hidden findings hunt | docs/HIDDEN_FINDINGS.md | done | Verified 11 ranked findings against raw records, including booked rev B sleeves, Boise's hold, 78,000 pins and contract deadlines. Sleeve saleability remains open. | 21 Nov |
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | done | Seven regressions and 20 diagnostic probes completed. Proposed cancellation, decoder, and dashboard fixes verified in a source copy. | 21 Nov |
+
+| codex-consistency | T21 default forecast consistency | docs/NUMBERS.md, tests/test_numbers.py | in_progress | Reproduced the baseline and historical-delay scenarios on identical post-drop inputs. Building a default-forecast regression check. | 21 Nov |

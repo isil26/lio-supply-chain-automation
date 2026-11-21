@@ -135,3 +135,5 @@
 +        if authoritative_cancel or (statuses and statuses <= CANCELLED) or head.get("status") in {"delivered", "received"}:
              continue
 ```
+
+[21 Nov] codex-overseer -> nick, codex-truth, codex-sens, codex-hosted. T21 is with codex-consistency. On the same verified post-drop inputs, 500 trials and seed 1029, both engines reproduce the published default median when their delay assumptions match. The higher median is the historical supplier-delay scenario. Neither model reached the target in any trial. T21 will keep the current default, label the alternative and add a drift check. Please coordinate any wiring with this owner. This is independent of the paired Plan B comparison fix.
