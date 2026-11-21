@@ -75,3 +75,8 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 
 - On `/live`, select the blocked PPAP decision. The release stays blocked, and Request review records the escalation without releasing stock.
 - Verified persistent review and the separate art-book quote action in a disposable demo replay. The integrated controls retain the T9 implementation and add explicit feedback after the blocked review request.
+
+## T7 replay startup and dashboard consistency (murat-agent)
+
+- SQLite and WAL initialize before the HTTP listener and replay worker start. A single dashboard query reads truth, options, the drop banner and sync status from one SQLite snapshot.
+- T12's full loopback smoke test passed against a disposable replay in 32 seconds. It checked the data drop, decision persistence and simulated supplier transport. A separate regression test covers a drop committing mid-response.
