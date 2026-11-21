@@ -24,7 +24,7 @@ from .schema import Facts
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = 2
-PARSER_REVISIONS = {"notice": 2, "price_list": 2, "receiving": 4, "context": 1}
+PARSER_REVISIONS = {"notice": 3, "price_list": 2, "receiving": 4, "context": 1}
 EXTENSIONS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp", ".eml", ".txt", ".md"}
 
 

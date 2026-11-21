@@ -130,10 +130,30 @@ LOCAL_TRANSLATIONS = (
     (r"wysyłka\s+wyrobów gotowych z\s+magazynu możliwa", "Finished goods can still ship from warehouse stock."),
 )
 LOCAL_TIME = r"\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}"
+OFFER_ID = r"[A-Z0-9]+(?:[-/][A-Z0-9]+)*"
+OFFER_REVISION = r"[A-Z0-9]+"
+OFFER_HEADING = re.compile(
+    rf"^[ \t]*Offer\s+({OFFER_ID})[ \t]*,?[ \t]+revision\s+({OFFER_REVISION})[ \t]*\.?[ \t]*$",
+    re.I | re.M,
+)
+OFFER_SUPERSESSION = re.compile(
+    rf"(?:^[ \t]*|(?<=[.!?])[ \t]+)"
+    rf"(?P<statement>revision\s+(?P<revision>{OFFER_REVISION})\s+supersedes\s+"
+    rf"revision\s+(?P<previous>{OFFER_REVISION})\s+of\s+offer\s+(?P<offer>{OFFER_ID})\s+in\s+full)"
+    rf"(?=[ \t]*[.!?]|[ \t]*$)",
+    re.I | re.M,
+)
 
 
 def notice(facts, raw, page, confidence):
     flat = " ".join(raw.split())
+    for match in OFFER_HEADING.finditer(raw):
+        offer_id, revision = (value.upper() for value in match.groups())
+        facts.add("offer_revision", {"offer_id": offer_id, "revision": revision}, page, match[0], confidence)
+    for match in OFFER_SUPERSESSION.finditer(raw):
+        revision, previous, offer_id = (match[name].upper() for name in ("revision", "previous", "offer"))
+        facts.add("offer_supersession", {"offer_id": offer_id, "revision": revision, "supersedes": previous},
+                  page, match["statement"], confidence)
     lines = [line.strip() for line in raw.splitlines() if line.strip()]
     if len(lines) > 1:
         facts.add("what", lines[1], page, lines[1], confidence)

@@ -7,8 +7,10 @@ from datetime import datetime, timedelta
 
 from src.docs import documents
 from src.ingest.store import now, rows
-from src.truth import field_sources, simulate, value
+from src.truth import MODEL_RUNS, field_sources, value
+from src.truth.sensitivity import counterfactual
 from .expedite import choose as score_expedite
+from .offers import select_offers
 from .reliability import SupplierReliability
 
 POLICY = "soony/context/approval_policy_PP-07.pdf"
@@ -127,31 +129,41 @@ def choose(con, truth, data_root=None):
     ce = next((pid for pid in truth["editions"] if pid.endswith("-CE")), None)
     std = next((pid for pid in truth["editions"] if pid.endswith("-STD")), None)
 
-    def estimate(part, quantity, arrive, freight_mode):
+    trials = truth.get("model", {}).get("runs", MODEL_RUNS)
+    inbound_ids = {shipment["id"] for shipment in truth["inbound"]}
+
+    def estimate(scenario, changes):
         if not shifts:
             return None
-        independent = {pid: {k: row["unit_usage"][pid] for k, row in truth["parts"].items()
-                       if pid in row["unit_usage"] and not row["embedded_in"]} for pid in truth["editions"]}
-        stock = {k: row["on_hand"] for k, row in truth["parts"].items() if not row["embedded_in"]}
-        inbound = [dict(row, earliest=datetime.fromisoformat(row["earliest"]) if row["earliest"] else None)
-                   for row in truth["inbound"]]
-        inbound.append({"earliest": arrive, "material": part, "quantity": quantity, "held": False, "mode": freight_mode})
-        forecast = simulate(truth["editions"], independent, stock, inbound, shifts, trials=180)
-        return {pid: {"medianDelta": forecast[pid]["p50"] - truth["editions"][pid]["p50"],
-                      "baselineProbability": truth["editions"][pid]["probability"],
-                      "scenarioProbability": forecast[pid]["probability"]} for pid in forecast}
+        baseline = counterfactual(scenario, {}, trials=trials)["editions"]
+        forecast = counterfactual(scenario, changes, trials=trials)["editions"]
+        return {pid: {"medianDelta": row["p50"] - baseline[pid]["p50"],
+                      "baselineProbability": baseline[pid]["probability"],
+                      "scenarioProbability": row["probability"]} for pid, row in forecast.items()}
 
+    # Prefer the first observed copy for citations when bytes are retransmitted.
+    positions = dict(con.execute(
+        "SELECT source, MAX(id) FROM changes WHERE action IN ('added', 'changed') GROUP BY source"
+    ))
+    active_offers, offer_conflicts = select_offers(sorted(docs, key=lambda doc: positions.get(doc["source"], 0)))
     for doc in docs:
-        for offer in doc["fields"].get("available_offer", []):
+        for offer in active_offers.get(doc["source"], ()):
             detail = offer["value"]
             part = truth["parts"].get(detail.get("material"))
             if not part or not part["shortfall"]:
                 continue
-            supplier_rates = [r for r in part["suppliers"] if r["supplier_id"] in doc["source"] and r["currency"] == "EUR" and r["unit_price"] is not None]
+            supplier = doc.get("supplier_id")
+            supplier_rates = [
+                rate for rate in part["suppliers"]
+                if (rate["supplier_id"] == supplier if supplier else rate["supplier_id"] in doc["source"])
+                and rate["currency"] == "EUR" and rate["unit_price"] is not None
+            ]
             if not supplier_rates:
                 continue
             rate = supplier_rates[0]
             qty = min(int(detail["quantity"]), part["shortfall"])
+            if qty <= 0:
+                continue
             handling = detail["load_hours"] + (value(doc, "road_hours") or 0)
             known_cost = round(qty * rate["unit_price"], 2)
             full_lot_units = int(detail["quantity"])
@@ -161,7 +173,14 @@ def choose(con, truth, data_root=None):
             if not po_limits:
                 price_owner = "Confirm PO approver under PP-07"
             arrival = start + timedelta(hours=handling)
-            gain = estimate(part["material"], qty, arrival, "road")
+            shipment_id = f'plan-b-offer:{part["material"]}'
+            while shipment_id in inbound_ids:
+                shipment_id += ":offer"
+            proposed = {"id": shipment_id, "earliest": arrival.isoformat(), "material": part["material"],
+                        "quantity": qty, "held": True, "mode": "road", "supplier": rate["supplier_id"]}
+            scenario = dict(truth, inbound=[*truth["inbound"], proposed])
+            release = {"release_shipments": [shipment_id]}
+            gain = estimate(scenario, release)
             recovery = option("partial", f'Secure {part["label"].split(" Grand Heist")[0].lower()} stock',
                    f'Request a hold and a written delivered quote for {qty:,} finished units from {rate["supplier"].get("name", "the supplier")}. Prepare a separate PO decision after the dock slot and total cost are confirmed.',
                    known_cost, f"{price_owner} by total PO value + DC-HAM site lead dock release",
@@ -169,25 +188,31 @@ def choose(con, truth, data_root=None):
                    (f'Median packed-unit change: {sum(row["medianDelta"] for row in gain.values()):+,} if authorized at the first shift start.'
                     if gain is not None else "Shift impact pending."),
                    f'If the supplier requires all {full_lot_units:,} units, materials total €{full_lot_cost:,.2f}. Confirm freight, pickup time and dock slot.',
-                   [offer["citation"], *field_sources(doc, "road_hours"), rate["source"], *clauses],
+                   [offer["citation"], *offer.get("revision_evidence", ()),
+                    *field_sources(doc, "road_hours"), rate["source"], *clauses],
                    latest_action=latest.isoformat(), request_only=True, price_label="Materials estimate",
                    full_lot_price=full_lot_cost, full_lot_units=full_lot_units, modeled_impact=gain, material=part["material"],
                    supplier_id=rate["supplier_id"])
             recovery["supplier_timing"] = timing(rate["supplier_id"], arrival, "Express offer if authorized at first shift")
-            if qty > 0 and not part["embedded_in"]:
+            if not part["embedded_in"]:
                 copies = waiting_exposure(dict(part, shortfall=qty), truth["editions"], products)["units"]
-                shipment_id = f'proposed:{recovery["id"]}'
-                proposed = {"id": shipment_id, "earliest": arrival.isoformat(), "material": part["material"],
-                            "quantity": qty, "held": True, "mode": "road", "supplier": rate["supplier_id"]}
-                scenario = dict(truth, inbound=[*truth["inbound"], proposed])
                 affected = [pid for pid in truth["editions"] if part["unit_usage"].get(pid)]
                 edition = affected[0] if len(affected) == 1 else None
                 recovery["expedite"] = dict(score_expedite([
                     {"label": "Wait", "cost_eur": 0},
                     {"label": "Express offer", "cost_eur": known_cost,
-                     "changes": {"release_shipments": [shipment_id]}},
-                ], None, copies, truth=scenario, edition=edition),
+                     "changes": release},
+                ], None, copies, truth=scenario, edition=edition, trials=trials),
                     readiness_scope=truth["editions"][edition]["edition"] if edition else "all editions")
+
+    for supplier, offer_id, materials, evidence in offer_conflicts:
+        for material in sorted(materials):
+            if truth["parts"].get(material, {}).get("shortfall"):
+                option("offer_revision_review", f"Confirm the active revision of offer {offer_id}",
+                       "Ask the supplier to confirm which revision and quantity can still be requested.",
+                       None, "Buyer review", "No offer quantity is recommended pending supplier confirmation.",
+                       "The cited documents do not establish a single active revision.", evidence,
+                       request_only=True, material=material, supplier_id=supplier)
 
     for issue in truth["issues"]:
         if issue["kind"] == "quality_hold" and truth["parts"].get(issue["material"], {}).get("shortfall"):
