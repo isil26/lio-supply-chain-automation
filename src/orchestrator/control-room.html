@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soony · Launch Control Room</title>
+<style>
+:root{color-scheme:dark;--surface:#182126;--line:#344546;--text:#f5f2e9;--muted:#aebbb9;--green:#cbfa8d;--amber:#ffaf85}*{box-sizing:border-box}body{margin:0;background:#12191d;color:var(--text);font:15px/1.5 Arial,sans-serif}main{width:min(1336px,calc(100% - 96px));margin:0 auto;padding:41px 0 65px}header{display:flex;justify-content:space-between;align-items:flex-end;margin:0 0 27px;gap:24px}header h1{margin:0;font-size:clamp(30px,4vw,62px);font-weight:700;letter-spacing:-.048em;line-height:1.03}header p{margin:0 0 11px;color:var(--green);font:700 12px monospace;letter-spacing:.12em;text-transform:uppercase}header .right{text-align:right}header .right strong{font-size:23px;letter-spacing:-.02em}h2,h3,p{margin:0}h2{font-size:23px;letter-spacing:-.02em}h3{font-size:17px}.muted,small{color:var(--muted)}.mono{font:12px monospace;letter-spacing:.035em}button,select{font:inherit}button{color:inherit;background:#233234;border:1px solid #52625d;border-radius:5px;padding:8px 13px;cursor:pointer}button:hover,button:focus-visible{border-color:var(--green);outline:none}button:disabled{opacity:.55;cursor:default}.action{background:var(--green);color:#152114;font-weight:700;border-color:var(--green)}a{color:var(--green)}.strip{display:flex;gap:20px;align-items:center;justify-content:space-between;border:1px solid #42564a;border-left:3px solid var(--green);padding:12px 16px;background:#233230;margin-bottom:18px}.strip b{color:var(--green);margin-right:10px}.summary{display:grid;grid-template-columns:.8fr 1.1fr 1.1fr;gap:14px;margin-bottom:20px}.sheet,.metric{border:1px solid var(--line);background:var(--surface);border-radius:6px;min-width:0}.metric{padding:17px 20px}.metric .label{color:var(--muted);text-transform:uppercase;font:700 11px monospace;letter-spacing:.08em}.number{font-size:36px;font-weight:700;letter-spacing:-.05em;margin:5px 0}.bar{margin:12px 0 9px;height:5px;background:#354443;border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--green)}.prob{color:var(--amber)}.grid{display:grid;grid-template-columns:1.45fr 1fr;gap:18px;align-items:start}.sheet{padding:20px;margin-bottom:17px}.sheethead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 12px}.risk{width:100%;background:none;border:0;border-top:1px solid var(--line);padding:13px 0;border-radius:0;display:grid;grid-template-columns:1fr auto;gap:12px;text-align:left}.risk:hover{background:#233032}.risk:last-child{padding-bottom:1px}.risk span{display:block}.risk b.gap{font-size:22px;color:var(--amber);display:block;text-align:right;line-height:1.1}.risk-detail{margin:9px 0 0;font-size:13px;color:var(--muted);max-width:600px}.activity{border-top:1px solid var(--line);padding:11px 0;display:grid;grid-template-columns:1fr auto;gap:4px}.activity small{white-space:nowrap}.activity p{grid-column:1/-1;color:var(--muted);font-size:13px}.option-wrap,.thread-wrap{display:grid;gap:12px}.option-wrap select,.thread-wrap select{width:100%;border:1px solid var(--line);padding:8px;border-radius:4px;background:#263536;color:var(--text);min-width:0}.price{font-size:32px;font-weight:700;letter-spacing:-.05em;color:var(--green)}.note{color:var(--muted);font-size:13px}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.messages{border-left:2px solid var(--line);padding-left:12px}.messages article{margin:0 0 12px}.messages p{white-space:pre-wrap;font-size:14px;margin-top:5px}.msg-status{color:var(--amber);font-weight:bold}.toast{color:var(--amber);margin:7px 0}.toast:empty{display:none}dialog{color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px;width:min(740px,90vw);max-height:80vh;overflow:auto}dialog::backdrop{background:#080d10bb}dialog button{float:right}dialog li{margin:10px 0;overflow-wrap:anywhere}textarea{width:100%;min-height:76px;background:#263536;color:var(--text);font:inherit;padding:8px;border:1px solid var(--line)}@media(max-width:800px){main{width:calc(100% - 36px);padding-top:22px}.grid,.summary{grid-template-columns:1fr}.strip{align-items:start}header{align-items:start}.number{font-size:32px}}
+</style>
+</head>
+<body><main>
+<header><div><p>Soony · Procurement</p><h1>Launch Control Room</h1></div><div class="right"><strong id="launch">Grand Heist 6</strong><div class="muted mono" id="site">DC-HAM</div></div></header>
+<div class="strip"><span id="sync-status" role="status">Building launch snapshot…</span><button id="sync">Refresh inputs</button></div>
+<p id="feedback" class="toast" role="status"></p>
+<section class="summary" aria-label="Launch readiness" id="summary"></section>
+<div class="grid">
+<div><section class="sheet"><div class="sheethead"><h2>Component risks</h2><small>Open any row for evidence</small></div><div id="risks"></div></section>
+<section class="sheet"><div class="sheethead"><h2>Supplier threads</h2></div><div class="thread-wrap" id="threads"></div></section></div>
+<div><section class="sheet"><div class="sheethead"><h2>Approval inbox</h2><small>Procurement</small></div><div class="option-wrap" id="options"></div></section>
+<section class="sheet"><div class="sheethead"><h2>Agent activity</h2></div><div id="activity"></div></section></div>
+</div>
+<dialog id="sources"><button id="close-sources" type="button">Close</button><h2 id="source-title">Evidence</h2><ul id="source-list"></ul></dialog>
+</main>
+<script>
+const number = new Intl.NumberFormat("en-GB");
+const date = new Intl.DateTimeFormat("en-GB", {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Europe/Berlin"});
+const $ = id => document.getElementById(id);
+const node = (tag,value,className) => {
+  const element = document.createElement(tag);
+  if (value !== undefined) element.textContent = value;
+  if (className) element.className = className;
+  return element;
+};
+let state, optionId, threadId, lastState, lastDrop;
+const format = value => number.format(value);
+function label(value, className="note"){return node("div",value,className);}
+function button(name,onClick,primary=false){
+  const action=node("button",name,primary?"action":undefined);
+  action.onclick=onClick;
+  return action;
+}
+function listSelect(name, items, selected, onChange){
+  const select=node("select");
+  select.setAttribute("aria-label",name);
+  for (const item of items){
+    const option=node("option",item.name);
+    option.value=item.id;
+    option.selected=item.id===selected;
+    select.append(option);
+  }
+  select.onchange=event=>onChange(event.target.value);
+  return select;
+}
+async function action(path, body={}, success="Action recorded."){
+  $("feedback").textContent="Updating…";
+  try {
+    const response=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const result=await response.json();
+    if(!response.ok || !result.ok) throw Error(result.error ?? "Action unavailable");
+    $("feedback").textContent=success;
+    await refresh();
+  } catch(error){$("feedback").textContent=error.message;}
+}
+function evidence(title,sources){
+  $("source-title").textContent=title;
+  const seen=new Set();
+  $("source-list").replaceChildren();
+  for(const source of sources){
+    if(!source.file) continue;
+    const key=JSON.stringify(source);
+    if(seen.has(key)) continue;
+    seen.add(key);
+    const item=node("li");
+    const link=node("a",source.file.split("/").pop());
+    link.href="/api/source/"+source.file.split("/").map(encodeURIComponent).join("/")+(source.page?"#page="+source.page:"");
+    link.target="_blank";
+    link.rel="noopener";
+    item.append(link, label([source.sheet,source.page ? "p. "+source.page : "",source.row ? "row "+source.row:""].filter(Boolean).join(" · ")));
+    if(source.quote) item.append(node("p",source.quote));
+    $("source-list").append(item);
+  }
+  $("sources").showModal();
+}
+function summaries(){
+  const cut=node("article",undefined,"metric");
+  cut.append(label("Time to launch","label"),label("","number"),label(date.format(new Date(state.launch.deadline))+" CET · "+state.launch.location));
+  cut.children[1].id="countdown";
+  $("summary").replaceChildren(cut);
+  for(const item of state.readiness){
+    const metric=node("article",undefined,"metric");
+    metric.append(label(item.edition==="CE"?"Collector’s Edition":"Standard Edition","label"),label(format(item.packed)+" / "+format(item.target),"number"));
+    const bar=node("div",undefined,"bar");
+    const fill=node("i");
+    fill.style.width=item.percent+"%";
+    bar.append(fill);
+    metric.append(bar,label(format(item.probability*100)+"% modeled on time · "+format(item.p50)+" median packed","prob mono"));
+    if(item.firstStop) metric.append(label("First stoppage: "+item.firstStop));
+    $("summary").append(metric);
+  }
+  updateClock();
+}
+function updateClock(){
+  if(!state || !$("countdown")) return;
+  const remaining=Math.max(0,Math.floor((new Date(state.launch.deadline)-Date.now())/1000));
+  const pad=n=>String(n).padStart(2,"0");
+  $("countdown").textContent=pad(Math.floor(remaining/3600))+":"+pad(Math.floor(remaining/60)%60)+":"+pad(remaining%60);
+}
+function drawRisk(){
+  $("risks").replaceChildren();
+  for(const risk of state.risks){
+    const row=button("",()=>evidence(risk.component,risk.sources));
+    row.className="risk";
+    const subject=node("div");
+    subject.append(node("h3",risk.component),label(risk.supplier,"muted"));
+    if(risk.detail.length) subject.append(label(risk.detail[0],"risk-detail"));
+    const gap=node("div");
+    gap.append(node("b",risk.shortfall,"gap"),node("small",risk.gap ? "unit gap" : "watch"));
+    row.append(subject,gap);
+    $("risks").append(row);
+  }
+  if(!state.risks.length) $("risks").append(label("No current component risks."));
+}
+function drawOptions(){
+  const item=state.options.find(o=>o.id===optionId) ?? state.options[0];
+  $("options").replaceChildren();
+  if(!item){$("options").append(label("No decisions pending."));return;}
+  $("options").append(listSelect("Decision",state.options.map(o=>({id:o.id,name:o.title})),item.id,id=>{optionId=id;drawOptions();}));
+  $("options").append(node("h3",item.title),node("p",item.recommendation),
+    label(item.price===null?"Quote pending":new Intl.NumberFormat("en-IE",{style:"currency",currency:item.currency,maximumFractionDigits:2}).format(item.price),"price"),
+    label(item.priceLabel ?? item.price_label ?? "Cost estimate"),label(item.impact),label(item.risk),label(item.threshold));
+  const actions=node("div",undefined,"actions");
+  const approve=button(item.status==="approved"?"Approved":"Approve next step",()=>action("/api/decisions/"+item.id+"/approve",{},"Approval recorded."),true);
+  const review=button(item.status==="review"?"Review requested":"Request review",()=>action("/api/decisions/"+item.id+"/review",{},"Review requested."));
+  approve.disabled=item.status==="approved";
+  review.disabled=item.status==="approved" || item.status==="review";
+  actions.append(approve,review,button("Evidence",()=>evidence(item.title,item.evidence)));
+  $("options").append(actions);
+}
+function drawThreads(){
+  $("threads").replaceChildren();
+  const thread=state.threads.find(t=>t.id===threadId) ?? state.threads[0];
+  if(!thread){$("threads").append(label("No supplier follow-ups needed."));return;}
+  $("threads").append(listSelect("Supplier thread",state.threads.map(t=>({id:t.id,name:t.supplier+" · "+t.material})),thread.id,id=>{threadId=id;drawThreads();}));
+  $("threads").append(label(thread.status,"msg-status"));
+  const messages=node("div",undefined,"messages");
+  for(const message of thread.messages){
+    const line=node("article");
+    line.append(node("strong",message.sender),node("p",message.text));
+    if(message.parsed && Object.keys(message.parsed).length) line.append(label(Object.entries(message.parsed).map(([key,value])=>key+" "+value.value).join(" · ")));
+    messages.append(line);
+  }
+  $("threads").append(messages);
+  if(thread.status==="draft"){
+    const mode=state.sync.mode==="replay"?"dry-run":(state.sync.mailMode ?? "dry-run");
+    $("threads").append(button(mode==="dry-run"?"Approve dry-run send":"Approve supplier send",()=>{
+      const prompt=mode==="dry-run" ? "Record a dry-run send of this draft?" : "Send this draft to "+thread.supplier+"?";
+      if(window.confirm(prompt)) action("/api/threads/"+thread.id+"/send",{confirm:true});
+    },true));
+  }
+  if(thread.status==="awaiting reply" && state.sync.mode==="replay"){
+    const reply=node("textarea");
+    reply.placeholder="Enter a simulated supplier reply";
+    reply.setAttribute("aria-label","Simulated supplier reply");
+    $("threads").append(reply,button("Import demo reply",()=>action("/api/threads/"+thread.id+"/demo-reply",{text:reply.value})));
+  }
+}
+function drawActivity(){
+  $("activity").replaceChildren(...state.activity.slice(0,8).map(item=>{
+    const row=node("article",undefined,"activity");
+    row.append(node("strong",item.agent),node("small",item.time),node("p",item.action));
+    return row;
+  }));
+}
+async function refresh(){
+  try{
+    const response=await fetch("/api/dashboard");
+    const live=await response.json();
+    if(!response.ok) { $("sync-status").textContent=live.sync?.error ?? live.error; return; }
+    const signature=JSON.stringify([live.launch,live.readiness,live.risks,live.options,live.threads,live.activity,live.drop,live.sync?.pendingDrop,live.sync?.error]);
+    if(signature===lastState) return;
+    state=live;
+    lastState=signature;
+    $("launch").textContent=state.launch.name;
+    $("site").textContent=state.launch.location+" · Hamburg";
+    const drop=state.drop;
+    const title=state.sync?.error ?? drop?.title ?? "Launch snapshot";
+    const detail=state.sync?.error?"":drop?.detail;
+    $("sync-status").replaceChildren(node("b",title),document.createTextNode(detail ?? ""));
+    $("sync").textContent=state.sync?.pendingDrop ? "Replay supplier drop" : "Refresh inputs";
+    if(lastDrop && lastDrop!==drop?.id) $("feedback").textContent="Supplier inputs, gaps and decision options updated.";
+    lastDrop=drop?.id;
+    summaries();drawRisk();drawOptions();drawThreads();drawActivity();
+  }catch(error){$("sync-status").textContent="Dashboard connection interrupted. Retrying…";}
+}
+$("sync").onclick=()=>action("/api/sync",{},"Refresh queued.");
+$("close-sources").onclick=()=>$("sources").close();
+refresh();
+setInterval(refresh,3000);
+setInterval(updateClock,1000);
+</script></body></html>

@@ -3,6 +3,7 @@
 import csv
 import io
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -10,8 +11,6 @@ from collections import Counter
 from pathlib import Path
 
 from .schema import ITEM_CODE, quantity
-
-import re
 
 
 def command(args, timeout=45):
@@ -44,6 +43,14 @@ def render_page(path, page, work):
     return output
 
 
+def quantity_tokens(words, width):
+    """Read grouped digits in the quantity slot of a six-column receiving form."""
+    tokens = [word["text"].strip("|") for word in words
+              if .59 <= int(word["left"]) / width <= .68 and float(word["conf"]) >= 55]
+    raw = " ".join(tokens).strip()
+    return raw if quantity(raw) is not None else ""
+
+
 class LocalOCR:
     def __init__(self, repo, work):
         self.tesseract = shutil.which("tesseract")
@@ -51,7 +58,7 @@ class LocalOCR:
         self.apple = repo / "runtime" / "soony-ocr"
         self.work = work
         self.apple_failed = False
-        tessdata = repo / "runtime" / "tessdata"
+        tessdata = (repo / "runtime" / "tessdata").resolve()
         if self.tesseract:
             if (tessdata / "eng.traineddata").is_file():
                 self.tessflags = ["--tessdata-dir", str(tessdata)]
@@ -84,7 +91,8 @@ class LocalOCR:
             args = [self.tesseract, str(path), "stdout", *self.tessflags, "--psm", "6"]
             try:
                 if receiving:
-                    table = csv.DictReader(io.StringIO(command([*args, "tsv"])), delimiter="\t",
+                    tsv = command([*args, "-c", "tessedit_create_tsv=1"])
+                    table = csv.DictReader(io.StringIO(tsv), delimiter="\t",
                                            quoting=csv.QUOTE_NONE)
                     lines = {}
                     for word in table:
@@ -98,16 +106,16 @@ class LocalOCR:
                     text = command(args)
                     if text.strip():
                         return text, ()
-            except (OSError, RuntimeError, subprocess.SubprocessError):
+            except (KeyError, OSError, RuntimeError, subprocess.SubprocessError):
                 pass
         text = self.apple_text(path)
         if text:
             return text, ()
         raise RuntimeError("No readable image text from Tesseract or macOS Vision")
 
-    def handwritten_quantities(self, path, lines, missing_materials):
-        """Read digits below a quantity cell whose primary reading was illegible."""
-        if not self.tesseract or not missing_materials:
+    def handwritten_quantities(self, path, lines, materials):
+        """Read digits in the correction area just beneath a printed quantity cell."""
+        if not self.tesseract or not materials:
             return {}
         try:
             from PIL import Image, ImageOps
@@ -118,7 +126,7 @@ class LocalOCR:
         with Image.open(path) as image:
             for line in lines:
                 code = next((word for word in line if re.fullmatch(ITEM_CODE, word["text"].strip("|"))
-                             and word["text"].strip("|") in missing_materials), None)
+                             and word["text"].strip("|") in materials), None)
                 unit = next((word for word in line if word["text"].strip("|").lower()
                              in {"pcs", "szt", "ea", "stk"}), None)
                 if not code or not unit:
@@ -149,6 +157,51 @@ class LocalOCR:
                     if count >= 2:
                         readings[code["text"].strip("|")] = (value, quotes[value])
         return readings
+
+    def missing_quantities(self, path, lines, materials):
+        """Recover printed digits when the same receiving-form row lost its unit in OCR."""
+        if not self.tesseract or not materials:
+            return {}
+        try:
+            from PIL import Image, ImageOps
+        except ImportError:
+            return {}
+        results = {}
+        seen = Counter(word["text"].strip("|") for line in lines for word in line)
+        with Image.open(path) as image:
+            for line in lines:
+                code = next((word for word in line if word["text"].strip("|") in materials), None)
+                if not code:
+                    continue
+                material = code["text"].strip("|")
+                if seen[material] != 1 or not .035 <= int(code["left"]) / image.width <= .11:
+                    continue
+                if not any(.23 <= int(word["left"]) / image.width <= .32 for word in line):
+                    continue
+                reading = quantity_tokens(line, image.width)
+                if not reading:
+                    top, height = int(code["top"]), int(code["height"])
+                    bounds = (round(image.width * .597), max(0, top - height),
+                              round(image.width * .687), min(image.height, top + 2.3 * height))
+                    patch = ImageOps.autocontrast(ImageOps.grayscale(image.crop(tuple(map(int, bounds)))))
+                    crop = self.work / "printed-digits.png"
+                    readings = []
+                    for threshold in (150, 195):
+                        binary = patch.point(lambda pixel: 0 if pixel < threshold else 255)
+                        ImageOps.expand(binary, border=12, fill=255).save(crop)
+                        try:
+                            raw = command([self.tesseract, str(crop), "stdout", "--psm", "7",
+                                           "-c", "tessedit_char_whitelist=0123456789., "], timeout=15).strip()
+                        except (OSError, RuntimeError, subprocess.SubprocessError):
+                            continue
+                        count = quantity(raw)
+                        if count is not None and len(str(count)) >= 3:
+                            readings.append((count, raw))
+                    if len(readings) == 2 and readings[0][0] == readings[1][0]:
+                        reading = readings[0][1]
+                if reading:
+                    results[material] = (quantity(reading), reading)
+        return results
 
 
 def provider_cache_key(client):

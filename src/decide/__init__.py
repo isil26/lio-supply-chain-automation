@@ -19,7 +19,7 @@ def policy_details(docs):
     owners = [item["value"] for item in clauses if "Approval limits" in item["value"]]
     limits = []
     if owners:
-        for name, amount in re.findall(r"^(.+?)\s*\n<\s*([\d,]+)", owners[0], re.M):
+        for name, amount in re.findall(r"^([^\n<]+?)(?:[ \t]{2,}|[ \t]*\n)<[ \t]*([\d,]+)", owners[0], re.M):
             if not re.match(r"\d\.", name):
                 limits.append((name.strip(), int(amount.replace(",", ""))))
     air = next((item for item in clauses if "air freight up to" in item["value"]), None)
@@ -59,7 +59,9 @@ def choose(con, truth):
                    for row in truth["inbound"]]
         inbound.append({"earliest": arrive, "material": part, "quantity": quantity, "held": False, "mode": freight_mode})
         forecast = simulate(truth["editions"], independent, stock, inbound, shifts, trials=180)
-        return {pid: forecast[pid]["p50"] - truth["editions"][pid]["p50"] for pid in forecast}
+        return {pid: {"medianDelta": forecast[pid]["p50"] - truth["editions"][pid]["p50"],
+                      "baselineProbability": truth["editions"][pid]["probability"],
+                      "scenarioProbability": forecast[pid]["probability"]} for pid in forecast}
 
     for doc in docs:
         for offer in doc["fields"].get("available_offer", []):
@@ -74,6 +76,8 @@ def choose(con, truth):
             qty = min(int(detail["quantity"]), part["shortfall"])
             handling = detail["load_hours"] + (value(doc, "road_hours") or 0)
             known_cost = round(qty * rate["unit_price"], 2)
+            full_lot_units = int(detail["quantity"])
+            full_lot_cost = round(full_lot_units * rate["unit_price"], 2)
             latest = launch_end - timedelta(hours=handling + 8)
             price_owner = next((name for name, limit in po_limits if known_cost < limit), "CPO and CFO jointly")
             if not po_limits:
@@ -82,12 +86,14 @@ def choose(con, truth):
             option("partial", f'Secure {part["label"].split(" Grand Heist")[0].lower()} stock',
                    f'Request a hold and a written delivered quote for {qty:,} finished units from {rate["supplier"].get("name", "the supplier")}. Prepare a separate PO decision after the dock slot and total cost are confirmed.',
                    known_cost, f"{price_owner} by total PO value + DC-HAM site lead dock release",
-                   f'{qty:,} units. {handling} h loading + driving, before receiving. Baseline model improvement at first shift: ' +
-                   (f'{sum(gain.values()):,} packed units across both lines.' if gain is not None else "pending shift data."),
-                   "Materials estimate only. Obtain freight quote, pickup time and dock slot. Game card and quality gaps remain.",
+                   f'{qty:,} units. {handling} h loading + driving, before receiving. ' +
+                   (f'Median packed-unit change: {sum(row["medianDelta"] for row in gain.values()):+,} if authorized at the first shift start.'
+                    if gain is not None else "Shift impact pending."),
+                   f'If the supplier requires all {full_lot_units:,} units, materials total €{full_lot_cost:,.2f}. Confirm freight, pickup time and dock slot.',
                    [offer["citation"], *field_sources(doc, "road_hours"), rate["source"], *clauses],
                    latest_action=latest.isoformat(), request_only=True, price_label="Materials estimate",
-                   material=part["material"], supplier_id=rate["supplier_id"])
+                   full_lot_price=full_lot_cost, full_lot_units=full_lot_units, modeled_impact=gain, material=part["material"],
+                   supplier_id=rate["supplier_id"])
 
     for issue in truth["issues"]:
         if issue["kind"] == "quality_hold" and truth["parts"].get(issue["material"], {}).get("shortfall"):
@@ -116,7 +122,7 @@ def choose(con, truth):
                        if air else f'Earliest confirmed sea lane: {sea["earliest"][:10]}.',
                        "Loaded containers and held stock require release. Confirm a signed price and revised arrival before booking.",
                        [*evidence, *sea["evidence"]], request_only=True, material=part["material"], supplier_id=sea["supplier"])
-        alternatives = [rate for rate in part["suppliers"] if not rate["primary"] and rate["supplier"].get("status") == "active"]
+        alternatives = [rate for rate in part["suppliers"] if rate["primary"] in (0, False, "N") and rate["supplier"].get("status") == "active"]
         for rate in alternatives:
             qty = max(part["shortfall"], math.ceil(rate["moq"] or 0))
             unit_price = rate["unit_price"]

@@ -159,8 +159,8 @@ def notice(facts, raw, page, confidence):
             facts.add("translation_en", translation, page, match[0], confidence)
             if "Rush orders" in translation or "Finished goods" in translation:
                 facts.add("impact", translation, page, match[0], confidence)
-    for match in re.finditer(rf"({ITEM_CODE})[^\n]*?\b({QUANTITY})\s*pcs\b.{0,160}?loaded\s+within\s+(\d+) h",
-                             raw, re.I | re.S):
+    for match in re.finditer(rf"({ITEM_CODE}).{{0,150}}?\b({QUANTITY})\s*pcs\b.{{0,220}}?loaded.{{0,160}}?within\s+(\d+) h",
+                             flat, re.I):
         material, units, load = match.groups()
         facts.add("available_offer", {"material": material, "quantity": quantity(units), "load_hours": int(load)},
                   page, match[0], confidence)
@@ -257,8 +257,11 @@ def workbook(facts, path):
                             if serialized[index] is not None}
                     for field in ("current_price", "unit_price"):
                         if field in item:
-                            item[field] = decimal_number(item[field], isinstance(item[field], str)
-                                                         and "," in item[field] and "." not in item[field])
+                            raw_price = item[field]
+                            item[field] = decimal_number(raw_price, isinstance(raw_price, str)
+                                                         and "," in raw_price and "." not in raw_price)
+                    if isinstance(item.get("effective_at"), str):
+                        item["effective_at"] = iso_date(item["effective_at"]) or item["effective_at"]
                     facts.add("price_items", item, page, quote, **locator)
                 elif header:
                     facts.add("conditions", quote, page, quote, **locator)

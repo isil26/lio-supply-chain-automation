@@ -24,6 +24,7 @@ from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_sta
 from src.truth import LOCAL, readiness
 
 DIST = ROOT / "web" / "dist"
+CONTROL_ROOM = Path(__file__).resolve().parent
 
 
 def drop_summary(previous, current, previous_options, options):
@@ -95,7 +96,7 @@ def dashboard(con):
         return datetime.fromisoformat(value).astimezone(LOCAL).strftime("%H:%M CET") if value else ""
 
     return {
-        "launch": {"name": truth["name"], "deadline": truth["deadline"], "location": truth["site"]},
+        "launch": {"name": truth["name"].strip(" -–•"), "deadline": truth["deadline"], "location": truth["site"]},
         "readiness": [{"edition": "CE" if pid.endswith("-CE") else "STD", "percent": round(row["packed"] / row["target"] * 100, 1),
                        "packed": row["packed"], "target": row["target"], "probability": row["probability"], "p50": row["p50"],
                        "p10": row["p10"], "p90": row["p90"], "firstStop": truth["parts"].get(row["first_stop"], {}).get("label"),
@@ -116,10 +117,13 @@ def dashboard(con):
 class Loop:
     def __init__(self, args):
         self.args = args
+        if args.demo or os.getenv("CHASER_REAL_SMTP") != "1":
+            os.environ.setdefault("CHASER_SENDER", "launch-team@example.invalid")
         self.lock = threading.Lock()
         self.trigger = threading.Event()
         self.stop = threading.Event()
         self.drop_files = []
+        self.initialized = False
         if args.demo:
             demo_dir = ROOT / "runtime" / "replay"
             demo_dir.mkdir(parents=True, exist_ok=True)
@@ -136,6 +140,17 @@ class Loop:
                         self.drop_files.append((source, self.root / key))
                     else:
                         self.copy(source, self.root / key)
+            cache = ROOT / "store" / "docs_cache.sqlite3"
+            if cache.is_file():
+                replay_store = self.root.parent / "store"
+                replay_store.mkdir(exist_ok=True)
+                with closing(sqlite3.connect(cache)) as source, closing(sqlite3.connect(replay_store / cache.name)) as dest:
+                    source.backup(dest)
+            language_data = ROOT / "runtime" / "tessdata"
+            if language_data.is_dir():
+                replay_runtime = self.root.parent / "runtime"
+                replay_runtime.mkdir(exist_ok=True)
+                (replay_runtime / "tessdata").symlink_to(language_data, target_is_directory=True)
         else:
             self.root = args.data
             self.database = args.db
@@ -159,10 +174,14 @@ class Loop:
                     sync_error = f"Portal sync failed ({exc.__class__.__name__}). Last local snapshot remains available."
             before = get_state(con, "truth")
             events = ingest(con, self.root, ROOT / "bridge" / "state.json" if self.args.online else None)
-            extracted = extract(con, self.root)
-            reconcile_handwriting(con, self.root)
             successful = [event for event in events if event["action"] != "error"]
-            if before is None or successful or extracted or get_state(con, "pendingRecompute", False):
+            with con:
+                if successful:
+                    save_state(con, "pendingEvents", [*get_state(con, "pendingEvents", []), *successful])
+            extracted = extract(con, self.root)
+            handwriting = reconcile_handwriting(con, self.root)
+            successful = get_state(con, "pendingEvents", [])
+            if not self.initialized or before is None or successful or extracted or handwriting or get_state(con, "pendingRecompute", False):
                 previous_options = get_state(con, "options", [])
                 with con:
                     save_state(con, "pendingRecompute", True)
@@ -173,6 +192,7 @@ class Loop:
                     save_state(con, "truth", truth)
                     save_state(con, "options", options)
                     save_state(con, "pendingRecompute", False)
+                    save_state(con, "pendingEvents", [])
                     chaser.activity(con, "Readiness Engine", f'Recomputed {len(truth["parts"])} component positions for {len(truth["editions"])} editions.')
                     if extracted:
                         chaser.activity(con, "Document Agent", f'Processed {extracted} documents and reconciled cited fields.')
@@ -196,7 +216,8 @@ class Loop:
             chaser.expire(con)
             with con:
                 save_state(con, "sync", {"time": now(), "error": sync_error, "mode": "replay" if self.args.demo else "portal" if self.args.online else "local",
-                                        "pendingDrop": len(self.drop_files), "events": [item for item in events if item["action"] == "error"]})
+                                        "pendingDrop": len(self.drop_files), "mailMode": "dry-run" if self.args.demo or os.getenv("CHASER_REAL_SMTP") != "1" else "live", "events": [item for item in events if item["action"] == "error"]})
+            self.initialized = True
             return len(successful)
 
     def promote_drop(self):
@@ -237,7 +258,11 @@ def handler(loop):
                     if path.startswith("/api/source/"):
                         return self.file(loop.root, unquote(path[len("/api/source/"):]))
                 return self.out({"error": "Unknown API endpoint"}, 404)
-            return self.file(DIST, unquote(path).lstrip("/") or "index.html")
+            if path in {"/", "/live"}:
+                return self.file(CONTROL_ROOM, "control-room.html")
+            if path == "/react":
+                return self.file(DIST, "index.html")
+            return self.file(DIST, unquote(path).lstrip("/"))
 
         def file(self, base, relative):
             target = (base / relative).resolve()
@@ -287,7 +312,13 @@ def handler(loop):
                     if match and match[2] == "send":
                         if body.get("confirm") is not True:
                             return self.out({"error": "Review and confirm this supplier message before sending"}, 409)
-                        chaser.send(con, match[1], demo=loop.args.demo or os.getenv("SOONY_ENABLE_SMTP") != "1")
+                        draft = con.execute("SELECT material,qty,status FROM chases WHERE id=?", (match[1],)).fetchone()
+                        truth = get_state(con, "truth", {})
+                        if draft and draft["status"] == "draft":
+                            current = truth.get("parts", {}).get(draft["material"], {})
+                            if current.get("shortfall", 0) != draft["qty"]:
+                                return self.out({"error": "The quantity has changed. Refresh the launch snapshot before sending."}, 409)
+                        chaser.send(con, match[1], demo=loop.args.demo or os.getenv("CHASER_REAL_SMTP") != "1")
                         return self.out({"ok": True})
                     if match and loop.args.demo:
                         message = con.execute("SELECT * FROM chases WHERE id=?", (match[1],)).fetchone()

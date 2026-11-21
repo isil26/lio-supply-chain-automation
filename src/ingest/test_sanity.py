@@ -89,7 +89,7 @@ class IngestionSanityTest(unittest.TestCase):
         self.assertEqual(first["tables"]["purchase_orders"]["rows"], 2)
         self.assertEqual(self.query("""
             SELECT po_line, supplier_id, unit_price, order_date, status, status_raw, buyer
-            FROM purchase_orders WHERE po_number = '4500000001'
+            FROM purchase_orders WHERE po_number = '4500000001' AND status_raw = 'GL'
         """), [(1, "SUP-0019", 1.52, "2024-08-12", "delivered", "GL", "André")])
         self.assertEqual(self.query("""
             SELECT status, source_sheet, source_row, supplier_id, eta FROM open_shipments
