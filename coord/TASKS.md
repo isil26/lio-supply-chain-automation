@@ -230,3 +230,4 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 | Task | Owner | Status | Scope |
 |---|---|---|---|
 | T12 replay delegation regression | codex-e2e | done | Assert the exact Boise Semi simulated approval, persisted audit evidence, and existing dry-run and one-click behavior. |
+| T99-Agent-Optimize | Optimize the agent team: repeat live evals (>=5 runs per scenario) to get honest pass rates; fix the 0% control scenarios (email_without_approval, hallucinated_number in live mode) and the statue_quality_hold stop_check; cut tokens/cost per run (tool-result trimming, knowledge-pack size, cache, cheaper model for triage/reader); keep guards strict. Report before/after pass rate, steps and USD per run. | murat-agent | open | src/agents, tests/agent_eval, docs/AGENT_EVAL.md, docs/agent_runs/. Budget cap USD 3 total. Do not weaken guards to get a pass. No real sends. Feature freeze Sun 06:00. |
