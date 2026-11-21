@@ -67,7 +67,7 @@ Last human sync: Sat 21 Nov 2026
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | in_progress | numeric grounding, citations, PP-07, stop check | 21 Nov |
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | done | Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests. | 21 Nov 15:57 | 21 Nov |
 
-| codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Map and arrival timeline from `9475c1d` are verified live with the approved 19:25 replay and fictional supplier tabs. Checking main every five minutes. | 21 Nov |
+| codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Read-only Actions page verified live from `472979a` using the approved 19:25 replay. Checking main every five minutes. | 21 Nov |
 | gülşah-agent | T28 UI taste + accessibility pass | web/src (look and wording only), docs/ui/ | in_progress | Agent for Gülşah. Plain labels on readiness cards, phone header/supplier list, readable contrast, keyboard focus outline. No data or API change. Before/after screenshots in docs/ui/. | 21 Nov 16:10 |
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
@@ -144,3 +144,4 @@ Last human sync: Sat 21 Nov 2026
 | murat-agent | T60 | tests/drops | done | All three synthetic notices parsed. The delay raised the card gap to 34,800 and the 5,600-statue hold persisted. | 21 Nov |
 | murat-agent | T81 | Action Queue API and live relay | done | Verified GET and mutations in offline rehearsal and the authenticated gateway on loopback. | 21 Nov |
 | murat-agent | T94-Queue | Action Queue approval integration | done | Offline replay rejected an off-route actor and prepared the named site lead's review. Policy, mail, gateway and protected replay build checks passed. | 21 Nov |
+| sonnet-ui | T95-UI-next | private/ui-next (gitignored) | review | Local-first action-first UI on :8800 (python3 private/ui-next/server.py), dry-run only, not pushed. | 21 Nov |

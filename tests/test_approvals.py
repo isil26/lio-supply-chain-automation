@@ -125,7 +125,8 @@ class Delegation(unittest.TestCase):
         self.assertEqual(r["delegation_id"], "DEL-T")
 
     def test_seed_is_unconfirmed_and_one_click(self):
-        seed = ap.load_delegations()
+        # the repo file also holds SIMULATED test-case delegations (DEL-TEST-*); the real seed is DEL-001 only
+        seed = [d for d in ap.load_delegations() if not d.get("simulated")]
         self.assertEqual(len(seed), 1)
         self.assertFalse(seed[0]["confirmed_in_writing"])
         self.assertEqual(seed[0]["max_value_eur"], 2_000_000)

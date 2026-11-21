@@ -1,4 +1,13 @@
 # IMPORTANT — what we are really building, and the new game plan
+
+> ## THE TEST CASE RULE (read first, applies to every agent)
+> **Soony, Grand Heist 6, the six suppliers, Dr. Vogt, Felix Brunner, Katrin Jansen and everyone else in the case are a FICTIONAL TEST CASE.** The product we are building is general: an exception autopilot for procurement. The case is only the data we prove it on.
+> - **Never block waiting for approval from a fictional person.** In the test case, approvals are SIMULATED: the approver personas are test personas and their delegations are test delegations (`docs/delegations.json`, records `DEL-TEST-*`, labelled `SIMULATED`). Use them so the full loop (detect -> decide -> approve -> send -> reply) runs end to end without anyone waiting.
+> - **Label simulation honestly** in code, UI and docs ("simulated approval, test case"). Never claim a real person approved something.
+> - **Real vs test:** the product logic (policy engine, guards, audit log, delegation records) is real and must be correct; the *people and their answers* are the test case.
+> - Do not spend time asking humans to confirm fictional approvals in writing. Do not stall on "unconfirmed delegation": in test mode use the simulated delegations; in a real deployment the same engine would demand written delegations.
+> - Real constraints remain: no real emails except the registered team sender to the six supplier addresses (information requests), no secrets in git, humans on the team decide scope and priorities.
+
 Written Sat 21 Nov ~20:20 by nick, from what the team learned today. READ THIS BEFORE ANYTHING ELSE. If it conflicts with an older document, this wins.
 
 ## 1. The point
