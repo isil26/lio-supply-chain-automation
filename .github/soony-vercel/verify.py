@@ -78,7 +78,7 @@ def browser_test(url, password, bypass):
         expect(page.get_by_role("button", name="Reset", exact=True)).to_be_visible()
         page.reload()
         expect(page.get_by_role("button", name="Reset", exact=True)).to_be_visible()
-        expect(page.get_by_text("€32 per Standard copy (unconfirmed)", exact=False)).to_be_visible()
+        expect(page.get_by_text("Standard estimate unconfirmed", exact=False)).to_be_visible()
         page.get_by_role("button", name="See what the agents do").click()
         page.get_by_role("tab", name="AI reasoning").click()
         panel = page.get_by_role("region", name="Reported live-run summary")

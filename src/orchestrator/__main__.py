@@ -186,6 +186,7 @@ def approval_mode(option):
             "id": option.get("id"), "kind": kind, "value_eur": option.get("price") if option.get("price") is not None
             else (0 if kind in ("dock_slot", "quality_exception", "supplier_info_request", "internal_message", "supplier_release") else None),
             "part": option.get("material"), "site": "DC-HAM" if kind == "dock_slot" else None,
+            "category": action_approvals.CATEGORIES.get(option.get("material")),
             "binding": kind not in ("supplier_info_request", "internal_message"), "reversible": kind != "purchase_order",
             "evidence": [cite_text(source) if isinstance(source, dict) else str(source) for source in option.get("evidence") or []]})
     except Exception:  # engine missing or changed: the UI falls back to one-click
@@ -194,29 +195,27 @@ def approval_mode(option):
     chain = [name(step) for step in verdict.get("escalation_chain") or [] if name(step)]
     return {"mode": verdict.get("mode"), "approver": name(verdict.get("approver")), "reason": verdict.get("reason"),
             "slaMinutes": verdict.get("sla_minutes"), "escalateTo": chain[0] if chain else None,
-            "blockedBy": verdict.get("blocked_by") or []}
+            "blockedBy": verdict.get("blocked_by") or [], "delegationId": verdict.get("delegation_id")}
 
 
 def auto_approve(con, demo=False):
-    """Approve open options that cost no more than the team's auto-approve limit (slider in the UI).
-
-    Never auto-approves what the approval engine marks NEVER (quality release, unpriced) or ESCALATE, anything
-    with an approval block, or anything a live supplier reply has made obsolete. Every approval is logged."""
+    """Apply the UI spending cap to options covered by a current written delegation."""
     setting = get_state(con, "autoApprove", {}) or {}
     limit = setting.get("limitEur") or 0
     if limit <= 0:
         return []
     done = decisions(con)
     try:
-        constraints = chaser.live_reply_constraints(con) if not demo else []
-    except Exception:
-        constraints = []
+        constraints = chaser.live_reply_constraints(con) if not demo else {}
+    except sqlite3.Error:
+        return []
     approved = []
     for option in get_state(con, "options", []) or []:
         if option["id"] in done or option.get("approval_block"):
             continue
-        mode = (approval_mode(option) or {}).get("mode")
-        if mode not in ("AUTO", "ONE_CLICK") or (option.get("price") or 0) > limit:
+        verdict = approval_mode(option) or {}
+        delegation = verdict.get("delegationId")
+        if verdict.get("mode") != "AUTO" or not delegation or (option.get("price") or 0) > limit:
             continue
         if constraints and supplier_option_block(option, constraints):
             continue
@@ -226,7 +225,8 @@ def auto_approve(con, demo=False):
             continue
         approved.append(option["id"])
         with con:
-            chaser.activity(con, "Auto-approve", f'{option["title"]}: approved automatically (cost up to €{limit:,.0f}, rule set by {setting.get("setBy") or "the team"}).')
+            chaser.activity(con, "Auto-approve", f'{option["title"]}: approved under delegation {delegation} '
+                           f'from {verdict["approver"]} (team cap €{limit:,.0f}).')
     if approved:
         with con:
             save_state(con, "autoApproved", sorted(set(get_state(con, "autoApproved", []) or []) | set(approved)))
