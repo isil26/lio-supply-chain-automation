@@ -65,8 +65,9 @@ def browser_test(url, password, bypass):
         page.get_by_role("button", name="Sign in", exact=True).click()
         actions = page.get_by_role("region", name="Actions", exact=True)
         expect(actions.get_by_role("listitem").first).to_be_visible()
-        expect(actions.get_by_role("slider")).to_have_count(0)
-        expect(actions.get_by_role("button", name=re.compile(r"^(Approve|Review)$"))).to_have_count(0)
+        # Practice mode (Gülşah, 21 Nov): slider and Approve/Review change only this browser and send nothing.
+        expect(actions.get_by_role("note")).to_contain_text("Nothing is sent")
+        expect(actions.get_by_role("slider")).to_have_count(1)
         offers = page.get_by_role("region", name="Supplier offers")
         expect(offers.get_by_text("Fictional offers for this example", exact=False)).to_be_visible()
         for material in ("Game cards", "Statues", "Art books", "Cover sleeves"):

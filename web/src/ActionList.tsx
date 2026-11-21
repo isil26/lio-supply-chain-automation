@@ -15,6 +15,7 @@ type Props = {
   autoIds: string[];
   autoBy?: string | null;
   onAutoLimit?: (limitEur: number) => void;
+  practiceNote?: string;
 };
 
 // Slider stops for the auto-approve limit (EUR); 0 = off.
@@ -39,7 +40,7 @@ function badge(mode: Mode) {
 
 const STATUS: Record<string, string> = { approved: "Approved", review: "Under review", blocked: "Blocked", sent: "Sent", replied: "Replied", done: "Done" };
 
-export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit }: Props) {
+export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit, practiceNote }: Props) {
   const shortName = (name?: string | null) => name ? name.replace(/^((?:Dr\.|Prof\.)\s+)?.*\s(\S+)$/, (_, title = "", last) => `${title}${last}`) : "";
   const nearest = STOPS.reduce((best, stop, i) => Math.abs(stop - autoLimit) < Math.abs(STOPS[best] - autoLimit) ? i : best, 0);
   const [stop, setStop] = useState(nearest);
@@ -98,6 +99,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
         <b>{STOPS[stop] ? euro(STOPS[stop]) : "Off"}</b>
       </label>}
     </div>
+    {practiceNote && <p className="ac-practice" role="note">{practiceNote}</p>}
     <ol className="ac-list">
       {shown.map((card, index) => {
         const b = badge(card.mode);

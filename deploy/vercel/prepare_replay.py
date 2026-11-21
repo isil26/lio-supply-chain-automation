@@ -10,6 +10,39 @@ from recording import DEFAULT_RECORDING, load_recording
 from src.orchestrator.__main__ import Loop, connect, dashboard
 
 
+MAIL_ARCHIVE = Path(__file__).resolve().parents[2] / "docs" / "supplier-email-archive"
+MAIL_ARCHIVE_TIME = "2026-11-21T20:44:02+01:00"  # Gmail snapshot time in docs/supplier-email-archive/README.md
+
+
+def mail_archive():
+    """Read-only copy of the team Gmail supplier threads, shown as the Verified team mailbox."""
+    threads = []
+    for path in sorted(MAIL_ARCHIVE.glob("*.json")):
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        messages = []
+        for index, item in enumerate(raw.get("messages", []), 1):
+            outbound = item.get("direction") == "outbound"
+            messages.append({
+                "id": index, "side": "out" if outbound else "in",
+                "sender": "Soony procurement" if outbound else raw.get("supplier", "Supplier"),
+                "text": item.get("body") or "", "time": item.get("date"), "timestamp": item.get("date"),
+                "transport": {"from": item.get("from"), "to": item.get("to"), "subject": item.get("subject"),
+                              "messageId": item.get("message_id"), "inReplyTo": item.get("in_reply_to"),
+                              "mode": "gmail", "status": "gmail_sent" if outbound else "received"},
+            })
+        if not messages:
+            continue
+        supplier = raw.get("supplier") or "Supplier"
+        threads.append({
+            "id": raw.get("thread_id") or path.stem, "supplier": supplier, "material": raw.get("material"),
+            "subject": messages[0]["transport"]["subject"] or "",
+            "status": "replied" if any(m["side"] == "in" for m in messages) else "sent",
+            "initials": "".join(word[0] for word in supplier.split()[:2]), "messages": messages,
+        })
+    threads.sort(key=lambda thread: thread["messages"][-1]["timestamp"] or "", reverse=True)
+    return {"status": "ready", "checkedAt": MAIL_ARCHIVE_TIME, "threads": threads, "actions": []} if threads else None
+
+
 def view(loop):
     with closing(connect(loop.database)) as con:
         result = dashboard(con)
@@ -52,8 +85,11 @@ def main():
         loop.promote_drop()
         loop.cycle(sync=False)
         after = view(loop)
+    archive = mail_archive()
     for phase in (before, after):
         phase["recordedAgentRun"] = recording
+        if archive:
+            phase["mailHistory"] = archive
     baseline = {risk["id"]: risk["gap"] for risk in before["risks"]}
     updated = {risk["id"]: risk["gap"] for risk in after["risks"]}
     if baseline == updated:
