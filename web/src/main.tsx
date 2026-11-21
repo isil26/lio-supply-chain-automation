@@ -344,7 +344,7 @@ function App() {
         reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={hostedReplayBuild}
         costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
         onDecide={(id, review) => void decide(id, review)} onEvidence={setSource}
-        autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []}
+        autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []} autoBy={data.autoApprove?.setBy}
         onAutoLimit={isStaticMode() ? undefined : (limit) => void setAutoApprove(limit).then(refresh).catch((err) => setError(err instanceof Error ? err.message : "Auto-approve could not be set"))}/>
 
       {data.inboundTimeline && <ArrivalTimeline timeline={data.inboundTimeline}/>}

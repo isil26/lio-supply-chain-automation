@@ -13,6 +13,7 @@ type Props = {
   onEvidence: (source: Source) => void;
   autoLimit: number;
   autoIds: string[];
+  autoBy?: string | null;
   onAutoLimit?: (limitEur: number) => void;
 };
 
@@ -38,7 +39,8 @@ function badge(mode: Mode) {
 
 const STATUS: Record<string, string> = { approved: "Approved", review: "Under review", blocked: "Blocked", sent: "Sent", replied: "Replied", done: "Done" };
 
-export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, onAutoLimit }: Props) {
+export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit }: Props) {
+  const shortName = (name?: string | null) => name ? name.replace(/^((?:Dr\.|Prof\.)\s+)?.*\s(\S+)$/, (_, title = "", last) => `${title}${last}`) : "";
   const nearest = STOPS.reduce((best, stop, i) => Math.abs(stop - autoLimit) < Math.abs(STOPS[best] - autoLimit) ? i : best, 0);
   const [stop, setStop] = useState(nearest);
   useEffect(() => setStop(nearest), [nearest]);
@@ -88,7 +90,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
     <div className="ac-head">
       <h3>Actions</h3>
       {!readOnly && onAutoLimit && <label className="ac-auto">
-        <span>Auto-approve up to</span>
+        <span>{autoBy ? `${shortName(autoBy)} auto-approves routine actions up to` : "Auto-approve routine actions up to"}</span>
         <input type="range" min={0} max={STOPS.length - 1} step={1} value={stop}
           onChange={(event) => setStop(Number(event.target.value))}
           onPointerUp={() => onAutoLimit(STOPS[stop])} onKeyUp={() => onAutoLimit(STOPS[stop])}

@@ -187,6 +187,7 @@ export type DashboardData = {
   network?: Network;
   autoApprove?: { limitEur?: number; setAt?: string; setBy?: string | null };
   autoApproved?: string[];
+  routineKinds?: string[];
   autoSend?: boolean;
   inboundTimeline?: {
     deadline: string;

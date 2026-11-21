@@ -198,6 +198,20 @@ def approval_mode(option):
             "blockedBy": verdict.get("blocked_by") or [], "delegationId": verdict.get("delegation_id")}
 
 
+# Routine actions may run under a delegated limit; binding ones (dock slots, orders, air freight, quality and
+# supplier releases) always wait for one click by the named approver (IMPORTANT.md section 3).
+ROUTINE_KINDS = {"supplier_info_request", "internal_message", "hold_and_quote"}
+
+
+def head_of_procurement():
+    """Name of the Head of Procurement from the approval engine's directory (org chart v2)."""
+    try:
+        from src.decide import approvals
+        return next((name for name, person in approvals.PEOPLE.items() if person.get("role") == "Head of Procurement"), None)
+    except Exception:
+        return None
+
+
 def auto_approve(con, demo=False):
     """Apply the UI spending cap to options covered by a current written delegation."""
     setting = get_state(con, "autoApprove", {}) or {}
@@ -213,6 +227,8 @@ def auto_approve(con, demo=False):
     for option in get_state(con, "options", []) or []:
         if option["id"] in done or option.get("approval_block"):
             continue
+        if ENGINE_KIND.get(option.get("kind")) not in ROUTINE_KINDS:
+            continue  # binding actions always keep one click (IMPORTANT.md section 3)
         verdict = approval_mode(option) or {}
         delegation = verdict.get("delegationId")
         if verdict.get("mode") != "AUTO" or not delegation or (option.get("price") or 0) > limit:
@@ -226,7 +242,7 @@ def auto_approve(con, demo=False):
         approved.append(option["id"])
         with con:
             chaser.activity(con, "Auto-approve", f'{option["title"]}: approved under delegation {delegation} '
-                           f'from {verdict["approver"]} (team cap €{limit:,.0f}).')
+                           f'from {verdict["approver"]} (routine, cap €{limit:,.0f}).')
     if approved:
         with con:
             save_state(con, "autoApproved", sorted(set(get_state(con, "autoApproved", []) or []) | set(approved)))
@@ -344,7 +360,8 @@ def dashboard(con, *, include_action_history=False):
                        "missCostEur": (missed.get(pid) or {}).get("value"), "missCostConfirmed": (missed.get(pid) or {}).get("confirmed")}
                       for pid, row in truth["editions"].items()],
         "inboundTimeline": inbound_timeline(truth),
-        "autoApprove": get_state(con, "autoApprove", {}) or {"limitEur": 0},
+        "autoApprove": {"limitEur": 0, "setBy": head_of_procurement(), **(get_state(con, "autoApprove", {}) or {})},
+        "routineKinds": sorted(kind for kind, engine in ENGINE_KIND.items() if engine in ROUTINE_KINDS),
         "autoApproved": get_state(con, "autoApproved", []) or [],
         "risks": risks, "activity": dashboard_activity(con, blocked, clock, docs=docs, reviews=reviews), "documentReviews": reviews,
         "threads": [{**thread, "initials": "".join(word[0] for word in thread["supplier"].split()[:2]),
@@ -816,8 +833,9 @@ def handler(loop):
                         except (TypeError, ValueError):
                             return self.out({"error": "limitEur must be a number"}, 400)
                         with con:
-                            save_state(con, "autoApprove", {"limitEur": limit, "setAt": now(), "setBy": str(body.get("setBy") or "")[:80] or None})
-                            chaser.activity(con, "Auto-approve", f"Auto-approve limit set to €{limit:,.0f}." if limit else "Auto-approve switched off.")
+                            who = str(body.get("setBy") or "")[:80] or head_of_procurement()
+                            save_state(con, "autoApprove", {"limitEur": limit, "setAt": now(), "setBy": who})
+                            chaser.activity(con, "Auto-approve", f"{who or 'The team'} auto-approves routine actions up to €{limit:,.0f}." if limit else "Auto-approve switched off.")
                         return self.out({"ok": True, "limitEur": limit, "approved": auto_approve(con, demo=loop.args.demo)})
                     match = re.fullmatch(r"/api/decisions/([a-f0-9]+)/(approve|review)", path)
                     if match:
