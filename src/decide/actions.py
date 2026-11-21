@@ -294,13 +294,22 @@ def _option_proposals(truth, options, reviews, other):
     for event in truth.get("issues", []):
         if event["kind"] != "short_ship" or event.get("material") != "CMP-GAM-001":
             continue
-        if truth["parts"].get(event["material"], {}).get("shortfall", 0) <= 0:
+        gap = truth["parts"].get(event["material"], {}).get("shortfall", 0)
+        if gap <= 0:
             continue
+        received = next((issue for issue in truth["issues"] if issue["kind"] == "shipment_received"
+                         and issue["shipment"] == event.get("shipment")), None)
+        detail = (f"{event['title']}. Check the existing supplier correspondence for the "
+                  f"{event['quantity']:,.0f}-card balance. Escalate any new, evidenced delivery option.")
+        if received:
+            detail = (f"{gap:,} game cards are still needed by launch. Review supplier correspondence for the "
+                      f"{event['quantity']:,.0f}-card balance and escalate any offer with a documented delivery window.")
         yield _proposal("recovery", "Track recovery of the game-card balance", "Tobias Brandt",
                         "Game Media Category Lead", truth["deadline"],
-                        f"{event['title']}. Check the existing supplier correspondence for the "
-                        f"{event['quantity']:,.0f}-card balance. Escalate any new, evidenced delivery option.",
-                        event["evidence"], material=event["material"], priority=6)
+                        detail,
+                        received["evidence"] if received else event["evidence"],
+                        material=event["material"], priority=6,
+                        **({"recoveryKind": "short_ship_balance"} if received else {}))
 
 
 def _with_forecast(item, option):

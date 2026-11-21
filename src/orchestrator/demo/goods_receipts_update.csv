@@ -1,0 +1,2 @@
+gr_number,gr_date,po_number,po_line,supplier_id,material_id,plant,qty_ordered,qty_received,delivery_note,remark
+5000413070,2026-11-21,4500318735,2,SUP-0010,CMP-GAM-001,DC-HAM,48000,28000,DN-261120-726,"partial delivery, balance per shipping advice"

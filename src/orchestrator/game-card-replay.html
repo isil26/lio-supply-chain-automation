@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game card recovery · Manti</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #151421; color: #f6f3fb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 54rem; margin: auto; padding: clamp(1rem, 5vw, 3rem); }
+    header { margin: 1rem 0 2rem; }
+    h1 { font-size: clamp(2rem, 6vw, 3.1rem); line-height: 1.1; margin: .45rem 0; }
+    h2 { font-size: 1.18rem; margin: 0 0 .6rem; }
+    p { line-height: 1.55; margin: .5rem 0; }
+    section { background: #1e1c2c; border: 1px solid #413b53; border-radius: .8rem; padding: 1.25rem; margin-bottom: .85rem; }
+    .label, a { color: #cbb7ff; }
+    .muted { color: #c7c1d1; }
+    .summary { display: flex; flex-wrap: wrap; gap: 1.2rem 2rem; margin: 1rem 0; }
+    dl { margin: 0; }
+    dt { color: #c7c1d1; font-size: .88rem; }
+    dd { font-size: 1.45rem; font-weight: 650; margin: .15rem 0 0; }
+    button { margin-top: .8rem; border: 0; border-radius: .45rem; padding: .65rem .95rem; background: #cbb7ff; color: #211638; font: inherit; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: default; }
+    :focus-visible { outline: 2px solid #f6f3fb; outline-offset: 3px; }
+    table { width: 100%; margin-top: .6rem; font-variant-numeric: tabular-nums; border-collapse: collapse; }
+    th, td { text-align: left; padding: .55rem .3rem; border-bottom: 1px solid #413b53; }
+    #status { color: #decbff; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="label">Manti · Simulated case replay</p>
+    <h1>Game card recovery</h1>
+    <p class="muted">Soony launch · Hamburg distribution centre</p>
+  </header>
+  <section aria-labelledby="update-title">
+    <h2 id="update-title">ERP update</h2>
+    <p id="update">Loading the launch forecast…</p>
+    <p id="evidence" class="muted"></p>
+    <button id="apply" hidden>Process goods receipt</button>
+  </section>
+  <section id="forecast" aria-labelledby="forecast-title" hidden>
+    <h2 id="forecast-title">Launch forecast</h2>
+    <div class="summary">
+      <dl><dt>Cards on hand</dt><dd id="on-hand"></dd></dl>
+      <dl><dt>Inbound by launch</dt><dd id="inbound"></dd></dl>
+      <dl><dt>Cards still short</dt><dd id="gap"></dd></dl>
+    </div>
+    <table aria-label="Forecast median copies by edition">
+      <thead><tr><th scope="col">Edition</th><th scope="col" id="baseline-title" hidden>Before receipt</th><th scope="col">Median copies</th><th scope="col">Target</th></tr></thead>
+      <tbody id="editions"></tbody>
+    </table>
+  </section>
+  <section id="decision" aria-labelledby="decision-title" hidden>
+    <h2 id="decision-title">Approval</h2>
+    <p id="action-title"></p>
+    <p id="action-detail" class="muted"></p>
+    <p id="approver" class="muted"></p>
+    <button id="approve" hidden>Simulate approval</button>
+    <p id="result" role="status"></p>
+  </section>
+  <p id="status" role="status"></p>
+</main>
+<script>
+  const byId = (id) => document.getElementById(id);
+  const number = new Intl.NumberFormat('en-US');
+  const material = 'CMP-GAM-001';
+  let baseline;
+  let action;
+
+  async function request(url, body) {
+    const response = await fetch(url, body === undefined ? undefined : {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (response.status === 503 && body === undefined) return null;
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+    return data;
+  }
+
+  function show(data) {
+    const risk = data.risks.find((item) => item.id === material);
+    const receipt = risk?.sources.find((source) => source.file.endsWith('/goods_receipts_update.csv'));
+    if (!risk) throw new Error('Game card planning data is unavailable.');
+    if (data.sync.pendingDrop) baseline = data.readiness;
+    byId('update').textContent = receipt
+      ? risk.detail.find((line) => line.includes('received on goods receipt'))
+      : 'A new Hamburg goods receipt is ready to process. The shipping advice still shows the lot in transit.';
+    byId('apply').hidden = Boolean(receipt);
+    if (receipt) {
+      const link = document.createElement('a');
+      link.href = '/api/source/' + receipt.file.split('/').map(encodeURIComponent).join('/');
+      link.textContent = `Goods receipt CSV · row ${receipt.row}`;
+      byId('evidence').replaceChildren(link);
+    }
+    byId('forecast').hidden = false;
+    for (const [id, value] of [['on-hand', risk.onHand], ['inbound', risk.inbound], ['gap', risk.gap]]) {
+      byId(id).textContent = number.format(value);
+    }
+    const showBaseline = Boolean(receipt && baseline);
+    byId('baseline-title').hidden = !showBaseline;
+    byId('editions').replaceChildren(...data.readiness.map((edition) => {
+      const row = document.createElement('tr');
+      row.insertCell().textContent = edition.edition === 'CE' ? 'Collector’s' : 'Standard';
+      if (showBaseline) row.insertCell().textContent = number.format(baseline.find((item) => item.edition === edition.edition).p50);
+      row.insertCell().textContent = number.format(edition.p50);
+      row.insertCell().textContent = number.format(edition.target);
+      return row;
+    }));
+    if (!receipt) return;
+    action = data.actions.find((item) => item.material === material && item.recoveryKind === 'short_ship_balance');
+    byId('decision').hidden = false;
+    byId('action-title').textContent = action?.title ?? 'No approval is needed.';
+    byId('action-detail').textContent = action?.detail ?? '';
+    byId('approver').textContent = action?.approverName ? `PP-07 approver: ${action.approverName}` : '';
+    byId('approve').hidden = !['ONE_CLICK', 'AUTO'].includes(action?.mode) || action?.status !== 'pending';
+    byId('result').textContent = action?.status === 'prepared'
+      ? `Simulated approval recorded for ${action.delivery.approved_by}. Internal message prepared in the replay.` : '';
+  }
+
+  async function waitForReady(received) {
+    for (let attempt = 0; attempt < 150; attempt++) {
+      const data = await request('/api/dashboard');
+      if (data && (data.sync.mode !== 'replay' || data.sync.mailMode !== 'dry-run')) {
+        throw new Error('This demo requires an isolated dry-run replay.');
+      }
+      if (data?.sync.failed || data?.sync.events?.length) throw new Error('The replay could not process the source update.');
+      if (data && (!received || data.sync.pendingDrop === 0)) {
+        show(data);
+        byId('status').textContent = '';
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    }
+    throw new Error('The forecast did not finish in time. Reload to check the replay.');
+  }
+
+  async function run(button, pending, operation) {
+    if (button) button.disabled = true;
+    byId('status').textContent = pending;
+    try {
+      await operation();
+    } catch (error) {
+      byId('status').textContent = error.message;
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  byId('apply').onclick = () => run(byId('apply'), 'Recalculating the forecast…', async () => {
+    await request('/api/sync', {});
+    await waitForReady(true);
+  });
+  byId('approve').onclick = () => run(byId('approve'), 'Recording the simulated approval…', async () => {
+    await request(`/api/actions/${action.id}/approve`, { by: action.approverName, note: 'Simulated approval in the game-card replay.' });
+    await waitForReady(true);
+  });
+  void run(null, '', () => waitForReady(false));
+</script>
+</body>
+</html>

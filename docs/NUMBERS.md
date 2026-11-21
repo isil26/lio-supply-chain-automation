@@ -1,6 +1,12 @@
 # NUMBERS.md — the single frozen number set (deck, demo, video must use ONLY these)
 The dashboard, deck, and pitch use the default readiness model. These figures are from the complete post-drop snapshot. When publishing a new snapshot, refresh its fingerprint and forecast together, then update the deck and video.
 
+## Later Hamburg goods receipt (T98 corrected live-snapshot rerun)
+
+The later portal mirror contains goods receipt `5000413070` for 28,000 cards on PO `4500318735` line 2 (`soony/erp/goods_receipts_update.csv`, row 4). The receipt matches AWB `020-48113256` in `soony/erp/open_shipments.csv` (row 17) and in the shipping advice (page 1). The planning engine retires the matching inbound lot. Cards on hand rise from 70,100 to **98,100**. Eligible inbound falls from 28,000 to **0**, leaving **6,800 short** against 104,900 remaining cards required.
+
+With the matched lot already received, the 500-run Collector’s-first rerun gives **639,100 Standard** and **66,100 Collector’s** at the median, with **0 of 500** trials reaching either edition’s target. The published 19:25 forecast below remains the starting state for the [game-card demo](GAME_CARD_DEMO.md).
+
 ## After the 19:25 drop (Sat 21 Nov, current baseline; the sections below it are STALE history)
 Source of the new inputs: `soony/context/launch_status.xlsx` (Saturday 13:00), `soony/master/bom_delta_2026-11-21.csv`, `components_update_2026-11-21.csv`, `products.csv` (day_one_qty), supplier `profile.json` v2, PackRight `components_delta.csv`, CPO memo, org chart v2, `soony/news/2026-11-21_export_controls.json`. Rules the engine applies (src/truth): the latest dated source wins for packed counts (launch status 13:00 beats the pack-out log, which ends 19 Nov; both are shown in the issues), rates come from the launch status, and the stock snapshot (20 Nov) is reduced by the parts of the copies packed since the log (42,000 STD + 6,300 CE) x BOM quantity. ECN-2026-118: the 64,000 rev B sleeves (GR 5000413064 of PO 4500318738 line 1, PackRight) are not usable stock for Standard, and PackRight's open rev B inbound is not counted. Collector's first (CPO memo) is the baseline policy (`ce_first`). Remaining pack-out time starts at the status time: Sat 13:00-22:00 plus Sun 06:00-20:00 = 23 h (was 30 h).
 
