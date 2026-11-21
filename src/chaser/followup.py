@@ -2,8 +2,7 @@
 
 Reminders: a sent supplier email with no answer gets a polite reminder draft after a wait
 that shrinks as the cut-off gets closer (12 h a few days out, 2 h on the last day). At most
-two reminders per thread; after that the activity feed recommends a phone call. Reminders
-are `draft` chases, so a person still reviews and sends them.
+two reminders per thread. After two sent reminders, Procurement reviews alternative supply.
 
 Attachments: replies often carry a packing list, air waybill, bill of lading or invoice.
 We record each attachment's name, type, what kind of document it looks like, and its text
@@ -66,33 +65,47 @@ def due_reminders(con, now=None, *, save=False):
     now = _aware(now) if now else datetime.now(timezone.utc)
     con.row_factory = sqlite3.Row
     rows = con.execute("""
-        SELECT c.*, (SELECT max(time) FROM messages WHERE chase_id=c.id AND side='out') AS last_out
+        SELECT c.*, (SELECT time FROM messages WHERE chase_id=c.id AND side='out'
+                         AND coalesce(json_extract(transport,'$.mode'),'') NOT IN ('dry_run','simulated')
+                         AND coalesce(json_extract(transport,'$.status'),'smtp_accepted')='smtp_accepted'
+                         AND sender NOT LIKE '%(demo)' ORDER BY julianday(time) DESC LIMIT 1) AS last_out
         FROM chases c
-        WHERE c.status IN ('awaiting reply', 'no reply')
+        WHERE c.status IN ('awaiting reply', 'no reply') AND c.parent_thread_id IS NULL
           AND c.subject NOT LIKE '%(SOONY-%'
-          AND NOT EXISTS (SELECT 1 FROM messages WHERE chase_id=c.id AND side='in')
-          AND NOT EXISTS (SELECT 1 FROM chases r JOIN messages m ON m.chase_id=r.id AND m.side='in'
-                          WHERE r.subject LIKE '%(SOONY-' || c.id || ')%')
     """).fetchall()
     out = []
+    from .mail_plan import contexts
+    states = contexts(con)
     handoffs = quality_handoffs(con)
     for row in rows:
         row = dict(row)
-        if _root(row) in handoffs or managed(row["supplier_id"], row["material"]) or not row.get("last_out"):
+        if row["id"] in states or _root(row) in handoffs or managed(row["supplier_id"], row["material"]):
             continue
+        if not row["last_out"] or _aware(row["deadline"]) <= now:
+            continue
+        # Use only accepted send receipts. A pending draft may survive many worker cycles.
+        reminder_ids = [reminder_id(row["id"], n) for n in range(1, MAX_REMINDERS + 1)]
+        sent = con.execute("""SELECT chase_id, time FROM messages WHERE chase_id IN (?,?) AND side='out'
+                            AND coalesce(json_extract(transport,'$.mode'),'') NOT IN ('dry_run','simulated')
+                            AND coalesce(json_extract(transport,'$.status'),'smtp_accepted')='smtp_accepted'
+                            AND sender NOT LIKE '%(demo)' ORDER BY julianday(time) DESC""", reminder_ids).fetchall()
+        sent_reminders = len({m["chase_id"] for m in sent})
+        if sent:
+            row["last_out"] = sent[0]["time"]
         waited = (now - _aware(row["last_out"])).total_seconds() / 3600
         need = wait_hours(now, row["deadline"])
-        sent_reminders = con.execute("SELECT count(*) FROM chases WHERE subject LIKE ? AND id != ?",
-                                     (f"%{row['id']}%", row["id"])).fetchone()[0]
         if waited < need:
             continue
         item = {"thread_id": row["id"], "supplier": row["supplier"], "waited_hours": round(waited, 1),
                 "wait_limit_hours": round(need, 1), "reminders_so_far": sent_reminders}
         if sent_reminders >= MAX_REMINDERS:
-            item["action"] = "call"
+            item["action"] = "review"
             if save:
-                _activity(con, f"{row['supplier']}: no answer after {sent_reminders} reminders. Please call them.",
-                          "warning")
+                detail = f"SOONY-{row['id']} · {row['supplier']}: two reminders sent without a reply. Procurement to review alternative supply."
+                with con:
+                    con.execute("""INSERT INTO activity(time,agent,action,type) SELECT ?, 'Mail Agent', ?, 'warning'
+                                   WHERE NOT EXISTS (SELECT 1 FROM activity WHERE agent='Mail Agent' AND action=?)""",
+                                (now.isoformat(timespec="seconds"), detail, detail))
         else:
             item["action"] = "remind"
             draft = reminder_draft(row, sent_reminders + 1)
@@ -100,15 +113,19 @@ def due_reminders(con, now=None, *, save=False):
             if save:
                 with con:
                     inserted = con.execute("""INSERT OR IGNORE INTO chases
-                        (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
-                        VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                        (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,parent_thread_id)
+                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
                                            (draft["id"], row["supplier_id"], row["supplier"], row["address"],
                                             row["language"], draft["subject"], "draft", row["material"], row["qty"],
-                                            draft["body"], row["deadline"])).rowcount
+                                            draft["body"], row["deadline"], row["id"])).rowcount
                 if inserted:
                     _activity(con, f"{row['supplier']}: no answer for {waited:.0f} h. Reminder drafted for review.")
         out.append(item)
     return out
+
+
+def reminder_id(thread_id, number):
+    return hashlib.sha256(f"{thread_id}:reminder:{number}".encode()).hexdigest()[:10].upper()
 
 
 def reminder_draft(row, number):
@@ -119,7 +136,7 @@ def reminder_draft(row, number):
     check = Guardrails().validate_draft(body)
     if not check.ok:
         raise ValueError("reminder failed guardrails: " + "; ".join(check.errors))
-    ref = hashlib.sha256(f"{row['id']}:reminder:{number}".encode()).hexdigest()[:10].upper()
+    ref = reminder_id(row["id"], number)
     return {"id": ref, "subject": f"[SOONY-{ref}] " + subject_t.format(subject=f"{original} (SOONY-{row['id']})"),
             "body": body}
 
@@ -297,7 +314,7 @@ def _legacy_answer_id(reply):
     return hashlib.sha256(f"answer:{reply}".encode()).hexdigest()[:10].upper()
 
 
-def answer_replies(con, *, save=False):
+def answer_replies(con, *, save=False, now=None):
     """Draft an answer for every supplier reply that we have not answered yet."""
     import sqlite3
     from .recovery import claimed_threads, unquoted
@@ -305,16 +322,23 @@ def answer_replies(con, *, save=False):
 
     con.row_factory = sqlite3.Row
     rows = con.execute("""
-        SELECT c.*, m.body AS reply, m.external_id AS reply_id
+        SELECT c.*, m.body AS reply, m.external_id AS reply_id, m.id AS source_id, m.parsed AS reply_fields
         FROM chases c JOIN messages m ON m.chase_id = c.id AND m.side = 'in'
-        WHERE m.id = (SELECT max(id) FROM messages WHERE chase_id = c.id)
+        WHERE NOT EXISTS (SELECT 1 FROM messages o WHERE o.chase_id=c.id AND o.side='out' AND o.id>m.id
+                          AND coalesce(json_extract(o.transport,'$.mode'),'') NOT IN ('dry_run','simulated'))
           AND coalesce(json_extract(m.transport, '$.mode'), '') <> 'simulated'
     """).fetchall()
     out = []
+    from .mail_plan import contexts, record_checkpoints
+    from .negotiate import is_late_offer
+    import json
+
+    states = contexts(con)
     owned = claimed_threads(con)
     handoffs = quality_handoffs(con)
     if save:
         with con:
+            record_checkpoints(con, states, now)
             # Preserve legacy physical threads and sent mail. Only retire queued
             # drafts that can be identified as a generic reply to this handoff.
             for root, trigger in handoffs.items():
@@ -340,7 +364,11 @@ def answer_replies(con, *, save=False):
             continue  # the launch-critical loop (supplier_loop.py) answers these itself
         root = _root(row)
         content = unquoted(row["reply"])
-        if root in handoffs or _late_freight(content, row["deadline"]):
+        state = states.get(row["id"])
+        if not state or state["replyId"] != row["source_id"] or state["plan"] or state["buyerDecided"]:
+            continue
+        attachments = json.loads(row["reply_fields"] or "{}").get("attachments", [])
+        if root in handoffs or _late_freight(content, row["deadline"]) or is_late_offer(content, row["deadline"], attachments):
             continue
         body, kinds = answer_body(row["language"], content, row["deadline"])
         ref = _answer_id(root, body, content)
@@ -352,10 +380,10 @@ def answer_replies(con, *, save=False):
         if save:
             with con:
                 con.execute("""INSERT OR IGNORE INTO chases
-                    (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
-                    VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                    (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,parent_thread_id,based_on_reply_id)
+                    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                             (ref, row["supplier_id"], row["supplier"], row["address"], row["language"], subject,
-                             "draft", row["material"], row["qty"], body, row["deadline"]))
+                             "draft", row["material"], row["qty"], body, row["deadline"], row["id"], row["source_id"]))
             _activity(con, f"{row['supplier']}: replied. Answer drafted ({', '.join(kinds)}).")
         out.append(item)
     return out

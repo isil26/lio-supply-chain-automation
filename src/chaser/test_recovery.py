@@ -83,6 +83,9 @@ class RecoveryTests(TestCase):
             patch.object(runner, "reconcile_handwriting", return_value=0),
             patch.object(runner, "readiness", side_effect=self.truth),
             patch.object(runner, "choose", return_value=[]),
+            # This synthetic forecast supplies mail inputs only. The full replay exercises T94.
+            patch.object(runner, "source_proposals", return_value=[]),
+            patch.object(runner, "dashboard", return_value={"actions": []}),
             patch("src.chaser.draft", return_value=0),
             patch("src.chaser.poll", return_value=0),
             patch("src.chaser.authenticate"),

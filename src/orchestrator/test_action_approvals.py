@@ -2,6 +2,7 @@
 
 import sqlite3
 import unittest
+from unittest.mock import patch
 
 from src.chaser import schema
 from src.decide import approvals
@@ -35,6 +36,28 @@ class ApprovalHandoffTest(unittest.TestCase):
         self.assertEqual((prepared["status"], prepared["approved_by"]), ("prepared", "Jonas Lindqvist"))
         self.assertEqual([row["mode"] for row in approvals.log_rows(self.con, action["id"])],
                          [approvals.ESCALATE, "APPROVED"])
+
+    def test_live_queue_ignores_a_simulated_grant(self):
+        action = {
+            "id": "eta", "kind": "supplier", "material": "CMP-GAM-001",
+            "title": "Request delivery ETA", "status": "pending", "costEur": 0,
+            "draft": {"body": "Could you confirm the delivery ETA?"},
+            "evidence": ["Test acknowledgement"],
+        }
+        grant = {
+            "id": "DEL-TEST-eta", "delegator": "Felix Brunner", "simulated": True,
+            "confirmed_in_writing": True, "action_kinds": ["supplier_info_request"],
+            "max_value_eur": 100, "valid_from": "2020-01-01T00:00:00+01:00",
+            "valid_until": "2099-01-01T00:00:00+01:00", "conditions": {"information_only": True},
+        }
+        with patch.object(approvals, "load_delegations", return_value=[grant]):
+            queue.project(self.con, [action], include_history=False)
+            self.assertEqual(action["mode"], approvals.ONE_CLICK)
+            queue.project(self.con, [action], include_history=False, demo=True)
+            self.assertEqual(action["mode"], approvals.AUTO)
+            with patch.object(queue.delivery, "auto_dispatch") as dispatch:
+                queue.register(self.con, [action], automatic=True)
+            dispatch.assert_not_called()
 
     def test_joint_order_remains_pending_until_both_signers_click(self):
         action = self.proposal("purchase_order", 5_000_000)

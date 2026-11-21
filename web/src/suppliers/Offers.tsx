@@ -8,6 +8,11 @@ import "./offers.css";
 // reserve; Decline sends a polite no-thanks. Both emails go out through the mail agent.
 
 type Deal = {
+  revision?: string; required_by?: string; thread_id?: string; order_quantity?: number | null; expires_at?: string | null;
+  offer_state?: "quoted" | "incomplete" | "late" | "unavailable" | "expired" | "superseded" | "approval_required";
+  offer_kind?: "goods" | "freight"; carrier?: string | null; freight_charge?: number | null;
+  review_reason?: string;
+  history?: { revision: string; action: string; by: string; at: string; terms: { order_quantity?: number; total_eur?: number; signer?: string } }[];
   id: string; supplier_id?: string; eta_text?: string | null; supplier: string; material: string; needed: number; quantity: number | null;
   unit_price: number | null; currency: string | null; price_eur: number | null; total_eur: number | null;
   eta: string | null; p_on_time: number | null; score: number | null; best: number; eligible: number;
@@ -52,6 +57,7 @@ export function Offers() {
   // and keep Approve / Decline in this browser only (nothing is sent).
   const example = hostedReplayBuild || isStaticMode();
   const [data, setData] = useState<Data | null>(example ? exampleData() : null);
+  const [reviewer, setReviewer] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [tab, setTab] = useState<string | null>(null);
@@ -83,11 +89,16 @@ export function Offers() {
     }
     setBusy(deal.id + action);
     try {
-      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ by: "Control room" }) });
-      if (!response.ok) throw new Error(String(response.status));
+      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ by: reviewer.trim(), revision: deal.revision }) });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        setNote(error.error ?? "The offer could not be updated. Review the latest terms.");
+        await load();
+        return;
+      }
       setNote(action === "approve"
-        ? `${country(deal)} approved. They are asked to reserve it; the purchase order needs the ${deal.signer}.`
-        : `${country(deal)} declined. A polite email is on its way.`);
+        ? `Reservation request recorded for ${deal.supplier}. ${deal.offer_kind === "freight" ? "Booking authorization" : "PO signer"} · ${deal.signer}.`
+        : `Decline recorded for ${deal.supplier}.`);
       await load();
     } catch {
       setNote("That did not work. Refresh and try again.");
@@ -106,7 +117,7 @@ export function Offers() {
   return (
     <section className="card offers" aria-labelledby="offers-title">
       <h3 id="offers-title">Supplier offers</h3>
-      <p className="card-sub">{example ? `What the 6 suppliers answered by email${data.as_of ? ` (${data.as_of})` : ""}.` : "What the suppliers answered by email."}</p>
+      <p className="card-sub">{example ? `Simulated supplier offers${data.as_of ? ` (${data.as_of})` : ""}. Decisions stay in this browser.` : "Review supplier quotes and request a nonbinding reservation. The authorized signer issues the purchase order."}</p>
       {note && <p className="offers-note" role="status">{note}</p>}
       {data.deals.length === 0 && <p className="empty">No offers yet. They appear here as suppliers reply.</p>}
 
@@ -119,14 +130,17 @@ export function Offers() {
         })}
       </div>}
 
+      {!example && data.deals.some(d => d.material === current && d.eligible && (d.status === "pending" || d.status === "changed")) &&
+        <label>Reviewed by <input value={reviewer} maxLength={80} autoComplete="name" onChange={event => setReviewer(event.target.value)} /></label>}
+
       {tabNote && <p className="offers-tabnote">{tabNote}</p>}
 
       {best.length > 0 && <div className="offers-best">
         {best.map((d) => (
           <div className="offers-best-item" key={d.id}>
             <p className="offers-label">Best offer · {product(d.material)}</p>
-            <p className="offers-best-line"><strong>{country(d)}</strong> · {d.quantity?.toLocaleString("en-US") ?? "?"} units · {unit(d)} · arrives {arrives(d)}</p>
-            <p className="muted">Total {eur(d.total_eur)} · PO signer: {d.signer} · {STATUS[d.status]}</p>
+            <p className="offers-best-line"><strong>{example ? country(d) : d.supplier}</strong> · {d.quantity?.toLocaleString("en-US") ?? "?"} units · {d.offer_kind === "freight" ? d.carrier : unit(d)} · arrives {arrives(d)}</p>
+            <p className="muted">Total {eur(d.total_eur)} · {d.offer_kind === "freight" ? "Booking authorization" : "PO signer"} {d.signer} · {STATUS[d.status]}</p>
           </div>
         ))}
       </div>}
@@ -139,24 +153,30 @@ export function Offers() {
           <tbody>
             {rows.map((d) => (
               <tr key={d.id} className={d.best ? "is-best" : d.eligible ? "" : "is-backup"}>
-                <th scope="row">{country(d)}{d.best ? <span className="offers-tag">Best</span> : null}
+                <th scope="row">{example ? country(d) : d.supplier}{d.best ? <span className="offers-tag">Best</span> : null}
                   {d.conditions && <p className="offers-cond">{d.conditions}</p>}
+                  {!example && d.required_by && <p className="muted small-text">Required by {when(d.required_by)}</p>}
                   {d.excerpt && <details><summary>{example ? "What they said" : "Their words"}</summary><p>{d.excerpt}</p></details>}
+                  {!example && d.thread_id && <a href={`?mail=1&thread=${encodeURIComponent(d.thread_id)}`}>Open supplier thread</a>}
                 </th>
                 <td className="num">{d.quantity?.toLocaleString("en-US") ?? "–"}<span className="muted"> / {d.needed.toLocaleString("en-US")}</span></td>
-                <td className="num">{unit(d)}{d.list_price != null && d.unit_price != null && d.unit_price > d.list_price && <span className="muted"> (contract {d.list_price})</span>}</td>
+                <td className="num">{d.offer_kind === "freight" ? "Freight service" : unit(d)}{d.list_price != null && d.unit_price != null && d.unit_price > d.list_price && <span className="muted"> (contract {d.list_price})</span>}</td>
                 <td className="num">{eur(d.total_eur)}</td>
                 <td>{arrives(d)}</td>
                 <td className="num">{d.p_on_time == null ? "–" : `${Math.round(d.p_on_time * 100)}%`}</td>
                 <td>{d.proof ?? "–"}</td>
-                <td>{[d.incoterm, d.payment_terms, d.moq ? `min ${d.moq.toLocaleString("en-US")}` : null].filter(Boolean).join(" · ") || "–"}</td>
+                <td>{[d.carrier, d.incoterm, d.payment_terms, d.moq ? `min ${d.moq.toLocaleString("en-US")}` : null].filter(Boolean).join(" · ") || "–"}</td>
                 <td>
-                  <p className="offers-status">{STATUS[d.status]}{d.decided_by && d.status !== "pending" && d.status !== "changed" ? ` (${d.decided_by})` : ""}</p>
+                  <p className="offers-status">{!example && d.status === "approved" ? "Reservation approved" : STATUS[d.status]}{d.decided_by && d.status !== "pending" && d.status !== "changed" ? ` (${d.decided_by})` : ""}</p>
+                  {!example && (!!d.eligible || d.offer_state === "approval_required") && <p className="muted small-text">{d.order_quantity?.toLocaleString("en-US")} units · {eur(d.total_eur)} · {d.offer_kind === "freight" ? "Booking authorization" : "PO signer"} {d.signer}{d.expires_at ? ` · Expires ${when(d.expires_at)}` : ""}</p>}
                   {d.eligible && (d.status === "pending" || d.status === "changed") ? <div className="offers-actions">
-                    <button className="primary-button" disabled={busy !== null} onClick={() => void decide(d, "approve")}>{busy === d.id + "approve" ? "…" : "Approve"}</button>
-                    <button className="ghost-button" disabled={busy !== null} onClick={() => void decide(d, "decline")}>{busy === d.id + "decline" ? "…" : "Decline"}</button>
+                    <button className="primary-button" disabled={busy !== null || (!example && !reviewer.trim())} onClick={() => void decide(d, "approve")}>{busy === d.id + "approve" ? "…" : example ? "Approve" : "Request reservation"}</button>
+                    <button className="ghost-button" disabled={busy !== null || (!example && !reviewer.trim())} onClick={() => void decide(d, "decline")}>{busy === d.id + "decline" ? "…" : "Decline"}</button>
                   </div> : null}
-                  {!d.eligible && d.status === "pending" && <p className="muted small-text">Nothing to approve: cannot deliver in time</p>}
+                  {!d.eligible && <p className="muted small-text">{d.review_reason ?? "No eligible offer for this delivery window."}</p>}
+                  {!example && !!d.history?.length && <details><summary>Decision history ({d.history.length})</summary>
+                    {d.history.map(h => <p key={h.revision}>{when(h.at)} · {h.by} · {h.action === "approved" ? "reservation approved" : "declined"} · {eur(h.terms.total_eur ?? null)}{h.revision !== d.revision ? " · prior terms" : ""}</p>)}
+                  </details>}
                 </td>
               </tr>
             ))}

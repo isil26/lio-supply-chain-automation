@@ -54,7 +54,7 @@ def schema(con):
            id TEXT PRIMARY KEY, supplier_id TEXT NOT NULL, supplier TEXT NOT NULL,
            address TEXT NOT NULL, language TEXT NOT NULL, subject TEXT NOT NULL, status TEXT NOT NULL,
            material TEXT NOT NULL, qty INTEGER NOT NULL, body TEXT NOT NULL, deadline TEXT NOT NULL,
-           due_at TEXT, message_id TEXT
+           due_at TEXT, message_id TEXT, parent_thread_id TEXT, based_on_reply_id INTEGER
        );
        CREATE TABLE IF NOT EXISTS messages (
            id INTEGER PRIMARY KEY, chase_id TEXT REFERENCES chases(id), external_id TEXT UNIQUE,
@@ -68,6 +68,10 @@ def schema(con):
 
     if "transport" not in {row[1] for row in con.execute("PRAGMA table_info(messages)")}:
         con.execute("ALTER TABLE messages ADD COLUMN transport TEXT")
+    columns = {row[1] for row in con.execute("PRAGMA table_info(chases)")}
+    for name, kind in (("parent_thread_id", "TEXT"), ("based_on_reply_id", "INTEGER")):
+        if name not in columns:
+            con.execute(f"ALTER TABLE chases ADD COLUMN {name} {kind}")
     supplier_loop.schema(con)
 
 
@@ -171,6 +175,8 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
         chase = con.execute("SELECT * FROM chases WHERE id=?", (chase_id,)).fetchone()
         if not chase:
             raise ValueError("Only a current draft can be sent")
+        from . import deals, mail_plan
+        decision_mail = chase["status"] == "draft" and deals.check_draft(con, chase_id)
         action = None
         if chase["status"] == "recovery draft":
             from .recovery import eligible_draft
@@ -178,7 +184,7 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
             action = eligible_draft(con, chase_id) if auto and not demo else None
             if not action:
                 raise ValueError("Recovery request changed or passed its send window")
-        elif supplier_loop.managed(chase["supplier_id"], chase["material"]):
+        elif not decision_mail and supplier_loop.managed(chase["supplier_id"], chase["material"]):
             if managed and chase["status"] == "loop draft":
                 action = supplier_loop.eligible_draft(con, chase_id, "demo" if demo else "live",
                                                       (chase["supplier_id"], chase["material"]))
@@ -186,7 +192,9 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
                 raise ValueError("This case requires a current supplier-loop draft")
         elif chase["status"] != "draft":
             raise ValueError("Only a current draft can be sent")
-        if action or auto:
+        if not action and not decision_mail and (auto or chase["based_on_reply_id"] is not None):
+            mail_plan.check_draft(con, chase, simulated=demo)
+        if action or auto or decision_mail:
             from .guardrails import Guardrails
             if not Guardrails().validate_draft(chase["body"]).ok:
                 raise ValueError("Automatic request failed the information-only check")
@@ -207,6 +215,13 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
         if action and action.get("replyTo"):
             message["In-Reply-To"] = action["replyTo"]
             message["References"] = f'{action["originMessageId"]} {action["replyTo"]}'
+        elif chase["based_on_reply_id"] is not None:
+            reply = con.execute("""SELECT external_id,transport FROM messages WHERE id=? AND side='in'""",
+                                (chase["based_on_reply_id"],)).fetchone()
+            if reply and reply["external_id"]:
+                message["In-Reply-To"] = reply["external_id"]
+                parent = (json.loads(reply["transport"] or "{}").get("inReplyTo") or "").strip()
+                message["References"] = " ".join(filter(None, (parent, reply["external_id"])))
         if not demo:
             message["X-Soony-Chaser"] = "1"
         message.set_content(chase["body"])
@@ -336,6 +351,12 @@ def receive(con, message, *, simulated=False, matched_thread_id=None):
             plan = plan_reply(get_state(con, "truth", {}), chase, body,
                               options=get_state(con, "options", []), simulated=simulated)
             plan["id"] = hashlib.sha256(f'reply:{chase["id"]}:{message_id}'.encode()).hexdigest()[:16]
+            from .mail_plan import classify
+            workflow = classify(body)
+            if workflow:
+                fields["mail_workflow"] = workflow
+                if not (plan.get("editions") or plan.get("offerId") or plan.get("disposition")):
+                    plan.update(nextAction=workflow["nextAction"], evidence=[workflow["evidence"]])
             fields["reply_plan"] = plan
             con.execute("UPDATE messages SET parsed=? WHERE external_id=?",
                         (json.dumps(fields, ensure_ascii=False), str(message_id)))
@@ -423,7 +444,10 @@ def expire(con):
 
 def list_threads(con, decision_states=None):
     schema(con)
+    from .mail_plan import contexts
     decision_states = decision_states or {}
+    workflow = contexts(con)
+    simulated_workflow = contexts(con, simulated=True)
     for row in con.execute("SELECT * FROM chases ORDER BY CASE status WHEN 'reply to verify' THEN 0 WHEN 'draft' THEN 2 ELSE 1 END, qty DESC, supplier"):
         thread = dict(row)
         if thread["status"] == "draft" and supplier_loop.managed(row["supplier_id"], row["material"]):
@@ -456,6 +480,13 @@ def list_threads(con, decision_states=None):
                 "sender": "Supplier Chaser", "side": "out", "text": row["body"], "time": "",
                 "transport": {"mode": "draft", "status": "draft", "to": row["address"], "subject": row["subject"]},
             }]
+        if dry_run_thread:
+            state = simulated_workflow.get(thread["id"])
+        else:
+            state = workflow.get(thread["id"])
+        if state and state["plan"]:
+            thread["mailPlan"] = {**state["plan"], "replyId": state["replyId"],
+                                  "sourceThread": state["sourceThread"], "simulated": dry_run_thread}
         yield thread
 
 
