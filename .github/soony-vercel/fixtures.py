@@ -32,12 +32,11 @@ def stage(source, fixture_dir):
     )
     offers = suppliers / "Offers.tsx"
     text, count = re.subn(
-        r"const COUNTRY: Record<[^\n]+\n[^}]+};\n"
-        r"const PRODUCT: Record<[^\n]+\n[^}]+};\n"
-        r"function country[^\n]+\nfunction product[^\n]+",
+        r"^const COUNTRY: Record<[\s\S]*?^function product[^\n]+",
         "function country(d: Deal) { return d.supplier; }\n"
         "function product(material: string) { return material; }",
         offers.read_text(),
+        flags=re.MULTILINE,
     )
     if count != 1:
         raise SystemExit("The supplier country and product lookups changed. Review the hosted substitutions.")
