@@ -20,8 +20,8 @@ Humans: Nick Federspiel, Murat, Gülsah, Leo, Isil Özyigit (team "Manti"). Fill
 7. **Agents:** if you run your own Claude/Codex/Copilot, tell it to read `AGENTS.md` first, and make sure its task is claimed on the board so we don't duplicate.
 8. Never commit `.soony_token`, `data/`, `store/`. Share the token via the portal Settings page, not git or chat.
 
-## DATA SECRECY: this repo is PUBLIC
-The hackathon brief forbids sharing data outside the team. Never commit data, tokens, or findings that quote the data (supplier names, PO numbers, quantities, contract text). Those live in `private/` (gitignored) and are shared via the team channel. Keep code generic and tests on synthetic fixtures.
+## Note
+This repo is public; the Soony data is fictional but the brief says not to share it outside the team. Never commit raw data (`data/`), the token or `store/`.
 
 ## Setup for a new teammate
 ```

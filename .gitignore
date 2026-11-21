@@ -13,7 +13,3 @@ bridge/changes.log
 runtime/
 *.sqlite3
 *.db
-private/
-FINDINGS.md
-CODEX_TASKS.md
-src/ingest/NOTES.md
