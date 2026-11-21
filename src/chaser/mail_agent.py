@@ -52,8 +52,14 @@ def check_imap():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python3 -m src.chaser.mail_agent")
-    parser.add_argument("command", choices=["status", "check"])
+    parser.add_argument("command", choices=["status", "check", "compare"])
+    parser.add_argument("--db", default=None, help="compare: SQLite store (default store/soony.db)")
+    parser.add_argument("--material", default=None, help="compare: one material only")
+    parser.add_argument("--save-drafts", action="store_true", help="compare: store negotiation drafts for approval")
+    parser.add_argument("--json", action="store_true", help="compare: print JSON")
     args = parser.parse_args(argv)
+    if args.command == "compare":
+        return compare_command(args)
     from .mailenv import load_team_mail_env
     load_team_mail_env()
     info = status()
@@ -77,6 +83,24 @@ def main(argv=None):
             print(f"FAIL {name}: cannot reach the mail server ({exc.__class__.__name__}). Check this machine's network.")
     print("Ready. Remember: the sender must be listed under Mail senders in the portal." if ok else "Not ready.")
     return 0 if ok else 1
+
+
+def compare_command(args):
+    import json
+    import sqlite3
+    from src.ingest.store import DB
+    from .negotiate import compare, to_text
+
+    con = sqlite3.connect(args.db or DB)
+    row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
+    if not row:
+        print("No supplier threads yet.")
+        return 1
+    report = compare(con, row[0], args.material, save=args.save_drafts)
+    print(json.dumps(report, ensure_ascii=False, indent=2, default=str) if args.json else to_text(report))
+    if args.save_drafts:
+        print("Negotiation drafts saved. They wait in the control room until a person reviews and sends them.")
+    return 0
 
 
 if __name__ == "__main__":
