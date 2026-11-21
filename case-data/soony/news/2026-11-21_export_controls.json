@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-11-20T18:00:00+01:00",
+  "items": [
+    {
+      "id": "NEWS-2026-1121-04",
+      "published_at": "2026-11-21T16:00:00+01:00",
+      "source": "Asia Commodities Wire",
+      "headline": "China tightens export licensing for rare-earth magnets",
+      "summary": "China's Ministry of Commerce said exports of sintered NdFeB magnets and of products shipped with such magnets as separate items will require end-use certificates. Industry sources expect processing times of four to eight weeks.",
+      "regions": [
+        "CN"
+      ],
+      "tags": [
+        "export-control",
+        "rare-earth",
+        "magnets"
+      ]
+    },
+    {
+      "id": "NEWS-2026-1121-05",
+      "published_at": "2026-11-21T16:30:00+01:00",
+      "source": "Ganzhou Business Review",
+      "headline": "Ganzhou magnet makers pause new export contracts pending guidance",
+      "summary": "Several magnet producers in Ganzhou, Jiangxi, have paused shipments to export customers until the licensing procedure is clarified.",
+      "regions": [
+        "CN"
+      ],
+      "tags": [
+        "rare-earth",
+        "Ganzhou"
+      ]
+    }
+  ]
+}

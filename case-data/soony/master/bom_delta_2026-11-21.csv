@@ -1,0 +1,3 @@
+change_id,parent_id,child_id,action,qty_per_old,qty_per_new,rev_old,rev_new,use_up_old_rev,effective_from,reason
+ECN-2026-118,FG-GH6-STD,CMP-GAM-004,revision,1,1,B,C,N,2026-11-21,new age-rating mark (USK 2026); parts to rev B must not be packed
+ECN-2026-119,FG-GH6-CE,CMP-GAM-009,revision,1,1,A,B,Y,2026-11-21,fold pattern changed; use up rev A

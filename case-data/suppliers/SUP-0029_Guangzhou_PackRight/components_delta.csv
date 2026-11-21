@@ -1,0 +1,3 @@
+component_id,supplier_id,action,lead_time_days_old,lead_time_days_new,share,primary,note
+CMP-GAM-007,SUP-0029,flag,63,105,1.0,Y,"+42 d for deliveries from December, see supply notice"
+CMP-MAG-005,SUP-0029,flag,63,,1.0,Y,sub-supplier cannot export; no second source on file
