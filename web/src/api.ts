@@ -162,6 +162,11 @@ export type DashboardData = {
   activity: Activity[];
   threads: SupplierThread[];
   supplierActions?: SupplierAction[];
+  recoveryApprovals?: {
+    id: string; title: string; approver: string; detail: string; dueAt?: string | null;
+    status: "awaiting_approval"; policy: string; price?: number | null; priceLabel?: string;
+    evidence?: Source | null; threadId?: string | null; replyId?: number | null;
+  }[];
   mailHistory?: { status: "ready" | "checking" | "unavailable"; checkedAt?: string; threads: SupplierThread[]; actions?: SupplierAction[] } | null;
   agents?: { enabled: boolean; mode?: string };
   recordedAgentRun?: RecordedAgentRun | null;

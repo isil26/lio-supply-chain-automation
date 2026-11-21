@@ -86,7 +86,7 @@ class ApprovalTests(unittest.TestCase):
             with closing(connect(database)) as con, con:
                 save_state(con, "options", [{"id": "abc", "title": "Release blocked",
                                              "approval_block": {"reason": "A required signer is vacant."}}])
-            handler_class = handler(SimpleNamespace(database=database))
+            handler_class = handler(SimpleNamespace(database=database, args=SimpleNamespace(demo=False)))
             request = object.__new__(handler_class)
             request.headers = Message()
             request.headers["Host"] = "127.0.0.1"
@@ -98,6 +98,27 @@ class ApprovalTests(unittest.TestCase):
             request.out = lambda payload, status=200: responses.append((payload, status))
             request.do_POST()
             self.assertEqual(responses, [({"error": "A required signer is vacant.", "status": "blocked"}, 409)])
+
+
+class RecoveryReviewTests(unittest.TestCase):
+    def test_queue_uses_the_matching_supplier_reply_and_no_guessed_price(self):
+        from src.decide.actions import recovery_reviews
+
+        with closing(sqlite3.connect(":memory:")) as con:
+            con.row_factory = sqlite3.Row
+            con.execute("CREATE TABLE messages(id INTEGER, chase_id TEXT, side TEXT, body TEXT)")
+            con.execute("INSERT INTO messages VALUES (4,'KARTON','in','Łącznie 12 390,00 EUR DAP Hamburg.')")
+            truth = {"deadline": "2026-11-22T20:00:00+01:00", "issues": [],
+                     "parts": {"CMP-GAM-008": {"shortfall": 5900}}}
+            option = {"id": "offer", "kind": "partial", "material": "CMP-GAM-008",
+                      "supplier_id": "SUP-0028", "status": "review", "price": 999}
+            action = {"kind": "review_cover", "optionId": "offer", "replyId": 4, "threadId": "KARTON"}
+            ready, = recovery_reviews(con, truth, [option], [action])
+            self.assertEqual((ready["price"], ready["owner"], ready["dueAt"]),
+                             (12390, "Paul Winter", "2026-11-21T20:00:00+01:00"))
+            unrelated, = recovery_reviews(con, truth, [option], [{**action, "threadId": "UNRELATED"}])
+            self.assertIsNone(unrelated["price"])
+            self.assertEqual(recovery_reviews(con, truth, [{**option, "status": "approved"}], [action]), [])
 
 
 class ExportTests(unittest.TestCase):
