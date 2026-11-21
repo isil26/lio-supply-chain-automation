@@ -52,7 +52,7 @@ def check_imap():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python3 -m src.chaser.mail_agent")
-    parser.add_argument("command", choices=["status", "check", "compare"])
+    parser.add_argument("command", choices=["status", "check", "compare", "remind"])
     parser.add_argument("--db", default=None, help="compare: SQLite store (default store/soony.db)")
     parser.add_argument("--material", default=None, help="compare: one material only")
     parser.add_argument("--save-drafts", action="store_true", help="compare: store negotiation drafts for approval")
@@ -60,6 +60,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.command == "compare":
         return compare_command(args)
+    if args.command == "remind":
+        return remind_command(args)
     from .mailenv import load_team_mail_env
     load_team_mail_env()
     info = status()
@@ -100,6 +102,21 @@ def compare_command(args):
     print(json.dumps(report, ensure_ascii=False, indent=2, default=str) if args.json else to_text(report))
     if args.save_drafts:
         print("Negotiation drafts saved. They wait in the control room until a person reviews and sends them.")
+    return 0
+
+
+def remind_command(args):
+    import sqlite3
+    from src.ingest.store import DB
+    from .followup import due_reminders
+
+    con = sqlite3.connect(args.db or DB)
+    items = due_reminders(con, save=args.save_drafts)
+    if not items:
+        print("No supplier is overdue for an answer.")
+    for item in items:
+        what = "call them" if item["action"] == "call" else f"reminder draft {item['draft_id']}"
+        print(f"{item['supplier']}: silent for {item['waited_hours']} h (limit {item['wait_limit_hours']} h) -> {what}")
     return 0
 
 

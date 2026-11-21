@@ -215,6 +215,22 @@ def dashboard(con):
     }
 
 
+def supplier_report(con, *, save, kind="all"):
+    """T77 mail-agent: best supplier per material plus overdue suppliers. Drafts only."""
+    from src.chaser.followup import due_reminders
+    from src.chaser.negotiate import compare
+
+    truth = get_state(con, "truth", {}) or {}
+    row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
+    deadline = truth.get("deadline") or (row[0] if row else None)
+    if not deadline:
+        return {"materials": [], "reminders": [], "deadline": None}
+    report = compare(con, deadline, save=save and kind in ("all", "negotiate"))
+    report["reminders"] = due_reminders(con, save=save and kind in ("all", "remind"))
+    report["deadline"] = deadline
+    return report
+
+
 class Loop:
     def __init__(self, args):
         self.args = args
@@ -435,6 +451,8 @@ def handler(loop):
                         return self.out(get_state(con, "truth"))
                     if path == "/api/release-gate":
                         return self.out(release_gate(con, loop.root))
+                    if path == "/api/suppliers/best":  # T77 mail-agent: read-only ranking
+                        return self.out(supplier_report(con, save=False))
                     if path == "/api/documents":
                         return self.out(list(documents(con)))
                     if path.startswith("/api/source/"):
@@ -489,6 +507,8 @@ def handler(loop):
                     return self.out(loop.agents.submit(body), 202)
                 with closing(connect(loop.database)) as con:
                     chaser.schema(con)
+                    if path == "/api/suppliers/drafts":  # T77 mail-agent: create drafts only, never sends
+                        return self.out(supplier_report(con, save=True, kind=body.get("kind", "all")))
                     match = re.fullmatch(r"/api/decisions/([a-f0-9]+)/(approve|review)", path)
                     if match:
                         decision = next((item for item in get_state(con, "options", []) if item["id"] == match[1]), None)
