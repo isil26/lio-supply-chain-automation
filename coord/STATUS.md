@@ -83,3 +83,4 @@ Last human sync: Sat 21 Nov 2026
 | copilot-fix2 | T47b fix live eval failures (loops, citations, briefer policy) | src/agents | in_progress | hard budget $0.60; diagnose from cassettes first | 21 Nov |
 | copilot-fix2 | T47b fix live eval failures (loops, citations, briefer policy) | src/agents | in_progress | Claimed; diagnosing cached live traces before any new calls. | 21 Nov 16:15 |
 | copilot-fix2 | T47b fix live eval failures (loops, citations, briefer policy) | src/agents | done | Runtime dedupe, two-round triage, grounded claims, and briefer PP-07/numeric validation implemented; focused tests pass. No new live pass rate claimed. | 21 Nov 16:30 |
+| copilot-fix3 | T47c fix live eval failures via replay (stop_check bound, citation, numeric) | src/agents | in_progress | budget $0.30 | 21 Nov |

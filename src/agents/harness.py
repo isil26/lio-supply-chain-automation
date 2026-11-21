@@ -32,8 +32,14 @@ def _tokens(value: Any) -> set[str]:
     text = _text(value)
     found = set()
     for match in re.finditer(r"\b\d+(?:[.,]\d+)*\b", text):
-        normalized = re.sub(r"[.,]", "", match.group(0))
+        raw = match.group(0)
+        normalized = re.sub(r"[.,]", "", raw)
         found.add(normalized.lstrip("0") or "0")
+        # 5900.0 / 5,900.00 are the same quantity as 5,900: also accept the value without a zero-only decimal tail
+        tail = re.fullmatch(r"(\d+(?:[.,]\d{3})*)[.,]0+", raw)
+        if tail:
+            integer = re.sub(r"[.,]", "", tail.group(1))
+            found.add(integer.lstrip("0") or "0")
     for match in re.finditer(r"\b\d{4}-\d{2}-\d{2}\b", text):
         found.add(match.group(0))
     return found

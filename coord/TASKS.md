@@ -84,3 +84,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T41 | Autonomy loop in orchestrator behind SOONY_AGENTS=1, runs table, trace/run APIs, kill switch, replay, harness on every run | copilot-loop | src/agents/loop.py, orchestrator glue | done P1 | T47 |
 | T44 | Agent team trace panel in the control room (graph, timeline, citations, harness badge, approvals, recorded-run mode for hosted) | copilot-trace | web/src/agents | done P2 | T41 contract |
 | T47b | Fix live agent failures: stop_check/loops, citation_check, briefer policy errors; budget $0.60 | copilot-fix2 | src/agents | done P1 | T47 |
+| T47c | Harness calibration + debug citation/numeric failures in replay; one live run per scenario under $0.30 | copilot-fix3 | src/agents | in_progress P1 | T47b |
