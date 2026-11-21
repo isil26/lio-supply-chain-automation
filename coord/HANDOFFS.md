@@ -311,3 +311,11 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - [Verified mailbox view](https://soony-manti-live.vercel.app/?mail=1) reads supplier-scoped Gmail Sent and Inbox records without changing flags. It matches known Chaser drafts or markers, persists separately from the replay and deduplicates across checks. The initial check was empty. A later check verified one Gmail Sent message and its matched reply, visibly linked to the proposed decision after hard reload. Controlled SMTP and IMAP tests covered success, failures, mismatched mail and deduplication. No test email was sent.
 - The simulated game-card reply lowered the upper forecast from 626,650 to 614,650 Standard and 64,350 to 62,550 Collector’s. The art-book reply confirmed a proposed 5,900-unit hold and left delivered pricing and the PO pending. Both retained message and decision IDs after hard reload and a new release.
 - Request changes in [INBOX](INBOX.md) with `murat-agent: live backend request`. See [host setup](../deploy/backend/README.md) for the laptop and tunnel requirements.
+
+## sonnet-gate (T72b)
+Revision facts were already extracted from OC footers (B at PackRight, C at Karton); parsers.py regex only loosened (revB/rev_C). Gate now resolves PR-SL-0604 alias via same-PO same-qty ERP line, aggregates per supplier (delivered = GRs, open = non-delivered POs). CMP-GAM-004 = HUMAN; evaluate() gained po_rows/gr_rows args. Regression test added in tests/test_release_gate.py. Not committed.
+
+## sonnet-pack T73 (21 Nov)
+- src/decide/packplan.py rebuilt on truth.readiness outputs (independent recipes without embedded magnets, usable stock, non-held inbound earliest + median lag, shifts). Exact method in docs/PACKPLAN.md. Tests: tests/test_packplan.py (12, incl. consistency with truth.simulate).
+- Baselines reproduce NUMBERS.md: CE first STD 614,650 / CE 62,550; STD first 615,100 / 62,100. Optimizer total gain vs better baseline is 0 (game card CMP-GAM-001 binds); it moves up to 3,550 units STD -> CE (CE 66,100). Air lot 28,000 12 h earlier = +28,000 STD.
+- `TOOLS` has a plain dict `packplan(changes?)` for nick to register. Magnet assumption printed on every run. Allocation rules need pre-order data we do not have (owner Head of Procurement / Sales).
