@@ -36,6 +36,8 @@ from src.agents.loop import AutonomyLoop
 
 DIST = ROOT / "web" / "dist"
 CONTROL_ROOM = Path(__file__).resolve().parent
+GAME_CARD_UPDATE = CONTROL_ROOM / "demo" / "goods_receipts_update.csv"
+GAME_CARD_RECEIPT_PATH = Path("soony/erp/goods_receipts_update.csv")
 
 
 def drop_summary(previous, current, previous_options, options):
@@ -316,7 +318,8 @@ def dashboard(con, *, include_action_history=False):
     risks = []
     for part in truth["parts"].values():
         flagged = [issue for issue in truth["issues"] if issue["material"] == part["material"] and issue["kind"] in
-                   {"quality_hold", "handwriting", "dock_hold", "short_ship", "tracker", "artwork", "revision_hold", "shipment_change"}]
+                   {"quality_hold", "handwriting", "dock_hold", "short_ship", "tracker", "artwork", "revision_hold",
+                    "shipment_change", "shipment_received"}]
         first = sum(edition.get("first_stop") == part["material"] for edition in truth["editions"].values())
         if not part["shortfall"] and not first and not flagged:
             continue
@@ -425,8 +428,10 @@ class Loop:
             self.root = session / "data"
             self.database = session / "soony.db"
             baseline = args.data
-            pending = {source.relative_to(baseline).as_posix() for source in baseline.rglob("*")
-                       if source.is_file() and ("shipping_advice" in source.name.casefold() or "oferta_" in source.name.casefold())}
+            game_card = getattr(args, "game_card_replay", False)
+            pending = set() if game_card else {
+                source.relative_to(baseline).as_posix() for source in baseline.rglob("*")
+                if source.is_file() and ("shipping_advice" in source.name.casefold() or "oferta_" in source.name.casefold())}
             for source in baseline.rglob("*"):
                 if source.is_file():
                     key = source.relative_to(baseline).as_posix()
@@ -435,6 +440,8 @@ class Loop:
                         self.drop_files.append((source, dest))
                     else:
                         self.copy(source, dest)
+            if game_card and not (receipt := self.root / GAME_CARD_RECEIPT_PATH).exists():
+                self.drop_files.append((GAME_CARD_UPDATE, receipt))
             cache = ROOT / "store" / "docs_cache.sqlite3"
             if cache.is_file():
                 replay_store = self.root.parent / "store"
@@ -751,6 +758,8 @@ def handler(loop):
                     if path.startswith("/api/source/"):
                         return self.file(loop.root, unquote(path[len("/api/source/"):]), source=True)
                 return self.out({"error": "Unknown API endpoint"}, 404)
+            if path == "/game-cards" and getattr(loop.args, "game_card_replay", False):
+                return self.file(CONTROL_ROOM, "game-card-replay.html")
             if path == "/live" or (path == "/" and not (DIST / "index.html").is_file()):
                 return self.file(CONTROL_ROOM, "control-room.html")
             if path in {"/", "/react"}:
@@ -1000,6 +1009,7 @@ def main():
     parser.add_argument("--data", type=Path, default=ROOT / "data")
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument("--replay-dir", type=Path, help="reuse a private local replay workspace")
+    parser.add_argument("--game-card-replay", action="store_true", help="stage only the game-card receipt and serve /game-cards")
     parser.add_argument("--mail-history-config", type=Path, help="private team mailbox configuration for the read-only history reader")
     parser.add_argument("--interval", type=float, default=45)
     modes = parser.add_mutually_exclusive_group()
@@ -1010,6 +1020,8 @@ def main():
     args = parser.parse_args()
     if args.replay_dir and not args.demo:
         parser.error("--replay-dir requires --demo")
+    if args.game_card_replay and (not args.demo or (args.data / GAME_CARD_RECEIPT_PATH).exists()):
+        parser.error("--game-card-replay requires --demo and a baseline without the goods-receipt update (use --data case-data)")
     if args.replay_dir:
         args.replay_dir = args.replay_dir.resolve()
         if args.replay_dir.is_relative_to(args.data.resolve()) or args.data.resolve().is_relative_to(args.replay_dir):

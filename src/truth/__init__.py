@@ -2,7 +2,7 @@
 import math
 import random
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -140,6 +140,22 @@ def receipt_comparisons(booked, scanned):
     elif ambiguous and unmatched:
         # The scan has no line IDs. Compare the remaining rows as a group in the caller.
         yield unmatched, ambiguous
+
+
+def confirmed_shipment_receipts(candidates, receipts, launch_date):
+    """Match a full advised lot where the shipment and receipt are uniquely linked."""
+    by_order = defaultdict(list)
+    for receipt in receipts:
+        if receipt["supplier_id"] and receipt["po_number"] and receipt["qty_received"] > 0:
+            key = (receipt["supplier_id"], receipt["material_id"], receipt["po_number"], receipt["qty_received"])
+            by_order[key].append(receipt)
+    matches = {
+        shipment: [receipt for receipt in by_order[key] if departure <= receipt["gr_date"] <= launch_date]
+        for shipment, key, departure in candidates
+    }
+    uses = Counter(receipt["gr_number"] for rows in matches.values() for receipt in rows)
+    return {shipment: rows[0] for shipment, rows in matches.items()
+            if len(rows) == 1 and uses[rows[0]["gr_number"]] == 1}
 
 
 def readiness(con, data_root, *, reconcile_shipments=None):
@@ -439,6 +455,7 @@ def readiness(con, data_root, *, reconcile_shipments=None):
     for row in tab["shipment"]:
         groups[row["shipment_id"]].append(row)
     inbound = []
+    receipt_candidates = []
     for shipment_id, entries in groups.items():
         feeds = sorted(entries, key=lambda row: ("erp/" in row["source"]["file"], row.get("updated_at") or ""), reverse=True)
         head = feeds[0]
@@ -466,9 +483,14 @@ def readiness(con, data_root, *, reconcile_shipments=None):
             if actual < confirmed_qty:
                 issue(f'{reference}: {actual:,.0f} flown against {confirmed_qty:,.0f} planned', material,
                       [*evidence, citation, *balance], "critical", "short_ship", supplier=head.get("supplier_id"),
-                      quantity=confirmed_qty - actual)
+                      quantity=confirmed_qty - actual, shipment=shipment_id)
             confirmed_qty = actual
             evidence = [*evidence, citation, *balance]
+            # A PO may cover several lots. Require shipment-specific quantity evidence,
+            # a single order, and a unique matching receipt before retiring any inbound.
+            if actual > 0 and len(pos) == 1 and head.get("supplier_id") and head.get("etd"):
+                key = (head["supplier_id"], material, pos[0], actual)
+                receipt_candidates.append((shipment_id, key, head["etd"]))
         statuses = {row["status"] for row in feeds if row["status"]}
         explicit_cancel = head["status"] in {"cancelled", "canceled"} and (
             "erp/" in head["source"]["file"] or statuses <= {"cancelled", "canceled"})
@@ -488,6 +510,14 @@ def readiness(con, data_root, *, reconcile_shipments=None):
                         "earliest": eta, "held": bool(hold), "supplier": head.get("supplier_id"), "evidence": evidence,
                         **({"sourceUpdatedAt": head.get("updated_at"), "sourceCancelled": explicit_cancel}
                            if reconcile_shipments else {})})
+
+    matched_receipts = confirmed_shipment_receipts(receipt_candidates, receipt_by_id.values(), launch_date)
+    for item in inbound:
+        if receipt := matched_receipts.get(item["id"]):
+            issue(f'{item["reference"]}: {item["quantity"]:,.0f} received on goods receipt {receipt["gr_number"]}',
+                  item["material"], [receipt["source"], *item["evidence"]], "watch", "shipment_received",
+                  supplier=item["supplier"], shipment=item["id"], quantity=receipt["qty_received"])
+    inbound = [item for item in inbound if item["id"] not in matched_receipts]
 
     for item in inbound:
         if item["supplier"] in old_revision_suppliers.get(item["material"], ()):
