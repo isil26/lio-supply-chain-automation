@@ -69,7 +69,8 @@ function App() {
   const [dark, setDark] = useState(true);
   const [behind, setBehind] = useState(false);
   const [threadId, setThreadId] = useState(() => new URLSearchParams(window.location.search).get("thread") || "");
-  const [threadsOpen, setThreadsOpen] = useState(() => new URLSearchParams(window.location.search).has("thread"));
+  const [mailView, setMailView] = useState(() => new URLSearchParams(window.location.search).get("mail") === "1");
+  const [threadsOpen, setThreadsOpen] = useState(() => Boolean(threadId) || mailView);
   const [dropVisible, setDropVisible] = useState(true);
   const [decisionBusy, setDecisionBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
@@ -96,10 +97,10 @@ function App() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const selectedThread = useMemo<SupplierThread | undefined>(() => {
-    if (!data) return undefined;
-    return data.threads.find((thread) => thread.id === threadId) ?? data.threads[0];
-  }, [data, threadId]);
+  const visibleThreads = mailView ? data?.mailHistory?.threads : data?.threads;
+  const selectedThread = useMemo<SupplierThread | undefined>(() => (
+    visibleThreads?.find((thread) => thread.id === threadId) ?? visibleThreads?.[0]
+  ), [visibleThreads, threadId]);
 
   if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
@@ -140,6 +141,17 @@ function App() {
     } finally {
       setSendBusy(false);
     }
+  };
+
+  const openMail = (real: boolean) => {
+    setMailView(real);
+    setThreadId("");
+    const url = new URL(window.location.href);
+    if (real) url.searchParams.set("mail", "1");
+    else url.searchParams.delete("mail");
+    url.searchParams.delete("thread");
+    url.hash = "";
+    window.history.replaceState(null, "", url);
   };
 
   const selectThread = (id: string) => {
@@ -287,9 +299,20 @@ function App() {
 
       <details className="card agents" open={threadsOpen} onToggle={(event) => setThreadsOpen(event.currentTarget.open)}>
         <summary><h3>Agents</h3><span className="muted">{drafts} emails ready · {reviews} files to check</span></summary>
+        {hostedReplayBuild && <div className="actions">
+          <a href="https://soony-manti-live.vercel.app/?mail=1" className="ghost-button">Open verified supplier mailbox</a>
+        </div>}
+        {data.mailHistory && <div className="actions">
+          <button className="ghost-button" aria-pressed={!mailView} onClick={() => openMail(false)}>Demo threads</button>
+          <button className="ghost-button" aria-pressed={mailView} onClick={() => openMail(true)}>Verified team mailbox</button>
+        </div>}
+        {mailView && <p className="muted">{data.mailHistory?.status === "ready"
+          ? (visibleThreads?.length ? "Read-only history reconciled from team Gmail." : "No verified chaser email found in the team mailbox.")
+          : data.mailHistory?.status === "unavailable" ? "Mailbox check unavailable. Previously verified messages remain visible."
+          : "Waiting for a read-only mailbox check."}{data.mailHistory?.checkedAt && <> · Checked {etaDate.format(new Date(data.mailHistory.checkedAt))} CET</>}</p>}
         <div className="agents-body">
           <div className="thread-list">
-            {data.threads.map((thread) => <button key={thread.id} className={thread.id === selectedThread?.id ? "thread selected" : "thread"} onClick={() => selectThread(thread.id)}>
+            {visibleThreads?.map((thread) => <button key={thread.id} className={thread.id === selectedThread?.id ? "thread selected" : "thread"} onClick={() => selectThread(thread.id)}>
               <strong>{thread.supplier}</strong><span>{thread.status}</span>
             </button>)}
           </div>
@@ -301,6 +324,7 @@ function App() {
                 draft: "Draft",
                 attempting: "Sending attempt",
                 smtp_accepted: "Accepted by SMTP",
+                gmail_sent: "Verified in Gmail Sent",
                 dry_run: "Dry-run email",
                 failed: "Send failed",
                 delivery_uncertain: "Delivery uncertain",
@@ -320,7 +344,7 @@ function App() {
                   <strong>{plan.simulated ? "Simulated decision" : "Reply decision"} · {{
                     proposed: "Proposed", pending: "Pending details", approved: "Approved for follow-up", review: "Under review",
                   }[plan.status]}</strong>
-                  <p><a href={`?thread=${encodeURIComponent(selectedThread.id)}#reply-${plan.id}`}>Decision {plan.id}</a></p>
+                  <p><a href={`?${mailView ? "mail=1&" : ""}thread=${encodeURIComponent(selectedThread.id)}#reply-${plan.id}`}>Decision {plan.id}</a></p>
                   {plan.shipmentId && plan.reportedEta && <p>{plan.shipmentId} · Reported ETA {etaDate.format(new Date(plan.reportedEta))} CET</p>}
                   {plan.editions?.map((edition) => <p key={edition.title}>
                     {edition.title} median packed · {formatNumber(edition.before)} → {formatNumber(edition.after)}
@@ -333,15 +357,15 @@ function App() {
                   {plan.evidence && <blockquote>{plan.evidence.join(" · ")}</blockquote>}
                   <p>{plan.nextAction}</p>
                   {plan.editions && <small>Supplier scenario for review. This decision has no purchasing or stock execution.</small>}
-                  {message.id && plan.status === "proposed" && !hostedReplayBuild && <div className="actions">
+                  {message.id && plan.status === "proposed" && !hostedReplayBuild && !mailView && <div className="actions">
                     <button className="ghost-button" disabled={decisionBusy} onClick={() => void approveReply(message)}>Approve follow-up</button>
                   </div>}
                 </section>}
               </div>;
             })}
             <div className="actions">
-              {!hostedReplayBuild && selectedThread.status === "draft" && <button className="primary-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : "Approve & send"}</button>}
-              {!hostedReplayBuild && data.sync?.mode === "replay" && selectedThread.status === "awaiting reply" && <button className="ghost-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Simulate reply"}</button>}
+              {!hostedReplayBuild && !mailView && selectedThread.status === "draft" && <button className="primary-button" onClick={() => void send()} disabled={sendBusy}>{sendBusy ? "Sending…" : data.sync?.mode === "replay" ? "Approve dry-run email" : "Approve & send"}</button>}
+              {!hostedReplayBuild && !mailView && data.sync?.mode === "replay" && selectedThread.status === "awaiting reply" && <button className="ghost-button" onClick={() => void demoReply()} disabled={replyBusy}>{replyBusy ? "Replying…" : "Simulate reply"}</button>}
             </div>
           </div>}
         </div>

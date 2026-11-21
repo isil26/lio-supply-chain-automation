@@ -74,7 +74,7 @@ export type SupplierMessage = {
   transport?: {
     from?: string; to?: string; subject?: string; messageId?: string; inReplyTo?: string;
     mode: string;
-    status: "draft" | "attempting" | "smtp_accepted" | "dry_run" | "failed" | "delivery_uncertain" | "received";
+    status: "draft" | "attempting" | "gmail_sent" | "smtp_accepted" | "dry_run" | "failed" | "delivery_uncertain" | "received";
   } | null;
   sender: string;
   side: "in" | "out";
@@ -134,6 +134,7 @@ export type DashboardData = {
   risks: Risk[];
   activity: Activity[];
   threads: SupplierThread[];
+  mailHistory?: { status: "ready" | "checking" | "unavailable"; checkedAt?: string; threads: SupplierThread[] } | null;
   agents?: { enabled: boolean; mode?: string };
   approval: Approval | null;
   options?: Approval[];
