@@ -101,3 +101,5 @@ Last human sync: Sat 21 Nov 2026
 | copilot-gate | T72 Release Gate | src/decide/release_gate.py, src/agents/tools.py, src/orchestrator | done | cited pure gate, CLI, read-only tool and GET /api/release-gate; focused tests pass | 21 Nov 17:06 |
 | copilot-pack | T73 pack-out optimizer + numbered allocation | src/decide/packplan.py | in_progress | implementing exact 30-minute pack plan, Pareto frontier, and CE allocation rules | 21 Nov |
 | copilot-gate2 | T72b artwork revision extraction -> gate HUMAN on sleeve | src/docs/parsers.py, release_gate.py | in_progress | no web work | 21 Nov |
+| sonnet-pack | T73 re-owned: fix pack-out optimizer inconsistency | src/decide/packplan.py | in_progress | copilot quota exhausted | 21 Nov |
+| sonnet-gate | T72b re-owned: artwork revision extraction | src/docs/parsers.py, release_gate.py | in_progress | copilot quota exhausted | 21 Nov |

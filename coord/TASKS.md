@@ -96,3 +96,5 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T72 | Release Gate: GO/HOLD/HUMAN per BOM part with cited rules (AQL, artwork rev, magnet conflict, vacant Category Lead, Incoterms, usable stock), API + agent tool; UI left to the viz owner | copilot-gate | src/decide/release_gate.py, src/agents/tools.py, src/orchestrator | done P1 | HIDDEN_FINDINGS |
 | T73 | Pack-out schedule optimizer (what to pack when, Pareto CE vs STD, unknown L) + numbered CE allocation rules + what-if | copilot-pack | src/decide/packplan.py | in_progress P1 | T11, T17 |
 | T72b | Extract artwork revision from OC footers so the Release Gate flags the sleeve rev B/C conflict (HUMAN) | copilot-gate2 | src/docs/parsers.py, release_gate.py | in_progress P1 | T72 |
+| T73 | (re-owned) pack-out optimizer consistency fix: use truth engine independent recipes, honest gain vs baseline | sonnet-pack | src/decide/packplan.py | in_progress P1 | copilot quota out |
+| T72b | (re-owned) artwork revision extraction for the Release Gate | sonnet-gate | src/docs/parsers.py, release_gate.py | in_progress P1 | copilot quota out |
