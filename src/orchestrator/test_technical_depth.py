@@ -101,6 +101,59 @@ class ApprovalTests(unittest.TestCase):
 
 
 class RecoveryReviewTests(unittest.TestCase):
+    def test_receiving_reviews_cite_the_exact_live_sleeve_thread(self):
+        from src.decide.actions import recovery_reviews
+
+        truth = {
+            "deadline": "2026-11-22T20:00:00+01:00", "issues": [],
+            "parts": {
+                "CMP-GAM-004": {"required": 86000, "on_hand": 80000, "revision_hold": {
+                    "quantity": 64000, "old_revision": "B", "new_revision": "C", "ecn": "ECN-2026-118"}},
+                "CMP-GAM-003": {"required": 86000, "on_hand": 54000},
+            },
+            "inbound": [
+                {"id": "SHP-2026-04313", "reference": "PO 7K21M", "quantity": 20000, "supplier": "SUP-0028",
+                 "earliest": "2026-11-21T20:00:00+01:00",
+                 "material": "CMP-GAM-004", "held": False},
+                {"id": "SHP-2026-04276", "reference": "NHSU4471921", "quantity": 350000, "supplier": "SUP-0029",
+                 "earliest": "2026-11-21T10:00:00+01:00",
+                 "material": "CMP-GAM-003", "held": False},
+            ],
+        }
+        with closing(connect(":memory:")) as con:
+            chaser.schema(con)
+            con.executemany("""
+                INSERT INTO chases(id,supplier_id,material,supplier,address,language,subject,status,qty,body,deadline)
+                VALUES(?,?,?,'Karton','supplier@example.com','en','Stock check','awaiting reply',1,'',?)
+            """, [
+                ("SLEEVE", "SUP-0028", "CMP-GAM-004", truth["deadline"]),
+                ("BOOK", "SUP-0028", "CMP-GAM-008", truth["deadline"]),
+            ])
+            for thread, tag, sent_status, reply_mode, parent in (
+                ("SLEEVE", "real", "smtp_accepted", "inbox", "real"),
+                ("BOOK", "book", "gmail_sent", "inbox", "book"),
+                ("SLEEVE", "test", "dry_run", "inbox", "test"),
+                ("SLEEVE", "wrong", "smtp_accepted", "inbox", "missing"),
+            ):
+                con.execute("""
+                    INSERT INTO messages(chase_id,external_id,side,sender,body,time,transport)
+                    VALUES(?,?,'out','Soony','Can you confirm PO 7K21M?',?,?)
+                """, (thread, tag, truth["deadline"], json.dumps({"status": sent_status})))
+                cursor = con.execute(
+                    "INSERT INTO messages(chase_id,external_id,side,sender,body,time,transport) "
+                    "VALUES(?,?,'in','Karton','Awaiting proof of delivery.',?,?)",
+                    (thread, f"reply-{tag}", truth["deadline"],
+                     json.dumps({"mode": reply_mode, "inReplyTo": parent})))
+                if tag == "real":
+                    live_id = cursor.lastrowid
+            sleeves, cases = recovery_reviews(con, truth, [], [])
+            self.assertEqual((sleeves["threadId"], sleeves["replyId"]), ("SLEEVE", live_id))
+            self.assertIn("6,000 sleeves short", sleeves["detail"])
+            self.assertIn("64,000 rev-B sleeves", sleeves["detail"])
+            self.assertIn("32,000 cases", cases["detail"])
+            truth["parts"]["CMP-GAM-004"]["on_hand"] += 20000
+            self.assertEqual([item["id"] for item in recovery_reviews(con, truth, [], [])], [cases["id"]])
+
     def test_queue_uses_the_matching_supplier_reply_and_no_guessed_price(self):
         from src.decide.actions import recovery_reviews
 

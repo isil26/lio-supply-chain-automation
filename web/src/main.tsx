@@ -365,8 +365,8 @@ function App() {
           {item.price != null && <p>{euros.format(item.price)} · {item.priceLabel}</p>}
           <p>{item.detail}</p>
           <div className="actions">
-            {item.threadId && <a className="ghost-button" href={`?thread=${encodeURIComponent(item.threadId)}${item.replyId == null ? "" : `#message-${item.replyId}`}`}>Supplier quote</a>}
-            {item.evidence && <button className="ghost-button" onClick={() => setSource(item.evidence!)}>Inspection evidence</button>}
+            {item.threadId && <a className="ghost-button" href={`?thread=${encodeURIComponent(item.threadId)}${item.replyId == null ? "" : `#message-${item.replyId}`}`}>Supplier reply</a>}
+            {item.evidence && <button className="ghost-button" onClick={() => setSource(item.evidence!)}>Source evidence</button>}
             <button className="ghost-button" onClick={() => setSource({ file: item.policy })}>PP-07</button>
           </div>
         </section>)}
