@@ -75,6 +75,8 @@ function SupplierActions({ actions, select, mailView, onEvidence }: {
       {action.threadId && (action.replyId != null ?
         <a className="ghost-button" href={`?${mailView ? "mail=1&" : ""}thread=${encodeURIComponent(action.threadId)}#message-${action.replyId}`}>Matched reply</a> :
         <button className="ghost-button" onClick={() => select(action.threadId!)}>Open supplier thread</button>)}
+      {action.dispatchThread && action.dispatchThread !== action.threadId &&
+        <button className="ghost-button" onClick={() => select(action.dispatchThread!)}>Open follow-up dispatch</button>}
       {action.policy && <button className="ghost-button" onClick={() => onEvidence({ file: action.policy })}>PP-07</button>}
     </div>)}
   </section>;
@@ -207,7 +209,7 @@ function App() {
     } finally { setDecisionBusy(false); }
   };
 
-  const demoReply = async (scenario?: "on-time" | "delayed") => {
+  const demoReply = async (scenario?: "on-time" | "delayed" | "complete") => {
     if (!selectedThread) return;
     setReplyBusy(true);
     try {
@@ -407,6 +409,7 @@ function App() {
               {!hostedReplayBuild && !mailView && data.sync?.mode === "replay" && ["awaiting reply", "reply to verify"].includes(selectedThread.status) &&
                 (data.supplierActions?.some((action) => action.case === "game_card" && action.threadId === selectedThread.id) ? <>
                   <button className="ghost-button" onClick={() => void demoReply("on-time")} disabled={replyBusy}>Simulate on-time ETA</button>
+                  <button className="ghost-button" onClick={() => void demoReply("complete")} disabled={replyBusy}>Simulate complete reply</button>
                   <button className="ghost-button" onClick={() => void demoReply("delayed")} disabled={replyBusy}>Simulate delayed ETA</button>
                 </> : selectedThread.status === "awaiting reply" && <button className="ghost-button" onClick={() => void demoReply()} disabled={replyBusy}>Simulate reply</button>)}
             </div>

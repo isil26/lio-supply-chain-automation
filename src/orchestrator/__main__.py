@@ -13,6 +13,7 @@ import time
 from contextlib import closing
 from datetime import datetime, timezone
 from email.message import EmailMessage
+from email.utils import make_msgid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -358,8 +359,9 @@ class Loop:
                     chaser.poll(con)
                 except (OSError, chaser.imaplib.IMAP4.error) as exc:
                     sync_error = (sync_error + " " if sync_error else "") + f"Inbox polling failed ({exc.__class__.__name__})."
+                supplier_loop.import_verified(con, os.getenv("SOONY_MAIL_HISTORY_DB"))
             supplier_loop.advance(con, get_state(con, "truth", {}), get_state(con, "options", []),
-                                  scope="demo" if self.args.demo else "live", dispatch=not self.args.once)
+                                  scope="demo" if self.args.demo else "live", dispatch=not getattr(self.args, "once", True))
             if not self.args.demo:
                 from src.chaser import autosend  # T78 mail-agent: automatic sending (live mode only)
                 if autosend.enabled(self.args.demo):
@@ -574,14 +576,19 @@ def handler(loop):
                             raise ValueError("A sent demo thread is required")
                         truth = get_state(con, "truth", {})
                         options = get_state(con, "options", [])
+                        scenario = body.get("scenario") if message["material"] == supplier_loop.CARD[1] and managed else None
                         if reply_text is None:
-                            scenario = body.get("scenario")
                             reply_text = supplier_loop.sample_card_reply(truth, scenario) if managed and scenario else demo_reply(truth, message, options)
                         if not isinstance(reply_text, str) or not reply_text.strip():
                             raise ValueError("Reply text must be nonempty")
                         reply = EmailMessage()
                         reply["From"], reply["Subject"], reply["In-Reply-To"] = message["address"], message["subject"], message["message_id"]
+                        reply["Message-ID"] = make_msgid(domain="simulation.soony.invalid")
                         reply.set_content(reply_text)
+                        if scenario == "complete":
+                            for kind in ("Commercial invoice", "Packing list", "Air waybill"):
+                                reply.add_attachment(f"Simulation only. {kind} for {supplier_loop.SHIPMENT}.",
+                                                     filename=f"{kind}.txt")
                         parsed = chaser.receive(con, reply, simulated=True)
                         if parsed and managed:
                             supplier_loop.advance(con, truth, options, scope="demo")

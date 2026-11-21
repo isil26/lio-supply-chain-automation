@@ -38,7 +38,7 @@ def main():
     parser.add_argument("data", type=Path)
     args = parser.parse_args()
     args.data = args.data.resolve(strict=True)
-    args.demo, args.online = True, False
+    args.demo, args.online, args.once = True, False, True
     recording_path = os.environ.get("SOONY_AGENT_RECORDING_FILE")
     recording = load_recording(Path(recording_path)) if recording_path else (
         load_recording(DEFAULT_RECORDING) if DEFAULT_RECORDING.is_file() else None

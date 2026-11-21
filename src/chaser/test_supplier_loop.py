@@ -9,6 +9,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from src import chaser
 from src.chaser import supplier_loop as loop
@@ -62,7 +63,7 @@ class SupplierLoopTests(unittest.TestCase):
                              json.dumps({"mode": mode, "status": "dry_run" if mode == "dry_run" else "gmail_sent"})))
         return mid
 
-    def reply(self, thread, mid, message_id, body, offset, *, simulated=False, address=ADDRESS):
+    def reply(self, thread, mid, message_id, body, offset, *, simulated=False, address=ADDRESS, docs=()):
         message = EmailMessage()
         message["From"] = address
         message["Subject"] = f"Re: [SOONY-{thread}] Test"
@@ -70,6 +71,8 @@ class SupplierLoopTests(unittest.TestCase):
         message["In-Reply-To"] = mid
         message["Message-ID"] = f"<{message_id}@example.invalid>"
         message.set_content(body)
+        for doc in docs:
+            message.add_attachment(f"Controlled fixture: {doc}.", filename=f"{doc}.txt")
         return chaser.receive(self.db, message, simulated=simulated)
 
     def test_later_card_revision_wins_even_if_an_older_reply_arrives_afterward(self):
@@ -117,10 +120,76 @@ class SupplierLoopTests(unittest.TestCase):
             send.assert_not_called()
         self.assertEqual(self.db.execute("SELECT count(*) FROM messages WHERE side='out'").fetchone()[0], 2)
 
+    @patch.dict("os.environ", {"CHASER_SENDER": "test@example.invalid"})
+    def test_complete_reply_cancels_queued_followup_before_transport_claim(self):
+        mid = self.sent(loop.CARD, "A002", f"Please confirm {loop.SHIPMENT}.", "dry_run")
+        early = loop.sample_card_reply(self.truth, "on-time")
+        complete = loop.sample_card_reply(self.truth, "complete")
+        metrics = {"editions": {"STD": {"p50": 600, "p90": 675, "probability": 0.1}}}
+        with patch("src.chaser.reply_plan.counterfactual", return_value=metrics), patch.object(loop, "counterfactual", return_value=metrics):
+            self.assertTrue(self.reply("A002", mid, "partial", early, 20, simulated=True))
+            loop.advance(self.db, self.truth, self.options[:1], scope="demo", clock=WHEN, dispatch=False)
+            draft = next(a for a in loop.view(self.db, "demo") if a["kind"] == "customs_followup")
+            self.assertEqual(draft["status"], "queued")
+            self.assertTrue(self.reply("A002", mid, "complete", complete, 25, simulated=True,
+                                       docs=("Commercial invoice", "Packing list", "Air waybill")))
+            with self.assertRaises(ValueError):
+                chaser.send(self.db, draft["dispatchThread"], demo=True, managed=True)
+            loop.advance(self.db, self.truth, self.options[:1], scope="demo", clock=WHEN)
+            self.assertEqual([a["kind"] for a in loop.view(self.db, "demo")], ["approve_dock"])
+            self.assertEqual(self.db.execute("SELECT count(*) FROM messages WHERE side='out'").fetchone()[0], 1)
+
+    @patch.dict("os.environ", {"CHASER_REAL_SMTP": "1", "CHASER_AUTO_SEND": "1",
+                              "CHASER_SMTP_HOST": "test.invalid", "CHASER_SMTP_PORT": "587",
+                              "CHASER_SENDER": "test@example.invalid", "SOONY_AGENTS": "0"})
+    def test_live_worker_reuses_verified_karton_thread_for_one_due_status_request(self):
+        from src.orchestrator import __main__ as runner
+
+        class Clock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return WHEN + timedelta(hours=3)
+
+        mid = self.sent(loop.BOOK, "B003", "Would you accept a 50–100 unit order below the minimum?", "gmail")
+        self.assertTrue(self.reply("B003", mid, "pending", "Minimum order is 5,000 units. We are checking internally.", 10))
+        history = self.path.parent / "mail-history.db"
+        with closing(connect(history)) as checkpoint:
+            self.db.backup(checkpoint)
+        with self.db:
+            self.db.execute("DELETE FROM messages")
+            self.db.execute("DELETE FROM chases")
+            save_state(self.db, "options", self.options[1:])
+            save_state(self.db, "sourceChecks", {"filesSeen": 1, "rejections": [], "warnings": {}})
+        def cycle():
+            worker = runner.Loop(SimpleNamespace(data=self.path.parent, db=self.path, demo=False, online=False, once=False))
+            worker.initialized = True
+            return worker.cycle()
+        with (
+            patch.dict("os.environ", {"SOONY_MAIL_HISTORY_DB": str(history)}),
+            patch.object(loop, "datetime", Clock),
+            patch.object(runner, "ingest", return_value=[]),
+            patch.object(runner, "extract", return_value=0),
+            patch.object(runner, "reconcile_handwriting", return_value=0),
+            patch("src.chaser.poll", return_value=0),
+            patch("src.chaser.mailenv.load_team_mail_env"),
+            patch("src.chaser.authenticate"),
+            patch("src.chaser.smtplib.SMTP") as smtp,
+        ):
+            receiver = smtp.return_value.__enter__.return_value
+            receiver.send_message.return_value = {}
+            cycle()
+            cycle()
+            receiver.send_message.assert_called_once()
+            message = receiver.send_message.call_args.args[0]
+            self.assertEqual(message["In-Reply-To"], "<pending@example.invalid>")
+            self.assertIn(mid, message["References"])
+            self.assertIn("karton_status_followup", {a["kind"] for a in loop.view(self.db, "live")})
+        self.assertEqual(self.db.execute("SELECT count(*) FROM messages WHERE side='out'").fetchone()[0], 2)
+
     @patch.dict("os.environ", {"CHASER_REAL_SMTP": "1", "CHASER_SMTP_HOST": "test.invalid",
                               "CHASER_SMTP_PORT": "587", "CHASER_SENDER": "test@example.invalid"})
     def test_uncertain_transport_is_claimed_once_across_workers_and_restart(self):
-        loop.advance(self.db, self.truth, self.options, scope="live", clock=WHEN)
+        loop.advance(self.db, self.truth, self.options, scope="live", clock=WHEN, dispatch=False)
         action = next(a for a in loop.view(self.db, "live") if a["case"] == "game_card")
         self.assertEqual(action["status"], "queued")
 
