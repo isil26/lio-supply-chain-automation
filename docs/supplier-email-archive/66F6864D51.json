@@ -197,6 +197,19 @@
       ],
       "body_content_type": "text/plain",
       "body": "Hello,\n\nNo, we do not have an authorized European Boise partner that can release finished CMP-GAM-001 locally or program local 128 GB blanks on an already approved GH6 production line. There is also no programmed, traceable European service stock available for reallocation.\n\nAccordingly, the releasable quantity for that option is zero, and we cannot provide a local delivered quote or handoff by Sunday, 22 November. The packed 36,000-unit Boise lot remains the available source under PO 4500318769.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:37:09+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179528982962.31533.8469799915132328557@gmail.com>",
+      "chase_id": "8D26542DE8",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nWe understand the full quantity is not possible in time. Could you tell us how many units you could ship before 22 Nov 20:00 CET as a part shipment, and the earliest date for the rest?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
     }
   ]
 }
