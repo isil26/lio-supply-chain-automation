@@ -161,6 +161,78 @@
       "references": [],
       "body_content_type": "text/plain",
       "body": "Hello,\n\nThank you for your reply.\n\nTo complete our planning, could you also confirm: the quantity you can supply, the delivery date to Hamburg, the delivered unit price? Could you send the packing list or the shipping/booking reference once available?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:04:08+00:00",
+      "from": "Rohan Deshmukh <rohan.d.pune-diecast@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff7e97f4-a03ce654-996f-498e-bbc6-bd85f567555b-000000@eu-west-1.amazonses.com>",
+      "chase_id": "3DEE18A01E",
+      "in_reply_to": "<179528766308.12942.5520908496274305466@gmail.com>",
+      "references": [
+        "<179528766308.12942.5520908496274305466@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nFor the current shipment under reference NHMU8536079, we can confirm 5,000 units of CMP-GAM-010 with planned arrival in Hamburg on 28 November 2026. The shipment covers PO 4500318739 and PO 4500318745.\n\nThe agreed unit price is INR 1,037 per unit FOB Nhava Sheva; no delivered Hamburg unit price is agreed. The carrier reference is NHMU8536079. I will need to obtain the packing list from our logistics team before sharing it.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:04:36+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<179528787687.15845.14127840804997515576@gmail.com>",
+      "chase_id": "3152557F43",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nTo complete our planning, could you also confirm: the delivery date to Hamburg?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:08:48+00:00",
+      "from": "Rohan Deshmukh <rohan.d.pune-diecast@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff82d9fe-6d2847b3-7e95-4ba0-9470-693f0769a048-000000@eu-west-1.amazonses.com>",
+      "chase_id": "3152557F43",
+      "in_reply_to": "<179528787687.15845.14127840804997515576@gmail.com>",
+      "references": [
+        "<179528787687.15845.14127840804997515576@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nThe planned arrival date in Hamburg for shipment NHMU8536079 is 28 November 2026.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:09:01+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "[SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<soony-sunday-recovery-pune-sort-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": "153839FA41",
+      "in_reply_to": "<010201a1ff7b31eb-bfd38a54-7964-49c0-85fe-53a15710ed6e-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<soony-sunday-recovery-pune-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff7b31eb-bfd38a54-7964-49c0-85fe-53a15710ed6e-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Rohan,\n\nThank you for proposing a Pune-supported inspection in Hamburg. Here is the applicable information we can substantiate from the incoming report for PO 4500318727, GR 5000413063: AQL 1.0, level II; sample 125; accept 3 / reject 4; 9 units had paint runs or thin coverage on the base edges. Dimensions and weight were within tolerance; packaging was undamaged. The file contains no finish photographs or colour-limit sample. These are the findings used to quarantine the lot.\n\nPlease use this written request to obtain a firm proposal and, if possible, a free provisional crew hold. Can you return the reference finish or photos from the PPAP package you submitted in September, your lot traceability and a screening work instruction for Soony Quality to review? Please confirm whether Pune will pay the full cost of third-party sorting, the partner and earliest start, throughput, and first and cumulative passing batches possible by Sunday 16:00 CET. Please submit the lot-specific inspection proposal through your usual supplier-quality channel and return the case or concession reference so Soony can assess release of individually conforming units. If a local crew is unavailable, would Pune fund sorting by the site on documented actuals, and on what terms? Please give a concrete deadline for the next confirmation if the proposal is pending.\n\nThis request authorizes preparation of a quote only. Site access, paid work and product release require separate written instructions.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:09:56+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<179528819647.18044.5881382759931943000@gmail.com>",
+      "chase_id": "3E5D155F40",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nTo complete our planning, could you also confirm: the quantity you can supply, the delivery date to Hamburg, the delivered unit price?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
     }
   ]
 }
