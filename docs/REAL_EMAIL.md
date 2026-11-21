@@ -35,7 +35,7 @@ Then start the app as usual (`python3 -m src.orchestrator --online`). In the con
 
 ## Safety
 - Recipient allowlist (`src/chaser/allowlist.py`): real mail only goes to `@suppliers.juliansibbing.de` (the case suppliers). Override with `CHASER_ALLOWED_DOMAINS` or `CHASER_ALLOWED_RECIPIENTS` only for a self-test address.
-- Every send still needs human approval and passes the draft guardrails (no price ceilings, walkaway or deadline slack).
+- Manual sends require confirmation. Routine live sends use the T78 automatic mail policy. Draft guardrails cover price ceilings, walkaway positions and deadline slack.
 - First real send: one supplier, one approved email, check the Gmail "Sent" folder, then wait for the reply to arrive in the inbox.
 - Tests: `python3 -m unittest src.chaser.test_allowlist src.chaser.test_chaser` (needs `data/`, e.g. `cp -R case-data data`). Tests never send real mail.
 

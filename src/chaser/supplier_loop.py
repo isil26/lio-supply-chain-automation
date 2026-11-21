@@ -28,6 +28,7 @@ LOT_DENIAL = re.compile(r"\b(?:cannot|can’t|can't|can not|unable to)\s+(?:offe
 ACCEPTED = {"dry_run", "smtp_accepted", "gmail_sent"}
 DOCS = {"invoice", "packing_list", "air_waybill"}
 SLOT = re.compile(r"^(?:receiving |dock )slot\s*:\s*(?:confirmed|reserved)\b[^\n]*", re.I | re.M)
+ETA_NOTICE = re.compile(r"\b(?:ETA|arrival|delayed|rescheduled)\b", re.I)
 MESSAGE_ID = re.compile(r"<[^<>\s]+>")
 
 
@@ -101,6 +102,15 @@ def number(value):
     return int(re.sub(r"\D", "", value))
 
 
+def _document_signatures(reply):
+    documents = json.loads(reply["parsed"] or "{}").get("attachments", [])
+    return tuple(sorted({
+        (doc["kind"], sha256(" ".join(doc["text"].split()).encode()).hexdigest())
+        for doc in documents
+        if doc.get("kind") in DOCS and not doc.get("needs_review") and doc.get("text", "").strip()
+    }))
+
+
 def _correspondence(con, supplier, material, scope):
     modes = {"verified": {"gmail"}, "demo": {"dry_run"}, "live": {"smtp", "gmail"}}[scope]
     out = []
@@ -130,11 +140,12 @@ def _correspondence(con, supplier, material, scope):
         authored = as_time(reply["envelope"].get("authoredAt")) or as_time(reply["time"])
         parent_time = as_time(parent["time"])
         if authored and parent_time and authored + timedelta(minutes=2) >= parent_time:
-            replies.append({**reply, "authored": authored, "parent": parent})
+            documents = _document_signatures(reply) if (supplier, material) == CARD else ()
+            replies.append({**reply, "authored": authored, "parent": parent, "documents": documents})
     replies.sort(key=lambda r: (r["authored"], r["id"]))
     unique = {}
     for reply in replies:
-        key = (reply["parent"]["external_id"], " ".join(reply["body"].split()).casefold())
+        key = (reply["parent"]["external_id"], " ".join(reply["body"].split()).casefold(), reply["documents"])
         unique.setdefault(key, reply)
     return out, list(unique.values())
 
@@ -297,14 +308,17 @@ def _card(con, scope, truth, options, sent, replies, clock):
                         "The reconciled shipment is held or has no usable units.", **common)]
     if dated:
         reply = dated[-1]
-        same_date = {r["body"] for r in dated if r["authored"] == reply["authored"]}
-        dates = list(ETA.finditer(reply["body"]))
+        eta_reply = reply
+        if reply["documents"] and not ETA_NOTICE.search(reply["body"]):
+            eta_reply = next((r for r in reversed(dated) if ETA_NOTICE.search(r["body"])), reply)
+        same_date = {r["body"] for r in dated if r["authored"] == eta_reply["authored"]
+                     and (ETA_NOTICE.search(r["body"]) or not r["documents"])}
+        dates = list(ETA.finditer(eta_reply["body"]))
         when = as_time(dates[0][1]) if len(dates) == 1 and len(same_date) == 1 else None
         if when:
-            plan = json.loads(reply["parsed"] or "{}")
-            attachment_types = {a.get("kind") for a in plan.get("attachments", []) if not a.get("needs_review")}
+            attachment_types = {kind for r in dated for kind, _ in r["documents"]}
             missing = sorted(DOCS - attachment_types)
-            slot = SLOT.search(reply["body"])
+            slot = SLOT.search(reply["body"]) or SLOT.search(eta_reply["body"])
             if not slot:
                 missing.append("receiving_slot")
             hours = EXPEDITED_HANDLING_HOURS

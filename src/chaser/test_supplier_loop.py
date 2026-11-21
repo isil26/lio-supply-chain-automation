@@ -139,6 +139,55 @@ class SupplierLoopTests(unittest.TestCase):
             self.assertEqual([a["kind"] for a in loop.view(self.db, "demo")], ["approve_dock"])
             self.assertEqual(self.db.execute("SELECT count(*) FROM messages WHERE side='out'").fetchone()[0], 1)
 
+    def test_worker_counts_attachment_only_revisions_before_followup(self):
+        from src.orchestrator import __main__ as runner
+
+        class Clock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return WHEN + timedelta(minutes=45)
+
+        body = loop.sample_card_reply(self.truth, "complete")
+        documents = ("Commercial invoice", "Packing list", "Air waybill")
+        metrics = {"editions": {"STD": {"p50": 600, "p90": 675, "probability": 0.1}}}
+        for batches in ((documents,), (documents[:1], documents[1:])):
+            with self.subTest(batches=batches):
+                with self.db:
+                    self.db.execute("DELETE FROM supplier_loop_actions")
+                    self.db.execute("DELETE FROM messages")
+                    self.db.execute("DELETE FROM chases")
+                    save_state(self.db, "sourceChecks", {"filesSeen": 1, "rejections": [], "warnings": {}})
+                    save_state(self.db, "options", self.options[:1])
+                mid = self.sent(loop.CARD, "A003", f"Please confirm {loop.SHIPMENT}.", "dry_run")
+                with (
+                    patch("src.chaser.reply_plan.counterfactual", return_value=metrics),
+                    patch.object(loop, "counterfactual", return_value=metrics),
+                    patch.object(loop, "datetime", Clock),
+                    patch.object(runner, "ingest", return_value=[]),
+                    patch.object(runner, "extract", return_value=0),
+                    patch.object(runner, "reconcile_handwriting", return_value=0),
+                    patch.dict("os.environ", {"CHASER_REAL_SMTP": "0", "SOONY_AGENTS": "0"}),
+                ):
+                    self.assertTrue(self.reply("A003", mid, "no-docs", body, 10, simulated=True))
+                    loop.advance(self.db, self.truth, self.options[:1], scope="demo", dispatch=False)
+                    self.assertIn("customs_followup", {a["kind"] for a in loop.view(self.db, "demo")})
+                    for index, batch in enumerate(batches, 1):
+                        self.assertTrue(self.reply("A003", mid, f"docs-{index}", body, 10 + index,
+                                                   simulated=True, docs=batch))
+                    self.assertTrue(self.reply("A003", mid, "retransmitted-docs", body, 30,
+                                               simulated=True, docs=batches[-1]))
+                    worker = runner.Loop(SimpleNamespace(data=self.path.parent / "inputs", demo=True,
+                                                         replay_dir=self.path.parent, online=False, once=False))
+                    worker.initialized = True
+                    worker.cycle()
+                    worker.cycle()
+                    actions = loop.view(self.db, "demo")
+                    self.assertEqual([a["kind"] for a in actions], ["approve_dock"])
+                    reply_id = self.db.execute("SELECT id FROM messages WHERE external_id=?",
+                                               (f"<docs-{len(batches)}@example.invalid>",)).fetchone()[0]
+                    self.assertEqual(actions[0]["replyId"], reply_id)
+                    self.assertEqual(self.db.execute("SELECT count(*) FROM messages WHERE side='out'").fetchone()[0], 1)
+
     @patch.dict("os.environ", {"CHASER_REAL_SMTP": "1", "CHASER_AUTO_SEND": "1",
                               "CHASER_SMTP_HOST": "test.invalid", "CHASER_SMTP_PORT": "587",
                               "CHASER_SENDER": "test@example.invalid", "SOONY_AGENTS": "0"})
