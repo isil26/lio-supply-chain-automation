@@ -16,3 +16,15 @@ The empty `steps`, `proposed_calls`, `verified_handoffs`, and `approvals_pending
 - No run was repeated. The handoff file is nested so the existing exporter’s root-level JSON glob still selects its existing inputs.
 
 A future verified timeline needs the original run boundary and recorded tool execution rows, with proposal and result identifiers if available. Export only structured event fields and keep raw requests, responses, reasoning, credentials, and correspondence in private storage.
+
+## Export from the recording workstation
+
+Use [the bounded exporter](export_bounded_trace.py) with the original SQLite artifact and inclusive row IDs from the recording. If the two passes used separate databases, export each with its own range. Provide the run label or pass number separately. Supply mailbox row bounds only if they were identified from the original recording.
+
+```sh
+python3 docs/agent_runs/provenance/export_bounded_trace.py /path/to/recording.db FIRST_TRACE_ROW LAST_TRACE_ROW > /path/to/private/art-book-bounded.json
+```
+
+The exporter opens SQLite read-only. It emits allowlisted roles and tools, row IDs, recorded statuses, timestamps, positive recorded latency, and aggregate usage within the provided bounds. It classifies the legacy approval sentinel as pending and preserves missing statuses and latency as null. An error record does not establish that work ran past validation. Raw arguments, results, approval payloads, private reasoning, and cassette content stay out of the output.
+
+Use `--mailbox-rows FIRST LAST` to export allowlisted handoffs. The runtime updated the highest mailbox row after a delegate returned, so nested delegations could make a stored mailbox status ambiguous. The historical runtime could also leave the trace model column null when the adapter chose the model. The exporter counts these rows separately from explicitly named model rows. A usage match is a consistency check. The recording owner still needs to establish the source and exact boundaries.
