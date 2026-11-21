@@ -1,5 +1,26 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T41 — Autonomy loop and agent APIs (copilot-loop)
+
+- `src/agents/loop.py` persists bounded background runs in `agent_runs`, deduplicates event hashes, captures per-run traces and harness results, supports timer events, replay adapters, and the stop switch.
+- The orchestrator submits drop/reply events only when `SOONY_AGENTS=1`; `GET /api/agents/runs`, `GET /api/agents/trace?run=...`, `POST /api/agents/run`, and `POST /api/agents/stop` are available. Dashboard activity includes the agent trace projection.
+- Validation: `python3 -m unittest -q tests.test_agents_loop tests.test_agents_team tests.test_agents_runtime` (10 passed) and `PATH=$PWD/.venv/bin:$PATH bash scripts/demo_check.sh` (passed).
+
+## T47 — Live agent wiring (copilot-wire)
+
+- Role prompts load `knowledge.load_pack(role)` and require the pack's strict JSON schemas; verifier searches distinctive identifiers and opens matching documents.
+- Harness evaluation is attached to every team event. Violations mark proposals and pending approvals `blocked by harness`; specialist delegation and supplier drafts stop after one idempotent action.
+- Tool descriptions now document purpose, guardrails, and argument examples. Evaluator traces are isolated per live run.
+- Focused validation: 23 agent tests pass. Existing art-book live evidence passes twice at $0.057892; quality-hold and German-notice live runs were not completed after the cumulative live attempt reached $1.694971. Do not claim those pass rates.
+
+## T44 — Agent trace panel (copilot-trace)
+
+- Added `web/src/agents/AgentTrace.tsx`, scoped `agents.css`, typed trace contracts, and a recorded fixture under `web/public/snapshot/agent_run.json`.
+- The panel shows the five-role handoff graph, tool timeline, citation chips opening the existing evidence modal, per-step cost/latency, harness status, pending approvals, and live/replay/offline status.
+- Added DashboardApi methods for `/api/agents/runs`, `/api/agents/trace`, `/api/agents/run`, and `/api/agents/stop`; static and mock adapters remain safe until the backend is available.
+- Export latest redacted run with `python3 scripts/export_agent_run.py`.
+- Validation: `npm --prefix web run build` and `VITE_STATIC=1 npm --prefix web run build` pass.
+
 ## T39 — Agent tool layer (copilot-tools)
 
 - Added `src/agents/tools.py`: a closed registry of thin adapters over readiness, sensitivity, supplier reliability, cited document search, source comparison, expedite analysis, chaser draft/send/parse, pending options, PP-07 escalation, and review requests.
@@ -218,3 +239,11 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - The Plan B card and expedite calculation use the same held shipment, actual quoted loading and driving time, and equal trial counts with shipment-specific draws. A synthetic late offer adds zero median units and zero on-time probability. The usable control adds 10 median units and raises modeled on-time probability from 27% to 40%.
 - The matched 308-file replay still ranks the post-drop art-book hold and written delivered quote first. It is request-only, with the same evidence, materials estimate, gates and modeled benefit. The full offline HTTP rehearsal and 52 focused tests passed.
 - The refreshed protected deployment `dpl_Bny9b6AyYGMe5eRmcbWtohFmvbs9` uses the verified 308-file snapshot `2026-11-21_1436`. Signed-in parity at 16:04 CET covered both replay phases, primary action and evidence, timing, option order, readiness, gaps and blocked approval states. No additional refresh is needed for these buyer-visible results.
+
+## T64/T65 — Reply Interpreter and Briefer (copilot-roles)
+- Added `interpreter_agent(llm, db)` with a closed five-tool whitelist and JSON contract for language, commitment, quotes, contradictions, ladder and escalation.
+- Added conservative `interpret_reply()` plus `--evaluate`; 12 simulated supplier replies agree with attachment ground truth 11/12 (91.7%), deterministic cost $0.00.
+- Added `briefer_agent(llm, db)`, `validate_brief()` using `harness.numeric_grounding`, and a deterministic fallback.
+- Fake CLI: `python3 -m src.agents.briefer --scenario art_book --fake`; sample headline: “Collector's Edition readiness is blocked by verified evidence.”
+- Focused validation: `python3 -m unittest tests/test_agents_roles2.py -q` — 6 passed.
+- Related runtime/team validation: `python3 -m unittest tests/test_agents_runtime.py tests/test_agents_team.py -q` — 8 passed.
