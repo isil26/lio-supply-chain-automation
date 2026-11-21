@@ -76,8 +76,10 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T25 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T31 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T28 | UI taste + accessibility pass (wording, contrast, keyboard focus, phone layout) | gülşah-agent | web/src/main.tsx, web/src/styles.css, docs/ui/ | in_progress | builds on leo-claude's Metricalist theme |
-| T63 | Document Reader agent (LLM + vision): scans, handwriting, multilingual notices, quote-validated facts, coverage rating, review queue, provisional facts need approval | copilot-reader | src/agents/reader.py | in_progress P1 | T33 |
-| T64 | Reply Interpreter agent: supplier reply -> commitment strength, next ladder step, escalate | open P1 | src/agents | T47 |
-| T65 | Briefer agent: one-screen brief for Dr. Vogt from verified facts only (no new numbers), harness-checked | open P1 | src/agents | T47 |
+| T63 | Document Reader agent (LLM + vision): scans, handwriting, multilingual notices, quote-validated facts, coverage rating, review queue, provisional facts need approval | copilot-reader | src/agents/reader.py | done P1 | T33 |
+| T64 | Reply Interpreter agent: supplier reply -> commitment strength, next ladder step, escalate | copilot-roles in_progress P1 | src/agents | T47 |
+| T65 | Briefer agent: one-screen brief for Dr. Vogt from verified facts only (no new numbers), harness-checked | copilot-roles in_progress P1 | src/agents | T47 |
 | T66 | Per-role model routing: cheap model for extraction/parsing, stronger for Planner; cost table; configurable via env | open P2 | src/agents | T47 |
 | T67 | Inbound expedite option: dock slot + customs pre-clearance for game-card air lot SHP-2026-04311 (lands Sun 12:00) and pickup of 350k cases SHP-2026-04276 at CTA; owner DC-HAM site lead; draft to forwarder/dock; before/after forecast. Model: dock <=4h lifts STD 614,650->639,100, CE 62,550->66,100 | isil-agent | src/decide/inbound.py, tests/test_inbound.py (+ one registration hook in src/decide/__init__.py, coordinated) | in_progress P1 | T3, T17 |
+| T41 | Autonomy loop in orchestrator behind SOONY_AGENTS=1, runs table, trace/run APIs, kill switch, replay, harness on every run | copilot-loop | src/agents/loop.py, orchestrator glue | in_progress P1 | T47 |
+| T44 | Agent team trace panel in the control room (graph, timeline, citations, harness badge, approvals, recorded-run mode for hosted) | copilot-trace | web/src/agents | in_progress P2 | T41 contract |

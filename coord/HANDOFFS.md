@@ -1,5 +1,13 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T63 - Document Reader (copilot-reader)
+
+- Added `src/agents/reader.py`: `read_document(path, supplier_id=None)` returns the coverage/language/kind/facts/review contract, parses text/PDFs deterministically, and uses quote-validated text or vision JSON as a provisional fallback.
+- Image prompts use OpenAI-compatible `image_url` base64 input; handwritten claims must retain a verbatim transcription quote and are never forecast-safe before approval.
+- Review state persists in SQLite `doc_review`; call `DocumentReader(...).approve(file)` after human review. `reader_tool()` is compatible with the runtime tool registry.
+- CLI: `python3 -m src.agents.reader PATH`; focused validation: `python3 -m unittest tests.test_agents_reader -v` (4 passed).
+- No live model call was made; live cost `$0`. Register the tool in `src/agents/team.py`/role whitelists before enabling it in the runtime.
+
 ## T38b — Live multi-agent path (copilot-live)
 
 - Fixed live auth fallback across `SOONY_LLM_KEY`, `SOONY_LLM_API_KEY`, and `OPENAI_API_KEY`; OpenAI/Anthropic tool-call history now preserves parallel call IDs and tool-result protocol, with 30-second timeouts and one retry for 429/5xx.

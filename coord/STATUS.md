@@ -72,4 +72,8 @@ Last human sync: Sat 21 Nov 2026
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
 | codex-deploy | T19-Redeploy production dashboard | coord | in_progress | Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
 | copilot-wire | T47 wire knowledge pack + harness into live agents, iterate live to pass harness | src/agents | in_progress | budget $1 gpt-4.1-mini | 21 Nov |
-| copilot-reader | T63 Document Reader agent with vision | src/agents/reader.py | in_progress | claimed: deterministic text/OCR first, quote-validated LLM vision fallback, review queue | 21 Nov 16:08 |
+| copilot-reader | T63 Document Reader agent with vision | src/agents/reader.py | done | deterministic text/OCR first, quote-validated LLM vision fallback, review queue; 4 focused tests pass | 21 Nov 16:11 |
+| copilot-reader | T63 reader follow-up: mandatory vision for configured scans + handwriting review | src/agents/reader.py, tests/test_agents_reader.py | in_progress | fixing CLI/env wiring and printed-vs-handwritten quantity semantics | 21 Nov 16:12 |
+| copilot-loop | T41 autonomy loop + agent APIs | src/agents/loop.py, orchestrator glue | in_progress | SOONY_AGENTS=1, budget cap, kill switch, replay | 21 Nov |
+| copilot-roles | T64 reply interpreter + T65 briefer | src/agents/interpreter.py, briefer.py | in_progress | numbers copied from tool results only | 21 Nov |
+| copilot-trace | T44 agent trace panel | web/src/agents | in_progress | new files only, no restyle | 21 Nov |
