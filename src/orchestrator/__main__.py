@@ -21,10 +21,11 @@ from urllib.parse import unquote, urlsplit
 
 from bridge.live import PortalError, PortalMirror
 from src import chaser
+from src.chaser import actions as action_delivery
 from src.chaser.reply_plan import demo_reply
 from src.chaser import mail_history, recovery, supplier_loop
 from src.decide import authorize, choose, decisions
-from src.decide.actions import recovery_reviews
+from src.decide.actions import action_queue, mark_action, recovery_reviews, source_proposals
 from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
@@ -58,7 +59,7 @@ def drop_summary(previous, current, previous_options, options):
         old = previous["parts"].get(part)
         if old and old["shortfall"] != row["shortfall"]:
             updates.append(f'{part}: {old["shortfall"]:,} to {row["shortfall"]:,} short')
-    for pid, row in current["editions"].items():
+    for pid, row in current.get("editions", {}).items():
         prior = previous["editions"].get(pid, {}).get("p50")
         if prior is not None and row.get("p50") != prior:
             updates.insert(0, f'{row.get("edition", pid)} median forecast: {prior:,} → {row["p50"]:,}')
@@ -195,10 +196,10 @@ def inbound_timeline(truth):
     return {"deadline": truth["deadline"], "lots": sorted(lots, key=lambda lot: lot["earliest"])}
 
 
-def dashboard(con):
+def dashboard(con, *, include_action_history=False):
     # Keep the risks, options and banner on the same published replay snapshot.
     snapshot = {row["key"]: json.loads(row["value"]) for row in con.execute(
-        "SELECT key, value FROM state WHERE key IN ('truth', 'options', 'drop', 'sync')"
+        "SELECT key, value FROM state WHERE key IN ('truth', 'options', 'drop', 'sync', 'actionProposals')"
     )}
     truth = snapshot.get("truth")
     if not truth:
@@ -265,6 +266,7 @@ def dashboard(con):
               "lastSyncAgeSeconds": max(0, int((datetime.now(timezone.utc) - last_sync).total_seconds())) if last_sync else None}
     costs = std_costs(con)
     missed = customer_inputs().get("missed_copy_cost_eur", {})
+    queue_reviews = recovery_reviews(con, truth, actions, supplier_actions, include_pending=True)
     return {
         "launch": {"name": truth["name"].strip(" -–•"), "deadline": truth["deadline"], "location": truth["site"]},
         "readiness": [{"edition": "CE" if pid.endswith("-CE") else "STD", "percent": round(row["packed"] / row["target"] * 100, 1),
@@ -282,6 +284,8 @@ def dashboard(con):
         "mailHistory": mail_history.view(clock),
         "supplierActions": supplier_actions,
         "recoveryApprovals": recovery_reviews(con, truth, actions, supplier_actions) if live else [],
+        "actions": action_queue(con, truth, actions, queue_reviews, snapshot.get("actionProposals", []),
+                                missed, include_history=include_action_history),
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": snapshot.get("drop"),
         "sync": snapshot.get("sync"), "dataHealth": health,
@@ -477,9 +481,11 @@ class Loop:
                     if option.get("approval_block"):
                         option["evaluated_at"] = now()
                 draft_count = chaser.draft(con, truth, options)
+                proposals = source_proposals(con, truth, root)
                 with con:
                     save_state(con, "truth", truth)
                     save_state(con, "options", options)
+                    save_state(con, "actionProposals", proposals)
                     save_state(con, "pendingRecompute", False)
                     save_state(con, "pendingEvents", [])
                     chaser.activity(con, "Readiness Engine", f'Recomputed {len(truth["parts"])} component positions for {len(truth["editions"])} editions.')
@@ -509,6 +515,7 @@ class Loop:
                     with con:
                         save_state(con, "forecastMailWatermark", mail_watermark)
                 recovery.advance(con, get_state(con, "truth", {}))
+                action_delivery.refresh(con)
             supplier_loop.advance(con, get_state(con, "truth", {}), get_state(con, "options", []),
                                   scope="demo" if self.args.demo else "live",
                                   dispatch=mail_ready and not getattr(self.args, "once", True))
@@ -601,10 +608,10 @@ def handler(loop):
                         })
                         return self.out(health)
                     if path == "/api/actions":
-                        value = dashboard(con)
-                        return self.out({"actions": value["recoveryApprovals"]} if value else {"actions": []})
+                        value = dashboard(con, include_action_history=True)
+                        return self.out({"actions": value["actions"] if value else []})
                     if path == "/api/dashboard":
-                        value = dashboard(con)
+                        value = dashboard(con, include_action_history=True)
                         if value is not None:
                             from src.chaser import autosend
                             value["autoSend"] = autosend.enabled(loop.args.demo)
@@ -695,6 +702,10 @@ def handler(loop):
                     return self.out(loop.agents.submit(body), 202)
                 with closing(connect(loop.database)) as con:
                     chaser.schema(con)
+                    action_match = re.fullmatch(r"/api/actions/([a-f0-9]{24})/(approve|dismiss|done)", path)
+                    if action_match:
+                        with loop.lock:
+                            return self.update_action(con, *action_match.groups(), body)
                     deal = re.fullmatch(r"/api/deals/([a-f0-9]{12})/(approve|decline)", path)
                     if deal:  # T90 mail-agent: record the decision and draft the supplier email
                         from src.chaser import deals as supplier_deals
@@ -805,6 +816,46 @@ def handler(loop):
                 return self.out({"error": str(exc)}, 400)
             except PermissionError as exc:
                 return self.out({"error": str(exc)}, 403)
+
+        def update_action(self, con, action_id, verb, body):
+            by = body.get("by")
+            if not isinstance(by, str) or not by.strip() or len(by) > 80:
+                return self.out({"error": "A team member name in by is required."}, 400)
+            note = body.get("note")
+            if note is not None and (not isinstance(note, str) or len(note) > 500):
+                return self.out({"error": "Note must be text of 500 characters or fewer."}, 400)
+            value = dashboard(con, include_action_history=True)
+            action = next((item for item in (value or {}).get("actions", []) if item["id"] == action_id), None)
+            if action is None:
+                return self.out({"error": "Action changed or is unknown. Refresh the action queue."}, 409)
+            status = action["status"]
+            if verb == "approve":
+                if status in {"dismissed", "done"}:
+                    return self.out({"error": "This action is closed."}, 409)
+                if status != "pending":
+                    return self.out({"ok": True, "action": action})
+                sync = value.get("sync") or {}
+                supplier = action["kind"] == "supplier"
+                if (not loop.args.demo and (sync.get("pendingDrop") or get_state(con, "pendingRecompute", False)
+                        or recovery.pending_revision(con, get_state(con, "forecastMailWatermark", 0)))):
+                    return self.out({"error": "New evidence is being processed. Refresh before approving."}, 409)
+                if supplier and body.get("confirm") is not True:
+                    return self.out({"error": "Review and confirm the supplier draft before sending."}, 409)
+                delivery = action_delivery.on_approve(
+                    con, action, by.strip(), demo=loop.args.demo or sync.get("mailMode") != "live")
+                status = delivery["status"]
+            else:
+                updated = "dismissed" if verb == "dismiss" else "done"
+                if status in {"dismissed", "done"} and status != updated:
+                    return self.out({"error": "This action is closed."}, 409)
+                if status != updated:
+                    if action.get("delivery"):
+                        action_delivery.mark(con, action_id, updated, note)
+                    mark_action(con, action_id, updated, by.strip(), note)
+                status = updated
+            updated = dashboard(con, include_action_history=True)
+            action = next((item for item in updated["actions"] if item["id"] == action_id), dict(action, status=status))
+            return self.out({"ok": True, "action": action})
 
         def local_request(self):
             host = self.headers.get("Host", "").split(":")[0]
