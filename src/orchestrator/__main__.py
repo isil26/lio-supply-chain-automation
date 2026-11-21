@@ -26,6 +26,31 @@ from src.truth import LOCAL, readiness
 DIST = ROOT / "web" / "dist"
 
 
+def drop_summary(previous, current, previous_options, options):
+    risk_kinds = {"artwork", "dock_hold", "handwriting", "quality_hold", "short_ship"}
+    previous_issues = {(issue["kind"], issue["title"]) for issue in previous["issues"]}
+    updates = list(dict.fromkeys(
+        issue["title"] for issue in current["issues"]
+        if issue["kind"] in risk_kinds and (issue["kind"], issue["title"]) not in previous_issues
+    ))[:2]
+
+    # Decision IDs also change when estimates are updated. Identify new options by
+    # their action, component and supplier so a revised estimate stays the same option.
+    def action(option):
+        return option["title"], option.get("material"), option.get("supplier_id")
+
+    previous_actions = {action(option) for option in previous_options}
+    new_option = next((option for option in options if action(option) not in previous_actions), None)
+    if new_option:
+        updates.append(f'New option: {new_option["title"]}')
+
+    for part, row in current["parts"].items():
+        old = previous["parts"].get(part)
+        if old and old["shortfall"] != row["shortfall"]:
+            updates.append(f'{part}: {old["shortfall"]:,} to {row["shortfall"]:,} short')
+    return " · ".join(updates)
+
+
 def cite_text(source):
     path = source["file"]
     location = f' · p. {source["page"]}' if "page" in source else ""
@@ -138,6 +163,7 @@ class Loop:
             reconcile_handwriting(con, self.root)
             successful = [event for event in events if event["action"] != "error"]
             if before is None or successful or extracted or get_state(con, "pendingRecompute", False):
+                previous_options = get_state(con, "options", [])
                 with con:
                     save_state(con, "pendingRecompute", True)
                 truth = readiness(con, self.root)
@@ -154,13 +180,8 @@ class Loop:
                         chaser.activity(con, "Decision Copilot", f'Prepared {len(options)} options for Procurement review.')
                     if successful:
                         changed = [{"file": event["source"], "action": event["action"], **event["detail"]} for event in successful]
-                        delta = []
-                        if before:
-                            for part, row in truth["parts"].items():
-                                old = before["parts"].get(part)
-                                if old and old["shortfall"] != row["shortfall"]:
-                                    delta.append(f'{part}: {old["shortfall"]:,} to {row["shortfall"]:,} short')
-                        detail = " · ".join(delta) or f'{len(successful)} sources · {extracted} documents processed'
+                        detail = drop_summary(before, truth, previous_options, options) if before else ""
+                        detail = detail or f'{len(successful)} sources · {extracted} documents processed'
                         title = "Portal drop processed" if before else "Launch snapshot ready"
                         if self.args.demo and before:
                             title = "Replayed portal drop processed"
