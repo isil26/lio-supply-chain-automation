@@ -11,7 +11,7 @@ from pathlib import Path
 from zipfile import BadZipFile
 
 from .run import ingest as ingest_erp, load_manifest
-from .readers import decode_csv
+from .readers import ambiguous_slash_date, decode_csv
 
 from openpyxl import load_workbook
 from pydantic import BaseModel, ValidationError, create_model
@@ -126,7 +126,7 @@ def names(field):
     return [field, *ALIASES.get(field, "").split()]
 
 
-def normalize(kind, raw):
+def normalize(kind, raw, warnings=None):
     output = {}
     for name in MODELS[kind].model_fields:
         value = next((raw[k] for k in names(name) if k in raw and raw[k] is not None and str(raw[k]).strip()), None)
@@ -134,7 +134,10 @@ def normalize(kind, raw):
             continue
         fmt = next(field.rstrip("*").partition(":")[2] for field in SCHEMAS[kind].split() if field.split(":")[0].rstrip("*") == name)
         if fmt == "d":
+            original = value
             value = day(value)
+            if warnings is not None and isinstance(original, str) and ambiguous_slash_date(original.strip()):
+                warnings.append(f"{name}: ambiguous slash date {original}; interpreted as {value.isoformat()}")
         elif fmt in {"f", "i"}:
             value = number(value)
         elif fmt == "x":
@@ -187,7 +190,7 @@ def workbook_rows(body):
             book.close()
 
 
-def parse(source, body):
+def parse(source, body, warnings=None):
     path = Path(source)
     if path.suffix.lower() == ".xlsx":
         candidates = workbook_rows(body)
@@ -203,7 +206,10 @@ def parse(source, body):
         if not any(value is not None and str(value).strip() for value in raw.values()):
             continue
         try:
-            normalized.append((sheet, num, kind, normalize(kind, raw)))
+            row_warnings = []
+            normalized.append((sheet, num, kind, normalize(kind, raw, row_warnings)))
+            if warnings is not None:
+                warnings.extend(f"{sheet or 'CSV'} row {num}, {warning}" for warning in row_warnings)
         except (ValidationError, ValueError) as exc:
             raise ValueError(f"{sheet or 'CSV'} row {num}: {exc}") from exc
     if path.suffix.lower() in {".csv", ".tsv", ".txt"} and not normalized:
@@ -233,6 +239,7 @@ def ingest(con, root, state=None):
     with con:
         con.execute("BEGIN IMMEDIATE")
         previous = dict(con.execute("SELECT source,sha FROM files"))
+        supplemental_warnings = get_state(con, "sourceChecks", {}).get("supplementalWarnings", {})
         present = set()
         for path in sorted(root.rglob("*")):
             if not path.is_file() or any(part.startswith(".") for part in path.relative_to(root).parts):
@@ -249,8 +256,9 @@ def ingest(con, root, state=None):
                 raise ValueError(f"{source}: local SHA-256 differs from bridge state")
             if previous.get(source) == digest:
                 continue
+            warnings = []
             try:
-                rows = parse(source, body)
+                rows = parse(source, body, warnings)
                 if not rows and source not in erp_sources and con.execute(
                     "SELECT 1 FROM records WHERE source=? LIMIT 1", (source,)
                 ).fetchone():
@@ -262,6 +270,9 @@ def ingest(con, root, state=None):
                     events.append(change(con, source, "error", detail))
                 rejections.append({"source": source, "action": "error", "detail": detail})
                 continue
+            supplemental_warnings.pop(source, None)
+            if warnings:
+                supplemental_warnings[source] = warnings
             before = {(row["sheet"], row["row_no"]): json.loads(row["payload"]) for row in
                       con.execute("SELECT sheet,row_no,payload FROM records WHERE source=?", (source,))}
             after = {(sheet, num): data for sheet, num, _, data in rows}
@@ -281,10 +292,13 @@ def ingest(con, root, state=None):
                    if source in erp_changes else {}),
             }))
         for source in sorted(previous.keys() - present):
+            supplemental_warnings.pop(source, None)
             count = con.execute("SELECT COUNT(*) FROM records WHERE source=?", (source,)).fetchone()[0]
             con.execute("DELETE FROM files WHERE source=?", (source,))
             events.append(change(con, source, "removed", {"rows_removed": count}))
-        save_state(con, "sourceChecks", {"filesSeen": len(present), "warnings": report["warnings"], "rejections": rejections})
+        save_state(con, "sourceChecks", {"filesSeen": len(present), "rejections": rejections,
+                                         "supplementalWarnings": supplemental_warnings,
+                                         "warnings": {**report["warnings"], **supplemental_warnings}})
     return events
 
 

@@ -10,8 +10,11 @@ import tempfile
 from collections import Counter
 from contextlib import closing
 from pathlib import Path
+from xml.etree.ElementTree import ParseError
+from zipfile import BadZipFile
 
-from src.ingest.store import FILE_KINDS, key
+from src.ingest.readers import SOURCES
+from src.ingest.store import FILE_KINDS, SHEET_KINDS, key
 
 from .extract import PROVIDER_ERRORS, bind_note_filename, extract_file
 from .media import LocalOCR, provider_cache_key
@@ -32,6 +35,7 @@ def source_paths(data):
             paths.update((supplier / bucket).rglob("*"))
     for subdir in ("soony/receiving/DC-HAM", "soony/context", "soony/logistics"):
         paths.update((data / subdir).rglob("*"))
+    paths.discard(data / "soony/context/onboarding_notes.md")
     return sorted(path for path in paths if path.is_file()
                   and not any(part.startswith(("~$", ".")) for part in path.relative_to(data).parts)
                   and path.resolve().is_relative_to(data)
@@ -112,7 +116,7 @@ def extract_cached(path, source, manifest_hash, db, ocr, vision, translator):
         if not doc["error"] and not warnings:
             db.execute("INSERT OR REPLACE INTO extraction VALUES (?, ?, ?)", (sha, options, serialize(payload)))
             db.commit()
-    except (ImportError, *PROVIDER_ERRORS) as exc:
+    except (ImportError, LookupError, ParseError, BadZipFile, *PROVIDER_ERRORS) as exc:
         doc["error"] = f"Extraction failed ({type(exc).__name__})"
     return doc, False
 
@@ -187,7 +191,14 @@ def run_pipeline(data, state, output, *, vision=None, translator=None):
                     row["review_reasons"].append("notice has no verified operational fields")
                 elif row["kind"] == "price_list" and not fields.get("price_items"):
                     row["review_reasons"].append("unparsed price list")
-                elif row["kind"] in {"contract", "inspection", "context", "workbook"} and not fields:
+                elif row["kind"] == "workbook" and not (
+                    any(dataset.matches(Path(row["source"])) for dataset in SOURCES)
+                    or any(key(item.get("sheet", "")) in SHEET_KINDS for item in fields.get("rows", []))
+                ):
+                    row["review_reasons"].append("unrecognized workbook layout")
+                elif row["kind"] == "context" and not ({"policy_clause", "org_role"} & fields.keys()):
+                    row["review_reasons"].append("unrecognized document layout")
+                elif row["kind"] in {"contract", "inspection", "workbook"} and not fields:
                     row["review_reasons"].append("unrecognized document layout")
                 row["review_reasons"].extend(row["warnings"])
                 if row["kind"] == "receiving":
