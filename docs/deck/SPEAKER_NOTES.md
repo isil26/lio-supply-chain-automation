@@ -49,3 +49,8 @@ Use the simulated reply and final Plan B card. Keep the fallback open: do not cl
 
 **2:57–3:00**
 "Ask: run the replay on the next drop, validate the economics, and scale the virtual procurement department to adjacent fixed-date launches."
+
+
+## UPDATE 21 Nov evening (after Dr. Vogt)
+- Slide 4 is now "What it hands you": a list of five actions with owner and euros; say "Dr. Vogt told us she does not want another dashboard."
+- Slide 5 uses her numbers: EUR 120 per Collector's copy, EUR 32 per Standard copy; about EUR 1.95M exposure at today's forecast; the dock slot + early customs avoids about EUR 1.05M. Say "exposure", not "we will save". Standard figure to be confirmed.
