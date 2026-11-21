@@ -536,3 +536,9 @@ The [VM archive workflow](../.github/workflows/lio-vm.yml) now handles scheduled
 - The worker retires expired drafts even when they are held for approval or in cooldown. The live sender checks again before transport, using the published forecast.
 - The Action Queue shows the Procurement owner, deadline, supplier thread and latest uncovered quantity when available. The send audit records the handoff without creating a sent message.
 - Validation includes 116 Supplier Chaser tests and the offline replay. The mocked SMTP test covers a packing window that closes during connection setup.
+
+## T102 — Case file and ZIP upload
+
+- Uploads run the existing pipeline in a private dry-run scenario. Rejected files preserve the previous accepted forecast. The browser shows imported files and changes in the median forecast.
+- The local browser verified the individual receipt. The multi-chunk ZIP reproduced 639,100 Standard and 66,100 Collector’s, with a 6,800-card shortage. The malformed receipt, session isolation, existing replay, and authenticated relay checks passed.
+- Manti Live needs a coordinated VM planner and `deploy/vercel/package-vm.sh` relay release for `/api/uploads`. The development merge preserves the current production pin. The named-login and upload-session gateway tests pass together.

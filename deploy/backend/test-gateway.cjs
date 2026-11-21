@@ -125,3 +125,47 @@ test('the live relay requires a provisioned account to forward a write', async (
   delete process.env.SOONY_DEMO_ACCOUNTS;
   assert.equal((await send()).status, 503);
 });
+
+test('jury upload relay derives the upload session from the signed login', async (t) => {
+  const upstream = await listener(async (request, response) => {
+    const parts = [];
+    for await (const part of request) parts.push(part);
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify({
+      session: request.headers['x-soony-upload-session'],
+      authorized: request.headers.authorization === 'Bearer test-upload-token',
+      length: Buffer.concat(parts).length,
+    }));
+  }, t);
+  delete process.env.SOONY_LIVE_UPSTREAM;
+  Object.assign(process.env, {
+    SOONY_USERS_JSON: JSON.stringify(demoUsers),
+    SOONY_REPLAY_KEY: 'c'.repeat(64),
+    SOONY_UPLOAD_UPSTREAM: upstream,
+    SOONY_UPLOAD_UPSTREAM_TOKEN: 'test-upload-token',
+  });
+  const jury = await listener(control, t);
+  const origin = jury.replace('http:', 'https:');
+  const path = jury + '/control?op=uploads';
+  assert.equal((await fetch(path)).status, 401);
+  const signIn = async () => {
+    const login = await fetch(jury + '/login', {
+      method: 'POST', headers: { origin }, redirect: 'manual',
+      body: new URLSearchParams({ username: 'murat', password: '12345' }),
+    });
+    assert.equal(login.status, 303);
+    return login.headers.get('set-cookie').split(';')[0];
+  };
+  const cookie = await signIn();
+  const other = await signIn();
+  const body = JSON.stringify({ chunk: 'a'.repeat(100_000) });
+  const upload = await fetch(path, {
+    method: 'POST', headers: { cookie, origin, 'content-type': 'application/json' }, body,
+  });
+  assert.equal(upload.status, 200);
+  const first = await upload.json();
+  assert.equal(first.length, body.length);
+  assert.equal(first.authorized, true);
+  const second = await fetch(path, { headers: { cookie: other, 'x-soony-upload-session': first.session } });
+  assert.notEqual((await second.json()).session, first.session);
+});

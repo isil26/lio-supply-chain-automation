@@ -22,6 +22,7 @@ from email.utils import make_msgid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from urllib.parse import unquote, urlsplit
 
 from bridge.live import PortalError, PortalMirror
@@ -37,6 +38,7 @@ from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_sta
 from src.orchestrator.portal_update import portal_baseline, portal_update
 from src.orchestrator import action_approvals, decision_effects
 from src.orchestrator.numbers import numbers_report
+from src.orchestrator.uploads import MAX_BODY, UploadError, Uploads
 from src.truth import LOCAL, readiness
 from src.agents.loop import AutonomyLoop
 
@@ -444,7 +446,7 @@ class Loop:
             self.database = session / "soony.db"
             baseline = args.data
             game_card = getattr(args, "game_card_replay", False)
-            pending = set() if game_card else {
+            pending = set() if game_card or getattr(args, "upload_scenario", False) else {
                 source.relative_to(baseline).as_posix() for source in baseline.rglob("*")
                 if source.is_file() and ("shipping_advice" in source.name.casefold() or "oferta_" in source.name.casefold())}
             for source in baseline.rglob("*"):
@@ -487,7 +489,8 @@ class Loop:
                     self.root = self.portal.current() or self.root
                 except PortalError as error:
                     self.portal_state = {"status": "unavailable", "error": str(error)}
-        self.agents = AutonomyLoop(self.database) if os.getenv("SOONY_AGENTS") == "1" else None
+        self.agents = (AutonomyLoop(self.database) if os.getenv("SOONY_AGENTS") == "1"
+                       and not getattr(args, "upload_scenario", False) else None)
 
     @staticmethod
     def copy(source, dest):
@@ -561,6 +564,8 @@ class Loop:
                     save_state(con, "pendingEvents", [*get_state(con, "pendingEvents", []), *successful])
             if self.portal and manifest:
                 extracted = extract(con, root, output=self.portal.workspace / "store" / "docs.jsonl")
+            elif getattr(self.args, "upload_scenario", False):
+                extracted = extract(con, root, use_models=False)
             else:
                 extracted = extract(con, root)
             handwriting = reconcile_handwriting(con, root)
@@ -705,7 +710,43 @@ class Loop:
             self.trigger.clear()
 
 
+def evaluate_upload(seed, workspace, files):
+    scenario = Loop(SimpleNamespace(
+        demo=True, online=False, once=True, data=seed, replay_dir=workspace, upload_scenario=True,
+    ))
+    upstream_cache = seed.parent / "store" / "docs_cache.sqlite3"
+    if upstream_cache.is_file() and seed.parent.parent == workspace.parent:
+        replay_cache = workspace / "store" / upstream_cache.name
+        replay_cache.parent.mkdir(exist_ok=True)
+        shutil.copyfile(upstream_cache, replay_cache)
+    scenario.cycle()
+    with closing(connect(scenario.database)) as con:
+        before = dashboard(con)["readiness"]
+    for relative, file in files.items():
+        scenario.copy(file, scenario.root / relative)
+    if files:
+        scenario.cycle()
+    with closing(connect(scenario.database)) as con:
+        after = dashboard(con)
+        rejected = next((event for event in after["sync"]["events"] if event["source"] in files), None)
+        if rejected:
+            raise UploadError(f'{rejected["source"]}: {rejected["detail"]["error"]}', 422)
+        imported = {source for (source,) in con.execute("SELECT source FROM records UNION SELECT source FROM ingest_files")}
+        for document in documents(con):
+            if document["source"] not in files:
+                continue
+            if document["error"]:
+                raise UploadError(f'{document["source"]}: {document["error"]}', 422)
+            imported.add(document["source"])
+        unparsed = sorted(files.keys() - imported)
+        if unparsed:
+            raise UploadError(f"No rows or document content could be imported from {unparsed[0]}.", 422)
+    return {"before": before, "dashboard": after}
+
+
 def handler(loop, gateway_token=None):
+    uploads = Uploads(lambda: loop.args.data if loop.args.demo else loop.root, evaluate_upload)
+
     class Handler(BaseHTTPRequestHandler):
         def gateway_request(self):
             if not gateway_token:
@@ -729,6 +770,8 @@ def handler(loop, gateway_token=None):
             if not self.local_request():
                 return self.out({"error": "Use the loopback address"}, 403)
             path = urlsplit(self.path).path
+            if path == "/api/uploads":
+                return self.upload()
             if path.startswith("/api/"):
                 with closing(connect(loop.database)) as con:
                     chaser.schema(con)
@@ -849,6 +892,8 @@ def handler(loop, gateway_token=None):
             if not self.local_request() or self.headers.get_content_type() != "application/json":
                 return self.out({"error": "Local JSON request required"}, 403)
             path = urlsplit(self.path).path
+            if path == "/api/uploads":
+                return self.upload()
             try:
                 length = int(self.headers.get("Content-Length", "0"))
                 if length > 4096 or length < 0:
@@ -1073,6 +1118,22 @@ def handler(loop, gateway_token=None):
             updated = dashboard(con, include_action_history=True)
             action = next((item for item in updated["actions"] if item["id"] == action_id), dict(action, status=status))
             return self.out({"ok": True, "action": action})
+
+        def upload(self):
+            try:
+                body = None
+                if self.command == "POST":
+                    length = int(self.headers.get("Content-Length", "0"))
+                    if not 0 < length <= MAX_BODY:
+                        raise UploadError("Invalid upload request size.", 413)
+                    body = json.loads(self.rfile.read(length))
+                    if not isinstance(body, dict):
+                        raise UploadError("Upload request must be a JSON object.")
+                return self.out(uploads.request(self.headers.get("X-Soony-Upload-Session"), body))
+            except UploadError as exc:
+                return self.out({"error": str(exc)}, exc.status)
+            except (ValueError, UnicodeError):
+                return self.out({"error": "Invalid upload request."}, 400)
 
         def local_request(self):
             host = self.headers.get("Host", "").split(":")[0]

@@ -166,3 +166,5 @@ Last human sync: Sat 21 Nov 2026
 | codex-chaser-deadline | T101-Chaser-Deadline | src/chaser, Action Queue projection | in_progress | Tracing dispatch and the existing Procurement handoff surface. | 21 Nov |
 
 | codex-chaser-deadline | T101-Chaser-Deadline | src/chaser, Action Queue projection | done | Live dispatch rechecks the deadline at claim and before SMTP delivery. Expired queue items create a durable Procurement action. Chaser tests and offline replay passed. | 21 Nov |
+
+| codex-upload | T102-Upload | scoped orchestrator, web, gateway | done | Browser receipt upload and multi-chunk ZIP reproduced the T98 forecast. Authenticated relay artifact built. Manti Live proxy promotion pending. | 22 Nov |

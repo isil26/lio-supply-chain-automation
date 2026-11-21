@@ -145,3 +145,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-Manti-UI | Integrate the approved dashboard design with existing live/replay workflows | manti-dashboard | web UI and no-build control room | in_progress | T103-Login |
 
 | T101-Chaser-Deadline | Revalidate queued supplier mail at dispatch and route expired requests to Procurement | codex-chaser-deadline | src/chaser, Action Queue projection | done | T78-Mail-Queue, T81 |
+
+| T102-Upload | Ingest individual files or ZIP archives into an isolated launch scenario | codex-upload | scoped orchestrator, ingestion upload adapter, web and gateway | done (live relay release pending) | T1, T50-Live-Portal, T98 |

@@ -87,6 +87,11 @@ button:disabled { opacity: .5; cursor: default; }
 .ac-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .notice strong { color: var(--text); font-weight: 600; }
 .notice.alert { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
+.upload-data { flex-wrap: wrap; }
+.upload-data p { margin: 4px 0 0; }
+.upload-data [role="alert"] { color: var(--bad); }
+.upload-data details { margin-top: 6px; }
+.upload-data li { overflow-wrap: anywhere; }
 
 /* Hero: the answer */
 .topbar h1 { margin: 0; font-size: 18px; font-weight: 600; }
