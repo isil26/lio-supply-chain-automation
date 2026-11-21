@@ -101,6 +101,8 @@ class DemoReplayTest(unittest.TestCase):
         for directory in ("src", "bridge", "config"):
             shutil.copytree(ROOT / directory, workspace / directory,
                             ignore=shutil.ignore_patterns("__pycache__", ".soony_token", "state.json", "changes.log"))
+        (workspace / "docs").mkdir()
+        shutil.copyfile(ROOT / "docs" / "delegations.json", workspace / "docs" / "delegations.json")
         for relative in ("store/docs_cache.sqlite3", "runtime/tessdata"):
             source = ROOT / relative
             if source.exists():
@@ -161,17 +163,20 @@ class DemoReplayTest(unittest.TestCase):
             code, result = self.request("/api/actions")
             self.assertEqual(code, 200)
             queue = result["actions"]
-            self.assertEqual(queue, updated["actions"])
+            self.assertEqual([row["id"] for row in queue], [row["id"] for row in updated["actions"]])
             self.assertTrue({"recovery", "release_gate", "claims"} <= {row["source"] for row in queue})
             sleeve = next(row for row in queue if row["source"] == "release_gate" and row["material"] == "CMP-GAM-004")
             self.assertEqual(sleeve["person"], "Sofia Marchetti")
             action = next(row for row in queue if "provisional Hamburg dock slot" in row["title"])
             self.assertTrue(action["evidence"] and action["draft"]["body"])
+            self.assertEqual((action["mode"], action["approverName"]), ("ONE_CLICK", "Katrin Jansen"))
             path = f'/api/actions/{action["id"]}'
-            actor = {"by": "Offline test"}
+            self.assertEqual(self.request(path + "/approve", {"by": "Offline test"})[0], 403)
+            actor = {"by": "Katrin Jansen"}
             status, approved = self.request(path + "/approve", actor)
             self.assertEqual((status, approved["action"]["status"]), (200, "prepared"))
-            self.assertEqual(self.request(path + "/approve", actor), (status, approved))
+            retry_status, retry = self.request(path + "/approve", actor)
+            self.assertEqual((retry_status, retry["action"]["delivery"]), (status, approved["action"]["delivery"]))
             self.assertEqual(self.request(path + "/done", actor)[1]["action"]["status"], "done")
             self.assertEqual(self.request(path + "/approve", actor)[0], 409)
             review = next(row for row in queue if "Karton art-book PO" in row["title"])

@@ -17,7 +17,7 @@ import time
 from urllib.error import URLError
 from urllib.request import urlopen
 
-ROOTS = ("src", "web", "bridge", "case-data", "deploy/backend", "deploy/vercel")
+ROOTS = ("src", "web", "bridge", "case-data", "config", "docs/delegations.json", "deploy/backend", "deploy/vercel")
 CHECK_INTERVAL = 30
 START_TIMEOUT = 240
 
