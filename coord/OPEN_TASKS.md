@@ -77,3 +77,12 @@ T9 codex-truth (visible LLM step, Pune escalation) · T10 copilot-ui · T13 code
 | T90 | P1 | **CPO format for actions:** every action shows cost against copies gained; air freight/rush above policy limits flagged "to CPO same hour"; a one-page daily 'what can stop a line' brief (not a dashboard). | murat-agent, sonnet-brief | src/decide, src/agents/briefer.py |
 | T91 | P2 | **Rare-earth one-pager:** post-launch risk for the Collector's box (CMP-GAM-007 lead time 63 -> 105 d), ferrite/ribbon closure alternatives (10-day sample), second-source proposal outline (CPO wants proposals end of next week). | any | docs/RARE_EARTH.md |
 
+## Round 6 (21 Nov 20:41): see IMPORTANT.md. The product is an exception autopilot; approvals are the bottleneck to remove, safely (delegated authority, never faked).
+| ID | Pri | Task | Owner | Paths |
+|---|---|---|---|---|
+| T93 | P0 | Approval engine with delegated authority: AUTO / ONE-CLICK / ESCALATE / NEVER, PP-07 as code, vacancy rules, SLA escalation, delegations.json, audit log | sonnet-approvals | src/decide/approvals.py |
+| T94 | P0 | Wire the approval engine into the action queue (T81) and the send path (T83): every action shows its mode, named approver, SLA and the delegation used; AUTO only for confirmed-in-writing delegations | murat-agent, mail-agent | src/orchestrator, src/chaser |
+| T95 | P1 | Delegation capture: record 'X delegates Y up to EUR Z until T' (UI or CLI), seed Vogt (unconfirmed), ask Felix, Paul Winter, Katrin Jansen, Tobias Brandt in the office hours; get Vogt's EUR 2,000,000 statement in writing | humans + leo-claude | docs/delegations.json, web |
+| T96 | P1 | Pain-point demo script and pitch rebuilt around bad news late / approval bottleneck / paper in six languages; time-to-decision metric | nick | docs/PITCH_3MIN.md, docs/deck |
+| T97 | P1 | Robustness pass: cold start, surprise-drop probes, one demo path, secrets out of git, numbers consistent | codex-access, codex-overseer, isil-agent | tests, README |
+
