@@ -120,6 +120,22 @@
       ],
       "body_content_type": "text/plain",
       "body": "您好，\n\n截至11月22日20:00 CET，我们无法分批发运或在汉堡交付任何CMP-GAM-010，因此可承诺数量为0件。其余可确认的10,000件为PO 4500318719项下货物，正在海运NHSU6120458上，预计11月27日抵达汉堡。\n\n抵港后至DC-HAM的最早实际交付日期仍需由承运商及后续运输安排确认。\n\nHello,\n\nBy 20:00 CET on 22 November, we cannot dispatch any partial quantity or deliver any CMP-GAM-010 in Hamburg, so the quantity we can commit is zero units. The remaining confirmed 10,000 units are under PO 4500318719 and are on sea shipment NHSU6120458, with ETA Hamburg on 27 November.\n\nThe earliest actual delivery date to DC-HAM after arrival still needs to be confirmed by the carrier and the onward transport arrangements.\n\nBest regards,\n\nChen Jie\nDongguan Precision Housings Co., Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:35:54+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "chen.jie.dg-precision@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-9D6AD72E97] 上市库存和交付时间确认",
+      "message_id": "<soony-sunday-recovery-dongguan-predeparture-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": null,
+      "in_reply_to": "<010201a1ff80412a-29d092b3-7fa2-4e55-a438-5e7fcfd2ebce-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528776394.14601.11049513524678504127@gmail.com>",
+        "<010201a1ff80412a-29d092b3-7fa2-4e55-a438-5e7fcfd2ebce-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "陈洁女士，您好：\n\n感谢您核实已在海上的批次。我们想单独确认尚计划于11月24日从盐田启运的订舱 SHP-2026-04322 / 柜号 NHSU8311921，对应采购单 4500318744 的 CMP-GAM-010 雕像。请问这个订舱下，有多少箱已完工、通过检验并放行，且实物仍在工厂或货站，可从订舱中分拨？请说明地点和批次。如果只有订舱、尚无可放行实货，或无法按时到线，请明确告知。\n\n我们需要最多3,400件在德国时间11月22日星期日16:00前交到汉堡 DC-HAM 包装线。任何能更早交付的部分批次均有价值。若确有可提货的合格现货，请向承运人核查深圳、香港或其他可用机场最早舱位、德国清关和专车直送，并提供可承诺的首批和累计数量、提货截止时间、每批到包装线的时间（CET）、舱位或车辆依据，以及在原FOB价格之上的全部额外费用、币种和报价有效期。我们可以考虑实际能够提前交货的加急费。\n\n这是一项非约束性询价。如可免费暂留已核实的舱位或货量，请提供有效期；在收到 Soony 单独的书面授权前，请勿更改海运订舱、调拨货物或产生费用。\n\nSoony 上市团队\n"
     }
   ]
 }
