@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { hostedReplayBuild, isStaticMode } from "../api";
+import sample from "./offers-sample.json";
 import "./offers.css";
 
 // T90 mail-agent: every supplier offer in one table, best offer per part on top,
@@ -24,8 +26,16 @@ function when(iso: string | null) {
 }
 function unit(d: Deal) { return d.unit_price == null ? "no price" : `${d.unit_price} ${d.currency ?? ""}`; }
 
+function exampleData(): Data {
+  const deals = (sample as { deals: Deal[] }).deals;
+  return { deals, best: deals.filter((d) => d.best) };
+}
+
 export function Offers() {
-  const [data, setData] = useState<Data | null>(null);
+  // Hosted recording and static builds have no live backend: show a labelled example,
+  // and keep Approve / Decline in this browser only (nothing is sent).
+  const example = hostedReplayBuild || isStaticMode();
+  const [data, setData] = useState<Data | null>(example ? exampleData() : null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -37,12 +47,23 @@ export function Offers() {
   }
 
   useEffect(() => {
+    if (example) return;
     void load();
     const timer = window.setInterval(() => void load(), 30000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [example]);
 
   async function decide(deal: Deal, action: "approve" | "decline") {
+    if (example) {
+      const status = action === "approve" ? "approved" : "declined";
+      setData((old) => {
+        if (!old) return old;
+        const deals = old.deals.map((d) => d.id === deal.id ? { ...d, status, decided_by: "you" } as Deal : d);
+        return { deals, best: deals.filter((d) => d.best) };
+      });
+      setNote(`Example only: in the live app this ${action === "approve" ? "asks " + deal.supplier + " to reserve the units (the purchase order needs the " + deal.signer + ")" : "sends " + deal.supplier + " a polite no-thanks"}. Nothing was sent here.`);
+      return;
+    }
     setBusy(deal.id + action);
     try {
       const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ by: "Control room" }) });
@@ -64,7 +85,7 @@ export function Offers() {
   return (
     <section className="card offers" aria-labelledby="offers-title">
       <h3 id="offers-title">Supplier offers</h3>
-      <p className="card-sub">Every offer the suppliers sent, with price and timing. You decide; the mail agent tells the supplier.</p>
+      <p className="card-sub">{example ? "Example with sample replies, not live prices. " : ""}Every offer the suppliers sent, with price and timing. You decide; the mail agent tells the supplier.</p>
       {note && <p className="offers-note" role="status">{note}</p>}
       {rows.length === 0 && <p className="empty">No offers yet. They appear here as suppliers reply.</p>}
 

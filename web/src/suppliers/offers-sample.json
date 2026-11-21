@@ -1,0 +1,22 @@
+{
+  "deals": [
+    {"id": "example00001", "supplier": "Hwaseong Memory", "material": "CMP-GAM-001", "needed": 6800, "quantity": 6800,
+     "unit_price": 9.95, "currency": "USD", "price_eur": 9.15, "total_eur": 62220, "eta": "2026-11-22T09:00:00+00:00",
+     "p_on_time": 1.0, "score": 83.6, "best": 1, "eligible": 1, "proof": "date and quantity", "incoterm": "FCA Incheon",
+     "payment_terms": "60 days", "moq": 5000, "list_price": 9.6, "conditions": null,
+     "excerpt": "We can confirm 6,800 units at 9.95 USD, ready for the Friday flight. We will send the air waybill once booked.",
+     "signer": "Category Lead", "status": "pending", "decided_by": null, "decided_at": null},
+    {"id": "example00002", "supplier": "Boise Semi", "material": "CMP-GAM-001", "needed": 6800, "quantity": 6800,
+     "unit_price": 10.4, "currency": "USD", "price_eur": 9.57, "total_eur": 65076, "eta": "2026-11-23T01:00:00+00:00",
+     "p_on_time": 1.0, "score": 77.6, "best": 0, "eligible": 1, "proof": "shipping document", "incoterm": "EXW Boise",
+     "payment_terms": "30 days", "moq": 1000, "list_price": 10.1, "conditions": "your forwarder picks up (EXW)",
+     "excerpt": "Stock is available ex works Boise. Please send your forwarder details and we will release 6,800 units the same day.",
+     "signer": "Category Lead", "status": "pending", "decided_by": null, "decided_at": null},
+    {"id": "example00003", "supplier": "Dongguan Precision Housings", "material": "CMP-GAM-010", "needed": 3400, "quantity": 2000,
+     "unit_price": 88, "currency": "CNY", "price_eur": 11.44, "total_eur": 22880, "eta": "2026-11-22T03:00:00+00:00",
+     "p_on_time": 1.0, "score": 79.3, "best": 1, "eligible": 1, "proof": "date and quantity", "incoterm": "FOB Shenzhen",
+     "payment_terms": "30 days", "moq": 500, "list_price": 86, "conditions": "can only cover 2,000 units",
+     "excerpt": "We can only produce 2,000 housings before the deadline at 88 CNY per unit.",
+     "signer": "Buyer", "status": "pending", "decided_by": null, "decided_at": null}
+  ]
+}

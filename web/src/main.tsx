@@ -351,10 +351,10 @@ function App() {
         </section>
       </div>
 
-      <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>
+      <Offers/>
+      <BestSupplier/>
 
-      {!hostedReplayBuild && <Offers/>}
-      {!hostedReplayBuild && <BestSupplier/>}
+      <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>
 
       {data.recoveryApprovals?.length ? <section className="card" id="recovery-approvals" aria-label="Recovery approvals">
         <h3>Recovery approvals</h3>
