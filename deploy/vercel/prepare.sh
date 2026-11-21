@@ -11,6 +11,8 @@ repo=$(cd -- "$here/../.." && pwd)
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 cp -R "$repo/src" "$work/"
+mkdir "$work/bridge"
+cp "$repo/bridge/live.py" "$repo/bridge/sync.py" "$work/bridge/"
 
 PYTHONPATH="$work" PYTHONDONTWRITEBYTECODE=1 SOONY_LLM_PROVIDER=none SOONY_AGENTS=0 CHASER_REAL_SMTP=0 OMP_THREAD_LIMIT=1 \
   "${SOONY_BUILD_PYTHON:-python3}" "$here/prepare_replay.py" "$1" |
