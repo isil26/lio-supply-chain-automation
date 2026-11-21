@@ -8,7 +8,9 @@ const W = 960;
 const H = 440;
 
 // Supply network on a world map: suppliers, live shipment positions and the Hamburg warehouse.
-export function SupplyMap({ network }: { network: Network }) {
+export function SupplyMap({ network: raw }: { network: Network }) {
+  // One point per supplier, even if a data drop delivered the same supplier twice.
+  const network = useMemo(() => ({ ...raw, suppliers: [...new Map(raw.suppliers.map((s) => [s.id, s])).values()] }), [raw]);
   const [hover, setHover] = useState<string>("");
   const { land, grid, projection } = useMemo(() => {
     const topo = land110 as unknown as Parameters<typeof feature>[0];

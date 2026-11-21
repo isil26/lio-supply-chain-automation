@@ -14,6 +14,13 @@ call `on_approve(con, action, approved_by)`. This module then:
                         is prepared, not emailed; the UI shows it with a copy button and the
                         person marks it sent / done.
 
+T94 (IMPORTANT.md section 3): every dispatch first passes `gate()`, which uses the approval engine
+(src/decide/approvals.py, T93) when present, else ONE-CLICK. AUTO goes out only under a delegation
+confirmed in writing and only for information-only actions; ONE-CLICK waits for a named person;
+ESCALATE prepares a message to the next authority and sends nothing; NEVER blocks. The mode,
+approver, delegation and SLA are stored per action, and AUTO is logged as "delegation of <name>, record <id>".
+`auto_dispatch(con, action)` is the automatic entry point (no person clicked).
+
 `refresh(con)` follows supplier replies: an answer with a quantity and a date, or a document
 or booking reference, marks the action done; any other answer marks it "replied" for a look.
 `status(con)` returns every dispatched action for the T82 Actions screen.
@@ -29,13 +36,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from datetime import datetime, timezone
 
 from .guardrails import Guardrails
 
 EUR_PER_CE = 120   # missing Collector's copy (Dr. Vogt, recorded by Isil, docs/NUMBERS.md)
 EUR_PER_STD = 32   # missing Standard copy
-OPEN = ("prepared", "sent", "queued", "replied", "handled by supplier loop")
+OPEN = ("prepared", "sent", "queued", "replied", "handled by supplier loop", "awaiting approval", "escalated")
 
 
 def _now():
@@ -54,6 +62,10 @@ def schema(con):
         action_id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT NOT NULL, person TEXT, deadline TEXT,
         eur_at_stake REAL, approved_by TEXT, chase_id TEXT, recipient TEXT, subject TEXT, body TEXT,
         status TEXT NOT NULL, note TEXT, created TEXT NOT NULL, updated TEXT NOT NULL, action TEXT NOT NULL)""")
+    have = {row[1] for row in con.execute("PRAGMA table_info(action_sends)")}
+    for column in ("mode", "approver", "delegation", "sla"):  # T94
+        if column not in have:
+            con.execute(f"ALTER TABLE action_sends ADD COLUMN {column} TEXT")
 
 
 def eur_at_stake(action):
@@ -113,7 +125,8 @@ def _record(con, action, kind, status, approved_by, **extra):
                        chase_id=coalesce(excluded.chase_id, action_sends.chase_id),
                        recipient=coalesce(excluded.recipient, action_sends.recipient),
                        subject=coalesce(excluded.subject, action_sends.subject),
-                       body=coalesce(excluded.body, action_sends.body), updated=excluded.updated""",
+                       body=coalesce(excluded.body, action_sends.body),
+                       approved_by=coalesce(excluded.approved_by, action_sends.approved_by), updated=excluded.updated""",
                     (str(action["id"]), kind, _get(action, "title", "what", default=""), _get(action, "person", "owner"),
                      _get(action, "deadline", "by", "dueAt"), eur_at_stake(action), approved_by, row["chase_id"], row["recipient"],
                      row["subject"], row["body"], status, row["note"], now, now, json.dumps(action, ensure_ascii=False)))
@@ -173,23 +186,137 @@ def _supplier_email(con, action, approved_by, demo):
     return _record(con, action, "supplier", "sent", approved_by, note=note, **common)
 
 
-def on_approve(con, action, approved_by, *, demo=None):
-    """Dispatch one approved T81 action. Safe to call twice: an action is only sent once."""
+# ---- T94: approval modes (IMPORTANT.md section 3) -------------------------------------------
+MODES = ("AUTO", "ONE-CLICK", "ESCALATE", "NEVER")
+BINDING = re.compile(r"\b(?:we accept|accepted|purchase order|we (?:hereby )?order|please (?:reserve|book|ship)|"
+                     r"zamawiamy|akceptujemy|발주합니다|确认订购)\b", re.I)
+
+
+def engine_input(action):
+    """Translate a T81/T83 action into the T93 engine's vocabulary (kind, value_eur, evidence ...)."""
+    from src.decide import approvals
+    kind = str(_get(action, "kind", "channel", default="internal"))
+    if kind not in approvals.KINDS:
+        body = ((_get(action, "draft", default={}) or {}).get("body") or "")
+        binding = bool(action.get("binding")) or bool(BINDING.search(body))
+        if kind == "supplier" or _get(action, "supplierId", "supplier_id"):
+            kind = "hold_and_quote" if binding else "supplier_info_request"
+        elif re.search(r"dock[- ]slot", str(_get(action, "title", "what", default="")), re.I):
+            kind = "dock_slot"
+        else:
+            kind = "internal_message"
+    return {**action, "kind": kind, "value_eur": _get(action, "value_eur", "costEur", "cost_eur", "price"),
+            "evidence": _get(action, "evidence", default=[]) or []}
+
+
+def _engine_decision(action):
+    """Ask the T93 approval engine (src/decide/approvals.py); None if it is not there."""
+    try:
+        from src.decide import approvals
+    except ImportError:
+        return None
+    verdict = approvals.evaluate(engine_input(action))
+    name = lambda p: p.get("name") if isinstance(p, dict) else p  # noqa: E731
+    out = {"mode": verdict.get("mode"), "approver": name(verdict.get("approver")), "reason": verdict.get("reason", ""),
+           "sla": f'{verdict["sla_minutes"]} min' if verdict.get("sla_minutes") else None,
+           "escalateTo": name(verdict.get("approver")) if verdict.get("mode") == "ESCALATE" else None}
+    if verdict.get("delegation_id"):
+        # The engine only returns AUTO for a delegation confirmed in writing.
+        out["delegation"] = {"id": verdict["delegation_id"], "from": out["approver"],
+                             "confirmed": verdict.get("mode") == "AUTO"}
+    return out
+
+
+def gate(action, approved_by=None, decision=None):
+    """Decide how this action may go out. Returns {mode, approver, delegation, sla, reason}.
+
+    AUTO only with a delegation confirmed in writing and an information-only, reversible action.
+    Without an engine decision the default is ONE-CLICK: a named person must approve.
+    """
+    decision = decision or action.get("approval") or _engine_decision(action) or {}
+    mode = str(decision.get("mode") or "ONE-CLICK").upper().replace("_", "-").replace("ONECLICK", "ONE-CLICK")
+    if mode not in MODES:
+        mode = "ONE-CLICK"
+    delegation = decision.get("delegation") or None
+    out = {"mode": mode, "approver": decision.get("approver") or _get(action, "approver"),
+           "delegation": delegation, "sla": decision.get("sla") or decision.get("dueAt"),
+           "escalateTo": decision.get("escalateTo") or decision.get("escalate_to"),
+           "reason": decision.get("reason") or ""}
+    if mode == "AUTO":
+        body = ((_get(action, "draft", default={}) or {}).get("body") or "")
+        confirmed = isinstance(delegation, dict) and (delegation.get("confirmed") is True
+                                                       or delegation.get("confirmedInWriting") is True)
+        binding = bool(action.get("binding")) or bool(BINDING.search(body))
+        if not confirmed or binding:
+            out.update(mode="ONE-CLICK", reason=("delegation not confirmed in writing" if not confirmed
+                                                 else "binding action: needs a person") + "; " + out["reason"])
+    return out
+
+
+def _with_mode(con, action, row, g, approved_by):
+    who = approved_by
+    if g["mode"] == "AUTO":
+        d = g["delegation"]
+        who = f'delegation of {d.get("from") or d.get("delegator") or g["approver"]}, record {d.get("id", "?")}'
+    with con:
+        con.execute("UPDATE action_sends SET mode=?, approver=?, delegation=?, sla=?, approved_by=coalesce(?, approved_by) "
+                    "WHERE action_id=?", (g["mode"], g["approver"], json.dumps(g["delegation"]) if g["delegation"] else None,
+                                          g["sla"], who, str(action["id"])))
+        try:
+            from . import activity
+            activity(con, "Mail Agent", f'Action {action["id"]}: {g["mode"]} ({who or "no approver yet"}) -> {row["status"]}.',
+                     "analysis")
+        except Exception:  # activity table only exists once the chaser schema ran
+            pass
+    return get(con, action["id"])
+
+
+def on_approve(con, action, approved_by, *, demo=None, decision=None):
+    """Dispatch one approved T81 action. Safe to call twice: an action is only sent once.
+
+    approved_by: the person who clicked (ONE-CLICK), or None for an automatic run (only AUTO goes out).
+    decision: the approval engine's verdict; looked up from src/decide/approvals.py when omitted.
+    """
     schema(con)
     if not action.get("id"):
         raise ValueError("action needs an id")
-    if (existing := get(con, action["id"])) and existing["status"] not in ("blocked", "dismissed"):
+    if (existing := get(con, action["id"])) and existing["status"] not in ("blocked", "dismissed", "awaiting approval"):
         return existing
     if demo is None:
         demo = os.getenv("CHASER_REAL_SMTP") != "1"
+    g = gate(action, approved_by, decision)
     kind = _get(action, "kind", "channel", default="internal")
-    if kind == "supplier" or _get(action, "supplierId", "supplier_id"):
+    supplier = kind == "supplier" or bool(_get(action, "supplierId", "supplier_id"))
+    kind = "supplier" if supplier else "internal"
+    if g["mode"] == "NEVER":
+        row = _record(con, action, kind, "blocked", approved_by,
+                      note="Blocked by policy: " + (g["reason"] or "this action is never automatic"))
+        return _with_mode(con, action, row, g, approved_by)
+    if g["mode"] == "ESCALATE":
+        target = g["escalateTo"] or g["approver"] or "the next authority per PP-07"
+        subject, body = internal_message(dict(action, person=target))
+        row = _record(con, action, kind, "escalated", approved_by, recipient=target, subject="[ESCALATED] " + subject,
+                      body=body, note=f"Escalated to {target}. " + g["reason"])
+        return _with_mode(con, action, row, g, approved_by)
+    if g["mode"] == "ONE-CLICK" and not approved_by:
+        subject, body = internal_message(action)
+        row = _record(con, action, kind, "awaiting approval", None, recipient=g["approver"], subject=subject, body=body,
+                      note=f"Waiting for one click from {g['approver'] or 'the named approver'}. " + g["reason"])
+        return _with_mode(con, action, row, g, None)
+    if supplier:
         import sqlite3
         con.row_factory = sqlite3.Row  # the chaser send path reads rows by column name
-        return _supplier_email(con, action, approved_by, demo)
-    subject, body = internal_message(action)
-    return _record(con, action, "internal", "prepared", approved_by, recipient=_get(action, "person", "owner"),
-                   subject=subject, body=body, note="Ready to copy and send to the named person.")
+        row = _supplier_email(con, action, approved_by, demo)
+    else:
+        subject, body = internal_message(action)
+        row = _record(con, action, "internal", "prepared", approved_by, recipient=_get(action, "person", "owner"),
+                      subject=subject, body=body, note="Ready to copy and send to the named person.")
+    return _with_mode(con, action, row, g, approved_by)
+
+
+def auto_dispatch(con, action, *, demo=None, decision=None):
+    """Automatic run: only AUTO actions (confirmed delegation, information-only) go out; others wait or escalate."""
+    return on_approve(con, action, None, demo=demo, decision=decision)
 
 
 def mark(con, action_id, status, note=None):
@@ -236,7 +363,7 @@ def status(con):
     schema(con)
     refresh(con)
     cur = con.execute("""SELECT action_id, kind, title, person, deadline, eur_at_stake, approved_by, recipient, subject,
-                         body, status, note, updated FROM action_sends ORDER BY coalesce(eur_at_stake,0) DESC, created""")
+                         body, status, note, updated, mode, approver, delegation, sla FROM action_sends ORDER BY coalesce(eur_at_stake,0) DESC, created""")
     names = [c[0] for c in cur.description]
     return [dict(zip(names, row)) for row in cur.fetchall()]
 

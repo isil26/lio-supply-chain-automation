@@ -22,7 +22,7 @@ type Deal = {
 };
 type Data = { deals: Deal[]; best: Deal[]; notes?: Record<string, string>; as_of?: string };
 
-// Suppliers are named by country; two Chinese suppliers never share a product tab.
+// Suppliers are shown by name and country of origin, e.g. "Hwaseong Memory (South Korea)".
 const COUNTRY: Record<string, string> = {
   "SUP-0010": "South Korea", "SUP-0011": "USA", "SUP-0018": "India",
   "SUP-0019": "China", "SUP-0028": "Poland", "SUP-0029": "China",
@@ -31,7 +31,10 @@ const PRODUCT: Record<string, string> = {
   "CMP-GAM-001": "Game cards", "CMP-GAM-010": "Statues", "CMP-GAM-008": "Art books",
   "CMP-GAM-004": "Cover sleeves", "CMP-GAM-003": "Card cases", "CMP-GAM-007": "Collector's boxes",
 };
-function country(d: Deal) { return (d.supplier_id && COUNTRY[d.supplier_id]) || d.supplier; }
+function country(d: Deal) {
+  const origin = d.supplier_id ? COUNTRY[d.supplier_id] : undefined;
+  return origin && origin !== d.supplier ? `${d.supplier} (${origin})` : d.supplier;
+}
 function product(material: string) { return PRODUCT[material] ?? material; }
 
 const STATUS: Record<Deal["status"], string> = { pending: "Open", approved: "Approved", declined: "Declined", changed: "Changed, decide again", superseded: "Superseded by supplier update" };
