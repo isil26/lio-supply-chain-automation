@@ -1,5 +1,13 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T16 — Chaser scoring and escalation (copilot-chaser)
+
+- Reply parsing now returns commitment strength and score: `none` (0), `date_only` (1), `date_and_quantity` (2), and `document_or_booking_reference` (3), plus `what_to_ask_next`.
+- Added `r1_document` drafts in English, Korean, Chinese and Polish that request per-lot quantity and packing-list or booking evidence.
+- `validate_draft()` blocks binding commitments and disclosure of deadline slack, walkaway alternatives, maximum premium or cost per missing copy; `send()` rechecks the persisted draft.
+- R0-R4 next-step decisions persist in SQLite with timestamps and action log entries.
+- Run `python3 -m unittest src.chaser.test_chaser`; all 12 chaser tests pass.
+
 ## T10 — Vercel static replay (copilot-ui)
 
 - The React API client now uses static replay when `VITE_STATIC=1`, `?static=1`, or `?mock=1`, and automatically falls back to static snapshots when `/api/dashboard` is unreachable.
@@ -95,3 +103,8 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - The hosted control switches between two states calculated by the local pipeline from the private team snapshot. The download was cross-checked against the portal inventory before release. Get the password through the private team channel or the ignored access file on the shared workspace. Never copy credentials into coordination files.
 - [Deployment and refresh instructions](../deploy/vercel/README.md). Use the local full API for portal sync, outbound mail, approval workflows, and any source files.
 - The sample replay uses the synthetic fixture. The separate local exporter writes under ignored `private/static-replay/`, outside `web/public`. The hosted artifact only contains a sealed, server-side payload.
+
+## T14 — Surprise-drop robustness (codex-drops)
+
+- [Report and proposed diff](../docs/DROP_ROBUSTNESS.md). Run `python -m unittest discover -s tests/drops -v` for seven fast regressions. Run `PYTHONPATH=. python tests/drops/audit_drops.py` for the 20 diagnostic probes.
+- Highest-impact failures were cancelled inbound surviving a stale tracker, same-date stock copies double-counting a lot, and document extraction losing new facts without a visible warning. The source owner received an exact proposal in INBOX.

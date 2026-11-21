@@ -110,6 +110,62 @@ class SupplierChaserTest(unittest.TestCase):
         actions = self.store.action_log(thread["thread_id"])
         self.assertEqual([row["action"] for row in actions], ["draft_created"])
 
+    def test_reply_commitment_strength_levels(self):
+        llm = DeterministicFakeLLM()
+        self.assertEqual(llm.parse_reply("Maybe Friday").commitment_strength, "date_only")
+        self.assertEqual(
+            llm.parse_reply("Confirmed Friday, 5000 pcs").commitment_strength,
+            "date_and_quantity",
+        )
+        self.assertEqual(
+            llm.parse_reply("Booking number AWB-12345, shipped Friday").commitment_score,
+            3,
+        )
+
+    def test_r1_templates_in_supported_languages(self):
+        for supplier_id in ("SUP-0010", "SUP-0019", "SUP-0028", "SUP-0011"):
+            thread = self.chaser.draft(self.issue(supplier_id=supplier_id), tone="r1_document")
+            self.assertIn("r1_document", thread["tone"])
+            self.assertIn("PO", thread["body"] + thread["subject"])
+            self.assertIn("PO" if supplier_id != "SUP-0019" else "PO", thread["body"])
+
+    def test_draft_guardrail_blocks_secret_disclosures(self):
+        from .guardrails import Guardrails
+
+        guardrails = Guardrails()
+        for text in (
+            "Our deadline slack is 2 days.",
+            "The maximum premium is EUR 500.",
+            "We will walk away and use alternative suppliers.",
+            "The cost per missing copy is EUR 35.",
+        ):
+            result = guardrails.validate_draft(text)
+            self.assertFalse(result.ok)
+
+    def test_send_rechecks_draft_guardrail(self):
+        thread = self.chaser.draft(self.issue())
+        with self.store.connect() as db:
+            db.execute(
+                "UPDATE threads SET body='Our deadline slack is 2 days.' WHERE thread_id=?",
+                (thread["thread_id"],),
+            )
+        self.chaser.approve(thread["thread_id"])
+        os.environ["CHASER_SENDER"] = "launch@registered.example"
+        with self.assertRaisesRegex(ValueError, "draft failed send guardrail"):
+            self.chaser.send(thread["thread_id"], "dry-run")
+
+    def test_escalation_ladder_is_persisted(self):
+        thread = self.chaser.draft(self.issue())
+        self.assertEqual(self.store.get_escalation(thread["thread_id"])["rung"], "R0")
+        parsed = self.chaser.parse_reply(
+            thread["thread_id"],
+            "We have a booking number AWB-12345 for 5000 pcs on 2026-11-22.",
+        )
+        self.assertEqual(parsed["commitment_score"], 3)
+        escalation = self.store.get_escalation(thread["thread_id"])
+        self.assertIn(escalation["rung"], {"R0", "R1", "R2", "R3", "R4"})
+        self.assertTrue(escalation["updated_at"])
+
 
 if __name__ == "__main__":
     unittest.main()

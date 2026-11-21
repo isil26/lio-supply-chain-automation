@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     draft.add_argument("--po", required=True)
     draft.add_argument("--need", required=True, dest="what_we_need")
     draft.add_argument("--deadline", default="2026-11-22T20:00:00+01:00")
-    draft.add_argument("--tone", choices=["reminder", "firm_request", "phone_call", "plan_b"])
+    draft.add_argument("--tone", choices=["reminder", "r1_document", "firm_request", "phone_call", "plan_b"])
     draft.add_argument("--max-price-premium-pct", type=float, default=0.0)
     draft.add_argument("--proposed-price-premium-pct", type=float, default=0.0)
 

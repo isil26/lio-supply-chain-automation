@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import re
 
 from .models import Issue
 
@@ -34,4 +35,15 @@ class Guardrails:
         lowered = body.lower()
         errors = [f"binding commitment phrase: {phrase}" for phrase in FORBIDDEN_COMMITMENTS
                   if phrase in lowered]
+        forbidden_disclosures = (
+            (r"\bdeadline\s+(?:slack|buffer)\b", "deadline slack"),
+            (r"\b(?:we|our)\s+(?:have|retain)\s+\d+\s*(?:hours?|days?)\s+(?:of\s+)?(?:slack|buffer)\b", "deadline slack"),
+            (r"\b(?:maximum|max(?:imum)?\s+price)\s+premium\b|\bpremium\s+(?:ceiling|cap|maximum|limit)\b", "maximum premium"),
+            (r"\b(?:we\s+can\s+(?:pay|offer)\s+(?:up\s+to|a\s+maximum)|maximum\s+(?:premium|price))\b", "maximum premium"),
+            (r"\bcost\s+(?:per|of)\s+(?:a\s+)?(?:missing|missed)\s+(?:copy|unit)\b", "cost per missing copy"),
+            (r"\b(?:walk[- ]?away|walkaway)\b|\balternative\s+suppliers?\b", "walkaway or alternative supplier"),
+        )
+        for pattern, label in forbidden_disclosures:
+            if re.search(pattern, lowered):
+                errors.append(f"draft reveals {label}")
         return GuardrailResult(not errors, tuple(errors))

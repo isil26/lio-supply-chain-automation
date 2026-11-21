@@ -54,6 +54,13 @@ class ChaserStore:
                     needs_human INTEGER NOT NULL,
                     created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS escalation_state (
+                    thread_id TEXT PRIMARY KEY REFERENCES threads(thread_id),
+                    rung TEXT NOT NULL,
+                    entered_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    next_action TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS action_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     thread_id TEXT,
@@ -71,6 +78,15 @@ class ChaserStore:
                     created_at TEXT NOT NULL
                 );
             """)
+            reply_columns = {
+                row[1] for row in db.execute("PRAGMA table_info(replies)").fetchall()
+            }
+            if "commitment_strength" not in reply_columns:
+                db.execute("ALTER TABLE replies ADD COLUMN commitment_strength TEXT")
+            if "commitment_score" not in reply_columns:
+                db.execute("ALTER TABLE replies ADD COLUMN commitment_score INTEGER")
+            if "what_to_ask_next" not in reply_columns:
+                db.execute("ALTER TABLE replies ADD COLUMN what_to_ask_next TEXT")
 
     def connect(self):
         db = sqlite3.connect(self.path)
@@ -115,9 +131,34 @@ class ChaserStore:
         with self.connect() as db:
             db.execute("""
                 INSERT INTO replies
-                    (reply_id,thread_id,raw_text,status,new_eta,quantity,confidence,needs_human,created_at)
-                VALUES (:reply_id,:thread_id,:raw_text,:status,:new_eta,:quantity,:confidence,:needs_human,:created_at)
+                    (reply_id,thread_id,raw_text,status,new_eta,quantity,confidence,needs_human,
+                     commitment_strength,commitment_score,what_to_ask_next,created_at)
+                VALUES (:reply_id,:thread_id,:raw_text,:status,:new_eta,:quantity,:confidence,:needs_human,
+                        :commitment_strength,:commitment_score,:what_to_ask_next,:created_at)
             """, payload)
+
+    def set_escalation(self, thread_id: str, rung: str, next_action: str, at: str) -> None:
+        with self.connect() as db:
+            existing = db.execute(
+                "SELECT entered_at FROM escalation_state WHERE thread_id=?", (thread_id,)
+            ).fetchone()
+            entered_at = existing["entered_at"] if existing else at
+            db.execute("""
+                INSERT INTO escalation_state
+                    (thread_id,rung,entered_at,updated_at,next_action)
+                VALUES (?,?,?,?,?)
+                ON CONFLICT(thread_id) DO UPDATE SET
+                    rung=excluded.rung,
+                    updated_at=excluded.updated_at,
+                    next_action=excluded.next_action
+            """, (thread_id, rung, entered_at, at, next_action))
+
+    def get_escalation(self, thread_id: str) -> dict | None:
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT * FROM escalation_state WHERE thread_id=?", (thread_id,)
+            ).fetchone()
+        return dict(row) if row else None
 
     def add_inbox(self, payload: dict) -> None:
         with self.connect() as db:

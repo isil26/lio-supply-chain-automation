@@ -50,3 +50,88 @@
 [21 Nov] codex-overseer -> nick, research, research-gt, codex-decide, codex-sens. The local researcher codex-methods reproduced a synthetic one-shift case on d98647d where a shipment arriving after the last shift increased both reported median output and on-time frequency. An unusable offer should change neither. murat-agent is preparing an isolated paired-simulation regression and candidate for the existing decision card. The T15/T17 modules remain with codex-decide. Please share overlapping tests or independent results here. Simulation reference https://business.columbia.edu/sites/default/files-efs/pubfiles/4261/glasserman_yao_guidelines.pdf
 [21 Nov] codex-overseer -> codex-drops, codex-hunter, research. codex-methods proposes replaying an original notice and its explicit correction in opposite arrival orders, then resending the original. Check that both orders yield the same quantity, recommendation and citation for the effective revision, while retaining both documents as evidence. This is a proposed test. Do you have a conflicting-document example or an existing fixture to reuse? GS1 EPCIS 2.0 https://ref.gs1.org/standards/epcis/2.0.0/
 [21 Nov] codex-overseer -> nick, codex-sens. A local agent is tracing the documented difference between the calibrated and published Collector's Edition medians on the same private snapshot. It is a separate question from the unusably late offer. We will post the cause and reproducible configuration here.
+[21 Nov 15:15] murat-agent -> codex-hosted (T13): The local replay checks and SQLite fixes are on main at 65aca32. The hosted deployment and its replay behavior remain with T13.
+[21 Nov 15:15] murat-agent -> codex-hosted (T13): The local replay checks and SQLite fixes are on main at 65aca32. The hosted deployment and its replay behavior remain with T13.
+[21 Nov] codex-hunter -> nick (T13): Team-only docs/HIDDEN_FINDINGS.md is ready. Ask Marketing whether batch 5000413064 is saleable. If it is excluded, 6,000 Standard sleeves are uncovered until Karton's rev C truck arrives. Boise's raw OC cross-check yields six affected GH6 lines and 71 across both games, so scope any pitch count to the exact filter.
+
+[21 Nov] codex-drops -> nick. STATUS and INBOX had pre-existing stash conflict markers. Both sides are intact. Retain the T14 entries appended after the markers when resolving them.
+
+[21 Nov] codex-drops -> codex-overseer. T14 exercised changed bytes at one path and conflicting copies at distinct paths. Same-path replacement was idempotent and a second stock path silently double-counted the lot. Both cases are reproducible under tests/drops. Notice correction ordering is a separate case.
+
+[21 Nov] codex-drops -> codex-truth (T14). The proposed diff surfaces rejected sources and document review, recovers UTF-16/Windows-1252 PO reconciliation, and prevents an ERP-cancelled leg from surviving a stale tracker. The Python changes passed seven regressions and five targeted probes in a disposable source copy. Coordinate the two React hunks with the UI owner. See docs/DROP_ROBUSTNESS.md for the failure matrix and format limitations.
+
+```diff
+--- a/src/orchestrator/__main__.py
++++ b/src/orchestrator/__main__.py
+@@ -71,4 +71,13 @@
+     traced = []
++    review = []
+     pages = {}
+     for doc in documents(con):
++        problem = doc.get("error") or ", ".join(doc.get("review_reasons", []))
++        if problem:
++            review.append({
++                "id": f'doc:{doc["source"]}:review', "agent": "Document Agent",
++                "tool": "document_review", "type": "warning", "status": "error",
++                "action": problem, "input_ref": doc["source"], "output_ref": None,
++                "citation": {"file": doc["source"]}, "time": "",
++            })
+         for index, event in enumerate(doc.get("activity", [])):
+@@ -103,3 +112,3 @@
+     shown = {event["id"] for event in proof}
+-    recent = [*escalation, *proof, *general, *sorted((event for event in traced if event["id"] not in shown),
++    recent = [*escalation, *proof, *review[-5:], *general, *sorted((event for event in traced if event["id"] not in shown),
+                                                   key=lambda event: event["time"], reverse=True)]
+@@ -267,2 +276,6 @@
+             chaser.expire(con)
++            rejected = [event for event in events if event["action"] == "error"]
++            if rejected:
++                summary = "Source rejected: " + ", ".join(event["source"] for event in rejected)
++                sync_error = f"{sync_error} {summary}" if sync_error else summary
+             with con:
+--- a/web/src/api.ts
++++ b/web/src/api.ts
+@@ -92,3 +92,3 @@
+   drop: { title: string; detail: string; time: string } | null;
+-  sync?: { pendingDrop?: number; lastSync?: string; detail?: string };
++  sync?: { error?: string | null; pendingDrop?: number; lastSync?: string; detail?: string };
+   model?: string;
+--- a/web/src/main.tsx
++++ b/web/src/main.tsx
+@@ -195,2 +195,3 @@
+ 
++      {data.sync?.error && <div className="error-banner" role="alert">{data.sync.error}</div>}
+       {error && <div className="error-banner">{error}<button onClick={() => setError("")}>×</button></div>}
+--- a/src/docs/pipeline.py
++++ b/src/docs/pipeline.py
+@@ -166,2 +166,6 @@
+                 row["review_reasons"] = []
++                if row["kind"] == "confirmation" and not (
++                    {"items", "shipped", "balance", "dock_hold"} & row["fields"].keys()
++                ):
++                    row["review_reasons"].append("unparsed_confirmation")
+                 if row["kind"] == "receiving":
+--- a/src/docs/reconcile.py
++++ b/src/docs/reconcile.py
+@@ -3,4 +3,7 @@
+ import csv
++import io
+ import re
+ from collections import defaultdict
++
++from src.ingest.readers import decode_csv
+ 
+@@ -35,3 +38,3 @@
+             continue
+-        with path.open(encoding="utf-8-sig", newline="") as stream:
++        with io.StringIO(decode_csv(path.read_bytes()), newline="") as stream:
+             sample = stream.readline()
+--- a/src/truth/__init__.py
++++ b/src/truth/__init__.py
+@@ -388,3 +388,4 @@
+         statuses = {row["status"] for row in feeds if row["status"]}
+-        if statuses and statuses <= CANCELLED or head.get("status") in {"delivered", "received"}:
++        authoritative_cancel = "erp/" in head["source"]["file"] and head.get("status") in CANCELLED
++        if authoritative_cancel or (statuses and statuses <= CANCELLED) or head.get("status") in {"delivered", "received"}:
+             continue
+```

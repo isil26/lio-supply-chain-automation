@@ -46,5 +46,31 @@ class DeterministicFakeLLM:
         else:
             confidence = 0.85 if status in {"shipped", "confirmed", "delayed", "blocked"} else 0.45
         needs_human = status in {"blocked", "delayed", "needs_clarification", "unconfirmed"} or confidence < 0.6
+
+        document_ref = re.search(
+            r"\b(?:booking(?:\s+(?:number|no\.?|reference))?|packing\s+list|bill\s+of\s+lading|"
+            r"awb|air\s+waybill|forwarder(?:\s+release)?|truck\s+(?:plate|slot)|"
+            r"pallet(?:\s+label)?|lot\s+(?:number|id)|reference\s+(?:number|no\.?))\b",
+            lowered,
+        )
+        if document_ref:
+            commitment_strength = "document_or_booking_reference"
+            commitment_score = 3
+            what_to_ask_next = "No further supplier evidence is needed; route the reference for verification."
+        elif new_eta and quantity is not None:
+            commitment_strength = "date_and_quantity"
+            commitment_score = 2
+            what_to_ask_next = "Ask for the packing list or booking reference to verify the commitment."
+        elif new_eta:
+            commitment_strength = "date_only"
+            commitment_score = 1
+            what_to_ask_next = "Ask for the confirmed per-lot quantity and a packing list or booking reference."
+        else:
+            commitment_strength = "none"
+            commitment_score = 0
+            what_to_ask_next = "Ask for a confirmed quantity, ETA, and verifiable document or booking reference."
         return ReplyParse(status=status, new_eta=new_eta, quantity=quantity,
-                          confidence=confidence, needs_human=needs_human)
+                          confidence=confidence, needs_human=needs_human,
+                          commitment_strength=commitment_strength,
+                          commitment_score=commitment_score,
+                          what_to_ask_next=what_to_ask_next)

@@ -53,3 +53,6 @@ class ReplyParse:
     quantity: int | None
     confidence: float
     needs_human: bool
+    commitment_strength: str = "none"
+    commitment_score: int = 0
+    what_to_ask_next: str = "Ask for a confirmed quantity and ETA."
