@@ -17,6 +17,7 @@ import { AgentGraph } from "./agents/AgentGraph";
 import { BestSupplier } from "./suppliers/BestSupplier";
 import { MantiLogo, SupplyMap } from "./SupplyMap";
 import { BehindScenes } from "./BehindScenes";
+import { ArrivalTimeline } from "./ArrivalTimeline";
 import "./styles.css";
 
 const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon" | "sun" | "check" | "arrow" }) => {
@@ -148,6 +149,13 @@ function App() {
     .reduce<typeof data.approval>((best, option) => copiesSaved(option) > copiesSaved(best) ? option : best, null);
   const approval = bestOption && copiesSaved(bestOption) > 0 ? bestOption : data.approval;
   const saved = copiesSaved(approval);
+  // Euro view at finished-goods standard cost (products.csv); lost sales per copy are higher and still unknown.
+  const costOf = (pid?: string) => data.readiness.find((row) => row.productId === pid)?.stdCostEur ?? null;
+  const shortEur = data.readiness.every((row) => row.stdCostEur != null)
+    ? data.readiness.reduce((sum, row) => sum + Math.max(0, row.target - (row.p50 ?? row.packed)) * (row.stdCostEur ?? 0), 0) : null;
+  const savedEur = Object.entries(approval?.modeled_impact ?? {}).reduce<number | null>((sum, [pid, edition]) =>
+    sum == null || costOf(pid) == null ? null : sum + Math.max(0, edition.medianDelta ?? 0) * (costOf(pid) ?? 0), 0);
+  const euro = (n: number) => n >= 1e6 ? `€${(n / 1e6).toFixed(1)}M` : `€${Math.round(n / 1000)}k`;
   const timing = approval?.supplier_timing;
   const expedite = approval?.expedite;
   const grid = expedite?.sensitivity[0];
@@ -289,6 +297,7 @@ function App() {
 
       <section className="hero">
         <h2>{onTrack ? "On track for Sunday" : <><span className="big-number">{formatNumber(totalShort)}</span> copies short on Sunday</>}</h2>
+        {!onTrack && shortEur != null && <p className="hero-eur">≈ {euro(shortEur)} of games that cannot ship <span>(at standard cost)</span></p>}
         {!onTrack && saved > 0 && <p className="hero-save">One action can save <strong>{formatNumber(Math.min(saved, totalShort))}</strong> of them <span aria-hidden="true">→</span> <a href="#next-step">{approval?.title}</a></p>}
         <div className="editions">
           {editions.map((item) => <div className="edition" key={item.edition}>
@@ -301,6 +310,8 @@ function App() {
         </div>
         <p className="legend"><i className="dot packed"/>packed <i className="dot expected"/>expected by Sunday <i className="dot track"/>missing</p>
       </section>
+
+      {data.inboundTimeline && <ArrivalTimeline timeline={data.inboundTimeline}/>}
 
       <div className="columns">
         <section className="card">
@@ -321,6 +332,7 @@ function App() {
           {approval ? <>
             <p className="decision-title">{approval.title}</p>
             {saved > 0 && <p className="price">+{formatNumber(saved)} <span className="price-unit">copies</span></p>}
+            {saved > 0 && savedEur != null && savedEur > 0 && <p className="saved-eur">≈ {euro(savedEur)} of games ship that otherwise would not</p>}
             {approval.price != null && (saved > 0 ? <p className="muted">€{Math.round(approval.price).toLocaleString("en-US")}</p> : <p className="price">€{Math.round(approval.price).toLocaleString("en-US")}</p>)}
             {approval.price == null && saved > 0 && <p className="muted small-text">Approver: {approval.owner}</p>}
             {!hostedReplayBuild && <div className="actions">
@@ -337,7 +349,7 @@ function App() {
         </section>
       </div>
 
-      <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource}/>
+      <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>
 
       {!hostedReplayBuild && <BestSupplier/>}
 
@@ -431,7 +443,7 @@ function App() {
         <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>
       </details>
     </section>
-    {behind && <BehindScenes activity={data.activity} recording={data.recordedAgentRun} onClose={() => setBehind(false)} onEvidence={setSource}/>}
+    {behind && <BehindScenes activity={data.activity} recording={data.recordedAgentRun} autoSend={data.autoSend} onClose={() => setBehind(false)} onEvidence={setSource}/>}
     {source && <EvidenceModal source={source} onClose={() => setSource(null)}/>}
   </main>;
 }

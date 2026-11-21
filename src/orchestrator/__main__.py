@@ -11,7 +11,7 @@ import sys
 import threading
 import time
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from email.utils import make_msgid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -151,6 +151,32 @@ def supplier_option_block(option, constraints):
     return None
 
 
+def std_costs(con):
+    """Finished-goods standard cost per product (products.csv), for the euro view of the gap."""
+    if not con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'products'").fetchone():
+        return {}
+    return {pid: cost for pid, cost in con.execute("SELECT product_id, std_cost_eur FROM products") if cost is not None}
+
+
+def inbound_timeline(truth):
+    """Inbound lots of the part that stops packing first, with the modelled handling delay, for the arrival timeline."""
+    binding = {row.get("first_stop") for row in truth["editions"].values()} - {None}
+    deadline = datetime.fromisoformat(truth["deadline"])
+    lags = truth.get("model", {}).get("lag_hours", {})
+    lots = []
+    for lot in truth.get("inbound", []):
+        if lot.get("material") not in binding or not lot.get("quantity") or not lot.get("earliest"):
+            continue
+        earliest = datetime.fromisoformat(lot["earliest"])
+        if earliest > deadline + timedelta(days=2):
+            continue
+        lots.append({"id": lot["id"], "reference": lot.get("reference"), "material": lot["material"],
+                     "label": truth["parts"].get(lot["material"], {}).get("label"), "quantity": lot["quantity"],
+                     "mode": lot.get("mode"), "earliest": lot["earliest"], "held": bool(lot.get("held")),
+                     "lagHours": lags.get(lot.get("mode"))})
+    return {"deadline": truth["deadline"], "lots": sorted(lots, key=lambda lot: lot["earliest"])}
+
+
 def dashboard(con):
     # Keep the risks, options and banner on the same published replay snapshot.
     snapshot = {row["key"]: json.loads(row["value"]) for row in con.execute(
@@ -217,13 +243,16 @@ def dashboard(con):
               "needsReview": len({review["file"] for review in [*reviews, *sync.get("warnings", [])]}),
               "errors": len(errors) + int(sync.get("failed", False)),
               "lastSyncAgeSeconds": max(0, int((datetime.now(timezone.utc) - last_sync).total_seconds())) if last_sync else None}
+    costs = std_costs(con)
     return {
         "launch": {"name": truth["name"].strip(" -–•"), "deadline": truth["deadline"], "location": truth["site"]},
         "readiness": [{"edition": "CE" if pid.endswith("-CE") else "STD", "percent": round(row["packed"] / row["target"] * 100, 1),
                        "packed": row["packed"], "target": row["target"], "probability": row["probability"], "p50": row["p50"],
                        "p10": row["p10"], "p90": row["p90"], "firstStop": truth["parts"].get(row["first_stop"], {}).get("label"),
-                       "status": "At risk" if row["probability"] < .8 else "On track", "tone": "red" if row["probability"] < .3 else "amber"}
+                       "status": "At risk" if row["probability"] < .8 else "On track", "tone": "red" if row["probability"] < .3 else "amber",
+                       "productId": pid, "stdCostEur": costs.get(pid)}
                       for pid, row in truth["editions"].items()],
+        "inboundTimeline": inbound_timeline(truth),
         "risks": risks, "activity": dashboard_activity(con, blocked, clock, docs=docs, reviews=reviews), "documentReviews": reviews,
         "threads": [{**thread, "initials": "".join(word[0] for word in thread["supplier"].split()[:2]),
                      "messages": [dict(msg, timestamp=msg["time"], time=clock(msg["time"])) for msg in thread["messages"]]}
@@ -466,6 +495,9 @@ def handler(loop):
                         return self.out(health)
                     if path == "/api/dashboard":
                         value = dashboard(con)
+                        if value is not None:
+                            from src.chaser import autosend
+                            value["autoSend"] = autosend.enabled(loop.args.demo)
                         if value is not None and loop.agents:
                             value["agents"] = {
                                 "enabled": loop.agents.enabled,
