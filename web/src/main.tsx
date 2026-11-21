@@ -143,18 +143,19 @@ function App() {
   if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
   // Next step = the open option that saves the most copies in the forecast; falls back to the backend's pick.
-  const copiesSaved = (option: { modeled_impact?: Record<string, { medianDelta?: number }> } | null | undefined) =>
-    Object.values(option?.modeled_impact ?? {}).reduce((sum, edition) => sum + Math.max(0, edition.medianDelta ?? 0), 0);
+  const copiesSaved = (option: { modeled_impact?: Record<string, { medianDelta?: number; expectedDelta?: number }> } | null | undefined) =>
+    Math.round(Object.values(option?.modeled_impact ?? {}).reduce((sum, edition) => sum + Math.max(0, edition.expectedDelta ?? edition.medianDelta ?? 0), 0));
   const bestOption = (data.options ?? []).filter((option) => option.status !== "blocked")
     .reduce<typeof data.approval>((best, option) => copiesSaved(option) > copiesSaved(best) ? option : best, null);
   const approval = bestOption && copiesSaved(bestOption) > 0 ? bestOption : data.approval;
   const saved = copiesSaved(approval);
-  // Euro view at finished-goods standard cost (products.csv); lost sales per copy are higher and still unknown.
-  const costOf = (pid?: string) => data.readiness.find((row) => row.productId === pid)?.stdCostEur ?? null;
-  const shortEur = data.readiness.every((row) => row.stdCostEur != null)
-    ? data.readiness.reduce((sum, row) => sum + Math.max(0, row.target - (row.p50 ?? row.packed)) * (row.stdCostEur ?? 0), 0) : null;
+  // Euro view: what Soony says a missed copy costs (config/customer_inputs.json, Dr. Vogt); else finished-goods standard cost.
+  const useMiss = data.readiness.every((row) => row.missCostEur != null);
+  const costOf = (pid?: string) => { const row = data.readiness.find((r) => r.productId === pid); return (useMiss ? row?.missCostEur : row?.stdCostEur) ?? null; };
+  const shortEur = data.readiness.every((row) => costOf(row.productId) != null)
+    ? data.readiness.reduce((sum, row) => sum + Math.max(0, row.target - (row.p50 ?? row.packed)) * (costOf(row.productId) ?? 0), 0) : null;
   const savedEur = Object.entries(approval?.modeled_impact ?? {}).reduce<number | null>((sum, [pid, edition]) =>
-    sum == null || costOf(pid) == null ? null : sum + Math.max(0, edition.medianDelta ?? 0) * (costOf(pid) ?? 0), 0);
+    sum == null || costOf(pid) == null ? null : sum + Math.max(0, edition.expectedDelta ?? edition.medianDelta ?? 0) * (costOf(pid) ?? 0), 0);
   const euro = (n: number) => n >= 1e6 ? `€${(n / 1e6).toFixed(1)}M` : `€${Math.round(n / 1000)}k`;
   const timing = approval?.supplier_timing;
   const expedite = approval?.expedite;
@@ -297,7 +298,7 @@ function App() {
 
       <section className="hero">
         <h2>{onTrack ? "On track for Sunday" : <><span className="big-number">{formatNumber(totalShort)}</span> copies short on Sunday</>}</h2>
-        {!onTrack && shortEur != null && <p className="hero-eur">≈ {euro(shortEur)} of games that cannot ship <span>(at standard cost)</span></p>}
+        {!onTrack && shortEur != null && <p className="hero-eur">≈ {euro(shortEur)} at stake <span>{useMiss ? `(Soony's numbers: ${data.readiness.map((r) => `€${r.missCostEur} per ${r.edition === "CE" ? "Collector's" : "Standard"} copy`).join(", ")})` : "(at standard cost)"}</span></p>}
         {!onTrack && saved > 0 && <p className="hero-save">One action can save <strong>{formatNumber(Math.min(saved, totalShort))}</strong> of them <span aria-hidden="true">→</span> <a href="#next-step">{approval?.title}</a></p>}
         <div className="editions">
           {editions.map((item) => <div className="edition" key={item.edition}>
@@ -332,7 +333,7 @@ function App() {
           {approval ? <>
             <p className="decision-title">{approval.title}</p>
             {saved > 0 && <p className="price">+{formatNumber(saved)} <span className="price-unit">copies</span></p>}
-            {saved > 0 && savedEur != null && savedEur > 0 && <p className="saved-eur">≈ {euro(savedEur)} of games ship that otherwise would not</p>}
+            {saved > 0 && savedEur != null && savedEur > 0 && <p className="saved-eur">≈ {euro(savedEur)} saved{useMiss ? "" : " at standard cost"}</p>}
             {approval.price != null && (saved > 0 ? <p className="muted">€{Math.round(approval.price).toLocaleString("en-US")}</p> : <p className="price">€{Math.round(approval.price).toLocaleString("en-US")}</p>)}
             {approval.price == null && saved > 0 && <p className="muted small-text">Approver: {approval.owner}</p>}
             {!hostedReplayBuild && <div className="actions">

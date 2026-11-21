@@ -25,6 +25,8 @@ export type Readiness = {
   tone: "amber" | "red";
   productId?: string;
   stdCostEur?: number | null;
+  missCostEur?: number | null;
+  missCostConfirmed?: boolean | null;
 };
 
 export type Risk = {
