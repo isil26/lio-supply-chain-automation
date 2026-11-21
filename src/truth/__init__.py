@@ -268,10 +268,7 @@ def readiness(con, data_root):
                     stock_adjustments[part].append({"edition": editions[pid]["edition"], "units": units * amount,
                                                     "copies": units, "source": status_rows[pid]["source"]})
         for part in stock_adjustments:
-            total = sum(item["units"] for item in stock_adjustments[part])
             stock_sources[part].extend(item["source"] for item in stock_adjustments[part])
-            if part in {"CMP-GAM-001", "CMP-GAM-004", "CMP-GAM-008", "CMP-GAM-010", "CMP-GAM-003"}:
-                continue
         issue(f'Stock snapshot {snapshot} predates the copies packed since ({sum(consumed.values()):,}); parts consumed '
               f'were deducted from usable stock for {len(stock_adjustments)} components', None,
               [status_rows[pid]["source"] for pid in consumed][:1], "watch", "stock_consumption",
@@ -400,6 +397,34 @@ def readiness(con, data_root):
                       [erp["source"], entry["citation"], *field_sources(doc, "incoterm")], "high", "confirmation",
                       po=po, po_line=erp["po_line"], changed_fields=changed_fields)
 
+    # ECN with "must not be packed": received lots to the old revision are not usable stock.
+    revision_hold, old_revision_suppliers = {}, defaultdict(set)
+    from src.decide.release_gate import _revision_applies
+    for ecn in ecns:
+        part, old = ecn["child_id"], (ecn["rev_old"] or "").upper()
+        if (ecn["action"] or "") != "revision" or ecn["use_up_old_rev"] or not old:
+            continue
+        for doc in docs:
+            if doc["kind"] != "confirmation" or not doc["fields"].get("revision") or not doc.get("supplier_id"):
+                continue
+            if _revision_applies(doc, part, tab["po"]) and any(
+                    str(item["value"]).upper() == old for item in doc["fields"]["revision"]):
+                old_revision_suppliers[part].add(doc["supplier_id"])
+        lots = [batch for gr, batch in batches.items() if batch["material_id"] == part
+                and receipt_by_id.get(gr, {}).get("supplier_id") in old_revision_suppliers[part]]
+        held = sum(batch["quantity"] for batch in lots)
+        if old_revision_suppliers[part]:
+            evidence = [ecn["source"], *[batch["source"] for batch in lots],
+                        *[receipt_by_id[batch["batch"]]["source"] for batch in lots if batch["batch"] in receipt_by_id]]
+            available[part] -= held
+            stock_sources[part].extend(evidence)
+            revision_hold[part] = {"ecn": ecn["change_id"], "old_revision": old, "new_revision": ecn["rev_new"],
+                                   "quantity": int(held), "suppliers": sorted(old_revision_suppliers[part]),
+                                   "reason": ecn["reason"], "evidence": evidence}
+            issue(f'{ecn["change_id"]}: {int(held):,} {part} rev {old} pieces in stock are not usable (rev {ecn["rev_new"]} released); '
+                  f'{ecn["reason"]}', part, evidence, "critical", "revision_hold", quantity=int(held),
+                  supplier=", ".join(sorted(old_revision_suppliers[part])))
+
     # Post-snapshot SAP postings are incremental, provided the same receipt was not already represented by a batch.
     for receipt in receipt_by_id.values():
         if snapshot < receipt["gr_date"] <= launch_date and receipt["gr_number"] not in batches:
@@ -456,11 +481,27 @@ def readiness(con, data_root):
                         "mode": head.get("mode") or plan_row.get("mode") or "road", "eta": head.get("eta"),
                         "earliest": eta, "held": bool(hold), "supplier": head.get("supplier_id"), "evidence": evidence})
 
+    for item in inbound:
+        if item["supplier"] in old_revision_suppliers.get(item["material"], ()):
+            if item["quantity"] <= 0:
+                continue
+            item["held"] = True
+            item["rev_hold"] = revision_hold[item["material"]]["ecn"]
+            issue(f'{item["reference"]}: {item["quantity"]:,.0f} {item["material"]} to rev {revision_hold[item["material"]]["old_revision"]} '
+                  f'must not be accepted ({revision_hold[item["material"]]["ecn"]})', item["material"], item["evidence"],
+                  "high", "revision_hold_inbound", supplier=item["supplier"])
+
     required = defaultdict(float)
     for pid, items in needs.items():
         for part, amount in items.items():
             required[part] += editions[pid]["remaining"] * amount
     meta = {row["component_id"]: row for row in tab["component"]}
+    critical, drawing_rev = {}, {}
+    for row in tab["component_change"]:
+        if row["field"] == "critical":
+            critical[row["component_id"]] = (row["new"] or "").strip().upper() in {"Y", "YES", "TRUE", "1"}
+        elif row["field"] == "drawing_rev" and row["new"]:
+            drawing_rev[row["component_id"]] = row["new"]
     parts = {}
     for part, demand in required.items():
         candidates = qualified[part]
@@ -489,8 +530,30 @@ def readiness(con, data_root):
             "shortfall": int(max(0, demand - material_stock - by_launch)),
             "per_edition": {pid: int(recipe[part] * editions[pid]["remaining"]) for pid, recipe in needs.items() if part in recipe},
             "suppliers": candidates, "evidence": [*evidence, *[src for item in passing for src in item["evidence"]]],
-            "embedded_in": bundled_with[0] if bundled_with else None, "unit_usage": {pid: recipe[part] for pid, recipe in needs.items() if part in recipe},
+            "embedded_in": bundled_with[0] if bundled_with else None,
+            "critical": critical.get(part, meta.get(part, {}).get("critical")),
+            "drawing_rev": drawing_rev.get(part, meta.get(part, {}).get("drawing_rev")),
+            "consumed_since_snapshot": sum(item["units"] for item in stock_adjustments.get(part, [])),
+            "revision_hold": revision_hold.get(part),
+            "ecn": [{"change_id": row["change_id"], "old": row["rev_old"], "new": row["rev_new"],
+                     "use_up_old_rev": bool(row["use_up_old_rev"]), "effective_from": row["effective_from"],
+                     "source": row["source"]} for row in ecns if row["child_id"] == part], "unit_usage": {pid: recipe[part] for pid, recipe in needs.items() if part in recipe},
         }
+    for supplier in suppliers.values():
+        until = supplier.get("qualification_valid_until")
+        if (until and until < launch_date and (supplier.get("qualification_status") or "") == "conditional"
+                and not supplier.get("qualification_extended_by")):
+            for part in sorted({row["component_id"] for row in tab["supply"] if row["supplier_id"] == supplier["supplier_id"]} & parts.keys()):
+                issue(f'{supplier["name"]}: conditional qualification expired {until} and was not extended. '
+                      f'POs after expiry are held awaiting approval (PP-07 section 5)', part,
+                      [supplier["source"], *stock_sources[part][:0]], "high", "qualification_expired",
+                      supplier=supplier["supplier_id"], valid_until=until)
+    for row in tab["supply_change"]:
+        if row["action"] == "flag" and row["component_id"] in parts | embedded.keys():
+            issue(f'{row["supplier_id"]} flag on {row["component_id"]}: ' + (row["note"] or "") +
+                  (f' (lead time {row["lead_time_days_old"]} -> {row["lead_time_days_new"]} days)'
+                   if row["lead_time_days_new"] else ""), row["component_id"], [row["source"]],
+                  "watch", "supplier_flag", supplier=row["supplier_id"], post_launch=True)
     forecast = simulate(editions, independent, available, inbound, shifts)
     alternatives = simulate(editions, independent, available, inbound, shifts, mode="std_first")
     for pid in forecast:
