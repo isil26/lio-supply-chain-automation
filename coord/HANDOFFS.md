@@ -1,5 +1,11 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T46 — Guard harness and golden evals (copilot-harness)
+
+- Added `src/agents/harness.py` with pure-Python numeric grounding, citation, PP-07 policy, stop/oscillation and supplier-language guards; `evaluate()` returns an aggregate report.
+- Added six golden scenarios under `tests/agent_eval/scenarios/` and `python3 tests/agent_eval/run_eval.py --fake` for the markdown report at `docs/AGENT_EVAL.md`. Live mode is available with `SOONY_AGENT_MODE=live` or `--live`, capped at five runs.
+- Added `tests/test_agents_harness.py`; all 7 focused tests pass. Fake golden eval passes all 6 scenarios, including proving that unapproved send and hallucinated-number cases are caught.
+
 ## T40 — Multi-agent team (copilot-agents)
 
 - Added `src/agents/team.py` and `src/agents/prompts.py`: Triage delegates at most 3 rounds to Analyst, Verifier, Planner and Chaser; each specialist has a closed role whitelist and the existing runtime/schema gates remain enforced.

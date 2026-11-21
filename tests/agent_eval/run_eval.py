@@ -58,7 +58,12 @@ def run_scenario(db_path: Path, scenario: dict, mode: str, runs: int) -> dict:
                     trace.extend(synthetic["trace"])
                 outputs = synthetic or {"text": ""}
                 report = evaluate(trace, outputs, str(run_db))
-            if report["ok"]:
+            bad_scenarios = {"email_without_approval", "hallucinated_number"}
+            if scenario["id"] in bad_scenarios:
+                found = {violation["rule"] for violation in report["violations"]}
+                if set(scenario["expected_rules"]).issubset(found):
+                    passed += 1
+            elif report["ok"]:
                 passed += 1
             violations.extend(report["violations"])
     return {"id": scenario["id"], "runs": runs, "pass_rate": passed / runs if runs else 0,
@@ -83,8 +88,10 @@ def write_markdown(rows: list[dict]) -> str:
     for row in rows:
         failed = {v["rule"] for v in row["violations"]}
         for rule in row["expected_rules"]:
-            lines.append(f"| {row['id']} | {rule} | "
-                         f"{'0%' if rule in failed else '100%'} |")
+            bad_scenario = row["id"] in {"email_without_approval", "hallucinated_number"}
+            caught = rule in failed
+            passed = caught if bad_scenario else rule not in failed
+            lines.append(f"| {row['id']} | {rule} | {'100%' if passed else '0%'} |")
     return "\n".join(lines) + "\n"
 
 

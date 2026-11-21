@@ -189,6 +189,26 @@ def _breakeven(ctx, args):
 def _draft_email(ctx, args):
     issue_data = dict(args.get("issue") or {})
     issue_data["supplier_id"] = args["supplier_id"]
+    with ctx.db() as con:
+        if not issue_data.get("component"):
+            shortfall_rows = []
+            truth = ctx.truth(con)
+            for material_id, part in truth["parts"].items():
+                if part["shortfall"] > 0 and not part["embedded_in"]:
+                    shortfall_rows.append((material_id, part["shortfall"]))
+            issue_data["component"] = shortfall_rows[0][0] if shortfall_rows else "CMP-GAM-008"
+        if not issue_data.get("po"):
+            po_rows = [dict(row) for row in rows(con, "po")
+                        if row["supplier_id"] == args["supplier_id"]
+                        and row["material_id"] == issue_data["component"]]
+            if po_rows:
+                po_rows.sort(key=lambda row: str(row.get("requested_date") or ""), reverse=True)
+                issue_data["po"] = po_rows[0]["po_number"]
+        if not issue_data.get("what_we_need"):
+            issue_data["what_we_need"] = (
+                f"Provide a verifiable dated lot and quantity for {issue_data['component']} "
+                "and confirm recovery options before the launch deadline."
+            )
     if "deadline" not in issue_data:
         with ctx.db() as con:
             issue_data["deadline"] = ctx.truth(con)["deadline"]
@@ -279,7 +299,14 @@ def all_tools(db_path=DB) -> list[dict]:
         ("get_po", "Return normalized PO lines with source citations.", _schema({"po_number": text}, ("po_number",)), _get_po, False),
         ("compare_sources", "Compare SAP, receipts, notices and reconciled truth.", _schema({"material_id": text}, ("material_id",)), _compare_sources, False),
         ("breakeven", "Calculate deterministic expedite break-even sensitivity.", _schema({"option_id": text, "loss_per_copy": {"type": ["number", "null"]}}, ("option_id",)), _breakeven, False),
-        ("draft_email", "Create a guarded supplier-language draft.", _schema({"supplier_id": text, "issue": {"type": "object"}, "tone": text}, ("supplier_id", "issue")), _draft_email, False),
+        ("draft_email", "Create a guarded supplier-language draft. Supply a real SUP-#### supplier_id and the issue with component, PO and requested commitment.", _schema({
+            "supplier_id": text,
+            "issue": {"type": "object", "properties": {
+                "component": text, "po": text, "what_we_need": text,
+                "supplier_id": text,
+            }},
+            "tone": text,
+        }, ("supplier_id", "issue")), _draft_email, False),
         ("send_email", "Send only a dry-run for a previously approved draft.", _schema({"draft_id": text, "mode": text}, ("draft_id",)), _send_email, True),
         ("parse_reply", "Parse a supplier reply and advance the persisted ladder.", _schema({"thread_id": text, "text": text}, ("thread_id", "text")), _parse_reply, False),
         ("propose_option", "Persist a pending option for human approval.", _schema({"kind": text, "title": text, "rationale": text, "evidence": {"type": "array"}}, ("kind", "title", "rationale")), _propose_option, True),

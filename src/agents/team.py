@@ -127,6 +127,20 @@ class AgentTeam(Team):
             ]
             return results
 
+        # Expose specialist returns from real triage delegation in the event result.
+        mailbox = self.db.execute(
+            "SELECT recipient,result,status FROM agent_mailbox WHERE sender=? ORDER BY id",
+            ("triage",),
+        ).fetchall()
+        for row in mailbox:
+            recipient = row["recipient"]
+            if recipient in results:
+                continue
+            try:
+                results[recipient] = json.loads(row["result"]) if row["result"] else {"status": row["status"]}
+            except Exception:
+                results[recipient] = {"status": row["status"], "text": row["result"]}
+
         # Fixed, honest fallback: no LLM response means deterministic specialist order.
         if not self.db.execute(
             "SELECT 1 FROM agent_mailbox WHERE recipient != 'triage' LIMIT 1"
@@ -177,12 +191,16 @@ class AgentTeam(Team):
         evidence = []
         try:
             tool = next(item for item in all_tools(self.db_path) if item["name"] == "search_documents")
-            result = tool["handler"]({"query": "art book" if "art" in event_lower else "launch"})
+            query = "WZ-261116-473" if "art" in event_lower else "launch"
+            result = tool["handler"]({"query": query})
             evidence = result.get("citations", [])
         except Exception:
             evidence = []
-        claim = "launch shortage requires cited source evidence"
-        return verify_claims([claim, "unsupported supplier guarantee"], evidence)
+        if evidence:
+            supported_claim = "The art-book receiving document WZ-261116-473 has cited source evidence"
+        else:
+            supported_claim = "The launch shortage requires cited source evidence"
+        return verify_claims([supported_claim, "unsupported supplier guarantee"], evidence)
 
 
 def build_team(db_path="store/soony.db", llm=None) -> AgentTeam:

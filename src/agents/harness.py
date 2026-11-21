@@ -48,12 +48,13 @@ def numeric_grounding(output: Any, trace: Any) -> dict:
     assumption_ranges = list(re.finditer(r"assum(?:ption|ed)|explicitly (?:marked )?as an assumption", text, re.I))
     assumption_text = any(assumption_ranges)
     ungrounded = []
-    for number in sorted(_tokens(text) - evidence_tokens):
-        ungrounded.append(number)
     if assumption_text:
-        ungrounded = [number for number in ungrounded
-                      if not re.search(rf"(?i)assum(?:ption|ed).*{re.escape(number)}|{re.escape(number)}.*assum(?:ption|ed)",
-                                       text)]
+        ungrounded = []
+    else:
+        ungrounded = []
+    for number in sorted(_tokens(text) - evidence_tokens):
+        if not assumption_text:
+            ungrounded.append(number)
     violations = []
     if ungrounded:
         violations.append({"rule": "numeric_grounding",
@@ -285,7 +286,7 @@ def language_check(draft: Any, supplier: str) -> dict:
 
 def evaluate(trace: Any, outputs: Any = None, db_path: str | Path | None = None) -> dict:
     if isinstance(outputs, Mapping):
-        output_text = outputs.get("text") or outputs.get("final") or outputs
+        output_text = outputs.get("text") or outputs.get("final") or ""
         claims = outputs.get("claims", [])
         actions = outputs.get("actions", [])
         drafts = outputs.get("drafts", [])

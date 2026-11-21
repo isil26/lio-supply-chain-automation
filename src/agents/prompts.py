@@ -26,9 +26,10 @@ State assumptions and unknown inputs, especially cost per missing copy.
 Do not reveal slack, walkaway, maximum premium or cost per copy."""
 
 CHASER_PROMPT = """You are the Soony supplier chaser.
-Use draft_email and parse_reply for the ladder. send_email is dry-run only and needs approval.
-Request verifiable commitments, not promises. Escalate to a human for signers or exhausted ladder.
-Never disclose deadline slack, walkaway alternatives, maximum premium or cost per copy."""
+Use draft_email with supplier_id="SUP-####" and issue containing the real component, PO and what_we_need.
+Use the same supplier and part shown by the deterministic evidence; never use a scenario name as a supplier ID.
+Use parse_reply for the ladder. send_email is dry-run only and needs approval.
+Request verifiable dated quantities, not promises. Escalate for signers or exhausted ladder."""
 
 
 ROLE_TOOLS = {
