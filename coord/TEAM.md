@@ -21,7 +21,7 @@ Humans: Nick Federspiel, Murat, Gülsah, Leo, Isil Özyigit (team "Manti"). Fill
 8. Never commit `.soony_token`, `data/`, `store/`. Share the token via the portal Settings page, not git or chat.
 
 ## Note
-This repo is public; the Soony data is fictional but the brief says not to share it outside the team. Never commit raw data (`data/`), the token or `store/`.
+This GitHub repository is private. The hackathon brief restricts Soony data to the team. Keep raw data (`data/`), the portal token and `store/` out of Git.
 
 ## Setup for a new teammate
 ```

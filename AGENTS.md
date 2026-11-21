@@ -4,7 +4,7 @@ Project: START Hack Munich 2026, Lio challenge "Keep the Line Running". We build
 
 ## Before you start (mandatory, in order)
 1. Read `coord/STATUS.md` (who is doing what right now) and `coord/TASKS.md` (the board).
-2. Read `FINDINGS.md` (data discoveries; VERIFIED vs AGENT-reported) and `CODEX_TASKS.md` (task specs T1-T8). These two files are NOT in git because they contain hackathon data details (repo is public): get them from the team's private channel and put them in `private/`.
+2. Read `FINDINGS.md` (data discoveries; VERIFIED vs AGENT-reported) and `CODEX_TASKS.md` (task specs T1-T8). These two files contain hackathon data details. Get them from the team's private channel and put them in `private/`.
 3. Read `coord/RESEARCH_INDEX.md` before ANY research (what is done, in progress, and known gaps) and `coord/DECISIONS.md` (architecture and contracts you must respect).
 4. **Claim your task** in `coord/TASKS.md` (set owner + status `in_progress`) and add a line to `coord/STATUS.md` BEFORE writing code. Only touch the directories you own.
 
@@ -39,7 +39,7 @@ Every agent has a unique name and uses it everywhere: the Owner/Agent column in 
   - On a conflict, keep both sides and ask the owner in `coord/INBOX.md`. Never force-push, never rewrite history, never revert others' commits.
 
 ## Hard rules
-- Never commit or print `.soony_token`, `data/`, `store/`, or any secret. Data is for this hackathon only.
+- The shared Vercel dashboard password is approved for tracking in this private repository. Collaborators and their agents can use [`deploy/vercel/team-password.txt`](deploy/vercel/team-password.txt) to sign in. Keep all other secrets, `.soony_token`, `data/`, and `store/` out of Git and logs. Data is for this hackathon only.
 - Never hardcode answers; derive everything from files in `data/` (re-synced by `python3 bridge/sync.py`). Cite sources (file, page/row) for every claim.
 - Numbers come from deterministic tools (MRP, Monte Carlo, cost calc); LLMs read, route, explain, draft.
 - Outbound emails to suppliers require the approval gate; default is dry-run.

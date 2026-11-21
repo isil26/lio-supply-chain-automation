@@ -103,6 +103,7 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - The hosted control switches between two states calculated by the local pipeline from the private team snapshot. The download was cross-checked against the portal inventory before release. Get the password through the private team channel or the ignored access file on the shared workspace. Never copy credentials into coordination files.
 - [Deployment and refresh instructions](../deploy/vercel/README.md). Use the local full API for portal sync, outbound mail, approval workflows, and any source files.
 - The sample replay uses the synthetic fixture. The separate local exporter writes under ignored `private/static-replay/`, outside `web/public`. The hosted artifact only contains a sealed, server-side payload.
+- Password location update. Collaborators and their agents can now use the [tracked Vercel team password](../deploy/vercel/team-password.txt) from the private GitHub repository in their clones and worktrees.
 
 ## T14 — Surprise-drop robustness (codex-drops)
 

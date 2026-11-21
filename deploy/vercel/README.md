@@ -4,9 +4,11 @@ The hosted dashboard uses the same React frontend as the local Control Room. The
 
 The hosted app uses a shared high-entropy team password, an eight-hour signed session cookie, and private, uncached API responses. Supplier sends and purchasing approvals run through the local app. Hosted evidence is limited to citations. The deployment artifact contains no raw portal files, database, or portal credentials.
 
+Open the [hosted dashboard](https://soony-launch-control.vercel.app) and sign in with the [team password](team-password.txt) tracked in the private GitHub repository. Collaborators and their agents can read the file from their checkout.
+
 ## Refresh from a new team snapshot
 
-Use the repository Python environment and Node 22. Keep the team password file and replay key in the team's approved private storage. Never put either value in a commit, a build log, or a public channel.
+Use the repository Python environment and Node 22. Keep the replay key in the team's approved private storage.
 
 ```sh
 # Run from the repository root. Set these paths to the approved local inputs.
@@ -22,7 +24,7 @@ The Vercel project needs two sensitive production environment variables. `SOONY_
 Promote the candidate with `vercel promote <deployment>` and check the production alias from the repo root. This integration check tests anonymous denial, sign-in, the deployed React bundle, the before/after forecasts and recovery option, session isolation, reset, and sign-out.
 
 ```sh
-python3 deploy/vercel/verify.py https://soony-launch-control.vercel.app "$TEAM_PASSWORD_FILE"
+python3 deploy/vercel/verify.py https://soony-launch-control.vercel.app deploy/vercel/team-password.txt
 ```
 
 Development against the full API continues with the [local runbook](../../docs/RUNBOOK.md).
