@@ -3,7 +3,7 @@ import unittest
 from email.message import EmailMessage
 
 from . import schema
-from .followup import attachment_evidence, due_reminders, wait_hours
+from .followup import answer_body, answer_replies, attachment_evidence, due_reminders, wait_hours
 
 DEADLINE = "2026-11-22T20:00:00+01:00"
 
@@ -59,3 +59,41 @@ class AttachmentTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AnswerRepliesTest(unittest.TestCase):
+    def setUp(self):
+        self.con = sqlite3.connect(":memory:")
+        self.con.row_factory = sqlite3.Row
+        schema(self.con)
+
+    def thread(self, cid, supplier_id, material, lang, reply, transport=None):
+        self.con.execute("INSERT INTO chases(id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)"
+                         " VALUES(?,?,?,?,?,?,?,?,?,?,?)", (cid, supplier_id, "Sup " + cid, f"{cid}@suppliers.juliansibbing.de",
+                         lang, f"[SOONY-{cid}] Launch stock", "reply to verify", material, 3400, "q", DEADLINE))
+        self.con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES(?,?,?,?,?,?)",
+                         (cid, cid + "o", "out", "us", "q", "2026-11-21T08:00:00+00:00"))
+        self.con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time,transport) VALUES(?,?,?,?,?,?,?)",
+                         (cid, cid + "i", "in", "s", reply, "2026-11-21T09:00:00+00:00", transport))
+
+    def test_every_unanswered_reply_gets_one_answer(self):
+        self.thread("D", "SUP-0019", "CMP-GAM-010", "zh", "We cannot deliver 3,400 units before the launch.")
+        self.thread("B", "SUP-0011", "CMP-GAM-001", "en", "Stock is available EXW Boise, your forwarder must pick up.")
+        self.thread("S", "SUP-0018", "CMP-GAM-010", "en", "Simulated", '{"mode": "simulated"}')
+        first = answer_replies(self.con, save=True)
+        self.assertEqual({a["thread_id"]: a["asks"][0] for a in first}, {"D": "partial", "B": "pickup"})
+        self.assertIn("分批", next(a["body"] for a in first if a["thread_id"] == "D"))
+        status = self.con.execute("SELECT status, subject FROM chases WHERE id=?", (first[0]["draft_id"],)).fetchone()
+        self.assertEqual(status[0], "draft")
+        self.assertTrue(status[1].startswith("Re: [SOONY-"))
+        self.assertEqual(answer_replies(self.con, save=True), [])  # not answered twice
+
+    def test_managed_cases_are_left_to_the_supplier_loop(self):
+        self.thread("H", "SUP-0010", "CMP-GAM-001", "ko", "확인 중입니다.")
+        self.assertEqual(answer_replies(self.con), [])
+
+    def test_complete_reply_asks_for_document(self):
+        body, kinds = answer_body("en", "Quantity: 3,400 pcs, ETA 2026-11-22 08:00, EUR 2.10 per unit", DEADLINE)
+        self.assertEqual(kinds, ["document"])
+        body, kinds = answer_body("en", "Quantity: 3,400 pcs, ETA 2026-11-22 08:00, EUR 2.10 per unit, AWB 020-12345678", DEADLINE)
+        self.assertEqual(kinds, ["noted"])

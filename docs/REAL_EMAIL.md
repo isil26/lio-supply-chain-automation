@@ -55,6 +55,8 @@ Factors (each 0-1, source in brackets): on-time chance (stated ETA, adjusted by 
 
 **Reminders.** `python3 -m src.chaser.mail_agent remind [--save-drafts]`: wait before reminding = hours left / 6, between 2 and 12 h. Two reminders, then the feed says to call.
 
+**Answering replies.** Every real supplier reply that we have not answered gets one answer draft in the supplier's language (`followup.answer_replies`, run by autosend): part shipment + earliest date if they cannot deliver, pickup details for EXW/forwarder answers, the missing quantity/date/price, or the packing list/booking reference. The Hwaseong card and Karton book threads are answered by `supplier_loop.py` instead.
+
 **Attachments.** Replies' attachments are stored in `messages.parsed.attachments` (name, type, kind: air_waybill / bill_of_lading / packing_list / invoice / delivery_note, text from PDF or text files). Any recognised shipping document counts as the strongest proof. Unreadable files are flagged `needs_review`.
 
 ## Game-card and Karton follow-ups
