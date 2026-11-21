@@ -27,8 +27,6 @@ const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon"
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 };
 
-const editionName = (code: string) => code === "STD" ? "Standard edition" : code === "CE" ? "Collector's Edition" : code;
-
 function Countdown({ deadline }: { deadline: string }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -237,11 +235,11 @@ function App() {
             const width = Math.max(2, ((p90 - p10) / scaleMax) * 100);
             const median = (p50 / scaleMax) * 100;
             return <article className="readiness-card" key={item.edition}>
-              <div className="edition-head"><span>{editionName(item.edition)}</span><em className={item.tone}>{item.status}</em></div>
-              <div className="percent-row"><strong>{item.probability == null ? "–" : <>{Math.round(item.probability * 100)}<small>%</small></>}</strong><span>{item.probability == null ? <>on-time chance<br/>not calculated yet</> : <>chance to ship<br/>everything on time</>}</span></div>
-              <div className="range-meta">{p10 === p90 ? <span>Expected by launch: <b>{formatNumber(p50)}</b></span> : <><span>{formatNumber(p10)}</span><b>likely units by launch</b><span>{formatNumber(p90)}</span></>}</div>
+              <div className="edition-head"><span>{item.edition}</span><em className={item.tone}>{item.status}</em></div>
+              <div className="percent-row"><strong>{Math.round((item.probability ?? 0) * 100)}<small>%</small></strong><span>P(on time)</span></div>
+              <div className="range-meta"><span>{formatNumber(p10)}</span><b>p10 / p50 / p90</b><span>{formatNumber(p90)}</span></div>
               <div className="range-bar"><i style={{ left: `${left}%`, width: `${width}%` }}/><b style={{ left: `${median}%` }}/></div>
-              <div className="packed-meta"><span>{formatNumber(item.packed)} packed now</span><span>{formatNumber(item.target)} needed</span></div>
+              <div className="packed-meta"><span>{formatNumber(item.packed)} packed</span><span>{formatNumber(item.target)} target</span></div>
             </article>;
           })}
         </div>
@@ -321,7 +319,7 @@ function App() {
               </table>
             </details>}
             <div className="decision-actions">
-              <span>{approval.status ? `Status: ${approval.status}` : "Waiting for your decision"}</span>
+              <span>{approval.status ? `Status: ${approval.status}` : "Buyer approval required"}</span>
               {!hostedReplayBuild && <>
                 <button className="review-button" onClick={() => void approve(true)} disabled={decisionBusy}>Request review</button>
                 <button className="approve-button" onClick={() => void approve(false)} disabled={decisionBusy || approval.status === "approved"}>{approval.status === "approved" ? <><Icon name="check"/> Approved</> : <>Approve <Icon name="arrow"/></>}</button>
