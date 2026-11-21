@@ -88,6 +88,10 @@ class AnswerRepliesTest(unittest.TestCase):
         self.assertTrue(status[1].startswith("Re: [SOONY-"))
         self.assertEqual(answer_replies(self.con, save=True), [])  # not answered twice
 
+    def test_cut_off_shown_in_hamburg_time(self):
+        body, _ = answer_body("en", "We cannot deliver before the launch.", DEADLINE)
+        self.assertIn("22 Nov 20:00 CET", body)
+
     def test_managed_cases_are_left_to_the_supplier_loop(self):
         self.thread("H", "SUP-0010", "CMP-GAM-001", "ko", "확인 중입니다.")
         self.assertEqual(answer_replies(self.con), [])

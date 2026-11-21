@@ -20,7 +20,7 @@ class SupplierChaserTest(unittest.TestCase):
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.store = ChaserStore(Path(self.tmp.name) / "chaser.sqlite")
-        self.chaser = SupplierChaser(store=self.store, data_root=ROOT / "data")
+        self.chaser = SupplierChaser(store=self.store, data_root=ROOT / ("data" if (ROOT / "data" / "suppliers").is_dir() else "case-data"))
         os.environ.pop("CHASER_SENDER", None)
         os.environ.pop("CHASER_REAL_SMTP", None)
 
@@ -54,7 +54,7 @@ class SupplierChaserTest(unittest.TestCase):
             "SUP-0029": "zh",
         }
         for supplier_id, language in expected.items():
-            supplier = load_supplier(supplier_id, ROOT / "data")
+            supplier = load_supplier(supplier_id)
             self.assertEqual(supplier.preferred_language, language)
 
     def test_draft_guardrail_states_and_dry_run(self):

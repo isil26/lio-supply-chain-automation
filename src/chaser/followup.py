@@ -41,6 +41,13 @@ REMINDER = {
 }
 
 
+def hamburg_time(value):
+    """Show a time the way the suppliers saw the cut-off: Hamburg local time, e.g. '22 Nov 20:00 CET'."""
+    from zoneinfo import ZoneInfo
+    local = value.astimezone(ZoneInfo("Europe/Berlin"))
+    return local.strftime("%d %b %H:%M ") + (local.tzname() or "CET")
+
+
 def _aware(value):
     value = value if isinstance(value, datetime) else datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
@@ -106,7 +113,7 @@ def due_reminders(con, now=None, *, save=False):
 def reminder_draft(row, number):
     subject_t, body_t = REMINDER.get(row["language"], REMINDER["en"])
     original = re.sub(r"^\[SOONY-[A-F0-9]+\]\s*", "", row["subject"])
-    sent = _aware(row["last_out"]).strftime("%Y-%m-%d %H:%M UTC")
+    sent = hamburg_time(_aware(row["last_out"]))
     body = body_t.format(sent=sent, ref=f"SOONY-{row['id']}", material=row["material"])
     check = Guardrails().validate_draft(body)
     if not check.ok:
@@ -191,7 +198,7 @@ def answer_body(language, reply, deadline):
     from .negotiate import parse_offer
     t = ANSWER.get(language, ANSWER["en"])
     offer = parse_offer(reply)
-    due = _aware(deadline).strftime("%Y-%m-%d %H:%M UTC") if deadline else "the launch"
+    due = hamburg_time(_aware(deadline)) if deadline else "the launch"
     lines, kinds = [t["open"]], []
     if CANNOT.search(reply):
         lines.append(t["cannot"].format(deadline=due)); kinds.append("partial")

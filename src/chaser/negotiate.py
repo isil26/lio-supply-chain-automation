@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 from .guardrails import Guardrails
+from .followup import hamburg_time
 
 # Assumed EUR conversion, overridable with CHASER_FX_EUR="USD=0.92,CNY=0.13". Shown with every result.
 DEFAULT_FX_EUR = {"EUR": 1.0, "USD": 0.92, "CNY": 0.13, "INR": 0.011, "PLN": 0.23, "KRW": 0.00068}
@@ -164,7 +165,13 @@ def quotes_from_db(con, material=None):
                (SELECT min(time) FROM messages WHERE chase_id = c.id AND side = 'out') AS out_time
         FROM chases c JOIN messages m ON m.chase_id = c.id AND m.side = 'in'
         WHERE m.id = (SELECT max(id) FROM messages WHERE chase_id = c.id AND side = 'in')
+        ORDER BY m.id
     """).fetchall()
+    # One supplier can answer in several threads (request, reminder, negotiation): keep its newest reply.
+    latest = {}
+    for row in rows:
+        latest[(row["supplier_id"], row["material"])] = row
+    rows = list(latest.values())
     quotes = []
     for row in rows:
         if material and row["material"] != material:
@@ -372,10 +379,10 @@ def negotiation_asks(q, ranked, context, deadline, fx=None, ask_pct=DEFAULT_ASK_
         buffer_h = (deadline - (q.eta_p90 or q.eta)).total_seconds() / 3600
         if buffer_h < 24:
             wanted = min(q.eta, deadline) - timedelta(hours=24)
-            asks.append({"lever": "earlier", "target": wanted.strftime("%Y-%m-%d %H:%M UTC")})
+            asks.append({"lever": "earlier", "target": hamburg_time(wanted)})
             if q.quantity and q.quantity > (units or q.needed) * 0.5:
                 early = max(1, int((units or q.quantity) * 0.5))
-                asks.append({"lever": "partial", "units": early, "target": wanted.strftime("%Y-%m-%d %H:%M UTC")})
+                asks.append({"lever": "partial", "units": early, "target": hamburg_time(wanted)})
         if context["time_pressure"] >= 0.6 and buffer_h < 36:
             asks.append({"lever": "express"})
     moq = (q.facts or {}).get("moq")
@@ -443,6 +450,12 @@ def save_draft(con, quote, draft, deadline, units=None):
 
     if managed(quote.supplier_id, quote.material):
         return False
+    con.execute("""CREATE TABLE IF NOT EXISTS negotiations (
+        supplier_id TEXT NOT NULL, material TEXT NOT NULL, chase_id TEXT NOT NULL, time TEXT NOT NULL,
+        PRIMARY KEY (supplier_id, material))""")
+    if con.execute("SELECT 1 FROM negotiations WHERE supplier_id=? AND material=?",
+                   (quote.supplier_id, quote.material)).fetchone():
+        return False  # one negotiation email per supplier and part, so we never haggle in a loop
     with con:
         inserted = con.execute("""INSERT OR IGNORE INTO chases
             (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
@@ -451,6 +464,8 @@ def save_draft(con, quote, draft, deadline, units=None):
                                 draft["subject"], "draft", quote.material, units or quote.quantity or quote.needed,
                                 draft["body"], deadline if isinstance(deadline, str) else deadline.isoformat())).rowcount
         if inserted:
+            con.execute("INSERT OR IGNORE INTO negotiations VALUES(?,?,?,?)",
+                        (quote.supplier_id, quote.material, draft["id"], datetime.now(timezone.utc).isoformat(timespec="seconds")))
             con.execute("INSERT INTO activity(time,agent,action,type) VALUES(?,?,?,?)",
                         (datetime.now(timezone.utc).isoformat(timespec="seconds"), "Mail Agent",
                          f"{quote.supplier}: drafted a negotiation email ({', '.join(draft['levers'])}) for review.", "info"))

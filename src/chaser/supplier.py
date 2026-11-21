@@ -8,7 +8,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def load_supplier(supplier_id: str, data_root: Path | None = None) -> Supplier:
-    root = (data_root or ROOT / "data") / "suppliers"
+    default = ROOT / "data" if (ROOT / "data" / "suppliers").is_dir() else ROOT / "case-data"
+    root = (data_root or default) / "suppliers"
     matches = list(root.glob(f"{supplier_id}_*/profile.csv"))
     if len(matches) != 1:
         raise ValueError(f"{supplier_id}: expected one profile.csv, found {len(matches)}")

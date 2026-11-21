@@ -150,6 +150,11 @@ class CompareDbTest(unittest.TestCase):
             status = con.execute("SELECT status FROM chases WHERE id=?", (n["draft_id"],)).fetchone()[0]
             self.assertEqual(status, "draft")
         self.assertEqual(entry["ranking"][0]["factors"]["speed"], 0.8)
+        # a second round (new reply, new target) must not create a second negotiation email
+        con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES(?,?,?,?,?,?)",
+                    ("A1", "A1m2", "in", "Alpha", "Quantity: 4000, ETA 2026-11-21 06:00, EUR 3.95 per unit", "2026-11-20T12:00:00+00:00"))
+        again = compare(con, DEADLINE, save=True, model=False, now=FAR)["materials"][0]
+        self.assertFalse(any(n["saved"] for n in again["negotiations"]))
 
 
 if __name__ == "__main__":
