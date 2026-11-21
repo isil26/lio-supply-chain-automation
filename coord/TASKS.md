@@ -137,7 +137,7 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T93-Approvals | Approval engine with delegated authority: AUTO / ONE-CLICK / ESCALATE / NEVER, PP-07 as code, delegations.json, audit log (spec: IMPORTANT.md section 3) | sonnet-approvals | src/decide/approvals.py, docs/delegations.json, docs/APPROVALS.md, tests/test_approvals.py | review | - |
 | T94-Queue | Apply T93 approvals to the action queue and pass verified decisions to T83 | murat-agent | src/orchestrator, scoped release packaging | done | T81, T93-Approvals, T94-send |
 | T-Mail-Planning | Reusable supplier email planning, negotiation and revision-aware buyer review | codex-overseer | chaser, orchestrator and supplier mail UI | review | T75, T81, T93, T94 |
-| T98-Card-Replay | Reconcile the received game-card lot and show one case from ERP update through simulated approval | codex-card-replay | scoped truth, regression tests and standalone demo | in_progress | T3, T81, T96 |
+| T98-Card-Replay | Reconcile the received game-card lot and show one case from ERP update through simulated approval | codex-card-replay | scoped truth, regression tests and standalone demo | done | T3, T81, T96 |
 ## Agent names (mandatory)
 Every agent has a unique name and uses it everywhere: the Owner/Agent column in `coord/STATUS.md` and `coord/TASKS.md`, the `FROM`/`TO` in `coord/INBOX.md`, and the git author name of its commits (`git -c user.name="<name>" ...`, message ends `[<name>]`).
 - Claude (lead) = **nick**.

@@ -496,3 +496,8 @@ At 20:24:41 CET Karton replied that it would now approach Warta for pickup and D
 ## T12 — Replay delegation regression (codex-e2e)
 
 The replay cap correctly approves the information-only Boise Semi game-card stock enquiry under simulated delegation DEL-TEST-001. The regression asserts the exact eligible option, the persisted approval and simulation label. The test keeps simulated delegations active in a temporary copy so the case dates do not turn the approval check into an empty assertion. The existing dock-slot one-click and supplier dry-run checks still run. The replay passed against real handlers in-process. The managed sandbox denied the loopback socket used by the standard demo check.
+
+## T98 — Game-card receipt and focused approval demo
+
+- Matched goods receipt 5000413070 to AWB 020-48113256 using the cited shipped quantity, PO, supplier and component. The live-snapshot rerun counts 98,100 on hand, zero eligible inbound and 6,800 short. Both editions missed their targets across 500 trials (p50 639,100 Standard and 66,100 Collector’s).
+- [Run the focused replay](../docs/GAME_CARD_DEMO.md). It stages only the receipt and uses the policy-routed Felix Brunner approval in a disposable dry-run database. The receipt, revised forecast and prepared internal message were verified in the browser.
