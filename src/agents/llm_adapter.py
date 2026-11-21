@@ -10,6 +10,7 @@ import json
 import os
 import time
 import urllib.request
+import urllib.error
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,42 @@ def _key(value: Any) -> str:
 
 class LLMError(RuntimeError):
     pass
+
+
+MODEL_PRICES_USD_PER_MTOK = {
+    "gpt-4.1-mini": {"input": 0.40, "output": 1.60},
+}
+
+
+def usage_cost(model: str, usage: dict) -> float:
+    prices = MODEL_PRICES_USD_PER_MTOK.get(model)
+    if not prices:
+        return 0.0
+    return (
+        int(usage.get("input_tokens", 0)) * prices["input"]
+        + int(usage.get("output_tokens", 0)) * prices["output"]
+    ) / 1_000_000
+
+
+def _redact(value: Any, secrets: tuple[str, ...]) -> Any:
+    if isinstance(value, str):
+        redacted = value
+        for secret in secrets:
+            if secret:
+                redacted = redacted.replace(secret, "[REDACTED]")
+        return redacted
+    if isinstance(value, list):
+        return [_redact(item, secrets) for item in value]
+    if isinstance(value, dict):
+        return {key: "[REDACTED]" if "key" in str(key).casefold() and "monkey" not in str(key).casefold()
+                and "api" in str(key).casefold() or "authorization" in str(key).casefold()
+                else _redact(item, secrets) for key, item in value.items()}
+    return value
+
+
+def _configured_secrets() -> tuple[str, ...]:
+    names = ("SOONY_LLM_KEY", "SOONY_LLM_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY")
+    return tuple(value for name in names if (value := os.getenv(name)))
 
 
 class Adapter:
@@ -33,7 +70,7 @@ class HTTPAdapter(Adapter):
         self.cassette_dir = Path(cassette_dir)
 
     def chat(self, messages, tools=(), system="", model=None):
-        model = model or os.getenv("SOONY_AGENT_MODEL", "claude-haiku-5-5")
+        model = model or os.getenv("SOONY_AGENT_MODEL") or os.getenv("SOONY_LLM_MODEL", "gpt-4.1-mini")
         request = {"messages": messages, "tools": list(tools), "system": system, "model": model}
         path = self.cassette_dir / f"{_key(request)}.json"
         if self.mode == "replay":
@@ -41,6 +78,7 @@ class HTTPAdapter(Adapter):
                 raise LLMError(f"missing replay cassette: {path}")
             return json.loads(path.read_text())
         response = self._request(request)
+        response = _redact(response, _configured_secrets())
         if self.mode == "record":
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(response, sort_keys=True))
@@ -52,24 +90,100 @@ class HTTPAdapter(Adapter):
             return self._openai(request, url)
         key = os.getenv("ANTHROPIC_API_KEY")
         if not key:
-            raise LLMError("no SOONY_LLM_URL or ANTHROPIC_API_KEY configured")
+            raise LLMError("no live provider configured: set SOONY_LLM_URL plus SOONY_LLM_API_KEY/OPENAI_API_KEY or ANTHROPIC_API_KEY")
+        anthropic_messages = self._anthropic_messages(request["messages"])
+        anthropic_tools = [{"name": item["function"]["name"],
+                            "description": item["function"].get("description", item["function"]["name"]),
+                            "input_schema": item["function"].get("parameters", {"type": "object", "properties": {}})}
+                           for item in request["tools"]]
         payload = {"model": request["model"], "max_tokens": 1200, "system": request["system"],
-                   "messages": request["messages"], "tools": request["tools"]}
+                   "messages": anthropic_messages, "tools": anthropic_tools}
         req = urllib.request.Request(
             "https://api.anthropic.com/v1/messages", json.dumps(payload).encode(),
             {"content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01"})
-        return self._normalise(json.loads(urllib.request.urlopen(req, timeout=30).read()), "anthropic")
+        data = self._post(req)
+        return self._normalise(data, "anthropic")
 
     def _openai(self, request, url):
         if not url.rstrip("/").endswith("chat/completions"):
-            url = url.rstrip("/") + "/v1/chat/completions"
-        messages = ([{"role": "system", "content": request["system"]}] if request["system"] else []) + request["messages"]
+            url = url.rstrip("/") + "/chat/completions"
+        messages = ([{"role": "system", "content": request["system"]}] if request["system"] else []) + self._openai_messages(request["messages"])
         payload = {"model": request["model"], "messages": messages, "tools": request["tools"]}
         headers = {"content-type": "application/json"}
-        if os.getenv("SOONY_LLM_KEY"):
-            headers["authorization"] = "Bearer " + os.environ["SOONY_LLM_KEY"]
+        key = next((os.environ[name] for name in ("SOONY_LLM_KEY", "SOONY_LLM_API_KEY", "OPENAI_API_KEY") if os.getenv(name)), None)
+        if not key:
+            raise LLMError("no live API key configured: set SOONY_LLM_KEY, SOONY_LLM_API_KEY or OPENAI_API_KEY")
+        headers["authorization"] = "Bearer " + key
         req = urllib.request.Request(url, json.dumps(payload).encode(), headers)
-        return self._normalise(json.loads(urllib.request.urlopen(req, timeout=30).read()), "openai")
+        data = self._post(req)
+        return self._normalise(data, "openai")
+
+    def _post(self, req):
+        last_error = None
+        for attempt in range(2):
+            try:
+                return json.loads(urllib.request.urlopen(req, timeout=30).read())
+            except urllib.error.HTTPError as exc:
+                body = exc.read().decode("utf-8", "replace")
+                last_error = exc
+                if exc.code not in (429, 500, 502, 503, 504) or attempt == 1:
+                    raise LLMError(f"live provider HTTP {exc.code}: {body[:500]}") from exc
+                time.sleep(0.5 * (attempt + 1))
+            except urllib.error.URLError as exc:
+                last_error = exc
+                if attempt == 1:
+                    raise LLMError(f"live provider unavailable: {exc.reason}") from exc
+                time.sleep(0.5 * (attempt + 1))
+        raise LLMError(f"live provider request failed: {last_error}")
+
+    @staticmethod
+    def _openai_messages(messages):
+        converted = []
+        for message in messages:
+            role = message.get("role")
+            if role == "tool":
+                converted.append({"role": "tool", "tool_call_id": message.get("tool_call_id"),
+                                  "content": message.get("content", "")})
+            elif role == "assistant" and message.get("tool_calls"):
+                converted.append({"role": "assistant", "content": message.get("content") or "",
+                                  "tool_calls": [{"id": call["id"], "type": "function",
+                                                  "function": {"name": call["name"],
+                                                               "arguments": json.dumps(call.get("arguments", {}))}}
+                                                 for call in message["tool_calls"]]})
+            else:
+                converted.append({"role": role, "content": message.get("content", "")})
+        return converted
+
+    @staticmethod
+    def _anthropic_messages(messages):
+        converted = []
+        pending = None
+        for message in messages:
+            if message.get("role") == "tool":
+                if pending is None:
+                    pending = {"role": "user", "content": []}
+                pending["content"].append({"type": "tool_result",
+                                           "tool_use_id": message.get("tool_call_id"),
+                                           "content": message.get("content", "")})
+            elif message.get("role") == "assistant" and message.get("tool_calls"):
+                if pending:
+                    converted.append(pending)
+                    pending = None
+                content = []
+                if message.get("content"):
+                    content.append({"type": "text", "text": message["content"]})
+                content.extend({"type": "tool_use", "id": call["id"],
+                                "name": call["name"], "input": call.get("arguments", {})}
+                               for call in message["tool_calls"])
+                converted.append({"role": "assistant", "content": content})
+            else:
+                if pending:
+                    converted.append(pending)
+                    pending = None
+                converted.append({"role": message.get("role"), "content": message.get("content", "")})
+        if pending:
+            converted.append(pending)
+        return converted
 
     @staticmethod
     def _normalise(data, provider):
@@ -84,9 +198,11 @@ class HTTPAdapter(Adapter):
                       "arguments": json.loads(x["function"].get("arguments") or "{}")}
                      for x in message.get("tool_calls", [])]
         usage = data.get("usage", {})
-        return {"text": text, "tool_calls": calls,
-                "usage": {"input_tokens": usage.get("input_tokens", usage.get("prompt_tokens", 0)),
-                          "output_tokens": usage.get("output_tokens", usage.get("completion_tokens", 0))}}
+        usage = {"input_tokens": usage.get("input_tokens", usage.get("prompt_tokens", 0)),
+                 "output_tokens": usage.get("output_tokens", usage.get("completion_tokens", 0))}
+        model = data.get("model", "")
+        usage["cost_usd"] = usage_cost(model, usage)
+        return {"text": text, "tool_calls": calls, "usage": usage}
 
 
 class FakeLLM(Adapter):

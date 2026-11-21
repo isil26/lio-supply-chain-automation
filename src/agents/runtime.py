@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import time
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ class Tool:
     function: Callable[..., Any]
     schema: dict | None = None
     needs_approval: bool = False
+    description: str = ""
 
     def validate(self, args):
         schema = self.schema or {}
@@ -34,7 +36,8 @@ def _tool(item):
         return item
     if callable(item):
         return Tool(getattr(item, "__name__", "tool"), item)
-    return Tool(item["name"], item["function"], item.get("schema"), item.get("needs_approval", False))
+    return Tool(item["name"], item["function"], item.get("schema"), item.get("needs_approval", False),
+                item.get("description", item["name"]))
 
 
 class Agent:
@@ -50,6 +53,7 @@ class Agent:
         db.row_factory = sqlite3.Row
         ensure_trace(db)
         started, messages, total_cost = time.monotonic(), [{"role": "user", "content": task}], 0.0
+        total_input_tokens, total_output_tokens = 0, 0
         for step in range(1, self.max_steps + 1):
             if time.monotonic() - started > self.timeout_seconds:
                 return {"status": "timeout", "reason": "wall-clock budget exceeded"}
@@ -58,7 +62,13 @@ class Agent:
                                          self.system_prompt, self.model)
                 calls = response.get("tool_calls", [])
                 usage = response.get("usage", {})
-                cost = (usage.get("input_tokens", 0) + usage.get("output_tokens", 0)) * 0.000001
+                total_input_tokens += int(usage.get("input_tokens", 0))
+                total_output_tokens += int(usage.get("output_tokens", 0))
+                cost = float(usage.get("cost_usd", 0.0))
+                if not cost:
+                    model_name = self.model or os.getenv("SOONY_AGENT_MODEL") or os.getenv("SOONY_LLM_MODEL", "")
+                    from .llm_adapter import usage_cost
+                    cost = usage_cost(model_name, usage)
                 total_cost += cost
                 if total_cost > self.budget_usd:
                     return {"status": "budget_exceeded", "reason": "token budget exceeded"}
@@ -70,11 +80,17 @@ class Agent:
                 return {"status": "error", "reason": str(exc)}
             if not calls:
                 text = response.get("text", "")
-                record(db, agent=self.name, model=self.model, step=step, result=text, reason="final")
-                return {"status": "completed", "text": text, "cost": total_cost}
-            for call in calls:
+                record(db, agent=self.name, model=self.model, step=step, result=text, reason="final",
+                       cost=total_cost, input_tokens=total_input_tokens, output_tokens=total_output_tokens)
+                return {"status": "completed", "text": text, "cost": total_cost,
+                        "input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
+            assistant_call = []
+            tool_results = []
+            for index, call in enumerate(calls):
                 name, args = call.get("name"), call.get("arguments", {})
                 tool = self.tools.get(name)
+                call_id = str(call.get("id") or f"{step}-{name}-{index}")
+                assistant_call.append({"id": call_id, "name": name, "arguments": args})
                 try:
                     if not tool:
                         raise ValueError(f"tool not allowed: {name}")
@@ -94,13 +110,19 @@ class Agent:
                     result = {"error": str(exc)}
                     record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,
                            result=result, reason="tool rejected", status="error")
-                messages.extend([{"role": "assistant", "content": response.get("text", "")},
-                                 {"role": "tool", "name": name, "content": json.dumps(result, default=str)}])
-        return {"status": "max_steps", "reason": "step budget exceeded", "cost": total_cost}
+                tool_results.append((name, call_id, result))
+            messages.append({"role": "assistant", "content": response.get("text", ""),
+                             "tool_calls": assistant_call})
+            for name, call_id, result in tool_results:
+                messages.append({"role": "tool", "name": name, "tool_call_id": call_id,
+                                 "content": json.dumps(result, default=str)})
+        return {"status": "max_steps", "reason": "step budget exceeded", "cost": total_cost,
+                "input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
 
     @staticmethod
     def _spec(tool):
-        return {"type": "function", "function": {"name": tool.name, "description": tool.name,
+        return {"type": "function", "function": {"name": tool.name,
+                "description": tool.description or tool.name,
                 "parameters": tool.schema or {"type": "object", "properties": {}}}}
 
 

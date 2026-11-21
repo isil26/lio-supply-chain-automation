@@ -9,7 +9,8 @@ def ensure_trace(db):
     db.executescript("""
     CREATE TABLE IF NOT EXISTS agent_trace (
       id INTEGER PRIMARY KEY AUTOINCREMENT, agent TEXT, model TEXT, step INTEGER,
-      tool TEXT, args TEXT, result TEXT, reason TEXT, cost REAL, latency_ms REAL, created_at REAL
+      tool TEXT, args TEXT, result TEXT, reason TEXT, cost REAL, latency_ms REAL,
+      input_tokens INTEGER DEFAULT 0, output_tokens INTEGER DEFAULT 0, created_at REAL
     );
     CREATE TABLE IF NOT EXISTS activity (
       id INTEGER PRIMARY KEY AUTOINCREMENT, agent TEXT, action TEXT, type TEXT,
@@ -19,12 +20,22 @@ def ensure_trace(db):
 
 
 def record(db, *, agent, model, step, tool=None, args=None, result=None, reason="",
-           cost=0.0, latency_ms=0.0, status="completed"):
+           cost=0.0, latency_ms=0.0, status="completed", input_tokens=0, output_tokens=0):
     ensure_trace(db)
     now = time.time()
     summary = result if isinstance(result, str) else json.dumps(result, sort_keys=True, default=str)[:1000]
-    db.execute("INSERT INTO agent_trace(agent,model,step,tool,args,result,reason,cost,latency_ms,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
-               (agent, model, step, tool, json.dumps(args or {}, default=str), summary, reason, cost, latency_ms, now))
+    columns = {row[1] for row in db.execute("PRAGMA table_info(agent_trace)").fetchall()}
+    for name, definition in (
+        ("input_tokens", "INTEGER DEFAULT 0"),
+        ("output_tokens", "INTEGER DEFAULT 0"),
+    ):
+        if name not in columns:
+            db.execute(f"ALTER TABLE agent_trace ADD COLUMN {name} {definition}")
+    db.execute("""INSERT INTO agent_trace
+        (agent,model,step,tool,args,result,reason,cost,latency_ms,input_tokens,output_tokens,created_at)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+               (agent, model, step, tool, json.dumps(args or {}, default=str), summary, reason,
+                cost, latency_ms, input_tokens, output_tokens, now))
     db.execute("INSERT INTO activity(agent,action,type,tool,status,created_at) VALUES(?,?,?,?,?,?)",
                (agent, f"{tool or 'model'}: {reason}".strip(), "analysis", tool, status, now))
     db.commit()

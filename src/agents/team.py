@@ -24,10 +24,11 @@ def _registry_tools(db_path: str | Path, allowed: Iterable[str]) -> list[Tool]:
         name = item["name"]
         schema = item["input_schema"]
 
-        def handler(args=None, fn=item["handler"]):
-            return fn(args or {})
+        def handler(fn=item["handler"], **kwargs):
+            return fn(kwargs)
 
-        result.append(Tool(name, handler, schema, needs_approval=item["needs_approval"]))
+        result.append(Tool(name, handler, schema, needs_approval=item["needs_approval"],
+                           description=item["description"]))
     return result
 
 
