@@ -1,0 +1,22 @@
+{
+  "delegations": [
+    {
+      "id": "DEL-001",
+      "delegator": "Dr. Maren Vogt",
+      "delegate": "system",
+      "action_kinds": ["supplier_info_request", "hold_and_quote", "purchase_order", "air_freight", "internal_message"],
+      "max_value_eur": 2000000,
+      "valid_from": "2026-11-21T20:04:00+01:00",
+      "valid_until": "2026-11-22T20:00:00+01:00",
+      "conditions": {"information_only": true, "reversible": true, "hold_and_quote": true},
+      "scope_note": "'approve anything under EUR 2,000,000 for launch recovery'. The engine still only auto-approves information-only, hold-and-quote or reversible actions; binding POs stay ONE_CLICK. Quality releases, supplier releases and dock slots are never covered.",
+      "source": {
+        "who": "team report to supply-rescue (relayed, not Dr. Vogt herself)",
+        "when": "2026-11-21 (follow-up conversation, after the 20:04 office-hours note)",
+        "medium": "verbal, relayed by the team",
+        "conflict": "Isil's office-hours recording says Dr. Vogt can only give information; no written approval exists (docs/AUTHORIZATIONS.md)"
+      },
+      "confirmed_in_writing": false
+    }
+  ]
+}
