@@ -132,3 +132,5 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T93-Mail-Events | Trigger archive updates from Gmail on new mail | codex-mail-archive | scripts/sync_supplier_email_archive.py, docs/supplier-email-archive/, own coordination notes | done | T93-Mail-Sync |
 | T50-Live-Portal | Poll official portal records from Mac, verify atomic snapshots and refresh Manti and needed outreach without raw Git pushes | murat-agent | bridge portal client, Mac worker, live sync UI, scoped recovery | done P0 | T50, T81-Supplier-Changes |
 | T19-CI | Set up push-triggered releases for the protected Soony replay | codex-deploy | .github/workflows/soony-vercel.yml, .github/soony-vercel | in_progress | T19-Vercel |
+
+| T-Mail-Planning | Generalize late-offer negotiation, reply-driven planning and revision-aware buyer approval | codex-overseer | scoped src/chaser and supplier offers UI, worker regressions | in_progress | T75, T81, T90 |
