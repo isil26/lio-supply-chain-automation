@@ -113,6 +113,33 @@ def dashboard_activity(con, blocked, clock, *, docs=None, reviews=()):
     return [dict(event, time=clock(event["time"])) for event in recent]
 
 
+def network(con, site_id, short_materials):
+    """Supplier and shipment positions for the map, read from the ingested master data and shipment feed."""
+    tables = {row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    if not {"records", "suppliers", "supplier_components", "open_shipments"} <= tables:
+        return {"hub": None, "suppliers": [], "shipments": []}
+    hub = None
+    for (payload,) in con.execute("SELECT payload FROM records WHERE kind = 'site'"):
+        row = json.loads(payload)
+        if row.get("site_id") == site_id and row.get("lat") is not None:
+            hub = {"id": site_id, "name": row.get("city") or row.get("name"), "lat": row["lat"], "lon": row["lon"]}
+    supply = {}
+    for supplier, material in con.execute("SELECT supplier_id, component_id FROM supplier_components"):
+        supply.setdefault(supplier, set()).add(material)
+    suppliers = [{"id": sid, "name": name, "city": city, "country": country, "lat": lat, "lon": lon,
+                  "atRisk": bool(supply.get(sid, set()) & short_materials)}
+                 for sid, name, city, country, lat, lon in con.execute(
+                     "SELECT supplier_id, name, city, country, lat, lon FROM suppliers WHERE lat IS NOT NULL AND lon IS NOT NULL")]
+    shipments = []
+    for sid, supplier, mode, status, lat, lon, eta, materials in con.execute(
+            "SELECT shipment_id, supplier_id, mode, status, last_lat, last_lon, eta, material_ids FROM open_shipments "
+            "WHERE last_lat IS NOT NULL AND last_lon IS NOT NULL"):
+        mats = set(json.loads(materials) if str(materials).startswith("[") else str(materials or "").replace("|", " ").split())
+        shipments.append({"id": sid, "supplier": supplier, "mode": mode, "status": status, "lat": lat, "lon": lon,
+                          "eta": str(eta or ""), "atRisk": bool(mats & short_materials)})
+    return {"hub": hub, "suppliers": suppliers, "shipments": shipments}
+
+
 def dashboard(con):
     # Keep the risks, options and banner on the same published replay snapshot.
     snapshot = {row["key"]: json.loads(row["value"]) for row in con.execute(
@@ -180,6 +207,7 @@ def dashboard(con):
         "drop": snapshot.get("drop"),
         "sync": snapshot.get("sync"), "dataHealth": health,
         "model": truth["model"], "dataQuality": truth["data_quality"],
+        "network": network(con, truth["site"], {risk["id"] for risk in risks if risk["gap"]}),
     }
 
 

@@ -94,6 +94,12 @@ export type Approval = {
   };
 };
 
+export type Network = {
+  hub: { id: string; name: string; lat: number; lon: number } | null;
+  suppliers: { id: string; name: string; city: string; country: string; lat: number; lon: number; atRisk: boolean }[];
+  shipments: { id: string; supplier: string; mode: string; status: string; lat: number; lon: number; eta: string; atRisk: boolean }[];
+};
+
 export type DashboardData = {
   launch: { name: string; deadline: string; location: string };
   readiness: Readiness[];
@@ -108,6 +114,7 @@ export type DashboardData = {
   dataHealth?: { filesSeen: number; filesParsed: number; needsReview: number; errors: number; lastSyncAgeSeconds: number | null };
   model?: string;
   dataQuality?: { documents?: number; extractionErrors?: number; [key: string]: unknown };
+  network?: Network;
 };
 
 type SourceReview = { file: string; reason: string };

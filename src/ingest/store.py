@@ -26,8 +26,8 @@ ERP = {
 
 # A required field is marked with *. Other fields preserve unknown values as null.
 SCHEMAS = {
-    "site": "site_id* name* operator type country city",
-    "port": "locode* name* country mode",
+    "site": "site_id* name* operator type country city lat:f lon:f",
+    "port": "locode* name* country lat:f lon:f mode",
     "carrier": "carrier_id* name* city country modes",
     "launch": "edition* product_id* day_one_demand:i* pre_orders:i packed:i still_to_pack:i rate_per_hour:i* hours_needed:f hours_available:f*",
     "plan_inbound": "supplier material_id* quantity:f* mode reference* etd:d eta:d status note",
