@@ -14,7 +14,7 @@ class ToolRegistryTests(unittest.TestCase):
         expected = {
             "get_readiness", "list_shortfalls", "whatif", "supplier_history",
             "search_documents", "get_document", "list_shipments", "get_po",
-            "compare_sources", "breakeven", "draft_email", "send_email",
+            "compare_sources", "list_options", "breakeven", "draft_email", "send_email",
             "parse_reply", "propose_option", "escalate_to_human", "request_review",
         }
         self.assertEqual({tool["name"] for tool in tools}, expected)

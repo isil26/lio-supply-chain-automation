@@ -42,6 +42,18 @@ class AgentTeamTests(unittest.TestCase):
         self.assertTrue(result["rejected"])
         self.assertEqual(len(result["rejected"]), 2)
 
+    def test_planner_handoff_creates_guarded_supplier_draft(self):
+        team = self._team("art_book")
+        result = team.run_event("art_book data-drop event")
+        pending = result["pending_approvals"]
+        self.assertTrue(any(row["tool"] == "propose_option" for row in pending))
+        self.assertTrue(any(row.get("tool") == "draft_email" for row in result["trace"]))
+        self.assertIn("summary", result)
+        self.assertIn("Human approval", result["summary"])
+        self.assertEqual(
+            result["harness"]["checks"]["numeric_grounding"]["ok"], True
+        )
+
     def test_build_team_has_role_whitelists(self):
         team = build_team(self.db)
         self.assertEqual(set(team.agents), {"triage", "analyst", "verifier", "planner", "chaser"})

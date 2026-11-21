@@ -174,7 +174,12 @@ def _breakeven(ctx, args):
         options = choose_options(con, truth, ctx.data_root)
     option = next((item for item in options if item["id"] == option_id), None)
     if option is None:
-        raise ValueError(f"option not found: {option_id}")
+        valid = [
+            {"id": item["id"], "title": item.get("title"), "price": item.get("price"),
+             "material": item.get("material")}
+            for item in options
+        ]
+        raise ValueError(f"option not found: {option_id}; valid option_ids: {json.dumps(valid, ensure_ascii=False)}")
     quantity = truth["parts"].get(option.get("material"), {}).get("shortfall", 0)
     if not quantity:
         quantity = int((option.get("cost_of_waiting") or {}).get("units", 0))
@@ -184,6 +189,18 @@ def _breakeven(ctx, args):
         loss, quantity,
     )
     return _result(report, option.get("evidence", []))
+
+
+def _list_options(ctx, args):
+    with ctx.db() as con:
+        truth = ctx.truth(con)
+        options = choose_options(con, truth, ctx.data_root)
+    return _result([
+        {"id": item["id"], "title": item.get("title"), "kind": item.get("kind"),
+         "price": item.get("price"), "currency": item.get("currency"),
+         "material": item.get("material"), "recommendation": item.get("recommendation")}
+        for item in options
+    ], [source for item in options for source in item.get("evidence", [])])
 
 
 def _draft_email(ctx, args):
@@ -306,6 +323,7 @@ def all_tools(db_path=DB) -> list[dict]:
         ("list_shipments", "List normalized shipment rows with source citations when an inbound ETA or tracker contradiction matters.", _schema({}), _list_shipments, False),
         ("get_po", "Return normalized PO lines and source citations for a real PO number, e.g. 4500318768.", _schema({"po_number": text}, ("po_number",)), _get_po, False),
         ("compare_sources", "Compare SAP, receipts, notices and reconciled truth for one material, e.g. CMP-GAM-008.", _schema({"material_id": text}, ("material_id",)), _compare_sources, False),
+        ("list_options", "List current deterministic Plan B options with their real option IDs; call before breakeven.", _schema({}), _list_options, False),
         ("breakeven", "Calculate deterministic expedite break-even sensitivity; loss_per_copy stays null when Dr. Vogt has not supplied it.", _schema({"option_id": text, "loss_per_copy": {"type": ["number", "null"]}}, ("option_id",)), _breakeven, False),
         ("draft_email", "Create exactly one guarded, approval-required supplier-language draft per supplier/component/PO issue. Supply real SUP-#### and issue fields; example supplier_id=SUP-0028.", _schema({
             "supplier_id": text,

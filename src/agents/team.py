@@ -163,6 +163,18 @@ class AgentTeam(Team):
             except Exception:
                 results[recipient] = {"status": row["status"], "text": row["result"]}
 
+        recipients = {
+            row["recipient"] for row in self.db.execute(
+                "SELECT recipient FROM agent_mailbox WHERE sender='triage'"
+            )
+        }
+        if "planner" in recipients and "chaser" not in recipients:
+            results["chaser"] = self.delegate(
+                "triage", "chaser",
+                "A Plan B option was proposed. Draft one guarded supplier request for the "
+                "real supplier/component/PO from the cited evidence; wait for human approval.",
+            )
+
         # Fixed, honest fallback: no LLM response means deterministic specialist order.
         if not self.db.execute(
             "SELECT 1 FROM agent_mailbox WHERE recipient != 'triage' LIMIT 1"
@@ -199,7 +211,8 @@ class AgentTeam(Team):
                 if quote:
                     claims.append({"text": quote, **citation})
         results["claims"] = claims
-        report = evaluate(trace_rows, {"text": final_text, "claims": claims}, str(self.db_path))
+        results["summary"] = self._run_summary(results, trace_rows)
+        report = evaluate(trace_rows, {"text": results["summary"], "claims": claims}, str(self.db_path))
         results["harness"] = report
         results["trace"] = activity(self.db, 100)
         if not report["ok"]:
@@ -216,6 +229,53 @@ class AgentTeam(Team):
         else:
             results["proposal_status"] = "eligible for human approval"
         return results
+
+    @staticmethod
+    def _run_summary(results: dict, trace_rows: list[dict]) -> str:
+        """Build a short summary only from deterministic tool results."""
+        values = []
+        for row in trace_rows:
+            result = row.get("result")
+            if isinstance(result, str):
+                try:
+                    result = json.loads(result)
+                except json.JSONDecodeError:
+                    continue
+            if isinstance(result, dict) and result.get("value") is not None:
+                values.append((row.get("tool"), result["value"]))
+
+        gap = None
+        for tool, value in values:
+            if tool != "list_shortfalls" or not isinstance(value, list):
+                continue
+            candidates = [item for item in value
+                          if isinstance(item, dict) and item.get("shortfall", 0) > 0]
+            if candidates:
+                gap = max(candidates, key=lambda item: item.get("shortfall", 0))
+                break
+
+        option = None
+        price = None
+        for tool, value in values:
+            if tool == "breakeven" and isinstance(value, dict):
+                option = value.get("recommendation") or value.get("option")
+                price = value.get("expedite_cost_eur") or value.get("cost_eur")
+            elif tool == "propose_option" and isinstance(value, dict) and option is None:
+                option = value
+        pieces = ["Data-drop triage completed from verified deterministic tool results."]
+        if gap:
+            label = gap.get("label") or gap.get("material") or "top gap"
+            pieces.append(f"Top gap: {label}, shortfall {gap.get('shortfall')} units.")
+        if option:
+            title = option.get("title") or option.get("label") or "Plan B option"
+            suffix = f", tool-computed price EUR {price}." if price is not None else "."
+            pieces.append(f"Recommended option: {title}{suffix}")
+        pending = results.get("pending_approvals") or []
+        if pending:
+            pieces.append("Human approval is pending; supplier outreach remains dry-run.")
+        else:
+            pieces.append("Human approval is required before any supplier outreach or commitment.")
+        return " ".join(pieces)
 
     def _fixed_fallback(self, event_lower: str) -> dict:
         results = {}

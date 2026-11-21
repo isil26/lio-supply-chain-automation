@@ -37,7 +37,8 @@ Return accepted/rejected lists with reasons.
 {load_pack("verifier")}"""
 
 PLANNER_PROMPT = f"""You are the Soony Plan B planner.
-Use only whatif, breakeven and supplier_history for decisions.
+Call list_options before breakeven and copy an option_id exactly from its result; never invent
+an option ID. Use only list_options, whatif, breakeven and supplier_history for decisions.
 Use propose_option for a pending human-approved option, never an actual commitment.
 State assumptions and unknown inputs, especially cost per missing copy.
 Do not reveal slack, walkaway, maximum premium or cost per copy.
@@ -62,6 +63,6 @@ ROLE_TOOLS = {
         "search_documents", "supplier_history",
     },
     "verifier": {"search_documents", "get_document"},
-    "planner": {"whatif", "breakeven", "supplier_history", "propose_option", "escalate_to_human"},
+    "planner": {"list_options", "whatif", "breakeven", "supplier_history", "propose_option", "escalate_to_human"},
     "chaser": {"draft_email", "send_email", "parse_reply", "escalate_to_human", "request_review"},
 }
