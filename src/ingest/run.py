@@ -142,9 +142,10 @@ def sqlite_value(value: object) -> object:
 
 def build_rows(
     inputs: dict[str, InputFile],
-) -> tuple[dict[str, list[tuple]], dict[str, int]]:
+) -> tuple[dict[str, list[tuple]], dict[str, int], dict[str, list[str]]]:
     rows = {dataset.table: [] for dataset in DATASETS}
     counts = {}
+    warnings = defaultdict(list)
     supplier_names: dict[str, set[str]] = defaultdict(set)
     # The tracker supplies names in place of IDs. Load profiles first.
     sources = sorted(inputs, key=lambda source: (inputs[source].dataset.table != "suppliers", source))
@@ -155,6 +156,8 @@ def build_rows(
         start = len(table_rows)
         try:
             for record in read_records(source, entry.body, entry.dataset, resolved_names):
+                if record.warnings:
+                    warnings[source].extend(record.warnings)
                 if isinstance(record.value, Supplier):
                     for name in (record.value.name, record.value.legal_name):
                         if name:
@@ -164,7 +167,9 @@ def build_rows(
         except (ValueError, ParseError, BadZipFile, KeyError, IndexError, StopIteration) as exc:
             raise ValueError(f"{source}: {exc}") from exc
         counts[source] = len(table_rows) - start
-    return rows, counts
+        if not counts[source] and Path(source).suffix == ".csv":
+            raise ValueError(f"{source}: CSV has no data rows")
+    return rows, counts, dict(warnings)
 
 
 def hash_diff(before: dict[str, str], after: dict[str, str]) -> list[dict]:
@@ -203,7 +208,7 @@ def ingest(data: Path, state: Path, database: Path) -> dict:
         manifest = load_manifest(state)
         inputs = load_inputs(data, manifest)
         create_schema(db)
-        prior = db.execute("SELECT bridge_manifest FROM ingest_state WHERE id = 1").fetchone()
+        prior = db.execute("SELECT bridge_manifest, last_summary FROM ingest_state WHERE id = 1").fetchone()
         previous_manifest = json.loads(prior[0]) if prior and prior[0] is not None else None
         previous_files = {
             source: (table, digest, count) for source, table, digest, count
@@ -213,7 +218,7 @@ def ingest(data: Path, state: Path, database: Path) -> dict:
         changes = hash_diff({source: entry[1] for source, entry in previous_files.items()},
                             current_hashes)
         if changes or prior is None:
-            rows, counts = build_rows(inputs)
+            rows, counts, warnings = build_rows(inputs)
             tables = replace_rows(db, rows)
             db.execute("DELETE FROM ingest_files")
             db.executemany("INSERT INTO ingest_files VALUES (?, ?, ?, ?)", (
@@ -221,6 +226,7 @@ def ingest(data: Path, state: Path, database: Path) -> dict:
                 for source, entry in inputs.items()
             ))
         else:
+            warnings = json.loads(prior[1]).get("warnings", {})
             counts = {source: entry[2] for source, entry in previous_files.items()}
             tables = {
                 dataset.table: {"rows": db.execute(f"SELECT count(*) FROM {dataset.table}").fetchone()[0],
@@ -237,6 +243,7 @@ def ingest(data: Path, state: Path, database: Path) -> dict:
             "hash_source": "bridge/state.json" if manifest is not None else "local files",
             "files": changes,
             "tables": tables,
+            "warnings": warnings,
             "bridge_files": hash_diff(previous_manifest or {}, manifest) if manifest is not None else None,
         }
         db.execute("INSERT OR REPLACE INTO ingest_state VALUES (1, ?, ?)", (

@@ -211,11 +211,16 @@ def readiness(con, data_root):
     stock_rows = [row for row in tab["stock"] if row["site"] == site and row["snapshot_date"] == snapshot]
     available, stock_sources = defaultdict(float), defaultdict(list)
     batches = {}
+    seen_lots = set()
     for row in stock_rows:
-        available[row["material_id"]] += row["quantity"]
         stock_sources[row["material_id"]].append(row["source"])
         if row["batch"]:
+            lot = (row["batch"], row["material_id"], row["quantity"])
+            if lot in seen_lots:
+                continue
+            seen_lots.add(lot)
             batches[row["batch"]] = row
+        available[row["material_id"]] += row["quantity"]
     original = dict(available)
     site_receipts = [row for row in tab["receipt"] if row["plant"] == site]
     receipt_by_id = {row["gr_number"]: row for row in site_receipts}
@@ -386,7 +391,8 @@ def readiness(con, data_root):
             confirmed_qty = actual
             evidence = [*evidence, citation, *balance]
         statuses = {row["status"] for row in feeds if row["status"]}
-        if statuses and statuses <= CANCELLED or head.get("status") in {"delivered", "received"}:
+        authoritative_cancel = "erp/" in head["source"]["file"] and head["status"] in CANCELLED
+        if authoritative_cancel or (statuses and statuses <= CANCELLED) or head["status"] in {"delivered", "received"}:
             continue
         # Only shipment-specific quantities count. A PO quantity can span multiple shipments.
         eta, route = shipment_time(dict(head, etas=[row["eta"] for row in feeds], flight_evidence=reference in shipped), route_map, shift_start)

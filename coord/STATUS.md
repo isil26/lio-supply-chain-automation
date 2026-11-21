@@ -45,3 +45,4 @@ Last human sync: Sat 21 Nov 2026
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | done | Seven regressions and 20 diagnostic probes completed. Proposed cancellation, decoder, and dashboard fixes verified in a source copy. | 21 Nov |
 
 | codex-consistency | T21 default forecast consistency | docs/NUMBERS.md, tests/test_numbers.py | done | Tested 489d0cc on the private post-drop snapshot. The default dashboard matches the published cutoff, trial count and edition figures. Historical supplier delays are labeled as sensitivity. | 21 Nov |
+| codex-fix | T32 surprise-drop fixes and decision integration | src/truth, src/ingest, src/docs, src/decide, src/orchestrator, web (warnings and decision/health display) | in_progress | Applying drop fixes before wiring T15/T17. | 21 Nov |

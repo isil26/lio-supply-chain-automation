@@ -175,6 +175,12 @@ def decode_csv(body: bytes) -> str:
     raise ValueError("could not decode CSV")
 
 
+def ambiguous_slash_date(value: str) -> bool:
+    match = re.fullmatch(r"(\d{1,2})/(\d{1,2})/\d{4}", value)
+    return bool(match and 1 <= int(match[1]) <= 12 and 1 <= int(match[2]) <= 12
+                and int(match[1]) != int(match[2]))
+
+
 def read_csv(body: bytes, dataset: Dataset, defaults: dict[str, str]) -> Iterator[SourceRow]:
     contents = decode_csv(body)
     first = next((line for line in contents.splitlines() if line.strip()), "")
@@ -277,6 +283,7 @@ class Record:
     value: BaseModel
     sheet: str
     row: int
+    warnings: tuple[str, ...] = ()
 
 
 def read_records(
@@ -322,4 +329,9 @@ def read_records(
             errors = exc.errors(include_input=False, include_context=False, include_url=False)
             message = ", ".join(f"{error['loc'][0]} {error['msg']}" for error in errors)
             raise ValueError(f"{location}: {message}") from exc
-        yield Record(record, sheet, row)
+        warnings = []
+        for field, raw_value in values.items():
+            parsed = getattr(record, field, None)
+            if isinstance(parsed, date) and isinstance(raw_value, str) and ambiguous_slash_date(raw_value):
+                warnings.append(f"{location}, {field}: ambiguous slash date {raw_value}; interpreted as {parsed.isoformat()}")
+        yield Record(record, sheet, row, tuple(warnings))
