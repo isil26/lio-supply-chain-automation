@@ -57,28 +57,44 @@ function respond(response, status, body, type = 'application/json; charset=utf-8
   response.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 }
 
-function loginPage(response, failed = false) {
+function loginReturn(query) {
+  const params = new URLSearchParams();
+  if (query.get("mail") === "1") params.set("mail", "1");
+  const thread = query.get("thread") || "";
+  if (/^[A-F0-9]{1,32}$/.test(thread)) params.set("thread", thread);
+  return params.size ? "/?" + params.toString() : "/";
+}
+
+function safeReturn(path) {
+  if (typeof path !== "string" || !/^\/(?:\?(?:mail=1(?:&thread=[A-F0-9]{1,32})?|thread=[A-F0-9]{1,32}))?$/.test(path)) return "/";
+  return path;
+}
+
+function loginPage(response, failed = false, next = "/") {
   const template = readFileSync(join(__dirname, 'login.html'), 'utf8');
   const page = process.env.SOONY_LIVE_UPSTREAM
     ? template.replace('private supplier-drop replay', 'private live control room') : template;
-  respond(response, failed ? 401 : 200, page.replace('<!-- LOGIN_ERROR -->', failed ? '<p role="alert">The team password is incorrect.</p>' : ''), 'text/html; charset=utf-8');
+  respond(response, failed ? 401 : 200, page
+    .replace('<!-- LOGIN_RETURN -->', '<input type="hidden" name="next" value="' + next.replace(/&/g, "&amp;") + '">')
+    .replace('<!-- LOGIN_ERROR -->', failed ? '<p role="alert">The team password is incorrect.</p>' : ''), 'text/html; charset=utf-8');
 }
 
-async function getPassword(request) {
+async function getLogin(request) {
   if (Number(request.headers['content-length']) > 1024 || !request.headers['content-type']?.startsWith('application/x-www-form-urlencoded')) {
-    return '';
+    return new URLSearchParams();
   }
-  if (typeof request.body === 'object' && request.body !== null) {
-    return typeof request.body.password === 'string' ? request.body.password : '';
+  if (typeof request.body === 'object' && request.body !== null && !Buffer.isBuffer(request.body)) {
+    return new URLSearchParams({ password: typeof request.body.password === 'string' ? request.body.password : '',
+                                 next: typeof request.body.next === 'string' ? request.body.next : '' });
   }
   let body = request.body || '';
   if (!body) {
     for await (const chunk of request) {
       body += chunk;
-      if (body.length > 1024) return '';
+      if (body.length > 1024) return new URLSearchParams();
     }
   }
-  return new URLSearchParams(body).get('password') || '';
+  return new URLSearchParams(String(body));
 }
 
 module.exports = async function control(request, response) {
@@ -107,21 +123,22 @@ module.exports = async function control(request, response) {
     return respond(response, 403, { error: 'Use the team dashboard to submit this request' });
   }
   if (op === 'login' && method === 'POST') {
-    const password = await getPassword(request);
-    const candidate = createHash('sha256').update(password).digest('hex');
-    if (!equal(candidate, passwordHash)) return loginPage(response, true);
+    const credentials = await getLogin(request);
+    const next = upstream ? safeReturn(credentials.get("next")) : "/";
+    const candidate = createHash('sha256').update(credentials.get("password") || "").digest('hex');
+    if (!equal(candidate, passwordHash)) return loginPage(response, true, next);
     setSession(response, key, {
       expiration: Math.floor(Date.now() / 1000) + SESSION_SECONDS,
       phase: 'before',
       nonce: randomBytes(16).toString('base64url'),
     });
-    response.setHeader('Location', '/');
+    response.setHeader('Location', next);
     return respond(response, 303, '');
   }
 
   const session = sessionFrom(request, key);
   if (op === 'home' && method === 'GET' && !session && !trustedGateway) {
-    return loginPage(response);
+    return loginPage(response, false, upstream ? loginReturn(url.searchParams) : "/");
   }
   if (!session && !trustedGateway) return respond(response, 401, { error: 'Team login required' });
   if (target) return forwardLive(request, response, upstream, target, process.env.SOONY_LIVE_UPSTREAM_TOKEN);

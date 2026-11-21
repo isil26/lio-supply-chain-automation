@@ -85,8 +85,8 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T44 | Agent team trace panel in the control room (graph, timeline, citations, harness badge, approvals, recorded-run mode for hosted) | copilot-trace | web/src/agents | done P2 | T41 contract |
 | T47b | Fix live agent failures: stop_check/loops, citation_check, briefer policy errors; budget $0.60 | copilot-fix2 | src/agents | done P1 | T47 |
 | T47c | Harness calibration + debug citation/numeric failures in replay; one live run per scenario under $0.30 | copilot-fix3 | src/agents | done P1 | T47b |
-| T68 | Host the persistent Python backend, add a protected Vercel live path and deploy current main automatically | murat-agent | deploy/backend, Vercel live preview configuration, scoped API and UI glue | in_progress | T19-Redeploy, T41 |
-| T69 | Turn a matched supplier reply into a cited forecast scenario and reviewable next step | murat-agent | src/chaser reply extraction, src/orchestrator, web supplier threads | in_progress | T26, T67 |
+| T68 | Host the persistent Python backend, add a protected Vercel live path and deploy current main automatically | murat-agent | deploy/backend, Vercel live preview configuration, scoped API and UI glue | done | T19-Redeploy, T41 |
+| T69-Reply | Turn a matched supplier reply into a cited forecast scenario and reviewable next step | murat-agent | src/chaser reply extraction, src/orchestrator, web supplier threads | done | T26, T67 |
 | T67 | Event taxonomy + materiality triage (ignore/watch/act/escalate with reasons, 12 labelled synthetic events, eval) | copilot-triage | src/agents/triage_policy.py, tests/agent_eval/events/, tests/test_triage_policy.py | done P1 | Added deterministic + ambiguous LLM triage, SQLite log, 12 synthetic fixtures and eval; 4 tests pass and eval is 12/12 |
 | T69 | Money on the table: cited damages, price drift, freight terms, leakage | copilot-claims | src/decide/claims.py, docs/CLAIMS.md, tests/test_claims.py | done P1 | HIDDEN_FINDINGS |
 | T41b | Fix empty agent trace endpoint, German-notice scenario citation, runs list fields | copilot-loop2 | src/agents, /api/agents routes | in_progress P1 | T41 |

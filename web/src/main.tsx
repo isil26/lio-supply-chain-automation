@@ -347,7 +347,7 @@ function App() {
                   <strong>{plan.simulated ? "Simulated decision" : "Reply decision"} · {{
                     proposed: "Proposed", pending: "Pending details", approved: "Approved for follow-up", review: "Under review",
                   }[plan.status]}</strong>
-                  <p><a href={`?${mailView ? "mail=1&" : ""}thread=${encodeURIComponent(selectedThread.id)}#reply-${plan.id}`}>Decision {plan.id}</a></p>
+                  <p><a style={{ color: "var(--text)" }} href={`?${mailView ? "mail=1&" : ""}thread=${encodeURIComponent(selectedThread.id)}#reply-${plan.id}`}>Decision {plan.id}</a></p>
                   {plan.shipmentId && plan.reportedEta && <p>{plan.shipmentId} · Reported ETA {etaDate.format(new Date(plan.reportedEta))} CET</p>}
                   {plan.editions?.map((edition) => <p key={edition.title}>
                     {edition.title} median packed · {formatNumber(edition.before)} → {formatNumber(edition.after)}
