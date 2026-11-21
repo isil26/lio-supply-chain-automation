@@ -149,3 +149,4 @@ Last human sync: Sat 21 Nov 2026
 
 | codex-card-replay | T98-Card-Replay | truth receipt/shipment reconciliation, regression and focused demo | in_progress | Owns game-card double count and one-case replay. Reviewed open PRs and notified Murat. | 21 Nov |
 | nick | T99 agent optimization (spec + delegation to murat-agent) | coord | in_progress | Delegated to murat-agent via INBOX 22:40; I review results and update HANDOFF/pitch claims. | 21 Nov |
+| nick | T100 agent live view (spec + delegation) | coord | in_progress | Delegated to leo-claude (build) + gülşah-agent (taste) via INBOX 22:50. | 21 Nov |
