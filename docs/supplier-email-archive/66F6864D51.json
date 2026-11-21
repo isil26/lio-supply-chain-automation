@@ -1,0 +1,82 @@
+{
+  "thread_id": "66F6864D51",
+  "supplier_id": "SUP-0011",
+  "supplier": "Boise Semi",
+  "material": "CMP-GAM-001",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:25:24+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "[SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179528552481.95969.322111796780427962@gmail.com>",
+      "chase_id": "66F6864D51",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for confirming the 36,000 packed CMP-GAM-001 cards under PO 4500318769 and the hold on AWB 020-48113304. Is there any released European stock, or any faster pickup and air option for at least 6,800 cards to be usable at DC-HAM by Sunday 22 November at 08:00 CET? Please also quote the full 36,000 if a route is available.\n\nPlease give the quantity and stock location, earliest release or pickup time with time zone, exactly what written authorization is needed, and the earliest realistic handoff in Hamburg. If you can quote expedited freight through Logistics, please send the itemized price. If the Sunday morning window is impossible, please give the earliest firm option.\n\nThis is an information and quote request only. It does not accept EXW terms, nominate a forwarder, book freight, or place an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:29:18+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a1ff5eb0da-69053586-bf66-49df-8f4f-50e2c976ad98-000000@eu-west-1.amazonses.com>",
+      "chase_id": "66F6864D51",
+      "in_reply_to": "<179528552481.95969.322111796780427962@gmail.com>",
+      "references": [
+        "<179528552481.95969.322111796780427962@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nWe do not have released European stock for CMP-GAM-001; the full 36,000 cards for PO 4500318769 are packed at our Boise dock. A Sunday, 22 November, 08:00 CET handoff at DC-HAM is not feasible.\n\nFor any quantity up to the full 36,000, we need either a brief written confirmation from Soony procurement accepting EXW Boise for PO 4500318769 or nomination of Soony’s forwarder. Once received, we will release the goods for the next available flight; Frankfurt arrival is approximately two days after release. I cannot provide a firm Hamburg handoff time until release and carrier handling are confirmed.\n\nI’ll ask Logistics to review expedited air options and provide itemized freight pricing separately.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:58:15+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "[SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<soony-sunday-recovery-boise-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": "66F6864D51",
+      "in_reply_to": "<010201a1ff5eb0da-69053586-bf66-49df-8f4f-50e2c976ad98-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528552481.95969.322111796780427962@gmail.com>",
+        "<010201a1ff5eb0da-69053586-bf66-49df-8f4f-50e2c976ad98-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Megan,\n\nWe understand the normal Boise–ORD–FRA service and the Sunday 08:00 Hamburg handoff are infeasible. Is there a different, carrier-verified option for part of PO 4500318769? Could your logistics team price a priority uplift, next-flight-out service or dedicated charter for 6,800 released, programmed GH6 cards from the packed lot, including a direct truck from an alternative European gateway if faster? If your team can arrange collection on our behalf, please quote the terms and the latest time an order would have to reach you.\n\nAn earlier split is useful. We need the last of these 6,800 on the DC-HAM packing line by Sunday 22 November at 18:30 CET. Please confirm feasible quantities with actual pickup and flight slots, cartons and gross weight, customs and final road leg, time-zone-specific line handoff, all-in charges and quote validity. If no premium option makes that time, please say so and give the earliest feasible line handoff. The 36,000-unit standard itinerary is already on file.\n\nThis is an RFQ. Please keep the existing booking and terms pending separate written authorization from Soony.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:00:51+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a1ff7b9335-3f871c7f-db9d-4b2f-8a48-a7f434c48adc-000000@eu-west-1.amazonses.com>",
+      "chase_id": "66F6864D51",
+      "in_reply_to": "<soony-sunday-recovery-boise-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179528552481.95969.322111796780427962@gmail.com>",
+        "<010201a1ff5eb0da-69053586-bf66-49df-8f4f-50e2c976ad98-000000@eu-west-1.amazonses.com>",
+        "<soony-sunday-recovery-boise-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nJust to be clear, no premium option can place 6,800 units from the Boise-packed lot on the DC-HAM line by Sunday, 22 November at 18:30 CET. We have no released European inventory, and the goods remain on hold pending Soony’s written EXW confirmation for PO 4500318769 or forwarder nomination.\n\nFollowing release, the earliest air timing is approximately two days to Frankfurt; final customs clearance and road delivery to Hamburg would follow. I cannot commit to a firm DC-HAM handoff without release and carrier confirmation.\n\nI have asked Logistics to assess priority-air alternatives and all-in freight, including any expedited European road leg. They will need to confirm available slots, carton/weight details, charges, and quote validity before we can issue a quote.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:01:05+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179528766555.12942.10376291555397434884@gmail.com>",
+      "chase_id": "D0169679EB",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nWe understand the full quantity is not possible in time. Could you tell us how many units you could ship before 22 Nov 20:00 CET as a part shipment, and the earliest date for the rest? To arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight.\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    }
+  ]
+}

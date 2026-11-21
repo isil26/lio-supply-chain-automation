@@ -1,0 +1,120 @@
+{
+  "thread_id": "06E83D9DBA",
+  "supplier_id": "SUP-0028",
+  "supplier": "Karton Nowak",
+  "material": "CMP-GAM-004",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:38:04+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "[SOONY-06E83D9DBA] Pilne: rękawy CMP-GAM-004, rewizja C",
+      "message_id": "<179528628457.3692.18379607880546550847@gmail.com>",
+      "chase_id": "06E83D9DBA",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nCzy mogą Państwo potwierdzić, ile gotowych i zwolnionych jakościowo rękawów CMP-GAM-004 w rewizji C jest fizycznie w DC-HAM z dostawy PO 7K21M? Prosimy o dowód dostawy, numer partii i potwierdzenie rewizji. Jeśli dostawa jest jeszcze w drodze, prosimy o potwierdzone miejsce oraz najwcześniejsze okno odbioru w Hamburgu wraz ze strefą czasową.\n\nPilnie szukamy też co najmniej 6 000 dodatkowych gotowych rękawów rewizji C. Czy można je dołączyć do najbliższego transportu lub odebrać w Europie tak, aby trafiły na linię DC-HAM przed 20:00 CET w niedzielę 22 listopada? Prosimy podać potwierdzoną ilość, partię, miejsce, status zwolnienia, najwcześniejszy termin i cenę z dostawą. Prosimy o osobne zestawienie dostawy PO 7K21M i dodatkowych sztuk.\n\nTo wyłącznie zapytanie o dostępność i cenę. Nie jest zamówieniem ani rezerwacją transportu.\n\nZespół Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:40:43+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-06E83D9DBA] Pilne: rękawy CMP-GAM-004, rewizja C",
+      "message_id": "<010201a1ff692404-ffcab88f-d9c9-4374-a519-53ec49487e9b-000000@eu-west-1.amazonses.com>",
+      "chase_id": "06E83D9DBA",
+      "in_reply_to": "<179528628457.3692.18379607880546550847@gmail.com>",
+      "references": [
+        "<179528628457.3692.18379607880546550847@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nPO 7K21M obejmuje 20 000 rękawów CMP-GAM-004 w rewizji C i zgodnie z planem Warta Trans miała dostarczyć je do DC-HAM dziś wieczorem. Nie mam jeszcze od przewoźnika podpisanego dowodu dostawy ani potwierdzenia przyjęcia w DC-HAM; numer partii i status zwolnienia jakościowego mogę potwierdzić po sprawdzeniu z magazynem.\n\nDodatkowe sztuki: obecnie trwa planowany postój offsetu. Możemy wykonać na linii cyfrowej do 15 000 rękawów w 36 godzin od pisemnego zlecenia, z użyciem posiadanego pliku rewizji C. Nie możemy więc potwierdzić dostawy dodatkowych 6 000 sztuk do DC-HAM przed 20:00 CET w niedzielę. Cena w trybie §3.2 wynosi 0,081 EUR/szt. DAP Hamburg, z zastrzeżeniem formalnego potwierdzenia zamówienia i transportu ekspresowego.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:41:44+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-06E83D9DBA] Pilne: rękawy CMP-GAM-004, rewizja C",
+      "message_id": "<179528650443.4811.3950502064174721664@gmail.com>",
+      "chase_id": "80FC81672C",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\ndziękujemy za odpowiedź.\n\nRozumiemy, że pełna ilość nie jest możliwa na czas. Ile sztuk mogliby Państwo wysłać przed 22 Nov 20:00 CET jako dostawę częściową i jaki jest najwcześniejszy termin dla reszty?\n\nTo jest wyłącznie zapytanie informacyjne, a nie zamówienie.\n\nZespół startowy Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:45:49+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-06E83D9DBA] Pilne: rękawy CMP-GAM-004, rewizja C",
+      "message_id": "<010201a1ff6dd1c7-75dd58e6-1f79-4ca1-a207-d7a06212e210-000000@eu-west-1.amazonses.com>",
+      "chase_id": "80FC81672C",
+      "in_reply_to": "<179528650443.4811.3950502064174721664@gmail.com>",
+      "references": [
+        "<179528650443.4811.3950502064174721664@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nW ramach cyfrowej linii podczas postoju możemy wykonać maksymalnie 15 000 rękawów w ciągu 36 godzin od otrzymania pisemnego zlecenia. Z uwagi na ten termin nie mogę potwierdzić żadnej dodatkowej ilości z dostawą do DC-HAM przed 22 listopada, godz. 20:00 CET.\n\nDla całych 15 000 sztuk najwcześniejszy termin pozostaje 36 godzin od zlecenia, plus transport ekspresowy z Poznania do Hamburga. Po wznowieniu offsetu w poniedziałek 23 listopada o 06:00 możemy sprawdzić termin wykonania pozostałej ilości.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:46:11+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-06E83D9DBA] Pilne: rękawy CMP-GAM-004, rewizja C",
+      "message_id": "<179528677143.6650.14178255999275386688@gmail.com>",
+      "chase_id": "20C4A8F160",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\ndziękujemy za odpowiedź.\n\nProsimy również o potwierdzenie: terminu dostawy do Hamburga, ceny jednostkowej z dostawą. Prosimy o przesłanie listy pakunkowej lub numeru przesyłki/rezerwacji, gdy będzie dostępny.\n\nTo jest wyłącznie zapytanie informacyjne, a nie zamówienie.\n\nZespół startowy Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:50:18+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-06E83D9DBA] Pilne: rękawy CMP-GAM-004, rewizja C",
+      "message_id": "<010201a1ff71ece5-798f76c8-5343-4d43-97c5-20a193220529-000000@eu-west-1.amazonses.com>",
+      "chase_id": "20C4A8F160",
+      "in_reply_to": "<179528677143.6650.14178255999275386688@gmail.com>",
+      "references": [
+        "<179528677143.6650.14178255999275386688@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nDla ewentualnego dodatkowego nakładu cyfrowego cena wynosi 0,081 EUR za sztukę DAP Hamburg, zgodnie z §3.2, plus koszt transportu ekspresowego, który muszę potwierdzić z Warta Trans. Termin dostawy do Hamburga to najwcześniej po zakończeniu 36-godzinnej produkcji oraz około 9 godzin transportu z Poznania.\n\nDla PO 7K21M numer transportu to PO 7K21M; przewoźnik Warta Trans planował dostawę do DC-HAM wieczorem 21 listopada. Listę pakunkową, numer partii oraz dowód dostawy mogę przesłać po otrzymaniu ich z magazynu i od przewoźnika.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:51:10+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-06E83D9DBA] Pilne: rękawy CMP-GAM-004, rewizja C",
+      "message_id": "<179528707057.9605.12888685485775821323@gmail.com>",
+      "chase_id": "E3C55B9000",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\ndziękujemy za odpowiedź.\n\nProsimy również o potwierdzenie: dostępnej ilości, terminu dostawy do Hamburga. Prosimy o przesłanie listy pakunkowej lub numeru przesyłki/rezerwacji, gdy będzie dostępny.\n\nTo jest wyłącznie zapytanie informacyjne, a nie zamówienie.\n\nZespół startowy Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:53:58+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-06E83D9DBA] Pilne: rękawy CMP-GAM-004, rewizja C",
+      "message_id": "<010201a1ff7546e4-a4fc02ca-d8aa-4d2c-85e2-150a8a8ce10b-000000@eu-west-1.amazonses.com>",
+      "chase_id": "E3C55B9000",
+      "in_reply_to": "<179528707057.9605.12888685485775821323@gmail.com>",
+      "references": [
+        "<179528707057.9605.12888685485775821323@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nDla dodatkowej produkcji dostępna ilość w okresie postoju to maksymalnie 15 000 sztuk CMP-GAM-004 rewizji C. Najwcześniejsza dostawa do DC-HAM byłaby możliwa po 36 godzinach produkcji od pisemnego zlecenia oraz około 9 godzinach transportu ekspresowego z Poznania.\n\nDla wysyłki PO 7K21M dostępna ilość wynosi 20 000 sztuk; transport Warta Trans był planowany do DC-HAM na wieczór 21 listopada. Numer referencyjny przesyłki to PO 7K21M. Listę pakunkową i potwierdzenie dostawy prześlę, gdy otrzymam je z magazynu i od przewoźnika.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    }
+  ]
+}

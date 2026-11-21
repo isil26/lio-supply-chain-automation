@@ -123,3 +123,5 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T88 | Re-ingest the 19:25 drop (launch_status, ECN-118/119, components_update, products, vendor master v2, news, memo, org v2) and update engine inputs + NUMBERS.md baseline | sonnet-engine | src/ingest, src/docs, src/truth | done | T1, T3 |
 
 | T81-Supplier-Rescue | Verify supplier-only Sunday recovery for 6,800 cards and 3,400 statues and share Dr. Vogt’s spending guidance | supply-rescue | supplier correspondence, authorization notes, internal agent knowledge | in_progress | T81, T88 |
+
+| T93-Mail-Archive | Publish verified Supplier Chaser email chains for team agents | codex-mail-archive | docs/supplier-email-archive/, own coordination notes | done | T80-Mac-Mail |
