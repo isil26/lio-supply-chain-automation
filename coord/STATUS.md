@@ -139,6 +139,6 @@ Last human sync: Sat 21 Nov 2026
 | murat-agent | T50-Live-Portal | bridge, live worker and Manti sync view | in_progress | Authenticated the Mac to the official read-only portal API. Baseline manifest matches all 318 verified files. | 21 Nov |
 | murat-agent | T50-Live-Portal | bridge, live worker and Manti sync view | done | Authenticated portal inventory matches all 318 files. Controlled add/change/remove refreshed forecast and sent one captured enquiry. Restart and rejected inputs preserved the accepted plan. | 21 Nov |
 | codex-deploy | T19-CI push-triggered protected Vercel release | .github/workflows/soony-vercel.yml, .github/soony-vercel | in_progress | GitHub push trigger and build passed in run 44940975860. Publishing awaits the project-scoped Vercel CI token. The five-minute release watch continues. | 21 Nov |
-| murat-agent | T55 | scripts/cost_report.py and scripts/status.sh | in_progress | Claimed the read-only token, cost and budget report. | 21 Nov |
-| murat-agent | T60 | tests/drops | in_progress | Claimed the disposable synthetic replay set. | 21 Nov |
-| murat-agent | T81 | Action Queue API and live relay | in_progress | Claimed the remaining backend queue and approval mutations. | 21 Nov |
+| murat-agent | T55 | scripts/cost_report.py and scripts/status.sh | done locally | Verified Hamburg date grouping, EUR conversion, budget alerts and partial legacy records. | 21 Nov |
+| murat-agent | T60 | tests/drops | done locally | All three synthetic notices parsed. The delay raised the card gap to 34,800 and the 5,600-statue hold persisted. | 21 Nov |
+| murat-agent | T81 | Action Queue API and live relay | done locally | Verified GET and mutations in offline rehearsal and the authenticated gateway on loopback. Awaiting authorization to publish. | 21 Nov |
