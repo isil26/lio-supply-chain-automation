@@ -98,3 +98,5 @@ Last human sync: Sat 21 Nov 2026
 | copilot-viz | T71 live agent visualization + Present mode | web/src/agents | done | Added animated graph, event lane, stream replay, harness panel, human gate, counters and Present mode; normal/static builds pass | 21 Nov 16:52 |
 | nick | stopped working on T71 visualization (handed over) | - | released | continuing on agent quality, Vogt prep, review | 21 Nov |
 | copilot-planner | T47d planner option ids + summary + chaser draft reach | src/agents | done | list_options/real IDs, grounded summary, chaser draft approval, per-step cost; focused tests pass. Live run blocked by non-interactive permission. | 21 Nov |
+| copilot-gate | T72 Release Gate | src/decide/release_gate.py | in_progress | backend only | 21 Nov |
+| copilot-pack | T73 pack-out optimizer + numbered allocation | src/decide/packplan.py | in_progress | backend only | 21 Nov |
