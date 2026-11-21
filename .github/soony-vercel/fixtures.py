@@ -1,5 +1,6 @@
 """Stage fictional hosted fixtures and verify the public build before upload."""
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -18,6 +19,9 @@ def replace(path, before, after):
 
 
 def stage(source, fixture_dir):
+    # Hosted graph and reasoning render from the authenticated recording.
+    mock = source / "web/src/agents/mock.json"
+    mock.write_text('{"steps":[],"approvals_pending":[]}\n')
     suppliers = source / "web/src/suppliers"
     for original, fictional in FIXTURES.items():
         shutil.copyfile(fixture_dir / fictional, suppliers / original)
@@ -26,6 +30,18 @@ def stage(source, fixture_dir):
         '{example ? `What the 6 suppliers answered by email${data.as_of ? ` (${data.as_of})` : ""}.` : "What the suppliers answered by email."}',
         '{example ? "Fictional offers for this example. Decisions stay in this browser." : "Offers from the latest supplier replies. The mail agent sends your decision."}',
     )
+    offers = suppliers / "Offers.tsx"
+    text, count = re.subn(
+        r"const COUNTRY: Record<[^\n]+\n[^}]+};\n"
+        r"const PRODUCT: Record<[^\n]+\n[^}]+};\n"
+        r"function country[^\n]+\nfunction product[^\n]+",
+        "function country(d: Deal) { return d.supplier; }\n"
+        "function product(material: string) { return material; }",
+        offers.read_text(),
+    )
+    if count != 1:
+        raise SystemExit("The supplier country and product lookups changed. Review the hosted substitutions.")
+    offers.write_text(text)
     replace(
         suppliers / "BestSupplier.tsx",
         '{example ? "Example with sample replies." : "From the latest supplier replies."} In live mode the mail agent sends these emails by itself, only to the case suppliers.',
@@ -38,7 +54,7 @@ def stage(source, fixture_dir):
 def case_markers(node):
     if isinstance(node, dict):
         for key, item in node.items():
-            if key in {"supplier", "excerpt", "draft_id", "body"} and isinstance(item, str) and len(item) >= 8:
+            if key in {"supplier", "supplier_id", "id", "excerpt", "conditions", "eta_text", "draft_id", "body"} and isinstance(item, str) and len(item) >= 8:
                 yield item
             yield from case_markers(item)
     if isinstance(node, list):
