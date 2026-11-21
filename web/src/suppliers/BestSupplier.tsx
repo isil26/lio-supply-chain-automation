@@ -84,7 +84,7 @@ export function BestSupplier() {
       <div className="bsup-head">
         <div>
           <h3 id="best-supplier-title">Best supplier</h3>
-          <p className="card-sub">{example ? "Example with sample replies." : "From the latest supplier replies."} In live mode the mail agent sends these emails by itself, only to the case suppliers.</p>
+          <p className="card-sub">{example ? "Generic example data, not case data." : "From the latest supplier replies."} In live mode the mail agent sends these emails by itself, only to the case suppliers.</p>
         </div>
         {!example && drafts > 0 && <button className="primary-button" onClick={() => void prepare()} disabled={busy}>{busy ? "Preparing…" : `Prepare ${drafts} email${drafts === 1 ? "" : "s"} now`}</button>}
       </div>

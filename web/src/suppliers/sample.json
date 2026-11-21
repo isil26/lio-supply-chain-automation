@@ -1,7 +1,8 @@
 {
+ "_fixture": "GENERIC EXAMPLE DATA for the hosted/static card. Not case data: no real suppliers, emails or thread IDs.",
  "materials": [
   {
-   "material": "CMP-GAM-001",
+   "material": "EXAMPLE-PART-1",
    "need": 6800,
    "context": {
     "hours_left": 26.5,
@@ -26,12 +27,12 @@
     "diversity": 0.02
    },
    "why": "time-critical: weighing on-time chance, price, delivery buffer most",
-   "pick": "Hwaseong Memory",
+   "pick": "Example Supplier A",
    "plan": {
     "allocation": [
      {
-      "supplier": "Hwaseong Memory",
-      "thread_id": "1FF005CE95",
+      "supplier": "Example Supplier A",
+      "thread_id": "EXAMPLE001",
       "units": 6800,
       "expected_on_time_units": 6800
      }
@@ -41,7 +42,7 @@
    },
    "ranking": [
     {
-     "supplier": "Hwaseong Memory",
+     "supplier": "Example Supplier A",
      "score": 83.6,
      "eligible": true,
      "factors": {
@@ -72,7 +73,7 @@
      ]
     },
     {
-     "supplier": "Boise Semi",
+     "supplier": "Example Supplier D",
      "score": 77.6,
      "eligible": true,
      "factors": {
@@ -96,7 +97,7 @@
       "10.4 USD/unit (about EUR 9.57)",
       "shipping document",
       "answered in 4 h",
-      "ships EXW Boise from outside the EU (customs clearance)",
+      "ships EXW from the supplier site, outside the EU (customs clearance)",
       "usual minimum order is 20,000",
       "pays on NET30"
      ]
@@ -104,7 +105,7 @@
    ],
    "negotiations": [
     {
-     "supplier": "Hwaseong Memory",
+     "supplier": "Example Supplier A",
      "asks": [
       {
        "lever": "price",
@@ -120,15 +121,15 @@
        "units": 6800
       }
      ],
-     "draft_id": "B1D2502897",
-     "subject": "[SOONY-B1D2502897] CMP-GAM-001 제안 재검토 요청",
-     "body": "안녕하세요,\n\nCMP-GAM-001 6,800개에 대한 제안에 감사드립니다. 진행을 위해 다음 사항을 요청드립니다:\n- 개당 9.95 USD 대신 9.36 USD(도착 기준) 단가;\n- 추가 비용 없는 특송 또는 항공 운송;\n- 이번 주문에 한해 통상 최소 주문 수량보다 적은 6,800개 수락;\n\n가능한 사항을 알려 주시기 바랍니다.\n\n이 메일은 정보 요청이며 발주가 아닙니다.\n\nSoony 출시 담당팀",
+     "draft_id": "EXAMPLE006",
+     "subject": "Example subject (generic fixture)",
+     "body": "Hello,\n\nThis is generic example text for the demo card. It is not a real message.\n\nExample launch team",
      "saved": false
     }
    ]
   },
   {
-   "material": "CMP-GAM-010",
+   "material": "EXAMPLE-PART-2",
    "need": 3400,
    "context": {
     "hours_left": 26.5,
@@ -153,12 +154,12 @@
     "diversity": 0.021
    },
    "why": "time-critical: weighing on-time chance, price, delivery buffer most",
-   "pick": "Dongguan Precision Housings",
+   "pick": "Example Supplier C",
    "plan": {
     "allocation": [
      {
-      "supplier": "Dongguan Precision Housings",
-      "thread_id": "9D6AD72E97",
+      "supplier": "Example Supplier C",
+      "thread_id": "EXAMPLE005",
       "units": 2000,
       "expected_on_time_units": 2000
      }
@@ -168,7 +169,7 @@
    },
    "ranking": [
     {
-     "supplier": "Dongguan Precision Housings",
+     "supplier": "Example Supplier C",
      "score": 79.3,
      "eligible": true,
      "factors": {
@@ -200,7 +201,7 @@
    ],
    "negotiations": [
     {
-     "supplier": "Dongguan Precision Housings",
+     "supplier": "Example Supplier C",
      "asks": [
       {
        "lever": "price",
@@ -216,9 +217,9 @@
        "units": 2000
       }
      ],
-     "draft_id": "76E56C3EB1",
-     "subject": "[SOONY-76E56C3EB1] CMP-GAM-010 报价复核请求",
-     "body": "您好，\n\n感谢贵司就 CMP-GAM-010 2,000 件的报价。为推进此事，我们希望：\n- 到货单价 83.31 CNY，而非 88 CNY；\n- 不加收费用的快递或空运；\n- 本次订单接受 2,000 件，低于贵司通常的最小起订量；\n\n请告知可行方案。\n\n本邮件仅为信息询问，并非订单。\n\nSoony 上市团队",
+     "draft_id": "EXAMPLE004",
+     "subject": "Example subject (generic fixture)",
+     "body": "Hello,\n\nThis is generic example text for the demo card. It is not a real message.\n\nExample launch team",
      "saved": false
     }
    ]
@@ -226,24 +227,24 @@
  ],
  "reminders": [
   {
-   "thread_id": "153839FA41",
-   "supplier": "Pune Diecast Works",
+   "thread_id": "EXAMPLE000",
+   "supplier": "Example Supplier B",
    "waited_hours": 8.5,
    "wait_limit_hours": 4.4,
    "reminders_so_far": 0,
    "action": "remind",
-   "draft_id": "28CB335B8E",
-   "body": "Hello,\n\nWe are following up on our message of 2026-11-21 08:00 UTC (SOONY-153839FA41). Could you reply with the available quantity, delivery date and price for CMP-GAM-010? A short answer is enough.\n\nThis is a request for information only, not an order.\n\nSoony launch team"
+   "draft_id": "EXAMPLE002",
+   "body": "Hello,\n\nThis is generic example text for the demo card. It is not a real message.\n\nExample launch team"
   },
   {
-   "thread_id": "753A15E708",
-   "supplier": "Hwaseong Memory",
+   "thread_id": "EXAMPLE003",
+   "supplier": "Example Supplier A",
    "waited_hours": 10.5,
    "wait_limit_hours": 4.4,
    "reminders_so_far": 0,
    "action": "remind",
-   "draft_id": "DF50914A13",
-   "body": "안녕하세요,\n\n2026-11-21 06:00 UTC에 보내드린 메일(SOONY-753A15E708)에 대해 다시 연락드립니다. CMP-GAM-001의 가능 수량, 납기, 단가를 회신해 주시기 바랍니다. 간단한 답변이면 충분합니다.\n\n이 메일은 정보 요청이며 발주가 아닙니다.\n\nSoony 출시 담당팀"
+   "draft_id": "EXAMPLE007",
+   "body": "Hello,\n\nThis is generic example text for the demo card. It is not a real message.\n\nExample launch team"
   }
  ]
 }
