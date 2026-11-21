@@ -1,5 +1,10 @@
 import unittest
+from contextlib import closing
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
+from . import __main__ as orchestrator
 from .__main__ import drop_summary
 
 
@@ -31,3 +36,31 @@ class DropSummaryTest(unittest.TestCase):
             "parts": {"CARD": {"shortfall": 20}},
         }
         self.assertEqual(drop_summary(snapshot, snapshot, [], []), "")
+
+    def test_dashboard_state_cannot_mix_two_replay_snapshots(self):
+        with TemporaryDirectory() as folder:
+            database = Path(folder) / "demo.db"
+            truth = {
+                "name": "Launch", "deadline": "2026-11-22T20:00:00+01:00", "site": "DC",
+                "parts": {}, "editions": {}, "issues": [], "model": {}, "data_quality": {},
+            }
+
+            def publish(name, pending):
+                with closing(orchestrator.connect(database)) as writer, writer:
+                    orchestrator.save_state(writer, "truth", dict(truth, name=name))
+                    orchestrator.save_state(writer, "options", [{"id": name}])
+                    orchestrator.save_state(writer, "drop", {"title": name})
+                    orchestrator.save_state(writer, "sync", {"pendingDrop": pending})
+
+            def publish_during_render(*_):
+                publish("Updated", 0)
+                return []
+
+            publish("Baseline", 2)
+            with closing(orchestrator.connect(database)) as reader:
+                with patch.object(orchestrator, "dashboard_activity", side_effect=publish_during_render):
+                    snapshot = orchestrator.dashboard(reader)
+                self.assertEqual(snapshot["approval"]["id"], "Baseline")
+                self.assertEqual(snapshot["drop"]["title"], "Baseline")
+                self.assertEqual(snapshot["sync"]["pendingDrop"], 2)
+                self.assertEqual(orchestrator.dashboard(reader)["approval"]["id"], "Updated")

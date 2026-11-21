@@ -107,10 +107,14 @@ def dashboard_activity(con, blocked, clock):
 
 
 def dashboard(con):
-    truth = get_state(con, "truth")
+    # Keep the risks, options and banner on the same published replay snapshot.
+    snapshot = {row["key"]: json.loads(row["value"]) for row in con.execute(
+        "SELECT key, value FROM state WHERE key IN ('truth', 'options', 'drop', 'sync')"
+    )}
+    truth = snapshot.get("truth")
     if not truth:
         return None
-    chosen = get_state(con, "options", [])
+    chosen = snapshot.get("options", [])
     states = decisions(con)
     actions = [dict(option, status="blocked", review_requested=states.get(option["id"]) == "review")
                if option.get("approval_block") else dict(option, status=states.get(option["id"], "pending"))
@@ -152,8 +156,8 @@ def dashboard(con):
                      "messages": [dict(msg, time=clock(msg["time"])) for msg in thread["messages"]]}
                     for thread in chaser.list_threads(con)],
         "approval": approval, "options": actions, "blockedApprovals": blocked,
-        "drop": get_state(con, "drop"),
-        "sync": get_state(con, "sync"),
+        "drop": snapshot.get("drop"),
+        "sync": snapshot.get("sync"),
         "model": truth["model"], "dataQuality": truth["data_quality"],
     }
 
@@ -435,6 +439,9 @@ def main():
         with closing(connect(loop.database)) as con:
             print(json.dumps(dashboard(con), ensure_ascii=False, indent=2))
         return
+    # Initialize SQLite and WAL before the worker and the first request can open it.
+    with closing(connect(loop.database)) as con:
+        chaser.schema(con)
     with ThreadingHTTPServer(("127.0.0.1", args.port), handler(loop)) as server:
         thread = threading.Thread(target=loop.background, daemon=True)
         thread.start()
