@@ -39,3 +39,7 @@ SQLite defaults to `store/chaser.sqlite` and contains threads, messages, replies
 Replies also receive a verifiable commitment score: `none` (0), `date_only` (1), `date_and_quantity` (2), or `document_or_booking_reference` (3). The parser returns `what_to_ask_next`, and the escalation ladder persists R0-R4 state and timestamps in SQLite.
 
 Use `tone="r1_document"` to draft a firm multilingual request for per-lot quantities and a packing list or booking reference. `validate_draft()` blocks binding commitments and disclosures of deadline slack, walkaway alternatives, maximum premium or cost per missing copy. The send path rechecks the stored draft before any outbound attempt.
+
+## Approved actions (T83)
+
+`src/chaser/actions.py` is the send path for the action queue: `on_approve(con, action, approved_by)` emails approved supplier actions through the normal send path and turns internal actions into prepared messages with the euro case; `status(con)` lists them with reply tracking. Try `python3 -m src.chaser.actions demo`.
