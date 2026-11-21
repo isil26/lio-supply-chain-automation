@@ -24,6 +24,9 @@ Every agent has a unique name and uses it everywhere: the Owner/Agent column in 
 ## Tool budget (21 Nov, 15:45)
 Codex usage is nearly exhausted. Prefer GitHub Copilot CLI agents for new implementation work (`copilot -p "<task>" --allow-tool write --allow-tool 'shell(npm:*)'`, launched in a herdr terminal via `hc run --bg --name <agent> -- sh -c 'exec copilot -p ...'`). Use Claude (Sonnet) subagents for research/review. Use Codex only for a task that is already running or when Copilot fails.
 
+## Secrets (mandatory)
+API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassettes or chat messages. They live in the gitignored `.env` (copy it from the team's private channel; run agents with `set -a; . ./.env; set +a`). Variables: `OPENAI_API_KEY`, `SOONY_LLM_URL`, `SOONY_LLM_MODEL`, `SOONY_AGENT_MODEL`, `SOONY_AGENT_MODE`, `SOONY_LLM_API_KEY`. Live LLM tests use `gpt-4.1-mini` only, with small budgets. Publishing a key to a repo, even a private one, leaks it permanently through history.
+
 ## Token cost (mandatory, we pay per token)
 - Use the cheapest model/effort that does the job: Codex `-c model_reasoning_effort=medium` (low for mechanical edits), Copilot default/auto model, Claude Sonnet or Haiku for routine work. Reserve the strongest model/effort for hard design or debugging.
 - Read only what you need (`sed -n`, `grep`, targeted ranges). Never re-read files you just wrote, never dump big files, CSVs or logs into context.
