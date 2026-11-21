@@ -47,7 +47,7 @@ export function RecordedAgentTrace({ recording, onEvidence }: { recording?: Reco
   const usage = verified ? recording?.verified_usage : summary?.aggregate_usage;
   return <section className="agent-trace-panel" aria-labelledby="recorded-agent-title">
     <div className="agent-trace-heading">
-      <div><p className="section-label">ART-BOOK SHORTFALL</p><h2 id="recorded-agent-title">{verified ? "Recorded live agent run" : "Reported live-run summary"}</h2></div>
+      <div><p className="section-label">ART-BOOK SHORTFALL</p><h2 id="recorded-agent-title">{verified ? "Recorded live agent run" : recording ? "Reported live-run summary" : "Art-book recording"}</h2></div>
       {recording && <span className="agent-trace-status">{verified ? "Read-only replay" : "Detailed trace unavailable"}</span>}
     </div>
     {!recording || !summary ? <p className="agent-empty" role="status">No art-book recording is available for this replay.</p> : <>

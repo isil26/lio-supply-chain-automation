@@ -296,7 +296,7 @@ function App() {
 
       <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource}/>
 
-      <BestSupplier/>
+      {!hostedReplayBuild && <BestSupplier/>}
 
       {data.network && data.network.suppliers.length > 0 && <section className="card map-card">
         <h3>Supply network</h3>
