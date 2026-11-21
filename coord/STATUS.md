@@ -12,3 +12,4 @@ Last human sync: Sat 21 Nov 2026
 | (free) | T5 decide, T7 orchestrator, T8 submission | | open | humans: claim in TASKS.md | |
 | Codex | T2 extraction, T4 chaser, T5 decision, T7 integration, T8 submission | src/docs, src/chaser, src/decide, src/orchestrator, docs | in_progress | OCR and decision modules underway. Portal synced five new documents. Will provide live API contract to Copilot and truth handoff to Claude. | 21 Nov 14:14 |
 | Codex | T7 offline integration verification | src/orchestrator | review | Baseline and synthetic drop replay passed, including decision review and the demo supplier send gate. Waiting on T6 browser integration and validation with the latest team snapshot. | 21 Nov 14:31 |
+| Codex | T7 drop banner | src/orchestrator | in_progress | Verified the five latest supplier documents in a private replay. Improving the existing banner so it surfaces new exceptions and recovery options alongside quantity changes. | 21 Nov 14:38 |
