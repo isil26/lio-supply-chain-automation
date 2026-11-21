@@ -92,4 +92,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T41b | Fix empty agent trace endpoint, German-notice scenario citation, runs list fields | copilot-loop2 | src/agents, /api/agents routes | in_progress P1 | T41 |
 | T71 | Live agent visualization: animated agent graph, event-to-decision lane, tool-call stream, harness panel, human gate, counters, Present mode, recorded-run replay for hosted | copilot-viz | web/src/agents | done P1 | T44, T41b |
 | T71 | Agent visualization: RELEASED by nick; a first version exists in web/src/agents (graph, event lane, stream, harness, gate, Present mode, replay) but the user finds it poor; the new owner may rebuild it freely | (new owner, claim here) | web/src/agents | open P1 | |
-| T47d | Planner uses real option ids, run summary, Chaser draft with pending approval, step cost attribution | copilot-planner | src/agents | in_progress P1 | T41b |
+| T47d | Planner uses real option ids, run summary, Chaser draft with pending approval, step cost attribution | copilot-planner | src/agents | done P1 | T41b |

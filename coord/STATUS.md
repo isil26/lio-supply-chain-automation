@@ -97,4 +97,4 @@ Last human sync: Sat 21 Nov 2026
 | copilot-loop2 | T41b trace endpoint, German notice citation | src/agents, /api/agents routes | done | Offline loop/harness tests pass (13), `scripts/demo_check.sh` passes. Live port 8794 verification is blocked in this session because loopback server startup requires interactive approval. No live cost incurred. | 21 Nov 16:48 |
 | copilot-viz | T71 live agent visualization + Present mode | web/src/agents | done | Added animated graph, event lane, stream replay, harness panel, human gate, counters and Present mode; normal/static builds pass | 21 Nov 16:52 |
 | nick | stopped working on T71 visualization (handed over) | - | released | continuing on agent quality, Vogt prep, review | 21 Nov |
-| copilot-planner | T47d planner option ids + summary + chaser draft reach | src/agents | in_progress | no web/viz work | 21 Nov |
+| copilot-planner | T47d planner option ids + summary + chaser draft reach | src/agents | done | list_options/real IDs, grounded summary, chaser draft approval, per-step cost; focused tests pass. Live run blocked by non-interactive permission. | 21 Nov |

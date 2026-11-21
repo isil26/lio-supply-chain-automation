@@ -1,5 +1,11 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T47d — Planner option IDs, summary and chaser handoff (copilot-planner)
+
+- Added `list_options` and made `breakeven` report valid IDs when given an invalid one; Planner prompts now require copying real IDs.
+- Agent runs produce a deterministic summary from tool results, run numeric grounding, force a Planner-to-Chaser handoff, persist one pending draft approval, and attribute model cost to tool rows.
+- Validation: `python3 -m unittest tests.test_agents_team tests.test_agents_tools tests.test_agents_runtime tests.test_agents_loop` — 15 passed. Live validation was attempted but denied by the non-interactive permission boundary; no live cost/result is claimed.
+
 ## T41b — Agent trace projection and German notice guard (copilot-loop2)
 - `/api/agents/trace` now exposes UI-ready `steps` plus `approvals_pending`, while retaining the raw trace for compatibility. Each step includes agent, tool, args/result summaries, reason, cost, latency, citations and status. `/api/agents/runs` exposes event summary text, step count, harness result and total run cost.
 - The worker snapshots only rows created for each run, then normalizes trace and pending approval state. The German-notice fixture under `tests/fixtures/unseen_german_notice.txt` gives the scenario a real reviewable file; empty claims are ignored rather than turned into false citation violations.

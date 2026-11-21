@@ -36,3 +36,4 @@ Rule: if a topic is listed as DONE, read the file instead of researching again. 
 - Vogt: cost of one missing Collector's Edition; remaining air-freight budget; who signs air freight and a statue concession while the Category Lead is vacant.
 - Brunner: are the 350k cases at CTA and collectable today; status of the dock-held game-card lot; is the lid-magnet BOM line real; can Karton split a finished-goods lot.
 - Berger (precise only): why the tracker omits 11 of 25 ERP shipments; which stock field shows whether a goods receipt is already included.
+| Implementation ideas ranked (Release Gate, obligation ledger, eval page, tracker truth check, 20-second mode; build/maybe/skip table, top 3 = Release Gate, eval page, 20-s mode). Vendor claims mostly [A]/[S] | docs/IMPLEMENTATION_IDEAS.md | research-impl |
