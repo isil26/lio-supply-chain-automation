@@ -9,7 +9,8 @@ Safety that stays on:
   - every body must pass the guardrails (no binding commitment, no maximum price, no deadline
     slack, no mention of other suppliers) or it is skipped and logged;
   - no cap per cycle (Gülşah, 21 Nov: suppliers are simulated). Set CHASER_AUTO_MAX_PER_CYCLE to cap;
-  - anti-spam only: one email per supplier address per CHASER_AUTO_COOLDOWN_MIN minutes (default 30),
+  - anti-spam only: while a supplier hasn't answered our last email, at most one email per
+    CHASER_AUTO_COOLDOWN_MIN minutes (default 30); once they reply we answer right away;
     and never the same text twice to the same address;
   - emails are information requests; purchase commitments still follow PP-07.
 Turn it off with CHASER_AUTO_SEND=0.
@@ -29,9 +30,15 @@ def enabled(demo=False):
 
 def _recent_addresses(con, minutes, now):
     since = (now - timedelta(minutes=minutes)).isoformat(timespec="seconds")
-    rows = con.execute("""SELECT DISTINCT lower(c.address) FROM messages m JOIN chases c ON c.id = m.chase_id
-                          WHERE m.side = 'out' AND m.time >= ?""", (since,)).fetchall()
-    return {row[0] for row in rows}
+    # Waiting only applies while the supplier hasn't answered our last email.
+    # If they replied after it, we may answer straight away.
+    rows = con.execute("""
+        SELECT lower(c.address) AS address,
+               max(CASE WHEN m.side = 'out' THEN m.time END) AS last_out,
+               max(CASE WHEN m.side = 'in' THEN m.time END) AS last_in
+        FROM messages m JOIN chases c ON c.id = m.chase_id
+        GROUP BY lower(c.address)""").fetchall()
+    return {row[0] for row in rows if row[1] and row[1] >= since and not (row[2] and row[2] >= row[1])}
 
 
 def run(con, *, send=None, now=None, prepare=True):

@@ -61,6 +61,18 @@ class AutoSendTest(unittest.TestCase):
         self.assertEqual(sent, ["A"])
         self.assertEqual({r["id"]: r["result"] for r in results}, {"A": "sent", "B": "blocked"})
 
+    def test_reply_lifts_the_wait(self):
+        con = db([("A", "a@suppliers.juliansibbing.de", "Follow-up answer.")])
+        con.execute("INSERT INTO chases(id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)"
+                    " VALUES('P','S','Sup P','a@suppliers.juliansibbing.de','en','s','awaiting reply','M',1,'first',?)", (DEADLINE,))
+        con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES('P','p1','out','us','first','2026-11-21T17:50:00+00:00')")
+        sent = []
+        autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
+        self.assertEqual(sent, [])  # no answer yet, 10 minutes ago: wait
+        con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES('P','p2','in','a','reply','2026-11-21T17:55:00+00:00')")
+        autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
+        self.assertEqual(sent, ["A"])  # they replied: answer right away
+
     def test_failed_send_is_logged_not_raised(self):
         con = db([("A", "boss@gmail.com", "Please confirm quantity.")])
 
