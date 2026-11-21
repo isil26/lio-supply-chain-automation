@@ -20,6 +20,7 @@ or send email. If a delegation result is already marked cached, use it and finis
 
 ANALYST_PROMPT = f"""You are the Soony launch analyst.
 Use search_documents, compare_sources, get_readiness and list_shortfalls for evidence.
+Call release_gate_status to say what may go in the box (GO), what is HOLD and what needs a named human (HUMAN).
 Report launch gaps and contradictions with file/page/quote citations.
 Use only tool-returned numbers. Mark quantities and dates unknown rather than guessing.
 {_OUTPUT_RULE}
@@ -27,6 +28,7 @@ Use only tool-returned numbers. Mark quantities and dates unknown rather than gu
 
 VERIFIER_PROMPT = f"""You are the independent Soony claim verifier.
 Re-check every Analyst and Planner claim against source documents.
+Cross-check any GO/HOLD/HUMAN or quantity claim with release_gate_status.
 Search using the exact component, PO, supplier, document identifier, and distinctive terms
 from the claim (for example "WZ-261116-473", "CMP-GAM-008", "AQL", "inspection", or
 "release"). Then call get_document for the best matching file to inspect its quoted fields.
@@ -38,7 +40,9 @@ Return accepted/rejected lists with reasons.
 
 PLANNER_PROMPT = f"""You are the Soony Plan B planner.
 Call list_options before breakeven and copy an option_id exactly from its result; never invent
-an option ID. Use only list_options, whatif, breakeven and supplier_history for decisions.
+an option ID. Use only list_options, whatif, breakeven, supplier_history, packplan and release_gate_status for decisions.
+Use packplan for which edition/line packs what and for what-if arrival changes; use release_gate_status for what may be packed and who must decide.
+State only units that appear in the packplan result; never compute gains yourself.
 Use propose_option for a pending human-approved option, never an actual commitment.
 State assumptions and unknown inputs, especially cost per missing copy.
 Do not reveal slack, walkaway, maximum premium or cost per copy.
@@ -60,9 +64,10 @@ ROLE_TOOLS = {
     "triage": {"delegate"},
     "analyst": {
         "get_readiness", "list_shortfalls", "compare_sources",
-        "search_documents", "supplier_history",
+        "search_documents", "supplier_history", "release_gate_status",
     },
-    "verifier": {"search_documents", "get_document"},
-    "planner": {"list_options", "whatif", "breakeven", "supplier_history", "propose_option", "escalate_to_human"},
+    "verifier": {"search_documents", "get_document", "release_gate_status"},
+    "planner": {"list_options", "whatif", "breakeven", "supplier_history", "packplan",
+                "release_gate_status", "propose_option", "escalate_to_human"},
     "chaser": {"draft_email", "send_email", "parse_reply", "escalate_to_human", "request_review"},
 }

@@ -94,6 +94,16 @@ def _release_gate_status(ctx, args):
     return _result(gate, [source for part in gate["parts"].values() for source in part.get("evidence", [])])
 
 
+def _packplan(ctx, args):
+    changes = args.get("changes") or {}
+    if not isinstance(changes, dict):
+        raise ValueError("changes must be an object")
+    with ctx.db() as con:
+        truth = ctx.truth(con)
+    from src.decide.packplan import plan, summarize
+    return _result(summarize(plan(truth, changes or None)), [truth["source"]])
+
+
 def _whatif(ctx, args):
     changes = args.get("changes", {})
     with ctx.db() as con:
@@ -329,7 +339,8 @@ def all_tools(db_path=DB) -> list[dict]:
     tools = [
         ("get_readiness", "Compute the deterministic cited readiness forecast; use first for a launch overview.", _schema({},), _get_readiness, False),
         ("list_shortfalls", "List components whose deterministic required quantity exceeds usable stock/inbound; use to identify every current gap.", _schema({}), _list_shortfalls, False),
-        ("release_gate_status", "Read-only cited GO/HOLD/HUMAN release status for every BOM part, or one part_id.", _schema({"part_id": text}), _release_gate_status, False),
+        ("release_gate_status", "Read-only cited release gate: which parts may go in the box now (GO), are held (HOLD, e.g. quarantined lot) or need a named human decision (HUMAN, e.g. conflicting revisions), with quantities per revision. Use for what may be packed and who must decide; one part_id optional.", _schema({"part_id": text}), _release_gate_status, False),
+        ("packplan", "Read-only exact pack-out plan: which edition (CE/STD) and line packs what, baselines, Pareto frontier, and what-if changes such as {\"changes\":{\"part_arrives_earlier\":{\"CMP-GAM-001\":12}}} (hours earlier), release_quarantined or restore_stock ({part: units}). Use for how many units each edition can pack and what an earlier arrival changes; quote only units from its result.", _schema({"changes": {"type": "object"}}), _packplan, False),
         ("whatif", "Replay a readiness scenario without mutating state; example changes={\"release_lot\":\"...\"}.", _schema({"changes": {"type": "object"}}, ("changes",)), _whatif, False),
         ("supplier_history", "Return calibrated lateness and source evidence for one real SUP-#### supplier, e.g. SUP-0028.", _schema({"supplier_id": text}, ("supplier_id",)), _supplier_history, False),
         ("search_documents", "Search extracted facts and exact citations. Query distinctive terms such as a PO, material, notice filename, AQL, inspection, or release; do not use only 'launch'.", _schema({"query": text, "supplier_id": text}), _search_documents, False),

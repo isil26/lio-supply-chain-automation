@@ -1,0 +1,13 @@
+{
+  "id": "sleeve_revision_conflict",
+  "event": "Marketing asks which sleeve revision is released",
+  "expected_rules": [
+    "numeric_grounding",
+    "citation_check",
+    "policy_check",
+    "stop_check"
+  ],
+  "synthetic": {
+    "actions": []
+  }
+}

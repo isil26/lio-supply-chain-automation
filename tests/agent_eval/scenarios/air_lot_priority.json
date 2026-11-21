@@ -1,0 +1,10 @@
+{
+  "id": "air_lot_priority",
+  "event": "Which game-card lot should we expedite to pack more units: what if the 28,000 air lot arrives earlier",
+  "expected_rules": [
+    "numeric_grounding",
+    "citation_check",
+    "stop_check"
+  ],
+  "synthetic": {}
+}
