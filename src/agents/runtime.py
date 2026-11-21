@@ -87,6 +87,7 @@ class Agent:
                         "input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
             assistant_call = []
             tool_results = []
+            call_cost = cost / max(1, len(calls))
             for index, call in enumerate(calls):
                 name, args = call.get("name"), call.get("arguments", {})
                 tool = self.tools.get(name)
@@ -114,10 +115,25 @@ class Agent:
                     else:
                         result = tool.function(**args)
                         seen_calls[signature] = result
+                        if name == "draft_email" and not (
+                            isinstance(result, dict) and result.get("error")
+                        ):
+                            db.execute(
+                                "CREATE TABLE IF NOT EXISTS agent_approvals "
+                                "(id INTEGER PRIMARY KEY, agent TEXT, tool TEXT, args TEXT, status TEXT)"
+                            )
+                            db.execute(
+                                "INSERT INTO agent_approvals(agent,tool,args,status) "
+                                "VALUES(?,?,?,'pending')",
+                                (self.name, name, json.dumps(args)),
+                            )
+                            db.commit()
                     if not deduplicated:
                         reason = call.get("reason", "model selected tool")
                         record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,
-                               result=result, reason=reason)
+                               result=result, reason=reason, cost=call_cost,
+                               input_tokens=usage.get("input_tokens", 0),
+                               output_tokens=usage.get("output_tokens", 0))
                 except Exception as exc:
                     result = {"error": str(exc)}
                     record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,
