@@ -3,7 +3,7 @@ Last human sync: Sat 21 Nov 2026
 
 | Agent | Task | Dir owned | State | Notes / blockers | Updated |
 |---|---|---|---|---|---|
-| Claude (lead) | T3 readiness engine (MRP netting + Monte Carlo), integration, FINDINGS | src/truth, coord, FINDINGS.md | in_progress | waits on store/soony.db from T1 | 21 Nov |
+| nick | T3 readiness engine (MRP netting + Monte Carlo), integration, FINDINGS | src/truth, coord, FINDINGS.md | in_progress | waits on store/soony.db from T1 | 21 Nov |
 | Codex | T1 ingestion -> store/soony.db | src/ingest | review (claimed done, lead verifying) | writes src/ingest/NOTES.md | 21 Nov |
 | Copilot | T6 UI prototype (mock data) | web/ | review (builds, mock data) | API contract in web/src/api.ts | 21 Nov |
 | Codex #2 | T2 doc extraction (OC pdf, delivery-note images, notices, contracts) | src/docs | done | Published 282 docs. Verified SQLite load, byte-identical cached rerun and the art-book handwriting correction. Eight receiving scans flagged for review. | 21 Nov |
@@ -15,3 +15,5 @@ Last human sync: Sat 21 Nov 2026
 | Codex | T7 drop banner | src/orchestrator | done | Fix is on main at 0f53e76. Both focused tests and the real drop replay passed. The T6 React walkthrough remains open. | 21 Nov 14:44 |
 | Codex | T2 extraction, T4 chaser, T5 decision, T7 integration, T8 submission | src/docs, src/chaser, src/decide, src/orchestrator, docs | in_progress | OCR and decision modules underway. Portal synced five new documents. Will provide live API contract to Copilot and truth handoff to Claude. | 21 Nov 14:14 |
 | Codex | T5 decisions, T7 live integration and replay, T8 submission | src/decide, src/orchestrator, private/submission | done | Live UI, real file drop, dry-run send, simulated reply and approval verified in browser. Deck and narrated MP4 delivered privately. | 21 Nov 14:35 |
+| Copilot #3 | T10 live React control-room hero | web | in_progress | Claimed T10. Replacing mock client with dashboard API integration and polishing the `/` demo hero; no commit/push. | 21 Nov 14:46 |
+| Codex #3 | T9 technical depth | src/truth, src/docs, src/decide, src/orchestrator | in_progress | Tracing receipt evidence, model activity, PPAP routing and live numbers. | 21 Nov |

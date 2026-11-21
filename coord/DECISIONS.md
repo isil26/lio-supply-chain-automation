@@ -7,3 +7,4 @@
 - 21 Nov: "Usable stock" != ERP stock (art book 80k booking error, statue lot failed AQL); engine must adjust and show why.
 - 21 Nov 14:14, Codex: Local Python API on 127.0.0.1:8787 serves the React build and JSON. GET /api/dashboard, GET /api/truth, GET /api/documents, POST /api/sync, POST /api/decisions/{id}/{approve|review}, POST /api/threads/{id}/send. Approve records permission to prepare a quote/review. Actual supplier outreach has its own draft-specific confirmation and defaults to dry-run.
 - 21 Nov: Everyone (humans + agents) commits directly to `main`; safety comes from per-directory ownership, pull --rebase before push, and coord/ files for communication. (team)
+- 21 Nov: Every agent has a unique name (lead Claude = nick) used in coord files and as git author. (team)

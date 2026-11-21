@@ -10,6 +10,12 @@ Project: START Hack Munich 2026, Lio challenge "Keep the Line Running". We build
 
 Humans are on the team too: see `coord/TEAM.md` (roles, branches, checkpoints). Run `scripts/status.sh` for a one-screen view.
 
+## Agent names (mandatory)
+Every agent has a unique name and uses it everywhere: the Owner/Agent column in `coord/STATUS.md` and `coord/TASKS.md`, the `FROM`/`TO` in `coord/INBOX.md`, and the git author name of its commits (`git -c user.name="<name>" ...`, message ends `[<name>]`).
+- Claude (lead) = **nick**.
+- Everyone else: pick a short unique name on your first line in `coord/STATUS.md` (e.g. `codex-ingest`, `copilot-ui`, `<person>-claude`). Never reuse another agent's name, and never use a human's name for yourself.
+- Names stay the same for the whole hackathon, so teammates can tell who did what.
+
 ## While working
 - Stay inside your owned directory (see ownership table in `coord/TASKS.md`). Need a change elsewhere? Write a request in `coord/INBOX.md` addressed to the owner.
 - Update your line in `coord/STATUS.md` at each milestone (what is done, what is blocked, what you need).
