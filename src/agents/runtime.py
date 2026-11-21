@@ -122,11 +122,17 @@ class Agent:
                                 "CREATE TABLE IF NOT EXISTS agent_approvals "
                                 "(id INTEGER PRIMARY KEY, agent TEXT, tool TEXT, args TEXT, status TEXT)"
                             )
-                            db.execute(
-                                "INSERT INTO agent_approvals(agent,tool,args,status) "
-                                "VALUES(?,?,?,'pending')",
-                                (self.name, name, json.dumps(args)),
-                            )
+                            encoded_args = json.dumps(args)
+                            if not db.execute(
+                                "SELECT 1 FROM agent_approvals "
+                                "WHERE agent=? AND tool=? AND args=? AND status='pending'",
+                                (self.name, name, encoded_args),
+                            ).fetchone():
+                                db.execute(
+                                    "INSERT INTO agent_approvals(agent,tool,args,status) "
+                                    "VALUES(?,?,?,'pending')",
+                                    (self.name, name, encoded_args),
+                                )
                             db.commit()
                     if not deduplicated:
                         reason = call.get("reason", "model selected tool")
@@ -137,7 +143,9 @@ class Agent:
                 except Exception as exc:
                     result = {"error": str(exc)}
                     record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,
-                           result=result, reason="tool rejected", status="error")
+                           result=result, reason="tool rejected", status="error", cost=call_cost,
+                           input_tokens=usage.get("input_tokens", 0),
+                           output_tokens=usage.get("output_tokens", 0))
                 tool_results.append((name, call_id, result))
             messages.append({"role": "assistant", "content": response.get("text", ""),
                              "tool_calls": assistant_call})
