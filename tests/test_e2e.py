@@ -161,6 +161,9 @@ class DemoReplayTest(unittest.TestCase):
                     self.assertEqual(gaps.get(material), expected, "Post-drop component gap")
 
         with timed("Verify action queue review, persistence and dismissal"):
+            status, cap = self.request("/api/auto-approve", {"limitEur": 2_000_000})
+            self.assertEqual((status, cap["approved"]), (200, []))
+            self.assertEqual(self.request("/api/auto-approve", {"limitEur": 0})[0], 200)
             code, result = self.request("/api/actions")
             self.assertEqual(code, 200)
             queue = result["actions"]

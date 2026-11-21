@@ -169,6 +169,86 @@ def std_costs(con):
     return {pid: cost for pid, cost in con.execute("SELECT product_id, std_cost_eur FROM products") if cost is not None}
 
 
+# Option kind (src/decide) -> action kind of the approval engine (src/decide/approvals.py, T93).
+ENGINE_KIND = {"inbound": "dock_slot", "partial": "hold_and_quote", "quality": "quality_exception",
+               "air": "air_freight", "alternate": "supplier_info_request", "ppap_release": "supplier_release",
+               "priority": "internal_message"}
+
+
+def approval_mode(option):
+    """Ask the approval engine how this option may be approved (AUTO / ONE_CLICK / ESCALATE / NEVER)."""
+    kind = ENGINE_KIND.get(option.get("kind"))
+    if not kind:
+        return None
+    try:
+        from src.decide import approvals
+        verdict = approvals.evaluate({
+            "id": option.get("id"), "kind": kind, "value_eur": option.get("price") if option.get("price") is not None
+            else (0 if kind in ("dock_slot", "quality_exception", "supplier_info_request", "internal_message", "supplier_release") else None),
+            "part": option.get("material"), "site": "DC-HAM" if kind == "dock_slot" else None,
+            "category": action_approvals.CATEGORIES.get(option.get("material")),
+            "binding": kind not in ("supplier_info_request", "internal_message"), "reversible": kind != "purchase_order",
+            "evidence": [cite_text(source) if isinstance(source, dict) else str(source) for source in option.get("evidence") or []]})
+    except Exception:  # engine missing or changed: the UI falls back to one-click
+        return None
+    name = lambda person: person.get("name") if isinstance(person, dict) else person
+    chain = [name(step) for step in verdict.get("escalation_chain") or [] if name(step)]
+    return {"mode": verdict.get("mode"), "approver": name(verdict.get("approver")), "reason": verdict.get("reason"),
+            "slaMinutes": verdict.get("sla_minutes"), "escalateTo": chain[0] if chain else None,
+            "blockedBy": verdict.get("blocked_by") or [], "delegationId": verdict.get("delegation_id")}
+
+
+# Routine actions may run under a delegated limit; binding ones (dock slots, orders, air freight, quality and
+# supplier releases) always wait for one click by the named approver (IMPORTANT.md section 3).
+ROUTINE_KINDS = {"supplier_info_request", "internal_message", "hold_and_quote"}
+
+
+def head_of_procurement():
+    """Name of the Head of Procurement from the approval engine's directory (org chart v2)."""
+    try:
+        from src.decide import approvals
+        return next((name for name, person in approvals.PEOPLE.items() if person.get("role") == "Head of Procurement"), None)
+    except Exception:
+        return None
+
+
+def auto_approve(con, demo=False):
+    """Apply the UI spending cap to options covered by a current written delegation."""
+    setting = get_state(con, "autoApprove", {}) or {}
+    limit = setting.get("limitEur") or 0
+    if limit <= 0:
+        return []
+    done = decisions(con)
+    try:
+        constraints = chaser.live_reply_constraints(con) if not demo else {}
+    except sqlite3.Error:
+        return []
+    approved = []
+    for option in get_state(con, "options", []) or []:
+        if option["id"] in done or option.get("approval_block"):
+            continue
+        if ENGINE_KIND.get(option.get("kind")) not in ROUTINE_KINDS:
+            continue  # binding actions always keep one click (IMPORTANT.md section 3)
+        verdict = approval_mode(option) or {}
+        delegation = verdict.get("delegationId")
+        if verdict.get("mode") != "AUTO" or not delegation or (option.get("price") or 0) > limit:
+            continue
+        if constraints and supplier_option_block(option, constraints):
+            continue
+        try:
+            authorize(con, option, "approve")
+        except PermissionError:
+            continue
+        approved.append(option["id"])
+        with con:
+            chaser.activity(con, "Auto-approve", f'{option["title"]}: approved under delegation {delegation} '
+                           f'from {verdict["approver"]} (routine, cap €{limit:,.0f}).')
+    if approved:
+        with con:
+            save_state(con, "autoApproved", sorted(set(get_state(con, "autoApproved", []) or []) | set(approved)))
+    return approved
+
+
 def customer_inputs():
     """Numbers the customer told us in interviews (config/customer_inputs.json), e.g. cost of a missed copy."""
     path = ROOT / "config" / "customer_inputs.json"
@@ -220,6 +300,8 @@ def dashboard(con, *, include_action_history=False):
     actions = [dict(option, status="blocked", review_requested=states.get(option["id"]) == "review")
                if option.get("approval_block") else dict(option, status=states.get(option["id"], "pending"))
                for option in chosen]
+    for option in actions:
+        option["approvalMode"] = approval_mode(option)
     for option in actions:
         if option["id"] in obsolete_dock:
             option.update(status="blocked", approval_block={"reason": obsolete_dock[option["id"]],
@@ -278,6 +360,9 @@ def dashboard(con, *, include_action_history=False):
                        "missCostEur": (missed.get(pid) or {}).get("value"), "missCostConfirmed": (missed.get(pid) or {}).get("confirmed")}
                       for pid, row in truth["editions"].items()],
         "inboundTimeline": inbound_timeline(truth),
+        "autoApprove": {"limitEur": 0, "setBy": head_of_procurement(), **(get_state(con, "autoApprove", {}) or {})},
+        "routineKinds": sorted(kind for kind, engine in ENGINE_KIND.items() if engine in ROUTINE_KINDS),
+        "autoApproved": get_state(con, "autoApproved", []) or [],
         "risks": risks, "activity": dashboard_activity(con, blocked, clock, docs=docs, reviews=reviews), "documentReviews": reviews,
         "threads": [{**thread, "initials": "".join(word[0] for word in thread["supplier"].split()[:2]),
                      "messages": [dict(msg, timestamp=msg["time"], time=clock(msg["time"])) for msg in thread["messages"]]}
@@ -520,6 +605,7 @@ class Loop:
                         save_state(con, "forecastMailWatermark", mail_watermark)
                 recovery.advance(con, get_state(con, "truth", {}))
                 action_delivery.refresh(con)
+            auto_approve(con, demo=self.args.demo)
             supplier_loop.advance(con, get_state(con, "truth", {}), get_state(con, "options", []),
                                   scope="demo" if self.args.demo else "live",
                                   dispatch=mail_ready and not getattr(self.args, "once", True))
@@ -746,6 +832,16 @@ def handler(loop):
                             return self.out({"error": str(exc)}, 400)
                     if path == "/api/suppliers/drafts":  # T77 mail-agent: create drafts only, never sends
                         return self.out(supplier_report(con, save=True, kind=body.get("kind", "all")))
+                    if path == "/api/auto-approve":
+                        try:
+                            limit = max(0.0, min(float(body.get("limitEur") or 0), 2_000_000.0))
+                        except (TypeError, ValueError):
+                            return self.out({"error": "limitEur must be a number"}, 400)
+                        with con:
+                            who = str(body.get("setBy") or "")[:80] or head_of_procurement()
+                            save_state(con, "autoApprove", {"limitEur": limit, "setAt": now(), "setBy": who})
+                            chaser.activity(con, "Auto-approve", f"{who or 'The team'} auto-approves routine actions up to €{limit:,.0f}." if limit else "Auto-approve switched off.")
+                        return self.out({"ok": True, "limitEur": limit, "approved": auto_approve(con, demo=loop.args.demo)})
                     match = re.fullmatch(r"/api/decisions/([a-f0-9]+)/(approve|review)", path)
                     if match:
                         if (match[2] == "approve" and not loop.args.demo and

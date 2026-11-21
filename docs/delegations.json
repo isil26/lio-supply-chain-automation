@@ -4,11 +4,21 @@
       "id": "DEL-001",
       "delegator": "Dr. Maren Vogt",
       "delegate": "system",
-      "action_kinds": ["supplier_info_request", "hold_and_quote", "purchase_order", "air_freight", "internal_message"],
+      "action_kinds": [
+        "supplier_info_request",
+        "hold_and_quote",
+        "purchase_order",
+        "air_freight",
+        "internal_message"
+      ],
       "max_value_eur": 2000000,
       "valid_from": "2026-11-21T20:04:00+01:00",
       "valid_until": "2026-11-22T20:00:00+01:00",
-      "conditions": {"information_only": true, "reversible": true, "hold_and_quote": true},
+      "conditions": {
+        "information_only": true,
+        "reversible": true,
+        "hold_and_quote": true
+      },
       "scope_note": "'approve anything under EUR 2,000,000 for launch recovery'. The engine still only auto-approves information-only, hold-and-quote or reversible actions; binding POs stay ONE_CLICK. Quality releases, supplier releases and dock slots are never covered.",
       "source": {
         "who": "team report to supply-rescue (relayed, not Dr. Vogt herself)",
@@ -17,6 +27,112 @@
         "conflict": "Isil's office-hours recording says Dr. Vogt can only give information; no written approval exists (docs/AUTHORIZATIONS.md)"
       },
       "confirmed_in_writing": false
+    },
+    {
+      "id": "DEL-TEST-001",
+      "delegator": "Felix Brunner",
+      "delegate": "system",
+      "action_kinds": [
+        "supplier_info_request",
+        "hold_and_quote",
+        "internal_message"
+      ],
+      "max_value_eur": 50000,
+      "valid_from": "2026-11-21T13:00:00+01:00",
+      "valid_until": "2026-11-22T20:00:00+01:00",
+      "conditions": {
+        "information_only": true,
+        "reversible": true,
+        "hold_and_quote": true
+      },
+      "scope_note": "SIMULATED test-case delegation: lets the demo run end to end. Information-only, hold-and-quote or reversible actions only; binding actions stay ONE_CLICK.",
+      "source": {
+        "who": "test case simulation (fictional persona)",
+        "when": "2026-11-21",
+        "medium": "simulated",
+        "simulated": true
+      },
+      "confirmed_in_writing": true,
+      "simulated": true
+    },
+    {
+      "id": "DEL-TEST-002",
+      "delegator": "Paul Winter",
+      "delegate": "system",
+      "action_kinds": [
+        "supplier_info_request",
+        "hold_and_quote",
+        "internal_message"
+      ],
+      "max_value_eur": 50000,
+      "valid_from": "2026-11-21T13:00:00+01:00",
+      "valid_until": "2026-11-22T20:00:00+01:00",
+      "conditions": {
+        "information_only": true,
+        "reversible": true,
+        "hold_and_quote": true
+      },
+      "scope_note": "SIMULATED test-case delegation: lets the demo run end to end. Information-only, hold-and-quote or reversible actions only; binding actions stay ONE_CLICK.",
+      "source": {
+        "who": "test case simulation (fictional persona)",
+        "when": "2026-11-21",
+        "medium": "simulated",
+        "simulated": true
+      },
+      "confirmed_in_writing": true,
+      "simulated": true
+    },
+    {
+      "id": "DEL-TEST-003",
+      "delegator": "Katrin Jansen",
+      "delegate": "system",
+      "action_kinds": [
+        "internal_message"
+      ],
+      "max_value_eur": 0,
+      "valid_from": "2026-11-21T13:00:00+01:00",
+      "valid_until": "2026-11-22T20:00:00+01:00",
+      "conditions": {
+        "information_only": true,
+        "reversible": true,
+        "hold_and_quote": true
+      },
+      "scope_note": "SIMULATED test-case delegation: lets the demo run end to end. Information-only, hold-and-quote or reversible actions only; binding actions stay ONE_CLICK.",
+      "source": {
+        "who": "test case simulation (fictional persona)",
+        "when": "2026-11-21",
+        "medium": "simulated",
+        "simulated": true
+      },
+      "confirmed_in_writing": true,
+      "simulated": true
+    },
+    {
+      "id": "DEL-TEST-004",
+      "delegator": "Tobias Brandt",
+      "delegate": "system",
+      "action_kinds": [
+        "supplier_info_request",
+        "hold_and_quote",
+        "internal_message"
+      ],
+      "max_value_eur": 200000,
+      "valid_from": "2026-11-21T13:00:00+01:00",
+      "valid_until": "2026-11-22T20:00:00+01:00",
+      "conditions": {
+        "information_only": true,
+        "reversible": true,
+        "hold_and_quote": true
+      },
+      "scope_note": "SIMULATED test-case delegation: lets the demo run end to end. Information-only, hold-and-quote or reversible actions only; binding actions stay ONE_CLICK.",
+      "source": {
+        "who": "test case simulation (fictional persona)",
+        "when": "2026-11-21",
+        "medium": "simulated",
+        "simulated": true
+      },
+      "confirmed_in_writing": true,
+      "simulated": true
     }
   ]
 }
