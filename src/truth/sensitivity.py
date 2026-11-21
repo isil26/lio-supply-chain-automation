@@ -35,7 +35,8 @@ from src.truth import LAG_HOURS, MODEL_RUNS, SLOT, readiness
 
 
 SEED = 1029
-CHANGE_FIELDS = {"shipment_days", "supplier_days", "add_units", "release_shipments", "shipment_earliest"}
+CHANGE_FIELDS = {"shipment_days", "supplier_days", "add_units", "release_shipments", "shipment_earliest",
+                 "handling_hours"}
 
 
 def calibrate_supplier_lags(con, *, before=None, min_samples=5):
@@ -129,7 +130,11 @@ class _Replay:
         supplier_days = changes.get("supplier_days", {})
         release = set(changes.get("release_shipments", ()))
         overrides = changes.get("shipment_earliest", {})
-        unknown = (shipment_days.keys() | release | overrides.keys()) - self.inbound.keys()
+        # Cap a shipment's post-arrival handling delay (e.g. a pre-booked dock slot).
+        caps = {sid: _number(hours) for sid, hours in changes.get("handling_hours", {}).items()}
+        if any(hours < 0 for hours in caps.values()):
+            raise ValueError("Handling hours must be nonnegative")
+        unknown = (shipment_days.keys() | release | overrides.keys() | caps.keys()) - self.inbound.keys()
         if unknown:
             raise ValueError(f"Unknown shipment IDs: {sorted(unknown)}")
         if supplier_days.keys() - self.suppliers:
@@ -143,10 +148,13 @@ class _Replay:
             if not earliest or item["held"] and sid not in release or item["quantity"] <= 0:
                 continue
             earliest += timedelta(days=slip)
-            key = sid, earliest
+            cap = caps.get(sid)
+            key = sid, earliest, cap
             if key not in self.arrival_cache:
+                limit = timedelta(hours=cap) if cap is not None else None
                 self.arrival_cache[key] = [
-                    bisect_left(self.slots, earliest + lag) for lag in self.lags[sid]
+                    bisect_left(self.slots, earliest + (min(lag, limit) if limit is not None else lag))
+                    for lag in self.lags[sid]
                 ]
             vector = self.arrival_cache[key]
             if min(vector) < len(self.slots):
@@ -244,7 +252,8 @@ def counterfactual(truth, changes, *, lag_profiles=None, trials=MODEL_RUNS, seed
     nonnegative quantity), release_shipments (shipment IDs), and optionally
     shipment_earliest (shipment ID to ISO datetime with offset). Both slips add
     to the ETA, after any ETA override. Held freight requires explicit release.
-    Pass calibrated profiles from calibrate_supplier_lags to match the CLI.
+    handling_hours (shipment ID to nonnegative hours) caps the post-arrival
+    handling delay, e.g. for a pre-booked dock slot. Pass calibrated profiles from calibrate_supplier_lags to match the CLI.
     """
     return _Replay(truth, lag_profiles or {}, trials, seed).run(changes)
 
