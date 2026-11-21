@@ -1,6 +1,7 @@
 """Offline end-to-end rehearsal using the team's downloaded portal files."""
 
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 import http.client
 import json
 import os
@@ -103,7 +104,14 @@ class DemoReplayTest(unittest.TestCase):
             shutil.copytree(ROOT / directory, workspace / directory,
                             ignore=shutil.ignore_patterns("__pycache__", ".soony_token", "state.json", "changes.log"))
         (workspace / "docs").mkdir()
-        shutil.copyfile(ROOT / "docs" / "delegations.json", workspace / "docs" / "delegations.json")
+        delegations = json.loads((ROOT / "docs" / "delegations.json").read_text(encoding="utf-8"))
+        # Keep the simulated delegations in force for this rehearsal after the case dates pass.
+        now = datetime.now(timezone.utc)
+        for delegation in delegations["delegations"]:
+            if delegation.get("simulated"):
+                delegation["valid_from"] = (now - timedelta(days=1)).isoformat()
+                delegation["valid_until"] = (now + timedelta(days=1)).isoformat()
+        (workspace / "docs" / "delegations.json").write_text(json.dumps(delegations), encoding="utf-8")
         for relative in ("store/docs_cache.sqlite3", "runtime/tessdata"):
             source = ROOT / relative
             if source.exists():
@@ -115,6 +123,7 @@ class DemoReplayTest(unittest.TestCase):
                if not key.startswith(("CHASER_", "SOONY_IMAP_", "SOONY_LLM_"))
                and key not in {"SOONY_TOKEN", "SOONY_LOCAL_MODEL", "SOONY_VISION_MODEL", "PYTHONPATH"}}
         env.update(CHASER_REAL_SMTP="0", CHASER_NO_TEAM_MAIL="1", SOONY_LLM_PROVIDER="none", SOONY_AGENTS="0")
+        env.pop("APPROVALS_KILL_SWITCH", None)
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             self.port = listener.getsockname()[1]
@@ -160,15 +169,26 @@ class DemoReplayTest(unittest.TestCase):
                 with self.subTest(material=material):
                     self.assertEqual(gaps.get(material), expected, "Post-drop component gap")
 
-        with timed("Verify action queue review, persistence and dismissal"):
+        with timed("Verify simulated auto-approval of the Boise Semi stock enquiry"):
+            enquiry = next(row for row in updated["options"] if row["kind"] == "alternate"
+                           and row["supplier_id"] == "SUP-0011" and row["material"] == "CMP-GAM-001")
+            self.assertIs(enquiry["request_only"], True)
+            mode = enquiry["approvalMode"]
+            self.assertEqual((mode["mode"], mode["delegationId"]), ("AUTO", "DEL-TEST-001"))
+            self.assertIs(mode["simulated"], True)
+            self.assertIn("Simulated approval (test case)", mode["reason"])
             status, cap = self.request("/api/auto-approve", {"limitEur": 2_000_000})
-            self.assertEqual(status, 200)
-            simulated = {
-                option["id"] for option in updated["options"]
-                if option["status"] == "pending" and (option.get("approvalMode") or {}).get("simulated")
-            }
-            self.assertEqual(set(cap["approved"]), simulated)
+            self.assertEqual((status, cap["approved"]), (200, [enquiry["id"]]))
+            replay = self.dashboard(lambda snapshot, sync: True)
+            self.assertEqual(replay["autoApproved"], [enquiry["id"]])
+            self.assertEqual(next(row["status"] for row in replay["options"] if row["id"] == enquiry["id"]),
+                             "approved")
+            self.assertEqual(replay["sync"]["mailMode"], "dry-run")
+            self.assertTrue(any(event["agent"] == "Simulated approval" and enquiry["title"] in event["action"]
+                                for event in replay["activity"]))
             self.assertEqual(self.request("/api/auto-approve", {"limitEur": 0})[0], 200)
+
+        with timed("Verify action queue review, persistence and dismissal"):
             code, result = self.request("/api/actions")
             self.assertEqual(code, 200)
             queue = result["actions"]
@@ -195,8 +215,7 @@ class DemoReplayTest(unittest.TestCase):
             self.assertEqual(next(row for row in persisted if row["id"] == review["id"])["status"], "dismissed")
 
         with timed("Approve a pending option and verify persisted state"):
-            option = next((row for row in updated["options"]
-                           if row["status"] == "pending" and row["id"] not in simulated), None)
+            option = next((row for row in replay["options"] if row["status"] == "pending"), None)
             self.assertIsNotNone(option, "No actionable approval option")
             option_id = option["id"]
             status, result = self.request(f"/api/decisions/{option_id}/approve", {})

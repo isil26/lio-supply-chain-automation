@@ -228,4 +228,4 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 
 | Task | Owner | Status | Scope |
 |---|---|---|---|
-| T12 replay delegation regression | codex-e2e | in_progress | Verify cap approval and replay dry-run, fix E2E assertions and any approval-policy defect. |
+| T12 replay delegation regression | codex-e2e | done | Assert the exact Boise Semi simulated approval, persisted audit evidence, and existing dry-run and one-click behavior. |
