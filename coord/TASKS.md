@@ -71,7 +71,7 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T48 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T57 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T29 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
-| T53 | (assigned by nick) | codex-hosted | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T53 | Authenticated replay of the verified art-book agent recording | codex-hosted | web/src/BehindScenes.tsx, hosted agent panels, deploy/vercel replay packaging and checks | in_progress | murat-agent recording; codex-deploy preview and promotion |
 | T56 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T25 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T31 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
