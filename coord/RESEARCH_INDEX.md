@@ -20,6 +20,8 @@ Rule: if a topic is listed as DONE, read the file instead of researching again. 
 | Surprise-drop robustness: unseen formats, encodings, languages, corrupt files | docs/DROP_ROBUSTNESS.md, tests/drops/ | codex-drops |
 | Comparable procurement systems and scientific methods for evaluating recovery decisions. First pass covers paired simulations and correction ordering. Share findings and experiments through the team inbox. | coord/INBOX.md | codex-methods |
 
+| Architecture optimality review: multi-agent vs pipeline, agent-loop patterns, visible validated LLM step, graceful new formats, SQLite consistency, top 5 changes | docs/ARCHITECTURE_REVIEW.md | arch-review |
+
 ## Known GAPS (not found publicly or not answerable from files; do not re-search)
 - Dr. Vogt's cost per missing copy / penalty per missed day: NOT in data ("ask me at the booth"). Office hours only.
 - Lio pricing and ROI: Lio publishes none. Only self-reported claims [S]. Software price anchors (Zip/Coupa/Ariba about $73-93k/yr) are weak third-party sources [S].

@@ -21,6 +21,9 @@ Every agent has a unique name and uses it everywhere: the Owner/Agent column in 
 - Everyone else: pick a short unique name on your first line in `coord/STATUS.md` (e.g. `codex-ingest`, `copilot-ui`, `<person>-claude`). Never reuse another agent's name, and never use a human's name for yourself.
 - Names stay the same for the whole hackathon, so teammates can tell who did what.
 
+## Tool budget (21 Nov, 15:45)
+Codex usage is nearly exhausted. Prefer GitHub Copilot CLI agents for new implementation work (`copilot -p "<task>" --allow-tool write --allow-tool 'shell(npm:*)'`, launched in a herdr terminal via `hc run --bg --name <agent> -- sh -c 'exec copilot -p ...'`). Use Claude (Sonnet) subagents for research/review. Use Codex only for a task that is already running or when Copilot fails.
+
 ## Token cost (mandatory, we pay per token)
 - Use the cheapest model/effort that does the job: Codex `-c model_reasoning_effort=medium` (low for mechanical edits), Copilot default/auto model, Claude Sonnet or Haiku for routine work. Reserve the strongest model/effort for hard design or debugging.
 - Read only what you need (`sed -n`, `grep`, targeted ranges). Never re-read files you just wrote, never dump big files, CSVs or logs into context.
