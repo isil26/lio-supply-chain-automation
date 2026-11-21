@@ -1,5 +1,11 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T72 — Release Gate (copilot-gate)
+
+- Added `src/decide/release_gate.py`: pure cited GO/HOLD/HUMAN evaluation from readiness, extracted documents and supplier rows; includes quality, artwork, embedded magnet, conditional Pune authority, Incoterm and usable-stock rules plus per-edition packable units.
+- Added `GET /api/release-gate`, read-only `release_gate_status(part_id?)`, CLI `python3 -m src.decide.release_gate`, focused tests and `docs/RELEASE_GATE.md`.
+- Validation: `python3 -m unittest -v tests.test_release_gate tests.test_agents_tools` — 5 passed. Real-store CLI smoke was blocked by the non-interactive permission boundary because `store/soony.db` access required approval.
+
 ## T47d — Planner option IDs, summary and chaser handoff (copilot-planner)
 
 - Added `list_options` and made `breakeven` report valid IDs when given an invalid one; Planner prompts now require copying real IDs.
