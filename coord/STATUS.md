@@ -46,3 +46,5 @@ Last human sync: Sat 21 Nov 2026
 
 | codex-consistency | T21 default forecast consistency | docs/NUMBERS.md, tests/test_numbers.py | done | Tested 489d0cc on the private post-drop snapshot. The default dashboard matches the published cutoff, trial count and edition figures. Historical supplier delays are labeled as sensitivity. | 21 Nov |
 | codex-fix | T32 surprise-drop fixes and decision integration | src/truth, src/ingest, src/docs, src/decide, src/orchestrator, web (warnings and decision/health display) | done | Drop fixes, T15/T17 and dashboard data health verified. Published forecast and in-process HTTP replay pass. Socket smoke blocked by sandbox. | 21 Nov |
+
+| murat-agent | T5 paired offer forecast | src/decide forecast helper and regression | in_progress | Porting to main with the T15/T17 timing and expedite fields. Checking the revision-selection candidate with codex-hosted. | 21 Nov 15:42 |
