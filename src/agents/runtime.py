@@ -54,6 +54,7 @@ class Agent:
         ensure_trace(db)
         started, messages, total_cost = time.monotonic(), [{"role": "user", "content": task}], 0.0
         total_input_tokens, total_output_tokens = 0, 0
+        seen_calls = {}
         for step in range(1, self.max_steps + 1):
             if time.monotonic() - started > self.timeout_seconds:
                 return {"status": "timeout", "reason": "wall-clock budget exceeded"}
@@ -95,17 +96,28 @@ class Agent:
                     if not tool:
                         raise ValueError(f"tool not allowed: {name}")
                     tool.validate(args)
-                    if tool.needs_approval:
+                    signature = (name, json.dumps(args, sort_keys=True, separators=(",", ":"), default=str))
+                    deduplicated = signature in seen_calls
+                    if deduplicated:
+                        result = {"status": "cached", "message": "already done; returning cached result",
+                                  "result": seen_calls[signature]}
+                        reason = "deduplicated repeated tool call"
+                        # Do not add a second tool event to the trace: repeated calls
+                        # must not look like repeated work to the stop guard.
+                    elif tool.needs_approval:
                         db.execute("CREATE TABLE IF NOT EXISTS agent_approvals (id INTEGER PRIMARY KEY, agent TEXT, tool TEXT, args TEXT, status TEXT)")
                         db.execute("INSERT INTO agent_approvals(agent,tool,args,status) VALUES(?,?,?,'pending')",
                                    (self.name, name, json.dumps(args)))
                         db.commit()
                         result = {"status": "pending_approval"}
+                        seen_calls[signature] = result
                     else:
                         result = tool.function(**args)
-                    reason = call.get("reason", "model selected tool")
-                    record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,
-                           result=result, reason=reason)
+                        seen_calls[signature] = result
+                    if not deduplicated:
+                        reason = call.get("reason", "model selected tool")
+                        record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,
+                               result=result, reason=reason)
                 except Exception as exc:
                     result = {"error": str(exc)}
                     record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,

@@ -44,6 +44,22 @@ class RoleTwoTests(unittest.TestCase):
         self.assertLess(len(brief.split()), 180)
         self.assertIn("scan.jpg", brief)
 
+    def test_briefer_uses_tool_signer_and_price_not_caller_defaults(self):
+        brief = build_brief(
+            [{"text": "A verified risk.", "citation": {
+                "file": "risk.pdf", "page": 2, "quote": "verified risk"}}],
+            [
+                {"tool": "propose_option", "result": {"value": {
+                    "title": "Expedite", "price": 12390}}},
+                {"tool": "escalate_to_human", "result": {"value": {
+                    "role": "Head of Procurement", "required_signers": ["Head of Procurement"]}}},
+            ],
+            "Decision", "Category Lead",
+        )
+        self.assertIn("12", brief)
+        self.assertIn("Head of Procurement", brief)
+        self.assertNotIn("Category Lead.", brief)
+
     def test_briefer_fake_run(self):
         agent = briefer_agent(FakeLLM([{"text": "HEADLINE: ready", "tool_calls": [], "usage": {}}]))
         result = agent.run("brief", sqlite3.connect(":memory:"))

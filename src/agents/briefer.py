@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .harness import numeric_grounding
+from .harness import numeric_grounding, policy_check
 from .knowledge import load_pack
 from .llm_adapter import HTTPAdapter
 from .runtime import Agent, Tool
@@ -34,10 +34,29 @@ def briefer_agent(llm=None, db="store/soony.db") -> Agent:
 def validate_brief(text: str, tool_results: Any) -> dict:
     words = len(str(text).split())
     report = numeric_grounding(text, tool_results)
+    actions = _tool_payloads(tool_results, {"propose_option", "escalate_to_human"})
+    report["violations"].extend(policy_check(actions)["violations"])
     violations = list(report["violations"])
     if words >= 180:
         violations.append({"rule": "brief_length", "detail": f"Brief has {words} words; maximum is 179"})
     return {"ok": not violations, "violations": violations, "words": words}
+
+
+def _tool_payloads(tool_results: Any, names: set[str]) -> list[dict]:
+    """Extract only persisted decision/escalation payloads from tool results."""
+    values = tool_results if isinstance(tool_results, list) else [tool_results]
+    payloads = []
+    for item in values:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("tool") or item.get("name") or "").casefold()
+        if name in names:
+            payload = item.get("result", item)
+            if isinstance(payload, dict) and isinstance(payload.get("value"), dict):
+                payload = payload["value"]
+            if isinstance(payload, dict):
+                payloads.append(payload)
+    return payloads
 
 
 def build_brief(claims: list[dict], options: list[dict], decision: str,
@@ -51,9 +70,24 @@ def build_brief(claims: list[dict], options: list[dict], decision: str,
         else:
             cite = str(citation)
         risks.append(f"- {claim.get('text', claim.get('claim', 'Unknown risk'))} [{cite}]")
-    action = options[0] if options else {}
+    tool_options = _tool_payloads(options, {"propose_option"})
+    tool_escalations = _tool_payloads(options, {"escalate_to_human"})
+    action = tool_options[0] if tool_options else (options[0] if options else {})
     title = action.get("title", "No priced option is available")
-    price = action.get("price", action.get("cost_eur", "unknown"))
+    price = action.get("price", action.get("cost_eur", action.get("value_eur", "unknown")))
+    signer_values = []
+    for payload in tool_escalations:
+        signer_values.extend(payload.get("required_signers", []))
+        if payload.get("role"):
+            signer_values.append(payload["role"])
+    signer = ", ".join(str(value) for value in signer_values if value) or "unknown; route through PP-07"
+    validation = validate_brief(
+        f"RECOMMENDED ACTION: {title} — price {price}. SIGNER: {signer.replace('PP-07', 'policy route')}.",
+        [*options],
+    )
+    if not validation["ok"]:
+        return json.dumps({"status": "rejected", "reason": "brief validation failed",
+                           "violations": validation["violations"]}, ensure_ascii=False)
     brief = "\n".join([
         f"HEADLINE: {decision}",
         "TOP RISKS:",

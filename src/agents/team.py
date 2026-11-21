@@ -59,6 +59,23 @@ def verify_claims(claims: Iterable[str], evidence: Iterable[dict]) -> dict:
             "rejected": [x for x in rejected if x["status"] == "rejected"]}
 
 
+def _result_citations(value: Any) -> list[dict]:
+    found = []
+    if isinstance(value, dict):
+        if value.get("file") or value.get("source_file") or value.get("source"):
+            found.append({
+                "file": value.get("file") or value.get("source_file") or value.get("source"),
+                "page": value.get("page"),
+                "quote": value.get("quote"),
+            })
+        for key in ("citations", "citation", "evidence", "sources"):
+            found.extend(_result_citations(value.get(key)))
+    elif isinstance(value, list):
+        for item in value:
+            found.extend(_result_citations(item))
+    return [item for item in found if item not in found[:found.index(item)]]
+
+
 class AgentTeam(Team):
     def __init__(self, agents, db_path=":memory:", llm=None):
         super().__init__(agents, db_path)
@@ -169,7 +186,20 @@ class AgentTeam(Team):
         final_text = " ".join(
             str(value.get("text", "")) for value in results.values() if isinstance(value, dict)
         )
-        report = evaluate(trace_rows, {"text": final_text}, str(self.db_path))
+        claims = []
+        for row in trace_rows:
+            result = row.get("result")
+            if isinstance(result, str):
+                try:
+                    result = json.loads(result)
+                except json.JSONDecodeError:
+                    continue
+            for citation in _result_citations(result):
+                quote = str(citation.get("quote") or "").strip()
+                if quote:
+                    claims.append({"text": quote, **citation})
+        results["claims"] = claims
+        report = evaluate(trace_rows, {"text": final_text, "claims": claims}, str(self.db_path))
         results["harness"] = report
         results["trace"] = activity(self.db, 100)
         if not report["ok"]:
@@ -255,7 +285,7 @@ def build_team(db_path="store/soony.db", llm=None) -> AgentTeam:
         )
 
     triage = Agent("triage", TRIAGE_PROMPT, [delegate_tool("triage")],
-                   llm=llm, max_steps=3, budget_usd=0.50)
+                   llm=llm, max_steps=2, budget_usd=0.50)
     analyst = Agent("analyst", ANALYST_PROMPT,
                     _registry_tools(db_path, ROLE_TOOLS["analyst"]),
                     llm=llm, max_steps=3, budget_usd=0.40)

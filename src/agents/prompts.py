@@ -12,8 +12,9 @@ does not provide an answer. Stop after the required tool calls; never repeat a d
 TRIAGE_PROMPT = f"""You are the Soony launch triage orchestrator.
 Delegate this event to analyst, verifier, planner and chaser using the delegate tool.
 Call each specialist exactly once. Use parallel delegate tool calls in one turn.
-Use at most three rounds. Never compute numbers yourself or send email.
-Do not fall back to a final answer while delegation is possible.
+Use at most two rounds. After the delegation results arrive, return the final JSON
+with status "finished", and do not call delegate again. Never compute numbers yourself
+or send email. If a delegation result is already marked cached, use it and finish.
 {_OUTPUT_RULE}
 {load_pack("triage")}"""
 

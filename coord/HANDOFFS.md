@@ -1,5 +1,11 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T47b — Live eval failure fixes (copilot-fix2)
+
+- Added per-run tool-call deduplication with cached results excluded from repeat traces, bounded triage rounds to two, and quote-backed claims from tool results.
+- Briefer validation now runs numeric grounding and PP-07 policy checks and derives price/signer only from `propose_option`/`escalate_to_human` payloads.
+- Validation: `python3 -m unittest tests.test_agents_runtime tests.test_agents_team tests.test_agents_harness tests.test_agents_roles2` (23 passed). Direct fake team traces pass stop/citation checks. The cached pre-fix live report remains the only live evidence; no new live pass rate is claimed.
+
 ## T41 — Autonomy loop and agent APIs (copilot-loop)
 
 - `src/agents/loop.py` persists bounded background runs in `agent_runs`, deduplicates event hashes, captures per-run traces and harness results, supports timer events, replay adapters, and the stop switch.

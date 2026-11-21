@@ -82,3 +82,4 @@ Last human sync: Sat 21 Nov 2026
 | copilot-trace | T44 agent trace panel | web/src/agents | done | Live/recorded trace panel, API adapters, citations, harness badge, approvals, and static exporter complete; both builds pass | 21 Nov 16:18 |
 | copilot-fix2 | T47b fix live eval failures (loops, citations, briefer policy) | src/agents | in_progress | hard budget $0.60; diagnose from cassettes first | 21 Nov |
 | copilot-fix2 | T47b fix live eval failures (loops, citations, briefer policy) | src/agents | in_progress | Claimed; diagnosing cached live traces before any new calls. | 21 Nov 16:15 |
+| copilot-fix2 | T47b fix live eval failures (loops, citations, briefer policy) | src/agents | done | Runtime dedupe, two-round triage, grounded claims, and briefer PP-07/numeric validation implemented; focused tests pass. No new live pass rate claimed. | 21 Nov 16:30 |
