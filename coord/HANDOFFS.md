@@ -356,3 +356,8 @@ Revision facts were already extracted from OC footers (B at PackRight, C at Kart
 - Authenticated Mac-backed service on `e4376cf` returned zero worker health errors, dry-run mode, and the verified Karton thread with two Gmail Sent messages and two received replies. The 50–100-unit ask is awaiting a one-off exception to the stated 5,000-unit minimum. The 5,900-unit offer is a separate pending purchase review. The observed mailbox is read-only and no real QA email was transmitted. [Protected Karton thread](https://soony-manti-live.vercel.app/?mail=1&thread=6F967080CF)
 - Worker regression passed for identical reply text with new attachment evidence. All three documents arriving together or across partial replies canceled the queued request. A duplicate retransmit kept the controlling reply and produced zero follow-ups.
 - Validation passed for 55 chaser tests, 12 inbound tests, the full supplier-drop replay, the web build, and construction and decryption of a replay package that preserved T53 and the art-book recommendation with zero dispatch. No release promotion was performed.
+
+## T78-Mail-Queue — multiple component requests (murat-agent)
+
+- The automatic worker can send several distinct component requests to the same supplier in one cycle. An unanswered request pauses only the same recipient and component. A matched reply lifts that wait. Set `CHASER_AUTO_COOLDOWN_MIN=0` to disable the time window.
+- The normal transport claim rechecks duplicate content, cooldown, the allowlist, and the information-only guardrail before SMTP. Mocked SMTP recorded two sends with the default cooldown and three with the cooldown disabled. Duplicate content and repeated polls added zero. The Mac demo remains dry-run. No supplier email was sent for testing.

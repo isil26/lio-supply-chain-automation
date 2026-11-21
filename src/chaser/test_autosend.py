@@ -64,7 +64,7 @@ class AutoSendTest(unittest.TestCase):
     def test_reply_lifts_the_wait(self):
         con = db([("A", "a@suppliers.juliansibbing.de", "Follow-up answer.")])
         con.execute("INSERT INTO chases(id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)"
-                    " VALUES('P','S','Sup P','a@suppliers.juliansibbing.de','en','s','awaiting reply','M',1,'first',?)", (DEADLINE,))
+                    " VALUES('P','S','Sup P','a@suppliers.juliansibbing.de','en','s','awaiting reply','CMP-GAM-001',1,'first',?)", (DEADLINE,))
         con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES('P','p1','out','us','first','2026-11-21T17:50:00+00:00')")
         sent = []
         autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
@@ -72,6 +72,35 @@ class AutoSendTest(unittest.TestCase):
         con.execute("INSERT INTO messages(chase_id,external_id,side,sender,body,time) VALUES('P','p2','in','a','reply','2026-11-21T17:55:00+00:00')")
         autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
         self.assertEqual(sent, ["A"])  # they replied: answer right away
+
+    def test_real_dispatch_path_can_send_distinct_components_to_the_same_supplier(self):
+        for cooldown, expected in (("30", ["A", "B"]), ("0", ["A", "B", "C"])):
+            with self.subTest(cooldown=cooldown):
+                address = "supplier@suppliers.juliansibbing.de"
+                con = db([("A", address, "Please confirm game card quantities."),
+                          ("B", address, "Please confirm art-book pickup."),
+                          ("C", address, "Please confirm the game card ETA."),
+                          ("D", address, "Please confirm game card quantities.")])
+                self.addCleanup(con.close)
+                con.execute("UPDATE chases SET material='CMP-GAM-008' WHERE id='B'")
+                con.execute("UPDATE chases SET material='CMP-GAM-003' WHERE id='D'")
+                con.commit()
+                with (
+                    mock.patch.dict(os.environ, {"CHASER_REAL_SMTP": "1", "CHASER_AUTO_COOLDOWN_MIN": cooldown,
+                                                 "CHASER_AUTO_MAX_PER_CYCLE": "0", "CHASER_SENDER": "qa@example.invalid",
+                                                 "CHASER_SMTP_HOST": "example.invalid", "CHASER_SMTP_PORT": "587"}),
+                    mock.patch("src.chaser.mailenv.load_team_mail_env"),
+                    mock.patch("src.chaser.authenticate"),
+                    mock.patch("src.chaser.smtplib.SMTP") as smtp,
+                ):
+                    receiver = smtp.return_value.__enter__.return_value
+                    receiver.send_message.return_value = {}
+                    result = autosend.run(con, prepare=False)
+                    self.assertEqual([r["id"] for r in result if r["result"] == "sent"], expected)
+                    self.assertEqual(receiver.send_message.call_count, len(expected))
+                    self.assertIn({"id": "D", "supplier": "Sup D", "result": "duplicate"}, result)
+                    autosend.run(con, prepare=False)
+                    self.assertEqual(receiver.send_message.call_count, len(expected))
 
     def test_failed_send_is_logged_not_raised(self):
         con = db([("A", "boss@gmail.com", "Please confirm quantity.")])
