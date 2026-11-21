@@ -210,6 +210,21 @@
       "references": [],
       "body_content_type": "text/plain",
       "body": "Hello,\n\nThank you for your reply.\n\nWe understand the full quantity is not possible in time. Could you tell us how many units you could ship before 22 Nov 20:00 CET as a part shipment, and the earliest date for the rest?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:39:24+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a1ff9edf24-71e2506b-6cdb-45b3-82c4-be5996698840-000000@eu-west-1.amazonses.com>",
+      "chase_id": null,
+      "in_reply_to": "<179528982962.31533.8469799915132328557@gmail.com>",
+      "references": [
+        "<179528982962.31533.8469799915132328557@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nNo quantity from the Boise lot can reach Europe before 22 November at 20:00 CET, whether shipped as a split or in full. The 36,000 cards remain packed and available for release once Soony confirms EXW Boise in writing or nominates its forwarder.\n\nAfter release, the booked ORD–FRA air service is expected to arrive in Frankfurt approximately two days later. The earliest date for the remaining quantity therefore depends on when release is authorized and on onward customs and road handling into Hamburg.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
     }
   ]
 }
