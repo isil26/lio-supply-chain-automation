@@ -267,9 +267,11 @@ def stop_check(trace: Any) -> dict:
         tool = str(row.get("tool") or "")
         if not tool:
             continue
-        signature = (tool, _text(row.get("args")))
+        # Different agents cross-checking the same read-only result (e.g. the Verifier re-reading the gate)
+        # is by design; a loop is the SAME agent repeating the same call.
+        signature = (str(row.get("agent") or ""), tool, _text(row.get("args")))
         calls[signature] = calls.get(signature, 0) + 1
-    repeated = [tool for (tool, _), count in calls.items() if count > 2]
+    repeated = [tool for (_, tool, _), count in calls.items() if count > 2]
     if repeated:
         violations.append({"rule": "stop_check",
                            "detail": "Repeated tool call signature exceeded twice",
