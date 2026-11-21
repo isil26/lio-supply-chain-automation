@@ -167,6 +167,8 @@ def send(con, chase_id, demo=False):
             check_recipient(chase["address"])
         message["To"], message["Subject"], message["Message-ID"] = chase["address"], chase["subject"], message_id
         message["Date"] = format_datetime(datetime.now(timezone.utc))
+        if not demo:
+            message["X-Soony-Chaser"] = "1"
         message.set_content(chase["body"])
         envelope = {"from": str(message["From"]), "to": chase["address"], "subject": chase["subject"],
                     "messageId": message_id, "mode": "dry_run" if demo else "smtp", "status": "attempting"}
@@ -234,14 +236,15 @@ def parse_reply(body):
     return result
 
 
-def receive(con, message, *, simulated=False):
+def receive(con, message, *, simulated=False, matched_thread_id=None):
     schema(con)
     sender = parseaddr(message.get("From", ""))[1].casefold()
     parent = (message.get("In-Reply-To", "") or "").strip()
     subject = message.get("Subject", "")
     ref = re.search(r"\[SOONY-([A-F0-9]+)\]", subject)
     chase = con.execute("""SELECT * FROM chases WHERE lower(address)=? AND
-               (message_id=? OR id=?) AND status NOT IN ('draft')""", (sender, parent, ref[1] if ref else "")).fetchone()
+               (message_id=? OR id=?) AND status NOT IN ('draft')""",
+                        (sender, parent, matched_thread_id or (ref[1] if ref else ""))).fetchone()
     if not chase:
         return False
     sent = con.execute("SELECT sender,transport FROM messages WHERE external_id=? AND chase_id=? AND side='out'",

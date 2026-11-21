@@ -19,6 +19,7 @@ from urllib.parse import unquote, urlsplit
 
 from src import chaser
 from src.chaser.reply_plan import demo_reply
+from src.chaser import mail_history
 from src.decide import authorize, choose, decisions
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
@@ -204,6 +205,7 @@ def dashboard(con):
         "threads": [{**thread, "initials": "".join(word[0] for word in thread["supplier"].split()[:2]),
                      "messages": [dict(msg, timestamp=msg["time"], time=clock(msg["time"])) for msg in thread["messages"]]}
                     for thread in chaser.list_threads(con, states)],
+        "mailHistory": mail_history.view(clock),
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": snapshot.get("drop"),
         "sync": snapshot.get("sync"), "dataHealth": health,
@@ -601,9 +603,16 @@ def main():
     # Initialize SQLite and WAL before the worker and the first request can open it.
     with closing(connect(loop.database)) as con:
         chaser.schema(con)
+    history_config = args.replay_dir.parent / "mail-history.json" if args.replay_dir else None
     with ThreadingHTTPServer(("127.0.0.1", args.port), handler(loop)) as server:
         thread = threading.Thread(target=loop.background, daemon=True)
         thread.start()
+        if history_config and history_config.is_file():
+            settings = json.loads(history_config.read_text())
+            history_db = history_config.with_name("mail-history.db")
+            os.environ["SOONY_MAIL_HISTORY_DB"] = str(history_db)
+            threading.Thread(target=mail_history.run,
+                             args=(loop.stop, loop.database, history_db, settings), daemon=True).start()
         print(f"Launch Control Room at http://127.0.0.1:{args.port} (Ctrl-C to stop)", flush=True)
         try:
             server.serve_forever()

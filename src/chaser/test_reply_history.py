@@ -5,9 +5,10 @@ from tempfile import TemporaryDirectory
 import smtplib
 import unittest
 from email.message import EmailMessage
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from src import chaser
+from src.chaser import mail_history
 from src.chaser.reply_plan import plan_reply
 from src.decide import authorize, decisions
 from src.ingest.store import connect, get_state, save_state
@@ -76,6 +77,62 @@ class ReplyHistoryTests(unittest.TestCase):
             plan_after = next(chaser.list_threads(con, decisions(con)))["messages"][-1]["parsed"]["reply_plan"]
             self.assertEqual(plan_after["id"], plan["id"])
             self.assertEqual(plan_after["status"], "approved")
+
+    def test_read_only_gmail_worker_keeps_verified_history_separate_and_deduplicated(self):
+        with closing(connect(self.path)) as con, con:
+            con.execute("UPDATE chases SET address='fixture@suppliers.juliansibbing.de' WHERE id='AB12'")
+        sent = EmailMessage()
+        sent["From"] = "team@example.invalid"
+        sent["To"] = "fixture@suppliers.juliansibbing.de"
+        sent["Subject"] = "[SOONY-AB12] Test"
+        sent["Message-ID"] = "<sent@team.invalid>"
+        sent["Date"] = "Sat, 21 Nov 2026 12:00:00 +0000"
+        sent.set_content("Please confirm availability.")
+        unrelated = EmailMessage()
+        unrelated["From"] = str(sent["From"])
+        unrelated["To"] = str(sent["To"])
+        unrelated["Subject"] = str(sent["Subject"])
+        unrelated["Message-ID"] = "<manual@team.invalid>"
+        unrelated.set_content("A manually composed message that does not match the Chaser draft.")
+        inbound = EmailMessage()
+        inbound["From"] = "fixture@suppliers.juliansibbing.de"
+        inbound["To"] = "team@example.invalid"
+        inbound["Subject"] = "Re: [SOONY-AB12] Test"
+        inbound["Message-ID"] = "<genuine-reply@fixture.invalid>"
+        inbound["In-Reply-To"] = "<sent@team.invalid>"
+        inbound.set_content("SHIP-1 delayed.\nRevised ETA: 2026-11-22T22:00:00+01:00")
+        inbox = Mock()
+        mailbox = None
+        def select(name, *, readonly):
+            self.assertTrue(readonly)
+            nonlocal mailbox
+            mailbox = name
+            return "OK", []
+        def uid(action, *args):
+            records = {b"11": sent, b"12": unrelated} if mailbox == '"[Gmail]/Sent Mail"' else {b"21": inbound}
+            if action == "search":
+                return "OK", [b" ".join(records)]
+            self.assertEqual(action, "fetch")
+            self.assertIn("BODY.PEEK", args[1])
+            return "OK", [(b"message", records[args[0]].as_bytes())]
+        inbox.select.side_effect = select
+        inbox.uid.side_effect = uid
+        inbox.list.return_value = ("OK", [b'(\\Sent) "/" "[Gmail]/Sent Mail"'])
+        history_path = self.path.with_name("gmail.db")
+        settings = {"user": "team@example.invalid", "password": "test-only"}
+        stop = Mock()
+        stop.is_set.side_effect = [False, False, True]
+        with patch("src.chaser.mail_history.imaplib.IMAP4_SSL") as client:
+            client.return_value.__enter__.return_value = inbox
+            mail_history.run(stop, self.path, history_path, settings)
+        with closing(connect(history_path)) as history:
+            outbound, reply = next(chaser.list_threads(history))["messages"]
+            self.assertEqual(outbound["transport"]["status"], "gmail_sent")
+            self.assertEqual(reply["transport"]["inReplyTo"], "<sent@team.invalid>")
+            self.assertEqual(reply["parsed"]["reply_plan"]["editions"][0]["after"], 0)
+        with closing(connect(self.path)) as source:
+            self.assertEqual(next(chaser.list_threads(source))["status"], "draft")
+            self.assertEqual(source.execute("SELECT count(*) FROM messages").fetchone()[0], 0)
 
     def test_ambiguous_hold_reply_leaves_offer_pending_without_an_eta_request(self):
         thread = {"material": "PART", "supplier_id": "SUP-TEST", "qty": 80}

@@ -58,7 +58,9 @@ function respond(response, status, body, type = 'application/json; charset=utf-8
 }
 
 function loginPage(response, failed = false) {
-  const page = readFileSync(join(__dirname, 'login.html'), 'utf8');
+  const template = readFileSync(join(__dirname, 'login.html'), 'utf8');
+  const page = process.env.SOONY_LIVE_UPSTREAM
+    ? template.replace('private supplier-drop replay', 'private live control room') : template;
   respond(response, failed ? 401 : 200, page.replace('<!-- LOGIN_ERROR -->', failed ? '<p role="alert">The team password is incorrect.</p>' : ''), 'text/html; charset=utf-8');
 }
 
