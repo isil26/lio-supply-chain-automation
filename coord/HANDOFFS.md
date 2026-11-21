@@ -32,3 +32,18 @@
 - The browser test covered the before/after drop, evidence, a Polish draft, human-confirmed dry-run send, simulated reply and logged procurement approval. The live mail transport and optional local LLM need team configuration.
 - The React build is still available at `/react`. It is a separate mock-data UI until its owner switches its API client.
 - `README.md` contains local setup and architecture. The deck, walkthrough, business case and three-minute recording are under ignored `private/submission/`. Keep the recording and source-backed pitch inside the team workspace.
+
+## T10 — Live React control room (Copilot #3)
+
+- Replaced `web/src/api.ts` mock-only client with same-origin live HTTP calls for dashboard, source evidence, sync, decisions, and supplier threads. `?mock=1` is the only mock fallback.
+- Built a responsive hero screen in `web/src/main.tsx`: countdown, P(on-time) readiness cards with p10/p50/p90 range bars, ranked SAP-vs-reality risks, source evidence modal, live activity, supplier draft/send states, PP-07 approval card, and data-drop sync.
+- Vite proxies `/api` to `127.0.0.1:8787`; `npm --prefix web run build` passes.
+- T7 handoff: React is still served at `/react` and HTML at `/live`. Request is in `coord/INBOX.md` to make React `/` and retain `/live`.
+
+## T8 pitch deck (copilot-deck)
+
+- Created `docs/deck/index.html`: six self-contained 16:9 slides, dark design system, keyboard arrows, hash navigation, inline SVG architecture diagram, print-to-PDF CSS, and no external assets or fonts.
+- Created `docs/deck/SPEAKER_NOTES.md` for a timed 3-minute pitch: 0:30 problem, 1:45 live demo, 0:30 architecture, 0:15 business.
+- Created `docs/deck/README.md` with browser presentation and PDF export steps.
+- Source constraints: pitch figures come from `docs/NUMBERS.md`; cost-per-missing-copy and pricing are visibly marked as placeholders.
+- Presenter should open `docs/deck/index.html` in Chromium and export to a 16in x 9in PDF before submission.
