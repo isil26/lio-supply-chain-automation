@@ -42,6 +42,7 @@ def verify(base, password):
     headers, body = request(anonymous, "/")
     check(b"Team password" in body and b'/assets/' not in body, "anonymous visitors did not see the team sign-in")
     check("no-store" in headers.get("Cache-Control", ""), "login response is cacheable")
+    check(headers.get("Referrer-Policy") == "same-origin", "login page must preserve the origin on dashboard form submissions")
     request(anonymous, "/api/dashboard", expected=401)
     request(anonymous, "/api/sync", body=b"{}", expected=401)
     request(anonymous, "/api/replay/reset", body=b"{}", expected=401)

@@ -82,7 +82,8 @@ module.exports = async function control(request, response) {
   response.setHeader('Cache-Control', 'private, no-store');
   response.setHeader('Vercel-CDN-Cache-Control', 'no-store');
   response.setHeader('X-Content-Type-Options', 'nosniff');
-  response.setHeader('Referrer-Policy', 'no-referrer');
+  // Native form submissions need the same-origin Origin header checked below.
+  response.setHeader('Referrer-Policy', 'same-origin');
   response.setHeader('X-Robots-Tag', 'noindex, nofollow');
   response.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
 
