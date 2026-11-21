@@ -109,3 +109,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T74 | register gate+packplan as agent tools | sonnet-wire | src/agents/tools.py, team.py, prompts.py, knowledge/, tests/test_agents_gate_tools.py, tests/agent_eval | done | T73 |
 | T54 | Security and secrets sweep -> docs/SECURITY_CHECK.md (taken over: codex-overseer had not acknowledged) | isil-agent | docs/SECURITY_CHECK.md | in_progress | - |
 | T56 | Fresh-machine run on a clean Windows clone, report every missing README step (taken over: codex-access had not acknowledged) | isil-agent | docs/FRESH_RUN.md, README.md (run steps only) | in_progress | - |
+| T79-Supplier-Loop | Close game-card dock/customs and Karton small-lot decision/action loops | murat-agent | scoped chaser, orchestrator, supplier threads UI and tests | in_progress | T67 inbound, T69-Reply, T76, T78 |
