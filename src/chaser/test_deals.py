@@ -95,6 +95,8 @@ class DealsTest(unittest.TestCase):
         con = db()
         sync(con, DEADLINE, now=NOW, model=False)
         item = self.boise(con)
+        with self.assertRaisesRegex(ValueError, "name"):
+            decide(con, item["id"], "approve", "  ", revision=item["revision"])
         first = decide(con, item["id"], "approve", "Buyer", revision=item["revision"])
         self.assertTrue(is_decision_draft(con, first["email_id"]))
         self.assertTrue(check_draft(con, first["email_id"]))
@@ -110,7 +112,7 @@ class DealsTest(unittest.TestCase):
         con = db()
         sync(con, DEADLINE, now=NOW, model=False)
         original = self.boise(con)
-        approved = decide(con, original["id"], "approve", revision=original["revision"])
+        approved = decide(con, original["id"], "approve", "Buyer", revision=original["revision"])
         self.revise(con, "Quantity: 6,800 pcs, ETA 2026-11-22 06:00, USD 10.40 per unit, EXW, NET 10.")
         with self.assertRaisesRegex(ValueError,"changed"):
             check_draft(con, approved["email_id"])
@@ -151,7 +153,7 @@ class DealsTest(unittest.TestCase):
         sync(con, DEADLINE, now=NOW,model=False)
         d = self.boise(con)
         self.assertEqual((d["offer_kind"],d["offer_state"],d["total_eur"],d["unit_price"]), ("freight","quoted",1200,None))
-        approved = decide(con, d["id"], "approve",revision=d["revision"])
+        approved = decide(con, d["id"], "approve", "Buyer", revision=d["revision"])
         email = con.execute("SELECT body FROM chases WHERE id=?", (approved["email_id"],)).fetchone()[0]
         self.assertIn("without charge", email)
         self.assertIn("separate written authorization", email)

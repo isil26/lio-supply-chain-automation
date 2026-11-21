@@ -117,6 +117,38 @@ class MailPlanningTest(unittest.TestCase):
             self.assertEqual(message["In-Reply-To"], "<offer>")
             self.assertIn("<out-A1>", message["References"])
 
+    def test_late_reply_to_revised_offer_to_approved_response_survives_restart(self):
+        from . import deals
+        from .negotiate import compare
+
+        clock = datetime(2031, 8, 9, 14, tzinfo=timezone.utc)
+        cutoff = "2031-08-12T12:00:00Z"
+        self.receive("A1", "80 units. ETA 2031-08-14 10:00Z. EUR 4 per unit.", "late")
+        case = compare(self.db, cutoff, save=True, model=False, now=clock)["materials"][0]
+        self.assertEqual(case["plan"]["uncovered"], 80)
+        expedite = case["negotiations"][0]
+        self.assertEqual(expedite["asks"][0]["lever"], "expedite")
+        self.receive("A1", "80 units. ETA 2031-08-11 10:00Z. EUR 5 per unit. AWB 020-12345678.", "faster", 10)
+        env = {"CHASER_AUTO_COOLDOWN_MIN":"0", "CHASER_REAL_SMTP":"1", "CHASER_SENDER":"team@example.test",
+               "CHASER_SMTP_HOST":"unused.test", "CHASER_SMTP_PORT":"587"}
+        with patch.dict(os.environ, env), patch("src.chaser.mailenv.load_team_mail_env"), patch(
+                "src.chaser.smtplib.SMTP") as smtp, patch.object(deals, "_now", return_value=clock.isoformat()):
+            client = smtp.return_value.__enter__.return_value
+            client.send_message.return_value = {}
+            deals.sync(self.db, cutoff, now=clock, model=False)
+            firm, = deals.list_deals(self.db)["best"]
+            self.assertEqual(firm["total_eur"], 400)
+            decision = deals.decide(self.db, firm["id"], "approve", "Buyer", revision=firm["revision"])
+            first = autosend.run(self.db, now=clock)
+            self.assertEqual([r["id"] for r in first if r["result"]=="sent"], [decision["email_id"]])
+            message = client.send_message.call_args.args[0]
+            self.assertEqual(message["In-Reply-To"], "<faster>")
+            self.db.close()
+            self.db = connect(self.path)
+            deals.decide(self.db, firm["id"], "approve", "Buyer", revision=firm["revision"])
+            autosend.run(self.db, now=clock)
+            self.assertEqual(client.send_message.call_count, 1)
+
     def test_quoted_or_simulated_text_does_not_block_real_conversation(self):
         self.assertIsNone(mail_plan.classify("Thank you.\n> Please approve the freight charge."))
         with self.db:

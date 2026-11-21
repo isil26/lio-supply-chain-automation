@@ -396,7 +396,7 @@ def check_draft(con, chase_id):
     return True
 
 
-def decide(con, deal_id, action, by="team member", note=None, *, revision=None):
+def decide(con, deal_id, action, by=None, note=None, *, revision=None):
     """Record one immutable buyer decision and enqueue one nonbinding response per revision."""
     if action not in EMAIL:
         raise ValueError("Action must be approve or decline.")
@@ -414,6 +414,9 @@ def decide(con, deal_id, action, by="team member", note=None, *, revision=None):
             return deal
         if deal["status"] not in ("pending","changed"):
             raise ValueError("A decision is already recorded for this offer revision.")
+        if not isinstance(by, str) or not by.strip():
+            raise ValueError("Enter the name of the person reviewing this offer.")
+        by = by.strip()
         lang = deal["language"] if deal["language"] in EMAIL[action] else "en"
         freight = deal["offer_kind"] == "freight"
         subject, body = FREIGHT_RESERVATION[lang] if freight and action == "approve" else EMAIL[action][lang]

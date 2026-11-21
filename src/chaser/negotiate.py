@@ -259,7 +259,7 @@ def quotes_from_db(con, material=None, *, use_thread_deadlines=False, simulated=
                             row["material"], int(row["qty"]), offer["quantity"], offer["eta"],
                             offer["unit_price"], offer["currency"], offer["commitment"], reply_hours,
                             constraint=constraint, reply_id=row["reply_id"], deadline=_aware(row["deadline"]),
-                            stated_arrival=offer["stated_arrival"], automation_blocked=bool(states[row["id"]]["plan"])))
+                            stated_arrival=offer["stated_arrival"], automation_blocked=bool(states[row["id"]]["plan"] or states[row["id"]]["buyerDecided"])))
     return quotes
 
 

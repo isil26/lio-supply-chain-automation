@@ -147,14 +147,17 @@ class SendModeTest(unittest.TestCase):
 
     def test_offer_table_click_counts_as_the_click(self):
         from . import deals
-        con = db([("C", "c@suppliers.juliansibbing.de", "Bitte: Please reserve this quantity on these terms.")])
-        deals.schema(con)
-        con.execute("INSERT INTO deals(id,supplier_id,supplier,material,status,decided_by,email_id,updated_at)"
-                    " VALUES('d1','S','Sup C','CMP-GAM-001','approved','Gülşah','C','x')")
-        sent = []
-        results = autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
-        self.assertEqual(sent, ["C"])
-        self.assertEqual(autosend.mode(con, "C", "Please reserve")["approved_by"], "Gülşah")
+        from .test_deals import DEADLINE, db as offers_db
+        con = offers_db()
+        with mock.patch.object(deals, "_now", return_value=NOW.isoformat()):
+            deals.sync(con, DEADLINE, now=NOW, model=False)
+            offer = deals.list_deals(con)["best"][0]
+            receipt = deals.decide(con, offer["id"], "approve", "Gülşah", revision=offer["revision"])
+            sent = []
+            results = autosend.run(con, send=lambda con, cid: sent.append(cid), now=NOW, prepare=False)
+        self.assertEqual(sent, [receipt["email_id"]])
+        self.assertEqual(results[0]["mode"], "ONE-CLICK")
+        self.assertEqual(autosend.mode(con, sent[0], "Please reserve")["approved_by"], "Gülşah")
 
     def test_binding_detection_in_four_languages(self):
         for text in ("Please reserve 5,900 units.", "Prosimy o rezerwację tej ilości.", "이 조건으로 수량을 확보해 주시기 바랍니다.", "请按此条件预留数量"):

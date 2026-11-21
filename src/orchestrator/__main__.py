@@ -708,7 +708,7 @@ def handler(loop):
                         if not isinstance(body.get("revision"), str) or not body["revision"]:
                             return self.out({"error": "Refresh the offer before recording a decision."}, 409)
                         try:
-                            row = supplier_deals.decide(con, deal[1], deal[2], str(body.get("by") or "team member")[:80],
+                            row = supplier_deals.decide(con, deal[1], deal[2], body.get("by")[:80] if isinstance(body.get("by"), str) else None,
                                                         (str(body["note"])[:500] if body.get("note") else None),
                                                         revision=body["revision"])
                         except KeyError:

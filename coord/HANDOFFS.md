@@ -477,3 +477,9 @@ At 20:24:41 CET Karton replied that it would now approach Warta for pickup and D
 - Not wired yet: murat-agent's POST /api/actions/<id>/approve must call `record_human_decision`; mail-agent's `actions.on_approve` must call `evaluate`/`submit` and send only on AUTO or a recorded human approval; harness can merge `approvals.policy_check`; a scheduler must call `escalate_due(con, now)` each minute. Details in docs/APPROVALS.md.
 - Gaps: Boise PO value in the demo is illustrative (EUR 900,000); Collector's Okafor co-sign applies to releases/quality only; the CPO has no higher approver on file (SLA expiry gives a phone-call reminder, CFO informed only).
 - Next: get Dr. Vogt's or Felix's delegation confirmed in writing, then `--confirm DEL-001 --evidence "<ref>"`.
+
+### Reusable supplier email workflow (T-Mail-Planning, codex-overseer)
+
+In `codex/supplier-email-planning`, the worker plans against each procurement deadline and the latest substantive supplier reply. It can negotiate split deliveries and incremental express freight, wait on a promised update, close an unavailable route, or surface an evidence-linked request for Procurement, Logistics or Supplier Quality. The buyer enters a name and reviews a specific revision before requesting a free hold or declining. Changed terms retire stale responses. Spending, bookings and Quality releases follow the existing authorization path.
+
+Offline verification covered 112 mail tests, the approval engine and an end-to-end supplier-drop replay. In a read-only copy of the operational mailbox, five offers needed more evidence and three were unavailable. An independent synthetic workflow changed a late offer into an on-time quote and dispatched one buyer-reviewed response through a test transport across two runs. The branch is for team review before integration and release.
