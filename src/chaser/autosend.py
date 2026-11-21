@@ -89,6 +89,13 @@ def run(con, *, send=None, now=None, prepare=True):
         except Exception as exc:
             activity(con, "Mail Agent", f"Reply answering skipped ({exc.__class__.__name__}).", "warning")
         try:
+            from . import deals
+            row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
+            if row:
+                deals.sync(con, row[0], now=now)
+        except Exception as exc:
+            activity(con, "Mail Agent", f"Offer table update skipped ({exc.__class__.__name__}).", "warning")
+        try:
             from .negotiate import compare
             row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
             if row:

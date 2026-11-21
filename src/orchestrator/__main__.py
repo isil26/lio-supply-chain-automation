@@ -536,6 +536,12 @@ def handler(loop):
                         return self.out(get_state(con, "truth"))
                     if path == "/api/release-gate":
                         return self.out(release_gate(con, loop.root))
+                    if path == "/api/deals":  # T90 mail-agent: offers table with best offer per part
+                        from src.chaser import deals as supplier_deals
+                        deadline = (get_state(con, "truth", {}) or {}).get("deadline")
+                        if deadline:
+                            supplier_deals.sync(con, deadline)
+                        return self.out(supplier_deals.list_deals(con))
                     if path == "/api/suppliers/best":  # T77 mail-agent: read-only ranking
                         return self.out(supplier_report(con, save=False))
                     if path == "/api/documents":
@@ -592,6 +598,15 @@ def handler(loop):
                     return self.out(loop.agents.submit(body), 202)
                 with closing(connect(loop.database)) as con:
                     chaser.schema(con)
+                    deal = re.fullmatch(r"/api/deals/([a-f0-9]{12})/(approve|decline)", path)
+                    if deal:  # T90 mail-agent: record the decision and draft the supplier email
+                        from src.chaser import deals as supplier_deals
+                        try:
+                            row = supplier_deals.decide(con, deal[1], deal[2], str(body.get("by") or "team member")[:80],
+                                                        (str(body["note"])[:500] if body.get("note") else None))
+                        except KeyError:
+                            return self.out({"error": "Unknown offer. Refresh the page."}, 404)
+                        return self.out({"ok": True, "deal": row})
                     if path == "/api/suppliers/drafts":  # T77 mail-agent: create drafts only, never sends
                         return self.out(supplier_report(con, save=True, kind=body.get("kind", "all")))
                     match = re.fullmatch(r"/api/decisions/([a-f0-9]+)/(approve|review)", path)
