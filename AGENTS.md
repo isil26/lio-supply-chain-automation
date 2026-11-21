@@ -5,7 +5,7 @@ Project: START Hack Munich 2026, Lio challenge "Keep the Line Running". We build
 ## Before you start (mandatory, in order)
 1. Read `coord/STATUS.md` (who is doing what right now) and `coord/TASKS.md` (the board).
 2. Read `FINDINGS.md` (data discoveries; VERIFIED vs AGENT-reported) and `CODEX_TASKS.md` (task specs T1-T8). These two files are NOT in git because they contain hackathon data details (repo is public): get them from the team's private channel and put them in `private/`.
-3. Read `coord/DECISIONS.md` (architecture and contracts you must respect).
+3. Read `coord/RESEARCH_INDEX.md` before ANY research (what is done, in progress, and known gaps) and `coord/DECISIONS.md` (architecture and contracts you must respect).
 4. **Claim your task** in `coord/TASKS.md` (set owner + status `in_progress`) and add a line to `coord/STATUS.md` BEFORE writing code. Only touch the directories you own.
 
 Humans are on the team too: see `coord/TEAM.md` (roles, branches, checkpoints). Run `scripts/status.sh` for a one-screen view.
