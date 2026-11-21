@@ -1,24 +1,23 @@
 {
- "generated_at": "2026-11-21T17:55+01:00",
+ "generated_at": "2026-11-21T18:05+01:00",
  "generator": "overview-agent (scripts/overview.py)",
  "head": {
-  "sha": "1de087f",
-  "subject": "coord: isil-agent takes over T54 secrets sweep and T56 fresh-machine run [isil-agent]",
-  "when": "2026-11-21T17:54+01:00"
+  "sha": "d6619b2",
+  "subject": "Release Gate, pack-out optimizer, agent tools T74, eval run 3, Vogt card, publish-everything notice [nick]",
+  "when": "2026-11-21T18:03+01:00"
  },
  "summary": {
-  "agents": 57,
+  "agents": 60,
   "by_state": {
    "in_progress": 4,
    "assigned": 1,
    "review": 2,
    "outdated": 5,
-   "awaiting original source": 1,
-   "unknown": 2,
-   "done": 41,
+   "unknown": 5,
+   "done": 42,
    "released": 1
   },
-  "status_rows": 106,
+  "status_rows": 107,
   "inbox_requests_open": 13,
   "unclaimed_open_tasks": [
    {
@@ -49,49 +48,97 @@
  },
  "agents": [
   {
-   "name": "isil-agent",
+   "name": "murat-agent",
    "kind": "agent",
-   "current_task": "T54 secrets sweep + T56 fresh-machine run (T67 inbound option done)",
+   "current_task": "T79-Supplier-Loop",
    "state": "in_progress",
-   "dirs": "docs/SECURITY_CHECK.md, docs/FRESH_RUN.md",
-   "notes": "Sweeping tracked files and history for secrets; cloning fresh on Windows and following README only. Reports go to nick; no secret values will be written anywhere.",
-   "status_line": 34,
-   "last_activity": "2026-11-21T17:54+01:00",
-   "last_activity_ago": "0 min ago",
+   "dirs": "scoped chaser, orchestrator, supplier threads UI and tests",
+   "notes": "Implementing persisted evidence-driven actions for SHP-2026-04311 and Karton art books. Verified mailbox is read-only. Testing will use the isolated demo transport.",
+   "status_line": 118,
+   "last_activity": "2026-11-21T17:57+01:00",
+   "last_activity_ago": "8 min ago",
    "last_commit": {
-    "sha": "1de087f",
-    "when": "2026-11-21T17:54+01:00",
-    "subject": "coord: isil-agent takes over T54 secrets sweep and T56 fresh-machine run [isil-agent]",
+    "sha": "bbc3a86",
+    "when": "2026-11-21T17:57+01:00",
+    "subject": "T79: Claim scoped supplier decision loop [murat-agent]",
     "via_autosync": false
    },
-   "commits_total": 5,
+   "commits_total": 26,
    "board_tasks": [
     {
-     "id": "T54",
-     "title": "Security and secrets sweep -> docs/SECURITY_CHECK.md (taken over: codex-overseer had not a",
-     "state": "in_progress"
+     "id": "T7",
+     "title": "Serialize demo database initialization",
+     "state": "done"
     },
     {
-     "id": "T56",
-     "title": "Fresh-machine run on a clean Windows clone, report every missing README step (taken over: ",
+     "id": "T5",
+     "title": "Resolve explicit supplier-offer revisions and pair Plan B forecasts",
+     "state": "done"
+    },
+    {
+     "id": "T60",
+     "title": "(assigned by nick)",
+     "state": "assigned"
+    },
+    {
+     "id": "T55",
+     "title": "(assigned by nick)",
+     "state": "assigned"
+    },
+    {
+     "id": "T68",
+     "title": "Host the persistent Python backend, add a protected Vercel live path and deploy current ma",
+     "state": "done"
+    },
+    {
+     "id": "T69-Reply",
+     "title": "Turn a matched supplier reply into a cited forecast scenario and reviewable next step",
+     "state": "done"
+    },
+    {
+     "id": "T53-Trace",
+     "title": "Verify original art-book trace provenance and publish a safe handoff",
+     "state": "awaiting original source"
+    },
+    {
+     "id": "T79-Supplier-Loop",
+     "title": "Close game-card dock/customs and Karton small-lot decision/action loops",
      "state": "in_progress"
     }
    ],
    "board_open": [
-    "T54",
-    "T56"
+    "T60",
+    "T55",
+    "T53-Trace",
+    "T79-Supplier-Loop"
    ],
    "open_status_rows": [
     {
-     "line": 34,
-     "task": "T54 secrets sweep + T56 fresh-machine run (T67 inbound option done)",
+     "line": 110,
+     "task": "T53-Trace art-book provenance",
+     "state": "awaiting original source"
+    },
+    {
+     "line": 118,
+     "task": "T79-Supplier-Loop",
      "state": "in_progress"
     }
    ],
    "blockers": [],
-   "inbox_open_to": [],
+   "inbox_open_to": [
+    {
+     "line": 158,
+     "from": "nick",
+     "when": "21 Nov 16:00",
+     "text": "please take these OPEN tasks (details in coord/OPEN_TASKS.md; claim by adding your row to coord/TASKS.md and STATUS.md): T60 three extra synthetic drops for a second demo drop (replay set, never in data/) | T55 cost monitor scripts/cost_rep"
+    }
+   ],
    "inbox_open_from": [],
-   "flags": []
+   "flags": [
+    "STATUS line 110 still says 'awaiting original source' for 'T53-Trace art-book provenance' but the agent moved on",
+    "T60 assigned by nick, not acknowledged on the board",
+    "T55 assigned by nick, not acknowledged on the board"
+   ]
   },
   {
    "name": "codex-deploy",
@@ -102,7 +149,7 @@
    "notes": "Building the protected replay from current main and the tracked case snapshot. Redeploy requests go to codex-deploy in INBOX.",
    "status_line": 73,
    "last_activity": "2026-11-21T17:41+01:00",
-   "last_activity_ago": "13 min ago",
+   "last_activity_ago": "23 min ago",
    "last_commit": {
     "sha": "d402aaf",
     "when": "2026-11-21T17:41+01:00",
@@ -144,7 +191,7 @@
    "notes": "Tracking input freshness, hosted/local behavior and research handoffs.",
    "status_line": 42,
    "last_activity": "2026-11-21T15:42+01:00",
-   "last_activity_ago": "2 h 13 min ago",
+   "last_activity_ago": "2 h 23 min ago",
    "last_commit": {
     "sha": "826a043",
     "when": "2026-11-21T15:42+01:00",
@@ -236,7 +283,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T15:51+01:00",
-   "last_activity_ago": "2 h 03 min ago",
+   "last_activity_ago": "2 h 14 min ago",
    "last_commit": {
     "sha": "596f79d",
     "when": "2026-11-21T15:51+01:00",
@@ -286,7 +333,7 @@
    "notes": "`5cf4fbe` implementation. Protected local browser login, AI reasoning, supplier update and reload passed. Summary-only provenance at `f68cf1d`; original events awaiting source. codex-deploy owns protected preview and promotion.",
    "status_line": 113,
    "last_activity": "2026-11-21T17:43+01:00",
-   "last_activity_ago": "12 min ago",
+   "last_activity_ago": "22 min ago",
    "last_commit": {
     "sha": "f14798d",
     "when": "2026-11-21T17:43+01:00",
@@ -369,15 +416,15 @@
    "dirs": "scripts/overview.py, src/overview/, coord/AGENTS_OVERVIEW.md, coord/agents_overview.json",
    "notes": "Digest on main: coord/AGENTS_OVERVIEW.md + coord/agents_overview.json (newest STATUS row per agent, outdated/duplicate rows, unanswered INBOX, stale in_progress). Live page: `python3 scripts/overview.py --serve 8765`. Runs on Isil's laptop and refreshes the two files every 10 min while it is on. Read-only on all other files.",
    "status_line": 115,
-   "last_activity": "2026-11-21T17:45+01:00",
+   "last_activity": "2026-11-21T17:55+01:00",
    "last_activity_ago": "10 min ago",
    "last_commit": {
-    "sha": "4490eb9",
-    "when": "2026-11-21T17:45+01:00",
-    "subject": "T78: refresh agents overview (56 agents, 3 in progress) [overview-agent]",
+    "sha": "147bc86",
+    "when": "2026-11-21T17:55+01:00",
+    "subject": "T78: refresh agents overview (57 agents, 4 in progress) [overview-agent]",
     "via_autosync": false
    },
-   "commits_total": 6,
+   "commits_total": 7,
    "board_tasks": [],
    "board_open": [],
    "open_status_rows": [],
@@ -390,87 +437,6 @@
    ]
   },
   {
-   "name": "murat-agent",
-   "kind": "agent",
-   "current_task": "T53-Trace art-book provenance",
-   "state": "awaiting original source",
-   "dirs": "docs/agent_runs/provenance",
-   "notes": "Summary-only manifest and source hashes delivered. Asked copilot-live for the original run boundaries through the private inbox and provided a read-only exporter.",
-   "status_line": 110,
-   "last_activity": "2026-11-21T17:41+01:00",
-   "last_activity_ago": "13 min ago",
-   "last_commit": {
-    "sha": "d0d6a83",
-    "when": "2026-11-21T17:41+01:00",
-    "subject": "T53: Route recording request to copilot-live [murat-agent]",
-    "via_autosync": false
-   },
-   "commits_total": 25,
-   "board_tasks": [
-    {
-     "id": "T7",
-     "title": "Serialize demo database initialization",
-     "state": "done"
-    },
-    {
-     "id": "T5",
-     "title": "Resolve explicit supplier-offer revisions and pair Plan B forecasts",
-     "state": "done"
-    },
-    {
-     "id": "T60",
-     "title": "(assigned by nick)",
-     "state": "assigned"
-    },
-    {
-     "id": "T55",
-     "title": "(assigned by nick)",
-     "state": "assigned"
-    },
-    {
-     "id": "T68",
-     "title": "Host the persistent Python backend, add a protected Vercel live path and deploy current ma",
-     "state": "done"
-    },
-    {
-     "id": "T69-Reply",
-     "title": "Turn a matched supplier reply into a cited forecast scenario and reviewable next step",
-     "state": "done"
-    },
-    {
-     "id": "T53-Trace",
-     "title": "Verify original art-book trace provenance and publish a safe handoff",
-     "state": "awaiting original source"
-    }
-   ],
-   "board_open": [
-    "T60",
-    "T55",
-    "T53-Trace"
-   ],
-   "open_status_rows": [
-    {
-     "line": 110,
-     "task": "T53-Trace art-book provenance",
-     "state": "awaiting original source"
-    }
-   ],
-   "blockers": [],
-   "inbox_open_to": [
-    {
-     "line": 158,
-     "from": "nick",
-     "when": "21 Nov 16:00",
-     "text": "please take these OPEN tasks (details in coord/OPEN_TASKS.md; claim by adding your row to coord/TASKS.md and STATUS.md): T60 three extra synthetic drops for a second demo drop (replay set, never in data/) | T55 cost monitor scripts/cost_rep"
-    }
-   ],
-   "inbox_open_from": [],
-   "flags": [
-    "T60 assigned by nick, not acknowledged on the board",
-    "T55 assigned by nick, not acknowledged on the board"
-   ]
-  },
-  {
    "name": "codex-replay",
    "kind": "agent",
    "current_task": null,
@@ -479,7 +445,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:47+01:00",
-   "last_activity_ago": "3 h 08 min ago",
+   "last_activity_ago": "3 h 18 min ago",
    "last_commit": {
     "sha": "7bae579",
     "when": "2026-11-21T14:47+01:00",
@@ -504,7 +470,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:46+01:00",
-   "last_activity_ago": "3 h 09 min ago",
+   "last_activity_ago": "3 h 19 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [],
@@ -622,6 +588,148 @@
    ]
   },
   {
+   "name": "ALL AGENTS ON OTHER MACHINES (codex-",
+   "kind": "agent",
+   "current_task": null,
+   "state": "unknown",
+   "dirs": "",
+   "notes": "",
+   "status_line": null,
+   "last_activity": null,
+   "last_activity_ago": "unknown",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "any new ones)",
+   "kind": "agent",
+   "current_task": null,
+   "state": "unknown",
+   "dirs": "",
+   "notes": "",
+   "status_line": null,
+   "last_activity": null,
+   "last_activity_ago": "unknown",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "their humans",
+   "kind": "agent",
+   "current_task": null,
+   "state": "unknown",
+   "dirs": "",
+   "notes": "",
+   "status_line": null,
+   "last_activity": null,
+   "last_activity_ago": "unknown",
+   "last_commit": null,
+   "commits_total": 0,
+   "board_tasks": [],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "isil-agent",
+   "kind": "agent",
+   "current_task": "T54 secrets sweep + T56 fresh-machine run",
+   "state": "done",
+   "dirs": "docs/SECURITY_CHECK.md, docs/FRESH_RUN.md",
+   "notes": "Repo safe only while private: Gmail app password, Vercel password and case-data are committed. Fresh Windows clone now runs (fcntl fallback, tzdata, UTF-8 output); without Tesseract on PATH the art-book gap silently disappears. Suite unchanged vs clean main.",
+   "status_line": 34,
+   "last_activity": "2026-11-21T18:02+01:00",
+   "last_activity_ago": "3 min ago",
+   "last_commit": {
+    "sha": "7dda8fc",
+    "when": "2026-11-21T18:02+01:00",
+    "subject": "T54/T56: Secrets check, fresh Windows run and portability fixes [isil-agent]",
+    "via_autosync": false
+   },
+   "commits_total": 6,
+   "board_tasks": [
+    {
+     "id": "T54",
+     "title": "Security and secrets sweep -> docs/SECURITY_CHECK.md (taken over: codex-overseer had not a",
+     "state": "done"
+    },
+    {
+     "id": "T56",
+     "title": "Fresh-machine run on a clean Windows clone, report every missing README step (taken over: ",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [],
+   "blockers": [],
+   "inbox_open_to": [],
+   "inbox_open_from": [],
+   "flags": []
+  },
+  {
+   "name": "gülşah-agent",
+   "kind": "agent",
+   "current_task": "T71 live agent map",
+   "state": "done",
+   "dirs": "web/src/agents/AgentGraph.tsx, agentGraph.css",
+   "notes": "New \"Agents at work\" card under Missing parts/Next step. Gülşah picked the graph. Live: polls runs+trace every 2 s, new runs replay from step 1. Hosted: replays /snapshot/agent_run.json in plain words. Old AgentTrace and Behind the scenes untouched. Build passes. Vercel needs a redeploy to show it.",
+   "status_line": 107,
+   "last_activity": "2026-11-21T17:56+01:00",
+   "last_activity_ago": "9 min ago",
+   "last_commit": {
+    "sha": "60a9118",
+    "when": "2026-11-21T17:56+01:00",
+    "subject": "T78: 30-min wait only while the supplier hasn't replied [gülşah-agent]",
+    "via_autosync": false
+   },
+   "commits_total": 24,
+   "board_tasks": [
+    {
+     "id": "T71",
+     "title": "Agent visualization rebuilt as live agent map: main-page card \"Agents at work\", agents lig",
+     "state": "done"
+    }
+   ],
+   "board_open": [],
+   "open_status_rows": [
+    {
+     "line": 71,
+     "task": "T28 UI taste + accessibility pass",
+     "state": "in_progress"
+    }
+   ],
+   "blockers": [],
+   "inbox_open_to": [
+    {
+     "line": 190,
+     "from": "nick",
+     "when": "21 Nov",
+     "text": "copilot-viz (T71) is extending web/src/agents/* (agent graph, tool-call stream, Present mode) using your design tokens; please avoid editing web/src/agents/*. If you want to own the visualization instead, say so here and I will stop copilot"
+    }
+   ],
+   "inbox_open_from": [],
+   "flags": [
+    "STATUS line 71 still says 'in_progress' for 'T28 UI taste + accessibility pass' but the agent moved on"
+   ]
+  },
+  {
    "name": "Codex",
    "kind": "agent",
    "current_task": "T5 decisions, T7 live integration and replay, T8 submission",
@@ -630,7 +738,7 @@
    "notes": "Live UI, real file drop, dry-run send, simulated reply and approval verified in browser. Deck and narrated MP4 delivered privately.",
    "status_line": 18,
    "last_activity": "2026-11-21T17:53+01:00",
-   "last_activity_ago": "2 min ago",
+   "last_activity_ago": "12 min ago",
    "last_commit": {
     "sha": "387bde0",
     "when": "2026-11-21T17:53+01:00",
@@ -719,52 +827,6 @@
    ]
   },
   {
-   "name": "gülşah-agent",
-   "kind": "agent",
-   "current_task": "T71 live agent map",
-   "state": "done",
-   "dirs": "web/src/agents/AgentGraph.tsx, agentGraph.css",
-   "notes": "New \"Agents at work\" card under Missing parts/Next step. Gülşah picked the graph. Live: polls runs+trace every 2 s, new runs replay from step 1. Hosted: replays /snapshot/agent_run.json in plain words. Old AgentTrace and Behind the scenes untouched. Build passes. Vercel needs a redeploy to show it.",
-   "status_line": 107,
-   "last_activity": "2026-11-21T17:46+01:00",
-   "last_activity_ago": "8 min ago",
-   "last_commit": {
-    "sha": "82cfa9b",
-    "when": "2026-11-21T17:46+01:00",
-    "subject": "T78: remove per-cycle cap, keep anti-spam (cooldown + no repeated text) [gülşah-agent]",
-    "via_autosync": false
-   },
-   "commits_total": 23,
-   "board_tasks": [
-    {
-     "id": "T71",
-     "title": "Agent visualization rebuilt as live agent map: main-page card \"Agents at work\", agents lig",
-     "state": "done"
-    }
-   ],
-   "board_open": [],
-   "open_status_rows": [
-    {
-     "line": 71,
-     "task": "T28 UI taste + accessibility pass",
-     "state": "in_progress"
-    }
-   ],
-   "blockers": [],
-   "inbox_open_to": [
-    {
-     "line": 190,
-     "from": "nick",
-     "when": "21 Nov",
-     "text": "copilot-viz (T71) is extending web/src/agents/* (agent graph, tool-call stream, Present mode) using your design tokens; please avoid editing web/src/agents/*. If you want to own the visualization instead, say so here and I will stop copilot"
-    }
-   ],
-   "inbox_open_from": [],
-   "flags": [
-    "STATUS line 71 still says 'in_progress' for 'T28 UI taste + accessibility pass' but the agent moved on"
-   ]
-  },
-  {
    "name": "mail-agent",
    "kind": "agent",
    "current_task": "T78 automatic sending",
@@ -773,7 +835,7 @@
    "notes": "Gülşah decided: no per-email approval. Live mode only (CHASER_REAL_SMTP=1, not --demo): each cycle drafts reminders + negotiations, then sends all drafts. Allowlist, guardrails, 6/cycle, 60-min per-supplier cooldown kept. Kill switch CHASER_AUTO_SEND=0. 52 chaser tests pass.",
    "status_line": 116,
    "last_activity": "2026-11-21T17:35+01:00",
-   "last_activity_ago": "20 min ago",
+   "last_activity_ago": "30 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -822,7 +884,7 @@
    "notes": "cited pure gate, CLI, read-only tool and GET /api/release-gate; focused tests pass",
    "status_line": 101,
    "last_activity": "2026-11-21T17:06+01:00",
-   "last_activity_ago": "49 min ago",
+   "last_activity_ago": "59 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -848,7 +910,7 @@
    "notes": "Answer-first layout, one accent colour, map of suppliers/shipments/DC-HAM from data. AgentTrace kept inside Agents section. Vercel needs redeploy. 13 tests already failing on main before this (chaser etc.), none added.",
    "status_line": 91,
    "last_activity": "2026-11-21T17:00+01:00",
-   "last_activity_ago": "55 min ago",
+   "last_activity_ago": "65 min ago",
    "last_commit": {
     "sha": "c42a2e0",
     "when": "2026-11-21T17:00+01:00",
@@ -910,7 +972,7 @@
    "notes": "Added deterministic categories/materiality, quote-checked optional LLM second pass, SQLite event_decisions persistence/dashboard query, 12 synthetic fixtures and eval; 4 tests pass, eval 12/12 categories and decisions, cost $0.00",
    "status_line": 92,
    "last_activity": "2026-11-21T16:52+01:00",
-   "last_activity_ago": "63 min ago",
+   "last_activity_ago": "73 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -936,7 +998,7 @@
    "notes": "Added animated graph, event lane, stream replay, harness panel, human gate, counters and Present mode; normal/static builds pass",
    "status_line": 98,
    "last_activity": "2026-11-21T16:52+01:00",
-   "last_activity_ago": "63 min ago",
+   "last_activity_ago": "73 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [],
@@ -956,7 +1018,7 @@
    "notes": "Added deterministic late-damage, price-drift, freight/DDP, leakage and LTA-renewal claims tables. 4 focused tests pass; no live LLM or secrets used. Nick to commit/push.",
    "status_line": 94,
    "last_activity": "2026-11-21T16:48+01:00",
-   "last_activity_ago": "67 min ago",
+   "last_activity_ago": "77 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -984,7 +1046,7 @@
    "notes": "Offline loop/harness tests pass (13), `scripts/demo_check.sh` passes. Live port 8794 verification is blocked in this session because loopback server startup requires interactive approval. No live cost incurred.",
    "status_line": 97,
    "last_activity": "2026-11-21T16:48+01:00",
-   "last_activity_ago": "67 min ago",
+   "last_activity_ago": "77 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1021,7 +1083,7 @@
    "notes": "Runtime dedupe, two-round triage, grounded claims, and briefer PP-07/numeric validation implemented; focused tests pass. No new live pass rate claimed.",
    "status_line": 85,
    "last_activity": "2026-11-21T16:30+01:00",
-   "last_activity_ago": "85 min ago",
+   "last_activity_ago": "95 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1049,7 +1111,7 @@
    "notes": "Background drop/reply/timer events, hash dedupe, SQLite runs/traces, harness status, manual run and stop APIs wired; targeted agent tests and offline demo pass.",
    "status_line": 79,
    "last_activity": "2026-11-21T16:25+01:00",
-   "last_activity_ago": "90 min ago",
+   "last_activity_ago": "100 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1077,7 +1139,7 @@
    "notes": "configured scans always use vision; printed/handwritten quantities stay separate and scans require review; 7 tests pass",
    "status_line": 76,
    "last_activity": "2026-11-21T16:22+01:00",
-   "last_activity_ago": "93 min ago",
+   "last_activity_ago": "103 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1103,7 +1165,7 @@
    "notes": "constructors, closed tools, multilingual schema, grounded brief, fake/live CLIs; 6 focused tests pass",
    "status_line": 80,
    "last_activity": "2026-11-21T16:18+01:00",
-   "last_activity_ago": "97 min ago",
+   "last_activity_ago": "107 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1134,7 +1196,7 @@
    "notes": "Live/recorded trace panel, API adapters, citations, harness badge, approvals, and static exporter complete; both builds pass",
    "status_line": 82,
    "last_activity": "2026-11-21T16:18+01:00",
-   "last_activity_ago": "97 min ago",
+   "last_activity_ago": "107 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1162,7 +1224,7 @@
    "notes": "Closed cited registry implemented; tool tests and CLI schema validation pass",
    "status_line": 57,
    "last_activity": "2026-11-21T16:13+01:00",
-   "last_activity_ago": "102 min ago",
+   "last_activity_ago": "112 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1188,7 +1250,7 @@
    "notes": "Added 30 s SQLite busy timeout/WAL, moved portal sync outside the cycle lock, added cycle/lock metrics and `/api/health`, and confirmed the header-only and duplicate-lot regressions.",
    "status_line": 54,
    "last_activity": "2026-11-21T16:06+01:00",
-   "last_activity_ago": "108 min ago",
+   "last_activity_ago": "119 min ago",
    "last_commit": {
     "sha": "cdf97bf",
     "when": "2026-11-21T16:06+01:00",
@@ -1221,7 +1283,7 @@
    "notes": "Live art-book run used gpt-4.1-mini: $0.057892, 130,117 input / 3,653 output tokens; two live passes, stopped at the ~100k-token run guard. Added auth fallbacks, valid tool protocols, retries, real usage cost, honest CLI failure, cassette export and redacted trace; fake draft and 11 agent tests pass.",
    "status_line": 64,
    "last_activity": "2026-11-21T16:02+01:00",
-   "last_activity_ago": "113 min ago",
+   "last_activity_ago": "2 h 03 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1249,7 +1311,7 @@
    "notes": "Added six role loaders, stable domain/data/policy/pitfall/negotiation/style packs, six few-shot traces, role cards and 5 passing knowledge tests. Private FINDINGS/CODEX files were absent; facts use the repository snapshot and PP-07 files.",
    "status_line": 66,
    "last_activity": "2026-11-21T15:57+01:00",
-   "last_activity_ago": "118 min ago",
+   "last_activity_ago": "2 h 08 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1277,7 +1339,7 @@
    "notes": "Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests.",
    "status_line": 68,
    "last_activity": "2026-11-21T15:57+01:00",
-   "last_activity_ago": "118 min ago",
+   "last_activity_ago": "2 h 08 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1305,7 +1367,7 @@
    "notes": "Added the Triage/Analyst/Verifier/Planner/Chaser team, closed role tool whitelists, verification gate, fake/live entrypoint and 3 focused scenarios. 13 agent tests pass; art-book, quality-hold and German-notice fake CLIs pass.",
    "status_line": 61,
    "last_activity": "2026-11-21T15:52+01:00",
-   "last_activity_ago": "2 h 03 min ago",
+   "last_activity_ago": "2 h 13 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1334,7 +1396,7 @@
    "notes": "Standard-library ReAct loop, closed/schema-checked tools, budgets/timeouts, SQLite trace/activity, approval gate, Team blackboard/mailbox, HTTP + FakeLLM + cassette replay; tests pass",
    "status_line": 56,
    "last_activity": "2026-11-21T15:46+01:00",
-   "last_activity_ago": "2 h 09 min ago",
+   "last_activity_ago": "2 h 19 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1362,7 +1424,7 @@
    "notes": "Added six language-aware personas, private hidden state, LLM/FakeLLM replies, attachment hooks and demo CLI. Focused 4-test suite passes.",
    "status_line": 58,
    "last_activity": "2026-11-21T15:46+01:00",
-   "last_activity_ago": "2 h 09 min ago",
+   "last_activity_ago": "2 h 19 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1388,7 +1450,7 @@
    "notes": "Shared JSON/schema client, quote validation, disk cache, per-cycle budget and JSONL cost/latency log ship. Providers and reply parsing use fallback-safe glue. 36 focused tests pass; live check correctly reports no configured model.",
    "status_line": 55,
    "last_activity": "2026-11-21T15:43+01:00",
-   "last_activity_ago": "2 h 12 min ago",
+   "last_activity_ago": "2 h 22 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1416,7 +1478,7 @@
    "notes": "Tested 489d0cc on the private post-drop snapshot. The default dashboard matches the published cutoff, trial count and edition figures. Historical supplier delays are labeled as sensitivity.",
    "status_line": 47,
    "last_activity": "2026-11-21T15:35+01:00",
-   "last_activity_ago": "2 h 19 min ago",
+   "last_activity_ago": "2 h 30 min ago",
    "last_commit": {
     "sha": "544eb90",
     "when": "2026-11-21T15:35+01:00",
@@ -1447,7 +1509,7 @@
    "notes": "Implemented reply commitment scoring (0-3), multilingual R1 templates, send-time draft disclosure guardrails, and persisted R0-R4 escalation state. 12 chaser tests pass.",
    "status_line": 40,
    "last_activity": "2026-11-21T15:30+01:00",
-   "last_activity_ago": "2 h 25 min ago",
+   "last_activity_ago": "2 h 35 min ago",
    "last_commit": {
     "sha": "ee01397",
     "when": "2026-11-21T15:30+01:00",
@@ -1480,7 +1542,7 @@
    "notes": "Added Vercel static replay fallback, localStorage state, drop/review/approve/send/reply/reset controls, snapshot badge and static evidence; live API remains intact.",
    "status_line": 30,
    "last_activity": "2026-11-21T15:16+01:00",
-   "last_activity_ago": "2 h 39 min ago",
+   "last_activity_ago": "2 h 49 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1506,7 +1568,7 @@
    "notes": "Calibration, paired sensitivity, Plan B and CLI complete. Six focused tests and 40 repo tests pass. Live 500-trial CLI takes under a second.",
    "status_line": 27,
    "last_activity": "2026-11-21T15:08+01:00",
-   "last_activity_ago": "2 h 46 min ago",
+   "last_activity_ago": "2 h 57 min ago",
    "last_commit": {
     "sha": "da78e91",
     "when": "2026-11-21T15:08+01:00",
@@ -1537,7 +1599,7 @@
    "notes": "Real in-process replay passed all API assertions. Full subprocess check requires a terminal that permits loopback bind.",
    "status_line": 28,
    "last_activity": "2026-11-21T15:08+01:00",
-   "last_activity_ago": "2 h 46 min ago",
+   "last_activity_ago": "2 h 57 min ago",
    "last_commit": {
     "sha": "da78e91",
     "when": "2026-11-21T15:08+01:00",
@@ -1568,7 +1630,7 @@
    "notes": "Built docs/deck/index.html (6 slides, keyboard nav, 16:9, print CSS, inline SVG, dark design system), SPEAKER_NOTES.md, and README.md. Uses only frozen NUMBERS.md figures.",
    "status_line": 16,
    "last_activity": "2026-11-21T14:54+01:00",
-   "last_activity_ago": "3 h 01 min ago",
+   "last_activity_ago": "3 h 11 min ago",
    "last_commit": {
     "sha": "e979a50",
     "when": "2026-11-21T14:54+01:00",
@@ -1599,7 +1661,7 @@
    "notes": "SQLite state/approval gate, KO/ZH/PL/EN drafts, mock inbox/CLI, deterministic reply parser, dry-run and gated SMTP; 7 unit tests pass",
    "status_line": 11,
    "last_activity": "2026-11-21T14:16+01:00",
-   "last_activity_ago": "3 h 39 min ago",
+   "last_activity_ago": "3 h 49 min ago",
    "last_commit": null,
    "commits_total": 0,
    "board_tasks": [
@@ -1942,15 +2004,15 @@
    "dirs": "-",
    "notes": "continuing on agent quality, Vogt prep, review",
    "status_line": 99,
-   "last_activity": "2026-11-21T17:44+01:00",
-   "last_activity_ago": "11 min ago",
+   "last_activity": "2026-11-21T18:03+01:00",
+   "last_activity_ago": "2 min ago",
    "last_commit": {
-    "sha": "8a62f6b",
-    "when": "2026-11-21T17:44+01:00",
-    "subject": "Merge branch 'main' of https://github.com/isil26/lio-supply-chain-automation into claude/project-thread-u1r8na",
+    "sha": "d6619b2",
+    "when": "2026-11-21T18:03+01:00",
+    "subject": "Release Gate, pack-out optimizer, agent tools T74, eval run 3, Vogt card, publish-everything notice [nick]",
     "via_autosync": false
    },
-   "commits_total": 36,
+   "commits_total": 37,
    "board_tasks": [
     {
      "id": "T3",
@@ -2046,7 +2108,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:46+01:00",
-   "last_activity_ago": "3 h 09 min ago",
+   "last_activity_ago": "3 h 19 min ago",
    "last_commit": {
     "sha": "bdea665",
     "when": "2026-11-21T14:46+01:00",
@@ -2071,7 +2133,7 @@
    "notes": "",
    "status_line": null,
    "last_activity": "2026-11-21T14:45+01:00",
-   "last_activity_ago": "3 h 10 min ago",
+   "last_activity_ago": "3 h 20 min ago",
    "last_commit": {
     "sha": "181bb19",
     "when": "2026-11-21T14:45+01:00",
@@ -2238,10 +2300,40 @@
   },
   {
    "kind": "autosync",
-   "text": "38 of the last 184 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership."
+   "text": "38 of the last 189 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership."
   }
  ],
  "recent_commits": [
+  {
+   "sha": "d6619b2",
+   "agent": "nick",
+   "when": "2026-11-21T18:03+01:00",
+   "subject": "Release Gate, pack-out optimizer, agent tools T74, eval run 3, Vogt card, publish-everything notice [nick]"
+  },
+  {
+   "sha": "7dda8fc",
+   "agent": "isil-agent",
+   "when": "2026-11-21T18:02+01:00",
+   "subject": "T54/T56: Secrets check, fresh Windows run and portability fixes [isil-agent]"
+  },
+  {
+   "sha": "bbc3a86",
+   "agent": "murat-agent",
+   "when": "2026-11-21T17:57+01:00",
+   "subject": "T79: Claim scoped supplier decision loop [murat-agent]"
+  },
+  {
+   "sha": "60a9118",
+   "agent": "gülşah-agent",
+   "when": "2026-11-21T17:56+01:00",
+   "subject": "T78: 30-min wait only while the supplier hasn't replied [gülşah-agent]"
+  },
+  {
+   "sha": "147bc86",
+   "agent": "overview-agent",
+   "when": "2026-11-21T17:55+01:00",
+   "subject": "T78: refresh agents overview (57 agents, 4 in progress) [overview-agent]"
+  },
   {
    "sha": "1de087f",
    "agent": "isil-agent",
@@ -2301,36 +2393,6 @@
    "agent": "overview-agent",
    "when": "2026-11-21T17:44+01:00",
    "subject": "T78: refresh agents overview (56 agents, 4 in progress) [overview-agent]"
-  },
-  {
-   "sha": "4a6fc6d",
-   "agent": "gülşah-agent",
-   "when": "2026-11-21T17:44+01:00",
-   "subject": "T78: mail-agent sends supplier emails automatically in live mode (Gülşah's decision) [gülşah-agent]"
-  },
-  {
-   "sha": "e636937",
-   "agent": "nick",
-   "when": "2026-11-21T17:43+01:00",
-   "subject": "autosync: 9 files [nick]"
-  },
-  {
-   "sha": "949d5ba",
-   "agent": "overview-agent",
-   "when": "2026-11-21T17:43+01:00",
-   "subject": "T78: refresh agents overview after rebase [overview-agent]"
-  },
-  {
-   "sha": "cafc42b",
-   "agent": "overview-agent",
-   "when": "2026-11-21T17:43+01:00",
-   "subject": "T78: team overview digest (script, JSON + markdown, live dashboard) [overview-agent]"
-  },
-  {
-   "sha": "be27220",
-   "agent": "overview-agent",
-   "when": "2026-11-21T17:43+01:00",
-   "subject": "coord: register overview-agent, claim T78 team overview digest [overview-agent]"
   }
  ],
  "rules": "STATUS/TASKS: last row wins. 'answered' = addressee later wrote back to sender. Stale = in_progress, no activity for 90 min."
