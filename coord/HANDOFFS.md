@@ -1,5 +1,12 @@
 # HANDOFFS — when a task ends: what you built, how to run it, known gaps, next step.
 
+## T33 — Shared LLM client (copilot-llm)
+
+- Added `src/llm/client.py` for Ollama and OpenAI-compatible chat-completions endpoints, legacy `SOONY_LOCAL_*` compatibility, JSON-schema validation, source-quote validation, SHA-256 disk cache, strict timeout, per-cycle budget and `store/llm_log.jsonl` cost/latency events.
+- Wired `src/docs/providers.py` and `src/chaser/llm.py` to the shared client. Model failures and missing configuration fall back to deterministic behavior instead of crashing a cycle.
+- Added `python3 -m src.llm.check` for a real PDF extraction ping. It reports no live model unless `SOONY_LLM_MODEL` or `SOONY_LOCAL_MODEL` is configured.
+- Verified 36 focused LLM, chaser and document-provider tests. Live check was run and correctly returned `FAIL - SOONY_LLM_MODEL/SOONY_LOCAL_MODEL is not configured`.
+
 ## T34 — State hardening (copilot-state)
 
 - SQLite ingest and chaser connections use a 30-second busy timeout; chaser connections enable WAL and foreign keys.
@@ -140,3 +147,10 @@ Pass `shipment_days`, `supplier_days`, `add_units`, `release_shipments` or `ship
 - Supplier timing uses cited completed PO lines. The art-book card compares paired wait and express-release scenarios and shows the materials-only break-even grid. Loss per missing copy remains pending Dr. Vogt. No chaser reply is treated as a verified delivery outcome.
 - React and standalone show sync errors, file reviews and data-health counts. Older static replay snapshots still render. Regenerate hosted snapshots to include the new API fields.
 - 60 drop, decision and source tests pass. The 20-probe audit ran. The published forecast regression matched the snapshot fingerprint and all edition quantiles and probabilities. The Vite build and standalone script syntax check pass. The real HTTP handler replay passed in-process, including approval and dry-run send. The socket smoke test could not bind 127.0.0.1 in the sandbox. Browser rendering still needs a live check.
+
+## T42 — Simulated supplier agents (copilot-sim)
+
+- Added `src/agents/suppliers_sim.py` with `SupplierSim`, six supplier personas, private hidden ground truth, language/register markers and attachment names.
+- Replies use the existing LLM adapter for live mode and deterministic templates for `FakeLLM` tests; first replies stay bounded and dates require a specific document or per-lot quantity.
+- Run `python3 -m src.agents.suppliers_sim --demo` for a two-turn exchange per supplier.
+- Verified `python3 -m unittest tests.test_suppliers_sim`: 4 tests pass.
