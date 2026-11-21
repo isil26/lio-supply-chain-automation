@@ -180,6 +180,23 @@
       ],
       "body_content_type": "text/plain",
       "body": "Hello Megan,\n\nThank you for the update on the 36,000 packed in Idaho. We understand the two days to Frankfurt after release. We are seeking a written yes or no from your team on a different source: could an already authorised European Boise partner supply production-released GH6 cards locally, or program compatible local 128 GB blanks on a production line already approved for GH6?\n\nIf that option exists, we would consider a EUR 1 supplement per additional card delivered to the DC-HAM packing line by Sunday 22 November at 18:30 CET, including incremental transport. This applies to an agreed partial fulfilment of PO 4500318769 at the existing product price. Any smaller split up to 6,800 is worth quoting. If the partner needs a separate purchase instead, please quote the full delivered unit price, including programming and testing.\n\nCould you confirm the releasable quantity, approved site and release record, earliest line handover with timezone, all-in price and quote expiry? If local manufacture or transfer cannot supply any approved cards by the deadline, please confirm zero for this option. We are requesting indicative terms and will wait for a separate written order before any reservation with a charge or transfer. The existing EXW lot can remain in place.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:36:13+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a1ff9bf771-06f6c81a-1d3d-414e-ac77-398d08b4cc64-000000@eu-west-1.amazonses.com>",
+      "chase_id": null,
+      "in_reply_to": "<soony-sunday-recovery-boise-local-premium-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179528819557.18044.16283804452710627425@gmail.com>",
+        "<010201a1ff87abb8-2e83b028-b4e5-407d-93b9-99ddc142495a-000000@eu-west-1.amazonses.com>",
+        "<soony-sunday-recovery-boise-local-premium-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nNo, we do not have an authorized European Boise partner that can release finished CMP-GAM-001 locally or program local 128 GB blanks on an already approved GH6 production line. There is also no programmed, traceable European service stock available for reallocation.\n\nAccordingly, the releasable quantity for that option is zero, and we cannot provide a local delivered quote or handoff by Sunday, 22 November. The packed 36,000-unit Boise lot remains the available source under PO 4500318769.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
     }
   ]
 }
