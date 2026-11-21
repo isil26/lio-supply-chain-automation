@@ -95,7 +95,7 @@ def _quoted_fact_candidates(value: Any, source_text: str, path: str = "$"):
             quote = value.get("quote")
             if not isinstance(quote, str) or not quote.strip():
                 raise LLMCallError(f"{path}.quote is required for an extracted value")
-            if quote not in source_text:
+            if " ".join(quote.split()) not in " ".join(source_text.split()):
                 raise LLMCallError(f"{path}.quote is not present in the source text")
         for key, child in value.items():
             yield from _quoted_fact_candidates(child, source_text, f"{path}.{key}")
@@ -211,7 +211,7 @@ class LLMClient:
                 cache_path.unlink(missing_ok=True)
 
         messages = [
-            {"role": "system", "content": "Return a single valid JSON object matching the supplied JSON schema. Do not add prose."},
+            {"role": "system", "content": "Return a single valid JSON object matching this JSON schema exactly (use these key names, include every required key). Do not add prose.\nSCHEMA: " + json.dumps(schema, ensure_ascii=False)},
             {"role": "user", "content": prompt},
         ]
         if images:
