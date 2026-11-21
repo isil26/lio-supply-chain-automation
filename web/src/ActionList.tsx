@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Approval, DashboardData, Source } from "./api";
 
 type Review = NonNullable<DashboardData["recoveryApprovals"]>[number];
-type Mode = { mode?: string; approver?: string; reason?: string; escalateTo?: string; blockedBy?: string[] } | null | undefined;
+type Mode = Approval["approvalMode"];
 type Props = {
   options: Approval[];
   reviews?: Review[];
@@ -29,7 +29,7 @@ function badge(mode: Mode) {
   const m = (mode?.mode ?? "ONE_CLICK").toUpperCase();
   const blocked = (mode?.blockedBy ?? []).join(" ");
   if (m === "REVIEW") return { cls: "", text: "", hint: "Confirm in the warehouse or with the supplier." };
-  if (m === "AUTO") return { cls: "auto", text: "Auto", hint: "Approved under a written delegation; logged and the owner is notified." };
+  if (m === "AUTO") return { cls: "auto", text: mode?.simulated ? "Simulated" : "Auto", hint: mode?.reason };
   if (m === "ESCALATE") return { cls: "escalate", text: `Escalated${mode?.escalateTo ? ` → ${mode.escalateTo}` : ""}`, hint: mode?.reason };
   if (m === "NEVER" && /value_eur|not grounded/i.test(blocked)) return { cls: "never", text: "Needs a price first", hint: mode?.reason };
   if (m === "NEVER" && /quality/i.test(mode?.reason ?? "")) return { cls: "never", text: "Quality decides", hint: mode?.reason };
@@ -102,6 +102,10 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
       {shown.map((card, index) => {
         const b = badge(card.mode);
         const decided = card.status !== "pending";
+        const automatic = autoIds.includes(card.id);
+        const decisionLabel = automatic
+          ? card.mode?.simulated ? "Simulated approval" : "Auto-approved"
+          : STATUS[card.status] ?? card.status;
         return <li key={card.id} className={`ac-item ${index === 0 ? "top" : ""}`}>
           <div className="ac-main">
             {!decided && b.text && <span className={`ac-badge ${b.cls}`} title={b.hint ?? undefined}>{b.text}</span>}
@@ -113,7 +117,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
               : card.price ? <><b>{euro(card.price)}</b><span>cost</span></> : card.price === 0 ? <span className="muted">no cost</span> : <span className="muted">no gain modelled</span>}
           </div>
           <div className="ac-buttons">
-            {decided ? <span className={`ac-status ${autoIds.includes(card.id) ? "auto" : ""}`}>{autoIds.includes(card.id) ? "Auto-approved" : STATUS[card.status] ?? card.status}</span>
+            {decided ? <span className={`ac-status ${automatic ? "auto" : ""}`}>{decisionLabel}</span>
               : !readOnly && card.option && card.mode?.mode !== "NEVER" && <button className="primary-button small" disabled={busy} onClick={() => onDecide(card.id, false)}>Approve</button>}
             {!decided && !readOnly && card.option && <button className="ghost-button small" disabled={busy} onClick={() => onDecide(card.id, true)}>Review</button>}
             <button className="link-button" onClick={() => setOpen(open === card.id ? "" : card.id)} aria-expanded={open === card.id}>{open === card.id ? "Less" : "Why"}</button>

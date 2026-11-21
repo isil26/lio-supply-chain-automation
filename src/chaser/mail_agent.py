@@ -93,12 +93,15 @@ def compare_command(args):
     from src.ingest.store import DB
     from .negotiate import compare, to_text
 
+    from . import schema
+
     con = sqlite3.connect(args.db or DB)
+    schema(con)
     row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
     if not row:
         print("No supplier threads yet.")
         return 1
-    report = compare(con, row[0], args.material, save=args.save_drafts)
+    report = compare(con, row[0], args.material, save=args.save_drafts, use_thread_deadlines=True)
     print(json.dumps(report, ensure_ascii=False, indent=2, default=str) if args.json else to_text(report))
     if args.save_drafts:
         print("Negotiation drafts saved. They wait in the control room until a person reviews and sends them.")
@@ -110,12 +113,15 @@ def remind_command(args):
     from src.ingest.store import DB
     from .followup import due_reminders
 
+    from . import schema
+
     con = sqlite3.connect(args.db or DB)
+    schema(con)
     items = due_reminders(con, save=args.save_drafts)
     if not items:
         print("No supplier is overdue for an answer.")
     for item in items:
-        what = "call them" if item["action"] == "call" else f"reminder draft {item['draft_id']}"
+        what = "review alternative supply" if item["action"] == "review" else f"reminder draft {item['draft_id']}"
         print(f"{item['supplier']}: silent for {item['waited_hours']} h (limit {item['wait_limit_hours']} h) -> {what}")
     return 0
 

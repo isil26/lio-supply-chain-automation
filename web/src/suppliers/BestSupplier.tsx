@@ -9,14 +9,14 @@ import "./bestSupplier.css";
 
 type Row = { supplier: string; score: number; eligible: boolean; reasons: string[]; factors: Record<string, number> };
 type Negotiation = { supplier: string; asks: { lever: string; target?: number | string; from?: number; currency?: string; units?: number }[]; draft_id: string; body: string; saved: boolean };
-type Material = {
+type Material = { deadline?: string;
   material: string; need: number; why: string; pick: string | null;
   context: { mode: string; time_pressure: number; price_spread_pct: number; on_time_floor: number; hours_left: number };
   weights: Record<string, number>;
   plan: { allocation: { supplier: string; units: number; expected_on_time_units: number }[]; uncovered: number; split: boolean };
   ranking: Row[]; negotiations: Negotiation[];
 };
-type Reminder = { supplier: string; waited_hours: number; wait_limit_hours: number; action: "remind" | "call"; draft_id?: string };
+type Reminder = { supplier: string; waited_hours: number; wait_limit_hours: number; action: "remind" | "call" | "review"; draft_id?: string };
 type Report = { materials: Material[]; reminders: Reminder[]; fx_eur_assumed?: Record<string, number> };
 
 const MODE: Record<string, string> = {
@@ -95,9 +95,9 @@ export function BestSupplier() {
       {report && materials.length === 0 && <p className="empty">No supplier has replied yet. The ranking appears with the first answer.</p>}
 
       {materials.map((m) => (
-        <article className="bsup-material" key={m.material}>
+        <article className="bsup-material" key={m.material + (m.deadline ?? "")}>
           <header>
-            <p className="bsup-part">{m.material} · need {m.need.toLocaleString("en-US")}</p>
+            <p className="bsup-part">{m.material} · need {m.need.toLocaleString("en-US")}{m.deadline && ` · due ${new Date(m.deadline).toLocaleString()}`}</p>
             <p className="bsup-pick">{m.pick ? <>Pick <strong>{m.pick}</strong></> : "No supplier can make it on time yet"}</p>
             <p className="muted bsup-mode">{MODE[m.context.mode] ?? m.why} · time pressure {pct(m.context.time_pressure)} · prices {m.context.price_spread_pct}% apart</p>
           </header>
@@ -137,7 +137,7 @@ export function BestSupplier() {
 
       {reminders.length > 0 && <div className="bsup-reminders">
         <p className="bsup-part">Waiting for an answer</p>
-        <ul>{reminders.map((r) => <li key={r.supplier + r.action}>{r.supplier}: silent for {Math.round(r.waited_hours)} h. {r.action === "call" ? "Two reminders sent, please call them." : "A reminder is ready."}</li>)}</ul>
+        <ul>{reminders.map((r) => <li key={r.supplier + r.action}>{r.supplier}: silent for {Math.round(r.waited_hours)} h. {r.action === "remind" ? "A reminder is ready." : "Two reminders sent. Review alternative supply."}</li>)}</ul>
       </div>}
     </section>
   );

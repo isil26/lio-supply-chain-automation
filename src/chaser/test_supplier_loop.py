@@ -166,6 +166,8 @@ class SupplierLoopTests(unittest.TestCase):
                     patch.object(runner, "ingest", return_value=[]),
                     patch.object(runner, "extract", return_value=0),
                     patch.object(runner, "reconcile_handwriting", return_value=0),
+                    # This worker fixture contains only supplier mail and its stock requirements.
+                    patch.object(runner, "dashboard", return_value={"actions": []}),
                     patch.dict("os.environ", {"CHASER_REAL_SMTP": "0", "SOONY_AGENTS": "0"}),
                 ):
                     self.assertTrue(self.reply("A003", mid, "no-docs", body, 10, simulated=True))
@@ -229,6 +231,8 @@ class SupplierLoopTests(unittest.TestCase):
             patch.object(runner, "ingest", return_value=[]),
             patch.object(runner, "extract", return_value=0),
             patch.object(runner, "reconcile_handwriting", return_value=0),
+            # This worker fixture contains only supplier mail and its stock requirements.
+            patch.object(runner, "dashboard", return_value={"actions": []}),
             patch("src.chaser.poll", return_value=0),
             patch("src.chaser.mailenv.load_team_mail_env"),
             patch("src.chaser.authenticate"),

@@ -175,7 +175,7 @@ ENGINE_KIND = {"inbound": "dock_slot", "partial": "hold_and_quote", "quality": "
                "priority": "internal_message"}
 
 
-def approval_mode(option):
+def approval_mode(option, *, demo=False):
     """Ask the approval engine how this option may be approved (AUTO / ONE_CLICK / ESCALATE / NEVER)."""
     kind = ENGINE_KIND.get(option.get("kind"))
     if not kind:
@@ -188,14 +188,16 @@ def approval_mode(option):
             "part": option.get("material"), "site": "DC-HAM" if kind == "dock_slot" else None,
             "category": action_approvals.CATEGORIES.get(option.get("material")),
             "binding": kind not in ("supplier_info_request", "internal_message"), "reversible": kind != "purchase_order",
-            "evidence": [cite_text(source) if isinstance(source, dict) else str(source) for source in option.get("evidence") or []]})
+            "evidence": [cite_text(source) if isinstance(source, dict) else str(source) for source in option.get("evidence") or []]},
+            allow_simulated=demo)
     except Exception:  # engine missing or changed: the UI falls back to one-click
         return None
     name = lambda person: person.get("name") if isinstance(person, dict) else person
     chain = [name(step) for step in verdict.get("escalation_chain") or [] if name(step)]
     return {"mode": verdict.get("mode"), "approver": name(verdict.get("approver")), "reason": verdict.get("reason"),
             "slaMinutes": verdict.get("sla_minutes"), "escalateTo": chain[0] if chain else None,
-            "blockedBy": verdict.get("blocked_by") or [], "delegationId": verdict.get("delegation_id")}
+            "blockedBy": verdict.get("blocked_by") or [], "delegationId": verdict.get("delegation_id"),
+            "simulated": verdict.get("simulated", False)}
 
 
 # Routine actions may run under a delegated limit; binding ones (dock slots, orders, air freight, quality and
@@ -229,7 +231,7 @@ def auto_approve(con, demo=False):
             continue
         if ENGINE_KIND.get(option.get("kind")) not in ROUTINE_KINDS:
             continue  # binding actions always keep one click (IMPORTANT.md section 3)
-        verdict = approval_mode(option) or {}
+        verdict = approval_mode(option, demo=demo) or {}
         delegation = verdict.get("delegationId")
         if verdict.get("mode") != "AUTO" or not delegation or (option.get("price") or 0) > limit:
             continue
@@ -241,7 +243,8 @@ def auto_approve(con, demo=False):
             continue
         approved.append(option["id"])
         with con:
-            chaser.activity(con, "Auto-approve", f'{option["title"]}: approved under delegation {delegation} '
+            label = "Simulated approval" if verdict["simulated"] else "Auto-approve"
+            chaser.activity(con, label, f'{option["title"]}: approved under delegation {delegation} '
                            f'from {verdict["approver"]} (routine, cap €{limit:,.0f}).')
     if approved:
         with con:
@@ -287,9 +290,11 @@ def dashboard(con, *, include_action_history=False):
         return None
     chosen = snapshot.get("options", [])
     states = decisions(con)
-    live = (snapshot.get("sync") or {}).get("mailMode") == "live"
+    sync = snapshot.get("sync") or {}
+    live = sync.get("mailMode") == "live"
+    demo = sync.get("mode") == "replay" and not live
     constraints = chaser.live_reply_constraints(con) if live else {}
-    supplier_actions = supplier_loop.view(con, "demo" if (snapshot.get("sync") or {}).get("mode") == "replay" else "live")
+    supplier_actions = supplier_loop.view(con, "demo" if demo else "live")
     if live:
         supplier_actions = [*recovery.view(con), *supplier_actions]
     obsolete_dock = {item["optionId"]: item["detail"] for item in supplier_actions
@@ -301,7 +306,7 @@ def dashboard(con, *, include_action_history=False):
                if option.get("approval_block") else dict(option, status=states.get(option["id"], "pending"))
                for option in chosen]
     for option in actions:
-        option["approvalMode"] = approval_mode(option)
+        option["approvalMode"] = approval_mode(option, demo=demo)
     for option in actions:
         if option["id"] in obsolete_dock:
             option.update(status="blocked", approval_block={"reason": obsolete_dock[option["id"]],
@@ -336,7 +341,6 @@ def dashboard(con, *, include_action_history=False):
     docs = list(documents(con))
     reviews = [{"file": doc["source"], "reason": doc["error"] or ", ".join(doc["review_reasons"])}
                for doc in docs if doc.get("error") or doc.get("review_reasons")]
-    sync = snapshot.get("sync") or {}
     parsed = {doc["source"] for doc in docs if doc.get("methods") and not doc.get("error")}
     parsed.update(row[0] for row in con.execute("SELECT DISTINCT source FROM records"))
     if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ingest_files'").fetchone():
@@ -373,7 +377,7 @@ def dashboard(con, *, include_action_history=False):
         "actions": action_approvals.project(
             con, action_queue(con, truth, actions, queue_reviews, snapshot.get("actionProposals", []),
                               missed, include_history=include_action_history),
-            include_history=include_action_history,
+            include_history=include_action_history, demo=demo,
         ),
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "drop": snapshot.get("drop"),
@@ -393,7 +397,7 @@ def supplier_report(con, *, save, kind="all"):
     deadline = truth.get("deadline") or (row[0] if row else None)
     if not deadline:
         return {"materials": [], "reminders": [], "deadline": None}
-    report = compare(con, deadline, save=save and kind in ("all", "negotiate"))
+    report = compare(con, deadline, save=save and kind in ("all", "negotiate"), use_thread_deadlines=True)
     report["reminders"] = due_reminders(con, save=save and kind in ("all", "remind"))
     report["deadline"] = deadline
     return report
@@ -810,11 +814,16 @@ def handler(loop):
                         ):
                             return self.out({"error": "Supplier evidence changed. Review the current recovery action.",
                                              "status": "blocked"}, 409)
+                        if not isinstance(body.get("revision"), str) or not body["revision"]:
+                            return self.out({"error": "Refresh the offer before recording a decision."}, 409)
                         try:
-                            row = supplier_deals.decide(con, deal[1], deal[2], str(body.get("by") or "team member")[:80],
-                                                        (str(body["note"])[:500] if body.get("note") else None))
+                            row = supplier_deals.decide(con, deal[1], deal[2], body.get("by")[:80] if isinstance(body.get("by"), str) else None,
+                                                        (str(body["note"])[:500] if body.get("note") else None),
+                                                        revision=body["revision"])
                         except KeyError:
                             return self.out({"error": "Unknown offer. Refresh the page."}, 404)
+                        except ValueError as exc:
+                            return self.out({"error": str(exc)}, 409)
                         return self.out({"ok": True, "deal": row})
                     held = re.fullmatch(r"/api/mail/([A-Za-z0-9_-]{1,64})/approve", path)
                     if held:  # IMPORTANT 6 mail-agent: one click on a binding email; the next mail cycle sends it

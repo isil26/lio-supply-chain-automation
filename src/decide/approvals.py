@@ -322,11 +322,13 @@ def _delegation_for(action: Mapping, route: Mapping, delegations: Iterable[Mappi
 
 # ----------------------------------------------------------------------------------------------- evaluate
 def evaluate(action: Mapping, now: Any = None, delegations: Iterable[Mapping] | None = None, *,
-             unavailable: Iterable[str] = (), kill_switch: bool | None = None) -> dict:
+             unavailable: Iterable[str] = (), kill_switch: bool | None = None,
+             allow_simulated: bool = False) -> dict:
     """Decide how an action may be approved. Never raises on bad input: it returns NEVER with blocked_by."""
     now = to_dt(now)
     action = dict(action or {})
-    delegations = list(load_delegations() if delegations is None else delegations)
+    delegations = [record for record in (load_delegations() if delegations is None else delegations)
+                   if allow_simulated or not record.get("simulated")]
     unavailable = set(unavailable) | set(action.get("unavailable") or [])
     if kill_switch is None:
         kill_switch = os.getenv("APPROVALS_KILL_SWITCH") == "1"
@@ -423,6 +425,9 @@ def evaluate(action: Mapping, now: Any = None, delegations: Iterable[Mapping] | 
                              f"(under EUR {float(deleg['max_value_eur']):,.0f}, valid until {deleg['valid_until'][:16]}); "
                              f"{'information only' if kind in INFO_KINDS else 'reversible'}; "
                              f"{approver['name']} is notified")
+            if deleg.get("simulated"):
+                out["reason"] = f"Simulated approval (test case): {out['reason']}"
+                out["simulated"] = True
             out["approver"] = _person(deleg["delegator"])
             out["notes"].append(f"logged as decided_by='delegation', never as {deleg['delegator']} personally")
         else:
@@ -654,7 +659,8 @@ def _demo() -> None:
     confirmed = [{**d, "confirmed_in_writing": True} for d in base]
     print(f"Approval engine demo, now={now}, delegations={[d['id'] + ('' if d.get('confirmed_in_writing') else ' (unconfirmed)') for d in base]}\n")
     for title, action, opts in demo_actions():
-        res = evaluate(action, opts.get("now", now), confirmed if opts.get("confirmed") else base)
+        res = evaluate(action, opts.get("now", now), confirmed if opts.get("confirmed") else base,
+                       allow_simulated=True)
         who = _name(res["approver"])
         extra = ""
         if res["co_signers"]:
