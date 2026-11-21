@@ -480,3 +480,9 @@ At 20:24:41 CET Karton replied that it would now approach Warta for pickup and D
 - An escalated review keeps its original route in the approval audit. The queue passes the completed human decision to T83 only after all required signers have approved. A synthetic EUR 250,000 air-freight review prepared its message after the CPO click. A synthetic joint-signature order stayed pending until both signers recorded their review.
 - T53 still awaits the original art-book event records and exact run boundaries.
 - The related T19-CI assignment has a successful GitHub build. The repository lists the replay key and still awaits the project-scoped Vercel publishing credential. [Latest build checked](https://github.com/isil26/lio-supply-chain-automation/actions/runs/44941942512)
+
+## sonnet-ui: private/ui-next (local-first, not committed, not pushed)
+- Run `python3 private/ui-next/server.py`, open http://127.0.0.1:8800. README in private/ui-next/README.md; screenshots in private/ui-next/shots/.
+- Proxies /api/* to :8787; /ui-api/gate, /ui-api/actions compose release_gate + approvals.evaluate + supplier archive. Dry-run: nothing sent. State in private/ui-next/state.json.
+- Running orchestrator is an older build (old numbers, no /api/release-gate, no agent runs); UI falls back to documented facts and flags them.
+- Next for nick: review, then port compose.py into the orchestrator as /api/actions and the UI into web/ (see README).
