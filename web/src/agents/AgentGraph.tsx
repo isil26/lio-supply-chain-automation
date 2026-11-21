@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { dashboardApi, hostedReplayBuild, isStaticMode, type AgentRun, type AgentTraceData, type AgentTraceStep, type Source } from "../api";
+import type { RecordedAgentRun } from "./RecordedAgentTrace";
 import mockTrace from "./mock.json";
 import "./agentGraph.css";
 
@@ -54,9 +55,11 @@ const nodeOf = (agent: string): NodeId | null => {
   return AGENTS.find((id) => name.includes(id)) ?? null;
 };
 
-function sentence(step: AgentTraceStep): string {
+type GraphStep = Pick<AgentTraceStep, "agent" | "tool" | "args_summary" | "result_summary" | "status" | "citations"> & { recordedTarget?: string };
+
+function sentence(step: GraphStep): string {
   const node = nodeOf(step.agent);
-  if (step.tool === "recorded_run" && node) return RECORDED_TEXT[node];
+  if (!hostedReplayBuild && step.tool === "recorded_run" && node) return RECORDED_TEXT[node];
   if (step.tool === "delegate") {
     const target = /"(?:agent|role|to|specialist)"\s*:\s*"([^"]+)"/.exec(step.args_summary ?? "")?.[1];
     return target ? `Handed the work to ${target[0].toUpperCase()}${target.slice(1)}.` : "Handed the work to a specialist.";
@@ -80,14 +83,29 @@ function curve(from: Node, to: Node) {
 const reducedMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const STEP_MS = 1100;
 
-export function AgentGraph({ onEvidence }: { onEvidence: (source: Source) => void }) {
+export function AgentGraph({ recording, onEvidence }: { recording?: RecordedAgentRun | null; onEvidence: (source: Source) => void }) {
   const recorded = hostedReplayBuild || isStaticMode();
   const [run, setRun] = useState<AgentRun | null>(null);
-  const [trace, setTrace] = useState<AgentTraceData>({ steps: [], approvals_pending: [] });
+  const [liveTrace, setTrace] = useState<AgentTraceData>({ steps: [], approvals_pending: [] });
   const [shown, setShown] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
+  const trace = useMemo((): { steps: GraphStep[]; approvals_pending: AgentTraceData["approvals_pending"] } => {
+    if (!hostedReplayBuild) return liveTrace;
+    return {
+      steps: recording?.events.map((event) => ({
+        agent: event.agent,
+        tool: event.tool ?? "handoff",
+        result_summary: event.summary ?? (event.target ? `Hand-off to ${event.target}` : undefined),
+        status: event.status,
+        citations: event.citations,
+        recordedTarget: event.target ?? undefined,
+      })) ?? [],
+      approvals_pending: recording?.approvals_pending?.map((item) => ({ ...item, detail: item.detail ?? undefined })) ?? [],
+    };
+  }, [liveTrace, recording]);
 
   useEffect(() => {
+    if (hostedReplayBuild) return;
     let alive = true;
     const load = async () => {
       try {
@@ -130,23 +148,28 @@ export function AgentGraph({ onEvidence }: { onEvidence: (source: Source) => voi
       const node = nodeOf(step.agent);
       if (!node) continue;
       visited.add(node);
-      if (node !== previous) hops.push([previous, node]);
+      const target = step.recordedTarget && nodeOf(step.recordedTarget);
+      if (hostedReplayBuild) {
+        if (target && target !== node) hops.push([node, target]);
+      } else if (node !== previous) hops.push([previous, node]);
       previous = node;
     }
     return { done: visited, path: hops, active: steps.length ? previous : null };
   }, [steps]);
 
-  const waitingForYou = finished && (trace.approvals_pending.length > 0 || done.has("chaser"));
+  const waitingForYou = finished && (trace.approvals_pending.length > 0 || (!hostedReplayBuild && done.has("chaser")));
   const lastHop = path[path.length - 1];
   const hopKey = (a: NodeId, b: NodeId) => `${a}>${b}`;
   const litKeys = new Set(path.map(([a, b]) => hopKey(a, b)));
   const pairLit = (a: NodeId, b: NodeId) => litKeys.has(hopKey(a, b)) || litKeys.has(hopKey(b, a));
   const uniqueHops = [...new Map(path.map((hop) => [hopKey(...hop), hop])).values()];
-  const finalHop: [NodeId, NodeId] | null = waitingForYou && active ? [active === "verifier" || active === "chaser" ? active : "chaser", "you"] : null;
+  const finalHop: [NodeId, NodeId] | null = !hostedReplayBuild && waitingForYou && active ? [active === "verifier" || active === "chaser" ? active : "chaser", "you"] : null;
 
   const focusIndex = picked ?? steps.length - 1;
   const focus = focusIndex >= 0 ? steps[focusIndex] : undefined;
-  const status = running ? "Live" : playing ? (recorded ? "Replaying a recorded run" : "Playing the last run") : steps.length ? "Run finished" : "Waiting for a new file";
+  const status = running ? "Live" : playing ? (recorded ? "Replaying a recorded run" : "Playing the last run")
+    : steps.length ? (hostedReplayBuild ? "Recording replayed" : "Run finished")
+    : hostedReplayBuild ? (recording ? "Reported run summary" : "Recording unavailable") : "Waiting for a new file";
   const replay = () => { setPicked(null); setShown(0); };
   const pickNode = (id: NodeId) => {
     for (let i = steps.length - 1; i >= 0; i -= 1) if (nodeOf(steps[i].agent) === id) { setPicked(i); return; }
@@ -210,10 +233,13 @@ export function AgentGraph({ onEvidence }: { onEvidence: (source: Source) => voi
           {(focus.citations ?? []).length > 0 && <div className="ag-chips">
             {(focus.citations ?? []).slice(0, 2).map((citation, index) => <button key={`${citation.file}-${index}`} className="ag-chip" onClick={() => onEvidence(citation)} title={citation.quote}>📄 {citation.file?.split("/").pop() ?? "Evidence"}</button>)}
           </div>}
-        </> : <p className="ag-text muted">When a new supplier file arrives, the agents start here.</p>}
+        </> : <p className="ag-text muted">{hostedReplayBuild
+          ? recording ? "See AI reasoning for reported roles and evidence coverage." : "No agent recording is available."
+          : "When a new supplier file arrives, the agents start here."}</p>}
         {waitingForYou && picked === null && <div className="ag-you">
           <strong>Your turn</strong>
-          <span>{done.has("chaser") ? "The supplier email is waiting for your OK." : `${trace.approvals_pending[0]?.title ?? "A Plan B is waiting for your OK"}.`} Nothing is sent without you.</span>
+          {hostedReplayBuild ? <span>{trace.approvals_pending[0]?.title} was pending in the recording.</span>
+            : <span>{done.has("chaser") ? "The supplier email is waiting for your OK." : `${trace.approvals_pending[0]?.title ?? "A Plan B is waiting for your OK"}.`} Nothing is sent without you.</span>}
         </div>}
         <div className="ag-actions">
           {picked !== null && <button className="ag-btn" onClick={() => setPicked(null)}>Back to latest</button>}
@@ -222,6 +248,6 @@ export function AgentGraph({ onEvidence }: { onEvidence: (source: Source) => voi
       </aside>
     </div>
     <p className="ag-legend"><span><i className="done"/>done</span><span><i className="now"/>happening now</span><span><i className="idle"/>possible path</span>
-      {finished && run?.harness?.ok !== false && <span className="ag-check">✓ Every number checked against a document</span>}</p>
+      {!hostedReplayBuild && finished && run?.harness?.ok !== false && <span className="ag-check">✓ Every number checked against a document</span>}</p>
   </section>;
 }

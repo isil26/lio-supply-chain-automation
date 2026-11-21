@@ -19,7 +19,7 @@ def check(condition, message):
         raise SystemExit(f"Verification failed: {message}")
 
 
-def verify(base, password):
+def verify(base, password, recording_coverage=None):
     def client():
         return build_opener(HTTPCookieProcessor(CookieJar()), NoRedirect())
 
@@ -50,6 +50,7 @@ def verify(base, password):
     request(anonymous, "/control/replay.enc", expected=404)
     request(anonymous, "/snapshot/before.json", expected=404)
     request(anonymous, "/snapshot/after.json", expected=404)
+    request(anonymous, "/snapshot/agent_run.json", expected=404)
 
     def login(opener, value, expected):
         return request(opener, "/login", expected=expected, body=urlencode({"password": value}).encode(),
@@ -69,7 +70,8 @@ def verify(base, password):
     asset = re.search(rb'<script[^>]+src="(/assets/[^" ]+\.js)"', shell)
     check(asset is not None, "authenticated visitors did not receive the React dashboard")
     _, bundle = request(signed_in, asset[1].decode())
-    check(b"Process drop" in bundle and b"TEAM REPLAY" in bundle and b"Mock source evidence" not in bundle,
+    replay_controls = b"Process drop" in bundle or b"See what the agents do" in bundle and b"Updating" in bundle
+    check(replay_controls and b"Mock source evidence" not in bundle,
           "the deployed UI bundle is missing the hosted replay controls or includes the sample client")
 
     def snapshot(opener):
@@ -80,9 +82,24 @@ def verify(base, password):
     before = snapshot(signed_in)
     check(before["sync"]["mode"] == "hosted-replay" and before["sync"]["pendingDrop"] > 0,
           "the baseline lacks a staged supplier drop")
+    if recording_coverage:
+        recording = before.get("recordedAgentRun") or {}
+        check(recording.get("coverage") == recording_coverage and recording.get("scenario") == "art_book",
+              "the authenticated replay does not have the requested art-book recording coverage")
+        check(b"AI reasoning" in bundle and b"Reported live-run summary" in bundle and b"Run demo event" not in bundle,
+              "the hosted AI reasoning panel is missing or includes live controls")
+        request(signed_in, "/api/agents/runs", expected=404)
+        request(signed_in, "/api/agents/trace", expected=404)
+        if recording_coverage == "summary_only":
+            check(recording.get("events") == [] and recording["timing"]["duration_ms"] is None
+                  and recording.get("approvals_pending") is None, "summary-only replay contains inferred events or approvals")
+        else:
+            check(bool(recording.get("events")), "verified recording contains no operational events")
     before_gaps = {risk["id"]: risk["gap"] for risk in before["risks"]}
     request(signed_in, "/api/sync", body=b"{}")
     after = snapshot(signed_in)
+    if recording_coverage:
+        check(after.get("recordedAgentRun") == before["recordedAgentRun"], "recording changed during dashboard replay")
     after_gaps = {risk["id"]: risk["gap"] for risk in after["risks"]}
     check(after["sync"]["pendingDrop"] == 0, "the supplier drop did not clear")
     check(after_gaps != before_gaps, "component shortfall forecasts did not change")
@@ -111,11 +128,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("url")
     parser.add_argument("password_file", type=Path)
+    parser.add_argument("--recording", choices=("summary_only", "verified_events"))
     args = parser.parse_args()
     url = urlsplit(args.url)
     if url.scheme != "https" or not url.hostname or url.path not in ("", "/") or any((url.query, url.fragment, url.username, url.password)):
         parser.error("URL must be an HTTPS origin")
-    verify(args.url.rstrip("/"), args.password_file.read_text().strip())
+    verify(args.url.rstrip("/"), args.password_file.read_text().strip(), args.recording)
 
 
 if __name__ == "__main__":

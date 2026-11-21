@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { Activity, Source } from "./api";
+import { hostedReplayBuild, type Activity, type Source } from "./api";
 import { AgentTrace } from "./agents/AgentTrace";
+import { RecordedAgentTrace, type RecordedAgentRun } from "./agents/RecordedAgentTrace";
 
 type Agent = { name: string; title: string; does: string; icon: keyof typeof ICONS };
 
@@ -31,7 +32,9 @@ function Glyph({ name }: { name: keyof typeof ICONS }) {
 const short = (text: string) => { const first = text.split(/(?<=\.)\s|\s·\s/)[0]; return first.length > 120 ? `${first.slice(0, 117)}…` : first; };
 const tidy = (text: string) => text.replace(/soony\/|suppliers\/SUP-\d+_[^/]+\//g, "").replace(/_/g, " ");
 
-export function BehindScenes({ activity, onClose, onEvidence }: { activity: Activity[]; onClose: () => void; onEvidence: (s: Source) => void }) {
+export function BehindScenes({ activity, recording, onClose, onEvidence }: {
+  activity: Activity[]; recording?: RecordedAgentRun | null; onClose: () => void; onEvidence: (s: Source) => void;
+}) {
   const agents = useMemo(() => {
     const seen = new Set(CATALOG.map((a) => a.name));
     const extra = [...new Set(activity.map((a) => a.agent))].filter((n) => !seen.has(n))
@@ -85,7 +88,9 @@ export function BehindScenes({ activity, onClose, onEvidence }: { activity: Acti
         </div>
       </header>
 
-      {tab === "reasoning" ? <div className="bs-body"><AgentTrace onEvidence={onEvidence}/></div> : <div className="bs-body">
+      {tab === "reasoning" ? <div className="bs-body">
+        {hostedReplayBuild ? <RecordedAgentTrace recording={recording} onEvidence={onEvidence}/> : <AgentTrace onEvidence={onEvidence}/>}
+      </div> : <div className="bs-body">
         <div className="bs-flow" aria-label="Agent hand-offs">
           {agents.map((agent, i) => <React.Fragment key={agent.name}>
             <button className={`bs-node ${selected === agent.name ? "selected" : ""} ${active === agent.name ? "active" : ""} ${agent === YOU ? "you" : ""}`}

@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import type { RecordedAgentRun } from "./agents/RecordedAgentTrace";
 import mockData from "./mock/dashboard.json";
 
 export type Source = {
@@ -136,6 +137,7 @@ export type DashboardData = {
   threads: SupplierThread[];
   mailHistory?: { status: "ready" | "checking" | "unavailable"; checkedAt?: string; threads: SupplierThread[] } | null;
   agents?: { enabled: boolean; mode?: string };
+  recordedAgentRun?: RecordedAgentRun | null;
   approval: Approval | null;
   options?: Approval[];
   drop: { title: string; detail: string; time: string } | null;
@@ -259,16 +261,20 @@ class HttpDashboardApi implements DashboardApi {
     return {};
   }
   getAgentRuns() {
+    if (hostedReplayBuild) return Promise.resolve([]);
     return json<AgentRun[]>("/api/agents/runs", { cache: "no-store" });
   }
   getAgentTrace(run?: string) {
+    if (hostedReplayBuild) return Promise.resolve({ steps: [], approvals_pending: [] });
     const query = run ? `?run=${encodeURIComponent(run)}` : "";
     return json<AgentTraceData>(`/api/agents/trace${query}`, { cache: "no-store" });
   }
   runAgent(event = "data_drop") {
+    if (hostedReplayBuild) return Promise.reject(new Error("This recording is read-only"));
     return json<{ id: string }>("/api/agents/run", { method: "POST", body: JSON.stringify({ event }) });
   }
   stopAgent(id: string) {
+    if (hostedReplayBuild) return Promise.reject(new Error("This recording is read-only"));
     return json<{ ok: boolean }>("/api/agents/stop", { method: "POST", body: JSON.stringify({ id }) });
   }
 }
