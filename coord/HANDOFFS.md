@@ -340,3 +340,10 @@ Revision facts were already extracted from OC footers (B at PackRight, C at Kart
 - Rules: the last STATUS/TASKS row wins. A STATUS row still `in_progress` for a task that TASKS marks done is flagged as outdated. An INBOX request counts as unanswered until the addressee writes back to the sender. `in_progress` with no commit, INBOX line or timed STATUS update for 90 min counts as stale. Autosync commits are credited to the owner of the touched directory when that owner is unambiguous.
 - Live page: `python3 scripts/overview.py --serve 8765 [--push 600]` serves `src/overview/dashboard.html`, runs `git pull` and regenerates every 60 s; with `--push`, it commits and pushes only the two overview files as overview-agent when their content changed.
 - Known limits: the classification is heuristic (keywords), and STATUS rows that give only a date and no time do not count as activity.
+
+## T74 — Gate + packplan as agent tools (sonnet-wire)
+
+- `packplan` (read-only, `changes` what-if: `part_arrives_earlier`, `release_quarantined`, `restore_stock`) added to `src/agents/tools.py`; `release_gate_status` description rewritten. Roles: Analyst = release_gate_status; Verifier = release_gate_status; Planner = packplan + release_gate_status (`src/agents/prompts.py` ROLE_TOOLS). Knowledge: guidance appended to `knowledge/pitfalls.md` (sleeve conflict = HUMAN, quarantined statue lot = HOLD, game card is the binding part, never state units not in the packplan result).
+- Harness needed no change: numeric_grounding/citation_check read tool results from the trace (tests/test_agents_gate_tools.py proves accepted and ungrounded numbers).
+- New golden scenarios `sleeve_revision_conflict`, `air_lot_priority` (fake mode via `_ScenarioLLM`). Fix in `tests/agent_eval/run_eval.py`: live copies now also clear agent_mailbox/approvals/state; stale delegations made every live scenario skip its specialists and pass trivially.
+- Note: stop_check counts identical tool signatures across agents, so prompts tell Verifier to call release_gate_status with the part_id and Planner with no arguments.
