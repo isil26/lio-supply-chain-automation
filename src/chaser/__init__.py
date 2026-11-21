@@ -64,6 +64,9 @@ def schema(con):
        CREATE TABLE IF NOT EXISTS activity (
            id INTEGER PRIMARY KEY, time TEXT NOT NULL, agent TEXT NOT NULL, action TEXT NOT NULL, type TEXT NOT NULL
        );
+       CREATE TABLE IF NOT EXISTS chaser_deadline_handoffs (
+           chase_id TEXT PRIMARY KEY REFERENCES chases(id), deadline TEXT, detail TEXT NOT NULL
+       );
     """)
 
     if "transport" not in {row[1] for row in con.execute("PRAGMA table_info(messages)")}:
@@ -158,23 +161,30 @@ def draft_documents(con, truth, options):
 
 
 def send(con, chase_id, demo=False, *, managed=False, auto=False):
+    from . import deadlines
+
     schema(con)
     if not demo:
         from .mailenv import load_team_mail_env
         load_team_mail_env()
     sender = os.getenv("CHASER_SENDER")
     host = os.getenv("CHASER_SMTP_HOST")
-    if not sender:
-        raise ValueError("CHASER_SENDER is required")
-    if not demo and (not host or os.getenv("CHASER_REAL_SMTP") != "1"):
-        raise ValueError("Live sending requires CHASER_REAL_SMTP=1 and CHASER_SMTP_HOST")
     message = EmailMessage()
-    message["From"] = sender
     with con:
         con.execute("BEGIN IMMEDIATE")
         chase = con.execute("SELECT * FROM chases WHERE id=?", (chase_id,)).fetchone()
         if not chase:
             raise ValueError("Only a current draft can be sent")
+        if not demo:
+            if reason := deadlines.record_if_expired(con, chase, datetime.now(timezone.utc), deadlines.current_plan(con)):
+                # Save the handoff before reporting the rejected send to the caller.
+                con.commit()
+                raise deadlines.DeadlineHandoff(reason)
+        if not sender:
+            raise ValueError("CHASER_SENDER is required")
+        if not demo and (not host or os.getenv("CHASER_REAL_SMTP") != "1"):
+            raise ValueError("Live sending requires CHASER_REAL_SMTP=1 and CHASER_SMTP_HOST")
+        message["From"] = sender
         from . import deals, mail_plan
         decision_mail = chase["status"] == "draft" and deals.check_draft(con, chase_id)
         action = None
@@ -238,19 +248,16 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
         if not demo:
             context = ssl.create_default_context()
             port = int(os.getenv("CHASER_SMTP_PORT", "587"))
-            if port == 465:
-                with smtplib.SMTP_SSL(host, port, timeout=20, context=context) as client:
-                    authenticate(client)
-                    rejected = client.send_message(message)
-                    if rejected:
-                        raise smtplib.SMTPRecipientsRefused(rejected)
-            else:
-                with smtplib.SMTP(host, port, timeout=20) as client:
+            transport = (smtplib.SMTP_SSL(host, port, timeout=20, context=context) if port == 465
+                         else smtplib.SMTP(host, port, timeout=20))
+            with transport as client:
+                if port != 465:
                     client.starttls(context=context)
-                    authenticate(client)
-                    rejected = client.send_message(message)
-                    if rejected:
-                        raise smtplib.SMTPRecipientsRefused(rejected)
+                authenticate(client)
+                deadlines.expire_transport_claim(con, chase_id, message_id)
+                rejected = client.send_message(message)
+                if rejected:
+                    raise smtplib.SMTPRecipientsRefused(rejected)
     except (OSError, smtplib.SMTPException) as exc:
         # SMTP acceptance can be ambiguous after a disconnect. Keep the message ID for reconciliation.
         rejected = isinstance(exc, (smtplib.SMTPRecipientsRefused, smtplib.SMTPSenderRefused,

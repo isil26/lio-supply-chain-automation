@@ -512,12 +512,17 @@ def advance(con, truth, options, *, scope, clock=None, dispatch=True):
 
 def view(con, scope):
     """Read-only current decisions, joined to actual transport outcomes."""
+    from .deadlines import handoff_reason
+
     if not con.execute("SELECT 1 FROM sqlite_master WHERE name='supplier_loop_actions'").fetchone():
         return []
     actions = [json.loads(row[0]) for row in con.execute(
         "SELECT payload FROM supplier_loop_actions WHERE scope=? AND active=1 ORDER BY case_name, rowid", (scope,))]
     for item in actions:
         dispatch_thread, origin = item.get("dispatchThread"), item.get("originMessageId")
+        if scope == "live" and dispatch_thread and (reason := handoff_reason(con, dispatch_thread)):
+            item.update(status="escalated", owner="Procurement", detail=reason)
+            continue
         if not dispatch_thread and not origin:
             continue
         row = (con.execute("""SELECT external_id,time,transport FROM messages WHERE side='out' AND chase_id=?

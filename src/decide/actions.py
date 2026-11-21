@@ -348,7 +348,7 @@ def action_queue(con, truth, options, reviews, other, missed, *, include_history
     """Make evidence changes invalidate stale action IDs and delivery records."""
     import hashlib
 
-    from src.chaser import LANGUAGE, supplier_loop
+    from src.chaser import LANGUAGE, deadlines, supplier_loop
     from src.chaser.actions import internal_message
     from src.ingest.store import rows
 
@@ -363,6 +363,12 @@ def action_queue(con, truth, options, reviews, other, missed, *, include_history
     covered = {tuple(row) for row in con.execute("SELECT supplier_id,material FROM chases")} if (
         _table(con, "chases")) else set()
     candidates = [*_option_proposals(truth, options, reviews, other), *other, *_triage(con, truth)]
+    for chase_id, material, supplier, parent, reply, deadline, detail in deadlines.handoffs(con):
+        candidates.append(_proposal(
+            "supplier_chaser", f"Review missed supplier decision window for {supplier}", "Procurement",
+            "Procurement", deadline, detail, [{"text": f"Supplier thread SOONY-{parent or chase_id}"}],
+            material=material, threadId=parent or chase_id, replyId=reply, priority=1,
+        ))
     result = {}
     for item in candidates:
         action = dict(item)

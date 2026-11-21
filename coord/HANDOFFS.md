@@ -530,3 +530,9 @@ The production Vercel deployment `dpl_2cKSNvxaProtuQCQoC2vRXDn3UDx` serves the V
 The [VM archive workflow](../.github/workflows/lio-vm.yml) now handles scheduled publishing. Its first manual run completed the archive step, and the fixed exporter found no unpublished messages on the VM at verification. The [archive index](../docs/supplier-email-archive/README.md) shows the current five-minute schedule. The GCP deploy key for event-triggered publishing was generated under the dedicated `lio-archive` account. It is pending registration by a GitHub repository administrator.
 
 [22 Nov 02:32 CET] T103 hosted rehearsal · codex-login. [Rehearsal dashboard](https://soony-launch-control.vercel.app/) now serves Vercel deployment `dpl_7DQThzMSrJeKBX7JwjBfqxgvUWeq`. It uses the merged named-login gateway from `db33bbe`, the account display on the authored rehearsal UI, and the existing session gate for JS and CSS. The encrypted replay is byte-identical to the previous rehearsal deployment `dpl_APFkWWCbVxG7iYXdFRbeG4ZnRwSD`. Public acceptance covered all five accounts, signed-out denial, protected assets, separate replay state, reset and sign-out. All 93 message bodies and envelopes matched their archive. Production continued serving `dpl_2cKSNvxaProtuQCQoC2vRXDn3UDx` and its original sign-in form.
+
+## T101-Chaser-Deadline — Queued supplier email (codex-chaser-deadline)
+
+- The worker retires expired drafts even when they are held for approval or in cooldown. The live sender checks again before transport, using the published forecast.
+- The Action Queue shows the Procurement owner, deadline, supplier thread and latest uncovered quantity when available. The send audit records the handoff without creating a sent message.
+- Validation includes 116 Supplier Chaser tests and the offline replay. The mocked SMTP test covers a packing window that closes during connection setup.

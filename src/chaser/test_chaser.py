@@ -3,8 +3,10 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from .agent import SupplierChaser
+from .deadlines import DeadlineHandoff
 from .llm import DeterministicFakeLLM
 from .models import Issue
 from .store import ChaserStore
@@ -101,6 +103,18 @@ class SupplierChaserTest(unittest.TestCase):
         os.environ["CHASER_SENDER"] = "launch@registered.example"
         with self.assertRaisesRegex(PermissionError, "CHASER_REAL_SMTP=1"):
             self.chaser.send(thread["thread_id"], "smtp")
+
+    @patch.dict(os.environ, {"CHASER_SENDER": "launch@registered.example", "CHASER_REAL_SMTP": "1"})
+    @patch("src.chaser.mailenv.load_team_mail_env")
+    @patch("src.chaser.agent.SMTPOutbox")
+    def test_expired_cli_send_is_escalated_to_procurement(self, outbox, _load_env):
+        thread_id = self.chaser.draft(self.issue(deadline=datetime.fromisoformat("2000-01-01T09:00:00+01:00")))["thread_id"]
+        self.chaser.approve(thread_id)
+        with self.assertRaisesRegex(DeadlineHandoff, "Procurement"):
+            self.chaser.send(thread_id, "smtp")
+        outbox.assert_not_called()
+        self.assertEqual(self.store.get_thread(thread_id)["state"], "escalated")
+        self.assertEqual(self.store.action_log(thread_id)[-1]["action"], "deadline_handoff")
 
     def test_fake_llm_iso_eta_and_blocked_status(self):
         llm = DeterministicFakeLLM()

@@ -2,6 +2,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 
+from .deadlines import DeadlineHandoff, timestamp
 from .guardrails import Guardrails
 from .llm import DeterministicFakeLLM, LLMClient, LLMReplyParser
 from src.llm.client import LLMClient as SharedLLMClient
@@ -228,6 +229,16 @@ class SupplierChaser:
         elif mode == "smtp":
             if os.environ.get("CHASER_REAL_SMTP") != "1":
                 raise PermissionError("real SMTP requires CHASER_REAL_SMTP=1")
+            deadline = timestamp(thread["deadline"])
+            if deadline is None or datetime.now(timezone.utc) >= deadline:
+                detail = "Supplier decision window expired or could not be verified. Procurement to review recovery options."
+                at = now_iso()
+                self.store.set_escalation(thread_id, "R4", detail, at)
+                self.store.log(thread_id, "deadline_handoff", {
+                    "owner": "Procurement", "deadline": thread["deadline"], "detail": detail,
+                }, at)
+                self.store.set_thread_state(thread_id, "escalated", at)
+                raise DeadlineHandoff(detail)
             outbox = SMTPOutbox()
         else:
             raise ValueError("mode must be dry-run, mock, or smtp")

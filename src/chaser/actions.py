@@ -142,6 +142,7 @@ def get(con, action_id):
 
 def _supplier_email(con, action, approved_by, demo):
     from . import activity, schema as chaser_schema, send, supplier_loop, LANGUAGE
+    from .deadlines import DeadlineHandoff
     chaser_schema(con)
     supplier_id, material = _get(action, "supplierId", "supplier_id"), _get(action, "material", default="")
     if supplier_loop.managed(supplier_id, material):
@@ -180,6 +181,8 @@ def _supplier_email(con, action, approved_by, demo):
     common = dict(chase_id=ref, recipient=address, subject=subject, body=body)
     try:
         send(con, ref, demo=demo)
+    except DeadlineHandoff as exc:
+        return _record(con, action, "supplier", "escalated", approved_by, note=str(exc), **common)
     except ValueError as exc:  # cooldown, missing live settings: the draft stays for the next mail cycle
         return _record(con, action, "supplier", "queued", approved_by, note=f"Not sent yet: {exc}", **common)
     note = "Dry run (demo): nothing left the building." if demo else "Sent from the team mailbox."
