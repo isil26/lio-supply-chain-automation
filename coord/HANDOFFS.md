@@ -501,3 +501,9 @@ The replay cap correctly approves the information-only Boise Semi game-card stoc
 
 - Matched goods receipt 5000413070 to AWB 020-48113256 using the cited shipped quantity, PO, supplier and component. The live-snapshot rerun counts 98,100 on hand, zero eligible inbound and 6,800 short. Both editions missed their targets across 500 trials (p50 639,100 Standard and 66,100 Collector’s).
 - [Run the focused replay](../docs/GAME_CARD_DEMO.md). It stages only the receipt and uses the policy-routed Felix Brunner approval in a disposable dry-run database. The receipt, revised forecast and prepared internal message were verified in the browser.
+
+## Jury site consolidation and T98 release (codex-site-consolidation)
+
+- Gülşah selected the protected replay as the primary URL. The Mac-backed team URL remains a separate deployment. [Primary Control Room](https://soony-launch-control.vercel.app)
+- Production deployment `dpl_3pTmjCS3BzGHBWV3FGX3g8dHUbqr` uses UI `ce36dac` and the Mac's verified portal snapshot `7217fb2ffe44f7bc3712fc026e511890b40ca66eebd303107a58f88a5a7c4f83`. The replay stages `soony/erp/goods_receipts_update.csv` as its only update. Forecast medians move from 614,650 Standard and 62,550 Collector’s to 639,100 and 66,100. The expected 28,000 cards move from inbound to on hand, leaving 98,100 on hand, zero eligible inbound and 6,800 short.
+- Production checks covered sign-in, anonymous and forged-session denial, protected assets, Update, independent sessions, reset and sign-out. Browser checks exercised practice review and approval, the spending slider and the role illustration. The 20:44 Gmail archive is awaiting a decision about access from the jury site. The preceding verified release is `dpl_8UHQVJW2fBwuPBPuaPoQrhFDJZVv`.
