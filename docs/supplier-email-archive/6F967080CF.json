@@ -1,0 +1,135 @@
+{
+  "thread_id": "6F967080CF",
+  "supplier_id": "SUP-0028",
+  "supplier": "Karton Nowak",
+  "material": "CMP-GAM-008",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T16:02:07+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "[SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<179527692796.61223.10451353623898573343@gmail.com>",
+      "chase_id": "6F967080CF",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nczy mogą Państwo zarezerwować 5 900 gotowych egzemplarzy artbooka Grand Heist 6 (CMP-GAM-008)? Prosimy potwierdzić dostępną liczbę egzemplarzy, termin ważności rezerwacji oraz najwcześniejszą możliwą datę i godzinę odbioru. Prosimy też o pisemną ofertę z ceną całkowitą i kosztem dostawy do magazynu DC-HAM w Hamburgu oraz przewidywanym terminem dostawy. To zapytanie ofertowe.\n\nZ poważaniem,\nZespół Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T16:05:49+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>",
+      "chase_id": "6F967080CF",
+      "in_reply_to": "<179527692796.61223.10451353623898573343@gmail.com>",
+      "references": [
+        "<179527692796.61223.10451353623898573343@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nmożemy zarezerwować 5 900 z dostępnych 8 000 gotowych artbooków Grand Heist 6 (CMP-GAM-008). Rezerwacja oraz oferta są ważne przez 24 godziny od naszej porannej oferty; wymagają następnie formalnego potwierdzenia zamówienia przez Soony.\n\nCena wynosi 2,10 EUR za sztukę, czyli łącznie 12 390,00 EUR DAP Hamburg; koszt transportu do DC-HAM jest ujęty w warunkach DAP. Towar możemy załadować w ciągu 4 godzin od otrzymania zamówienia, a transport drogowy do Hamburga trwa około 9 godzin od wysyłki. Dokładne okno dostawy potwierdzę z Warta Trans po otrzymaniu zlecenia.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T16:14:43+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<soony-6f967080cf-small-lot-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": "6F967080CF",
+      "in_reply_to": "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179527692796.61223.10451353623898573343@gmail.com>",
+        "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry Pani Agnieszko,\n\ndziękujemy za ofertę. Czy dla tej gotowej partii mogą Państwo jednorazowo odstąpić od minimum zamówienia i wycenić 50–100 artbooków Grand Heist 6 (CMP-GAM-008), ewentualnie najmniejszą pełną partię wysyłkową zawierającą co najmniej 50 sztuk? Prosimy o liczbę sztuk, najlepszą łączną cenę DAP DC-HAM z transportem i najwcześniejsze możliwe okno dostawy. Jeśli partię można dołączyć do już planowanego kursu do Hamburga, prosimy uwzględnić ten wariant w wycenie. Na tym etapie prosimy wyłącznie o ofertę.\n\nZ poważaniem,\nZespół Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T16:17:49+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<010201a1fee65127-b82eb810-9aa2-4128-b437-1dd2f8f83635-000000@eu-west-1.amazonses.com>",
+      "chase_id": "6F967080CF",
+      "in_reply_to": "<soony-6f967080cf-small-lot-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179527692796.61223.10451353623898573343@gmail.com>",
+        "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>",
+        "<soony-6f967080cf-small-lot-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nstandardowe minimum zamówienia dla CMP-GAM-008 wynosi 5 000 sztuk. Sprawdzę wewnętrznie, czy możemy jednorazowo zaoferować mniejszą ilość z gotowego zapasu oraz czy możliwe byłoby dołączenie jej do planowanego transportu do Hamburga.\n\nWrócę z potwierdzoną minimalną ilością, ceną DAP i oknem dostawy po tej weryfikacji.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:19:02+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<179528514232.93187.3957140434875871048@gmail.com>",
+      "chase_id": "822C7AEAE5",
+      "in_reply_to": "<010201a1fee65127-b82eb810-9aa2-4128-b437-1dd2f8f83635-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<soony-6f967080cf-small-lot-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1fee65127-b82eb810-9aa2-4128-b437-1dd2f8f83635-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nCzy mają już Państwo odpowiedź w sprawie wyjątku dla małej partii? Prosimy o potwierdzoną ilość, cenę DAP do Hamburga i możliwe okno dostawy. To wyłącznie zapytanie informacyjne.\n\nZespół Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:21:43+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<010201a1ff57c175-3078f6d2-1dd5-47f6-9581-63f9524e13b7-000000@eu-west-1.amazonses.com>",
+      "chase_id": "822C7AEAE5",
+      "in_reply_to": "<179528514232.93187.3957140434875871048@gmail.com>",
+      "references": [
+        "<soony-6f967080cf-small-lot-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1fee65127-b82eb810-9aa2-4128-b437-1dd2f8f83635-000000@eu-west-1.amazonses.com>",
+        "<179528514232.93187.3957140434875871048@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nnie mam jeszcze wewnętrznego potwierdzenia wyjątku od minimum dla małej partii artbooków. Nie mogę więc na ten moment potwierdzić ilości, ceny DAP ani okna dostawy.\n\nWrócę do Państwa po uzyskaniu decyzji od działu operacyjnego.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:47:48+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "[SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<soony-karton-5900-free-hold-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": "6F967080CF",
+      "in_reply_to": "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179527692796.61223.10451353623898573343@gmail.com>",
+        "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry Pani Agnieszko,\n\ndziękujemy za ofertę na 5 900 gotowych artbooków Grand Heist 6 (CMP-GAM-008) po 2,10 EUR za sztukę, łącznie 12 390 EUR DAP DC-HAM. Nasze pytanie dotyczy pełnych 5 900 sztuk z tej oferty.\n\nCzy mogą Państwo bezpłatnie odłożyć dla nas te egzemplarze na czas uzyskiwania formalnego zamówienia? Prosimy o podanie dokładnej daty i godziny (CET), do której będą obowiązywać rezerwacja i cena. Czy można również wstępnie wskazać z Warta Trans najwcześniejsze okno załadunku w Poznaniu i rozładunku w DC-HAM w niedzielę rano, 22 listopada, oraz godzinę, do której musieliby Państwo otrzymać zamówienie, aby zachować to okno?\n\nTo prośba o niewiążącą, bezpłatną rezerwację i informację o transporcie. Prosimy zaczekać z wysyłką i wszelkimi płatnymi rezerwacjami do otrzymania formalnego zamówienia od Soony.\n\nZ poważaniem,\nZespół Soony\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:50:44+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<010201a1ff724fdd-4eafc58e-1511-4a37-b66e-2467c710830a-000000@eu-west-1.amazonses.com>",
+      "chase_id": "6F967080CF",
+      "in_reply_to": "<soony-karton-5900-free-hold-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179527692796.61223.10451353623898573343@gmail.com>",
+        "<010201a1fedb56ff-ddeb0ba0-7e41-417f-a53c-a7219358296e-000000@eu-west-1.amazonses.com>",
+        "<soony-karton-5900-free-hold-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nmożemy bezpłatnie wstępnie odłożyć 5 900 sztuk z gotowego zapasu i nie rozpoczniemy wysyłki bez formalnego zamówienia Soony. Cena 2,10 EUR za sztukę oraz dostępność pozostają zgodne z naszą poranną ofertą, ważną 24 godziny od jej wysłania; sprawdzę dokładną godzinę jej wygaśnięcia i potwierdzę ją osobno.\n\nGotowe artbooki możemy załadować w ciągu 4 godzin od otrzymania zamówienia, a podczas postoju produkcyjnego wysyłki z magazynu są nadal możliwe. Najwcześniejsze okna załadunku i niedzielnego rozładunku muszę potwierdzić z Warta Trans; nie mogę ich jeszcze zagwarantować.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "thread_id": "153839FA41",
+  "supplier_id": "SUP-0018",
+  "supplier": "Pune Diecast Works",
+  "material": "CMP-GAM-010",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T17:30:47+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "[SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<179528224771.84625.18055932470421168320@gmail.com>",
+      "chase_id": "153839FA41",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello Rohan Deshmukh,\n\nCan you confirm whether 3,400 units of CMP-GAM-010 are available for our Hamburg cut-off (22 Nov 20:00 CET)? Please reply with available quantity, earliest collection time, carrier reference and delivered price, if applicable. This is a request for information only.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T17:33:41+00:00",
+      "from": "Rohan Deshmukh <rohan.d.pune-diecast@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff2bc866-1cdf7bc7-a99d-4357-8bd1-8d046f61ac29-000000@eu-west-1.amazonses.com>",
+      "chase_id": "153839FA41",
+      "in_reply_to": "<179528224771.84625.18055932470421168320@gmail.com>",
+      "references": [
+        "<179528224771.84625.18055932470421168320@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nKindly note that 3,400 units cannot be made available for collection in Hamburg by the 22 November cut-off. Our next sea shipment, reference NHMU8536079, is scheduled to arrive Hamburg on 28 November and covers PO 4500318739 and 4500318745.\n\nThe agreed basis is FOB Nhava Sheva at INR 1,037 per unit; we do not have a delivered Hamburg price.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:24:18+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<179528545811.94817.1790700159929001753@gmail.com>",
+      "chase_id": "A26D2E8B8E",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nWe understand the full quantity is not possible in time. Could you tell us how many units you could ship before 2026-11-22 20:00 UTC as a part shipment, and the earliest date for the rest? To arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight.\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:27:14+00:00",
+      "from": "Rohan Deshmukh <rohan.d.pune-diecast@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff5cce8a-b360cd42-3b43-412b-8c32-205504916479-000000@eu-west-1.amazonses.com>",
+      "chase_id": "A26D2E8B8E",
+      "in_reply_to": "<179528545811.94817.1790700159929001753@gmail.com>",
+      "references": [
+        "<179528545811.94817.1790700159929001753@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nThere are no units available for pickup in Hamburg before 22 November 20:00 UTC. The next 5,000 units are already shipped by sea under reference NHMU8536079, with planned Hamburg arrival on 28 November.\n\nI will need to check with our logistics team regarding any alternative collection possibility from origin, including pickup address, packing details and gross weight. Kindly note this would not support the Hamburg cut-off.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:27:32+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<179528565227.96847.18442988122219568844@gmail.com>",
+      "chase_id": "F13A3B3971",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nTo arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight. To complete our planning, could you also confirm: the delivery date to Hamburg, the delivered unit price?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:29:44+00:00",
+      "from": "Rohan Deshmukh <rohan.d.pune-diecast@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff5f15cd-1981c800-a9d8-4830-8717-1d83a8ee1aa6-000000@eu-west-1.amazonses.com>",
+      "chase_id": "F13A3B3971",
+      "in_reply_to": "<179528565227.96847.18442988122219568844@gmail.com>",
+      "references": [
+        "<179528565227.96847.18442988122219568844@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nFor shipment NHMU8536079, our planned Hamburg arrival date is 28 November 2026. As this shipment has already been handed over for sea freight, it is not available for pickup from our Pune facility.\n\nThe agreed unit price is INR 1,037 per statue on FOB Nhava Sheva basis. We do not have a delivered unit price to Hamburg. Packing configuration, pallet count and gross weight need to be confirmed by our logistics team.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:29:59+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<179528579911.98186.13119593868473877370@gmail.com>",
+      "chase_id": "3E1D3D60FC",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nTo arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight. To complete our planning, could you also confirm: the quantity you can supply, the delivery date to Hamburg?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:32:31+00:00",
+      "from": "Rohan Deshmukh <rohan.d.pune-diecast@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff61a544-a5455dad-af82-4436-9d56-61c66d2cb6e2-000000@eu-west-1.amazonses.com>",
+      "chase_id": "3E1D3D60FC",
+      "in_reply_to": "<179528579911.98186.13119593868473877370@gmail.com>",
+      "references": [
+        "<179528579911.98186.13119593868473877370@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nThe quantity currently in transit under shipment NHMU8536079 is 5,000 units of CMP-GAM-010, with planned arrival in Hamburg on 28 November 2026. It is already with the sea carrier and therefore not available for collection.\n\nI am checking the packing details, including carton/pallet count and gross weight, with our logistics team and will revert once confirmed.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:58:05+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "[SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<soony-sunday-recovery-pune-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": "153839FA41",
+      "in_reply_to": "<010201a1ff2bc866-1cdf7bc7-a99d-4357-8bd1-8d046f61ac29-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528224771.84625.18055932470421168320@gmail.com>",
+        "<010201a1ff2bc866-1cdf7bc7-a99d-4357-8bd1-8d046f61ac29-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Rohan,\n\nCould Pune support a local recovery using the 5,600 statues already in Hamburg under PO 4500318727, goods receipt 5000413063? The incoming sample found paint runs or thin coverage on the base in 9 of 125. Dimensions and weight were within tolerance. We need 3,400 individually inspected, conforming units.\n\nCan your European quality representative or an inspection partner staff a 100% visual sort at DC-HAM this weekend? Please give the earliest start, inspectors and throughput, first passing batch and earliest time that 3,400 documented passes could be presented to Soony Quality, ideally by 16:00 CET on Sunday 22 November. Could you provide the approved finish standard or reference photos, lot traceability and your containment proposal by email now, including for a sort by the site's own team? Please identify any existing signed disposition covering this exact lot, and quote the all-in service cost. If only some of this is available, please say which elements you can confirm now.\n\nThe lot remains quarantined pending Soony's written quality disposition. This is a request for a proposal. Please wait for a formal instruction before starting work or incurring costs.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:00:26+00:00",
+      "from": "Rohan Deshmukh <rohan.d.pune-diecast@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff7b31eb-bfd38a54-7964-49c0-85fe-53a15710ed6e-000000@eu-west-1.amazonses.com>",
+      "chase_id": "153839FA41",
+      "in_reply_to": "<soony-sunday-recovery-pune-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179528224771.84625.18055932470421168320@gmail.com>",
+        "<010201a1ff2bc866-1cdf7bc7-a99d-4357-8bd1-8d046f61ac29-000000@eu-west-1.amazonses.com>",
+        "<soony-sunday-recovery-pune-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nThis is the first notification we have received regarding the incoming inspection of PO 4500318727. The reported paint runs and thin base-edge coverage appear cosmetic; with dimensions and weight within tolerance, we do not consider rejection of the full lot warranted.\n\nWe can propose arranging a 100% visual sort at DC-HAM, either through our quality support or by funding sorting by the site team, subject to your written instruction. I need to check immediate weekend availability, throughput, first-pass timing, finish reference, traceability records and the all-in cost with our quality and logistics teams before confirming these points.\n\nWe have no record of an existing signed disposition for this lot. Kindly send the applicable acceptance standard or reference photographs used by your incoming team, so that the sorting criteria are aligned.\n\nBest regards,\n\nRohan Deshmukh\nPune Diecast Works Pvt. Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T19:01:03+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "rohan.d.pune-diecast@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-153839FA41] Launch stock and delivery confirmation",
+      "message_id": "<179528766308.12942.5520908496274305466@gmail.com>",
+      "chase_id": "3DEE18A01E",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nTo complete our planning, could you also confirm: the quantity you can supply, the delivery date to Hamburg, the delivered unit price? Could you send the packing list or the shipping/booking reference once available?\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "thread_id": "C86B928B4D",
+  "supplier_id": "SUP-0011",
+  "supplier": "Boise Semi",
+  "material": "CMP-GAM-001",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T17:30:45+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "[SOONY-C86B928B4D] Launch stock and delivery confirmation",
+      "message_id": "<179528224514.84625.8471533768109126016@gmail.com>",
+      "chase_id": "C86B928B4D",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello Megan Ortiz,\n\nCan you confirm whether 6,800 units of CMP-GAM-001 are available for our Hamburg cut-off (22 Nov 20:00 CET)? Please reply with available quantity, earliest collection time, carrier reference and delivered price, if applicable. This is a request for information only.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T17:33:32+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-C86B928B4D] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff2ba1e3-cabf41ca-8e39-407f-99e6-82a2b0e4ecc6-000000@eu-west-1.amazonses.com>",
+      "chase_id": "C86B928B4D",
+      "in_reply_to": "<179528224514.84625.8471533768109126016@gmail.com>",
+      "references": [
+        "<179528224514.84625.8471533768109126016@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nWe have 36,000 units of CMP-GAM-001 packed for PO 4500318769, but they are currently on hold pending Soony’s written confirmation of EXW Boise or nomination of your forwarder. Air waybill 020-48113304 is booked ORD–FRA; the prior planned Frankfurt arrival was 23 November, so I cannot confirm availability in Hamburg for the 22 November 20:00 CET cut-off.\n\nOnce EXW is confirmed, we will release the goods for the next available flight, with Frankfurt arrival typically about two days later. The applicable term is EXW Boise under §4.1, so there is no delivered price from Boise; logistics can provide freight charges if needed.\n\nBest regards,\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:24:16+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-C86B928B4D] Launch stock and delivery confirmation",
+      "message_id": "<179528545661.94817.5820700281176871958@gmail.com>",
+      "chase_id": "B32FD8BFBF",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nThank you for your reply.\n\nWe understand the full quantity is not possible in time. Could you tell us how many units you could ship before 2026-11-22 20:00 UTC as a part shipment, and the earliest date for the rest? To arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight.\n\nThis is a request for information only, not an order.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:27:50+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-C86B928B4D] Launch stock and delivery confirmation",
+      "message_id": "<010201a1ff5d588f-f27b9d28-a050-4982-8e2c-66e619409dcd-000000@eu-west-1.amazonses.com>",
+      "chase_id": "B32FD8BFBF",
+      "in_reply_to": "<179528545661.94817.5820700281176871958@gmail.com>",
+      "references": [
+        "<179528545661.94817.5820700281176871958@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Soony Launch Team,\n\nAll 36,000 CMP-GAM-001 cards on PO 4500318769 are packed together at our Boise dock. We cannot commit any quantity to shipment before 22 November 20:00 UTC unless Soony confirms EXW Boise in writing or nominates a forwarder, and we do not currently have a confirmed collection slot.\n\nThere is no later balance from this packed quantity; all 36,000 units can be released together once the EXW point is resolved. I’ll need to check with our warehouse for the ready-for-pickup time, pickup address, pallet/carton count, and gross weight.\n\nBest regards,\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    }
+  ]
+}

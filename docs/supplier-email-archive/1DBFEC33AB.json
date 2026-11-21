@@ -1,0 +1,168 @@
+{
+  "thread_id": "1DBFEC33AB",
+  "supplier_id": "SUP-0010",
+  "supplier": "Hwaseong Memory",
+  "material": "CMP-GAM-001",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T17:30:43+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "sy.kim.hwaseong-memory@suppliers.juliansibbing.de",
+      "subject": "[SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<179528224352.84625.10921769578170560089@gmail.com>",
+      "chase_id": "1DBFEC33AB",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Seo-yeon Kim님, 안녕하세요.\n\n운송 건 SHP-2026-04311(부품 CMP-GAM-001 28,000개)는 함부르크 출시 마감(22 Nov 20:00 CET)에 꼭 필요한 물량입니다. 도착 전에 통관을 마칠 수 있도록 오늘 중으로 SHP-2026-04311의 상업송장, 포장명세서 및 항공화물운송장을 보내 주시고, 항공편 번호와 예상 도착 시간을 확인해 주시기 바랍니다. 이 메일은 정보 요청이며 발주가 아닙니다.\n\nSoony 출시 담당팀\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T17:34:39+00:00",
+      "from": "Seo-yeon Kim <sy.kim.hwaseong-memory@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<010201a1ff2ca7ad-ac7ebf9d-775f-4a2f-a276-53aaba4515f6-000000@eu-west-1.amazonses.com>",
+      "chase_id": "1DBFEC33AB",
+      "in_reply_to": "<179528224352.84625.10921769578170560089@gmail.com>",
+      "references": [
+        "<179528224352.84625.10921769578170560089@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "안녕하세요.\n\nSHP-2026-04311은 항공화물운송장 020-48113256의 CMP-GAM-001 28,000장 물량으로 확인됩니다. 상업송장, 포장명세서 및 항공화물운송장 사본은 물류팀에 요청하여 가능한 한 신속히 전달드리겠습니다. 항공편 번호와 정확한 도착 예정 시각은 항공사에 확인 중이며, 확인되는 대로 안내드리겠습니다.\n\n감사합니다.\nSeo-yeon Kim\nHwaseong Memory Co., Ltd."
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T17:35:29+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "sy.kim.hwaseong-memory@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<179528252921.84972.7623914834967739156@gmail.com>",
+      "chase_id": "6C4F42CB04",
+      "in_reply_to": "<010201a1ff2ca7ad-ac7ebf9d-775f-4a2f-a276-53aaba4515f6-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528224352.84625.10921769578170560089@gmail.com>",
+        "<010201a1ff2ca7ad-ac7ebf9d-775f-4a2f-a276-53aaba4515f6-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "안녕하세요.\n\nSHP-2026-04311 운송 건을 확인 중입니다. 필요한 정보: 시간대가 표시된 도착 예정 시각. 확인된 내용만 알려 주십시오. 이 메일은 정보 확인 요청입니다.\n\nSoony 출시 담당팀\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T17:39:02+00:00",
+      "from": "Seo-yeon Kim <sy.kim.hwaseong-memory@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<010201a1ff30ac10-322fd5bf-000b-46d8-9635-fe88bb2e9ee3-000000@eu-west-1.amazonses.com>",
+      "chase_id": "6C4F42CB04",
+      "in_reply_to": "<179528252921.84972.7623914834967739156@gmail.com>",
+      "references": [
+        "<179528224352.84625.10921769578170560089@gmail.com>",
+        "<010201a1ff2ca7ad-ac7ebf9d-775f-4a2f-a276-53aaba4515f6-000000@eu-west-1.amazonses.com>",
+        "<179528252921.84972.7623914834967739156@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "안녕하세요.\n\n현재 확인된 내용은 항공화물운송장 020-48113256의 28,000장이 오늘 21 November ICN–FRA 구간으로 출발했다는 점입니다. 시간대가 포함된 정확한 FRA 도착 예정 시각은 아직 항공사 확인을 기다리고 있어, 확인되는 정보만으로는 안내드릴 수 없습니다.\n\n감사합니다.\nSeo-yeon Kim\nHwaseong Memory Co., Ltd."
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:25:23+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "sy.kim.hwaseong-memory@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<179528552368.95969.9996053489428015322@gmail.com>",
+      "chase_id": "219993CB24",
+      "in_reply_to": "<010201a1ff30ac10-322fd5bf-000b-46d8-9635-fe88bb2e9ee3-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528252921.84972.7623914834967739156@gmail.com>",
+        "<010201a1ff30ac10-322fd5bf-000b-46d8-9635-fe88bb2e9ee3-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "안녕하세요.\n\nSHP-2026-04311 / AWB 020-48113256의 28,000장 출발 확인 감사합니다. 항공사 ETA를 기다리는 동안 확보된 상업송장, 포장명세서, 항공화물운송장 사본을 먼저 보내 주실 수 있나요? 확인된 항공편 번호, 시간대가 포함된 프랑크푸르트 도착 예정 시각, 가장 빠른 함부르크 인계 시간, 그리고 이 화물의 Alpen Air Cargo 담당 연락처를 부탁드립니다. ETA가 아직 미정이면 다음 확인 가능 시간을 알려 주십시오.\n\n별도로 CMP-GAM-001의 미출하 잔량 또는 유럽 내 가용 재고 중 최소 6,800장을 11월 22일 08:00 CET까지 DC-HAM에서 포장에 사용할 수 있는 방법이 있나요? 가능 수량, 보관 장소, 출고 조건, 시간대가 포함된 가장 빠른 인계 시간과 운송 견적을 알려 주십시오. 불가능하면 가장 빠른 현실적인 일정을 부탁드립니다.\n\n이 메일은 정보와 견적 요청이며 발주, 운송 예약 또는 조건 수락이 아닙니다.\n\nSoony 출시 담당팀\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:29:23+00:00",
+      "from": "Seo-yeon Kim <sy.kim.hwaseong-memory@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<010201a1ff5ec5e0-eb108aab-40ec-4d38-b66c-7788b8f6ab39-000000@eu-west-1.amazonses.com>",
+      "chase_id": "219993CB24",
+      "in_reply_to": "<179528552368.95969.9996053489428015322@gmail.com>",
+      "references": [
+        "<179528252921.84972.7623914834967739156@gmail.com>",
+        "<010201a1ff30ac10-322fd5bf-000b-46d8-9635-fe88bb2e9ee3-000000@eu-west-1.amazonses.com>",
+        "<179528552368.95969.9996053489428015322@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "안녕하세요.\n\nThe commercial invoice, packing list and AWB copy are still being collected from our logistics team; I will forward them once available. We do not yet have a confirmed flight number, time-zone-specific FRA ETA, Hamburg handover time, or Alpen Air Cargo contact from the carrier, and I cannot provide a next confirmation time at present.\n\nFor an additional 6,800 CMP-GAM-001 cards available at DC-HAM by 22 November 08:00 CET, I cannot confirm any available European stock or make a transport quotation at this time. The remaining 20,000 cards under AWB 020-48113256 are scheduled for the next available flight on 23 November and are expected to reach Hamburg on 24 November.\n\n감사합니다.\nSeo-yeon Kim\nHwaseong Memory Co., Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:38:07+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "sy.kim.hwaseong-memory@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<179528628736.3692.8539983946532177531@gmail.com>",
+      "chase_id": "22C4C62CBF",
+      "in_reply_to": "<010201a1ff5ec5e0-eb108aab-40ec-4d38-b66c-7788b8f6ab39-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528552368.95969.9996053489428015322@gmail.com>",
+        "<010201a1ff5ec5e0-eb108aab-40ec-4d38-b66c-7788b8f6ab39-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "안녕하세요.\n\n항공 잔량의 현재 일정을 알려 주셔서 감사합니다. 별도 해상 운송 SHP-2026-04284 / 컨테이너 NHMU3390870의 CMP-GAM-001 재고를 확인 부탁드립니다. 이 화물의 현재 위치와 다음 기항지, 정확한 도착 예정 시각(시간대 포함), 통관 및 출고 상태를 알려 주십시오. 이미 유럽 항만 또는 창고에 도착한 물량이 있다면, 최소 6,800장을 분할하여 11월 22일 20:00 CET 이전에 함부르크 DC의 포장 라인에 투입할 수 있는 실제 인계 시각과 조건을 알려 주십시오. 유럽에서 출시 전에 수령할 수 없다면 가능한 가장 빠른 날짜를 확인 부탁드립니다.\n\n이 메일은 정보와 견적 요청이며 발주, 조건 수락 또는 운송 예약이 아닙니다.\n\nSoony 출시 담당팀\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:40:30+00:00",
+      "from": "Seo-yeon Kim <sy.kim.hwaseong-memory@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<010201a1ff68f23b-6f637aa8-34dd-47c1-af73-163ec2f93004-000000@eu-west-1.amazonses.com>",
+      "chase_id": "22C4C62CBF",
+      "in_reply_to": "<179528628736.3692.8539983946532177531@gmail.com>",
+      "references": [
+        "<179528552368.95969.9996053489428015322@gmail.com>",
+        "<010201a1ff5ec5e0-eb108aab-40ec-4d38-b66c-7788b8f6ab39-000000@eu-west-1.amazonses.com>",
+        "<179528628736.3692.8539983946532177531@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "안녕하세요.\n\n컨테이너 NHMU3390870은 PO 4500318733의 CMP-GAM-001 물량으로, 현재 당사 기록상 부산 출항 후 함부르크 도착 예정일은 11월 24일입니다. 현재 위치와 다음 기항지는 선사가 확인할 사항이며, 시간대가 포함된 정확한 도착 시각은 아직 확인되지 않았습니다.\n\n통관 및 출고 상태도 당사에서 확인할 수 없어 선사 및 현지 물류 측에 확인이 필요합니다. 따라서 11월 22일 20:00 CET 이전 DC-HAM 포장 라인 인계나 6,800장 분할 인계는 현재 기준으로 확약드릴 수 없습니다. 현 기록상 가장 이른 현실적인 일정은 함부르크 도착 예정일인 11월 24일이며, 이후 인계 시각은 통관 및 현지 운송 확인 후 안내드릴 수 있습니다.\n\n감사합니다.\nSeo-yeon Kim\nHwaseong Memory Co., Ltd."
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:58:10+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "sy.kim.hwaseong-memory@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<soony-sunday-recovery-hwaseong-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": null,
+      "in_reply_to": "<010201a1ff5ec5e0-eb108aab-40ec-4d38-b66c-7788b8f6ab39-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528552368.95969.9996053489428015322@gmail.com>",
+        "<010201a1ff5ec5e0-eb108aab-40ec-4d38-b66c-7788b8f6ab39-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Seo-yeon Kim 님, 안녕하세요.\n\n이미 출발한 28,000장과 별도로, 11월 23일 항공편으로 예정된 잔량 20,000장 중 6,800장의 일정을 앞당길 수 있는지 문의드립니다. 정규편 이외에 귀사 물류팀을 통해 다른 항공사의 긴급 화물편, 유럽 내 다른 공항 경유편과 전용 차량, 적재 가능 중량에 맞춘 분할 운송도 검토해 주시겠습니까? 대상은 GH6가 기록되고 품질 출하 승인이 된 CMP-GAM-001입니다.\n\n11월 22일 일요일 함부르크 DC-HAM 포장 라인 인계가 기준입니다. 오전 인계가 가장 좋으며, 추가 6,800장 전체는 늦어도 18:30 CET까지 필요합니다. 더 이른 부분 인계도 가능합니다. 확약 가능한 각 분할 수량, 실제 화물 준비 시각, 운송편과 화물 마감, 통관 및 함부르크까지의 운송, 현지 시각과 시간대가 표시된 인계 시각, 총액과 견적 유효 시각을 부탁드립니다. 가능하다면 귀사 물류팀에서 운송사의 서면 회신을 전달해 주십시오. 이미 출발한 28,000장의 독일 내 인계와 통관서류에 대해서도 새로 확인된 내용만 알려 주시면 감사하겠습니다.\n\n가능한 긴급편이 없다면 추가로 확약할 수 있는 수량과 가장 빠른 실제 인계 일정을 알려 주십시오. 본 메일은 견적 요청입니다. 정식 발주 또는 운송 예약 전에는 비용을 발생시키지 말아 주십시오.\n\nSoony 출시팀\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:00:44+00:00",
+      "from": "Seo-yeon Kim <sy.kim.hwaseong-memory@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-1DBFEC33AB] SHP-2026-04311 통관 서류 요청",
+      "message_id": "<010201a1ff7b7a9a-9ce6587f-8044-4f67-a43f-ee585b920a8e-000000@eu-west-1.amazonses.com>",
+      "chase_id": null,
+      "in_reply_to": "<soony-sunday-recovery-hwaseong-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179528552368.95969.9996053489428015322@gmail.com>",
+        "<010201a1ff5ec5e0-eb108aab-40ec-4d38-b66c-7788b8f6ab39-000000@eu-west-1.amazonses.com>",
+        "<soony-sunday-recovery-hwaseong-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "안녕하세요.\n\nWe have checked the available options for the remaining 20,000 CMP-GAM-001 cards. At present, we cannot confirm an earlier flight, alternative European airport routing, or a partial emergency movement that would allow any quantity to reach DC-HAM on 22 November; no costs or transport bookings will be incurred without Soony’s formal instruction.\n\nThe 20,000 cards remain planned for the next available flight on Monday, 23 November, with arrival in Hamburg expected on Tuesday, 24 November. We do not have a confirmed carrier quotation, flight details, or local handover time for an alternative movement.\n\nFor the 28,000 cards already flown under AWB 020-48113256, there is no new confirmed information on German customs clearance, local delivery, or the requested documents beyond the information already provided. We will update you when the carrier or our logistics team provides confirmed details.\n\n감사합니다.\nSeo-yeon Kim\nHwaseong Memory Co., Ltd.\n"
+    }
+  ]
+}

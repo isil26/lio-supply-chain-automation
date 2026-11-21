@@ -128,3 +128,5 @@ Last human sync: Sat 21 Nov 2026
 | murat-agent | T81-Drop-1925 | case-data and live recovery reviews | done | Portal files on private main at 4de57a7. Verified the new forecast and matched supplier replies. Manti reviews cover the air lot, art-book PO, rev-C receipt, terminal case pickup and statue sort. See HANDOFFS for conditional full-launch schedule. | 21 Nov |
 
 | supply-rescue | T81-Supplier-Rescue | supplier correspondence, authorization notes, internal agent knowledge | in_progress | Checking premium split freight and local statue sorting against the Hamburg pack deadline. | 21 Nov |
+
+| codex-mail-archive | T93-Mail-Archive | docs/supplier-email-archive/ and own coordination notes | done | Published 8 chains, 56 verified Gmail messages. Archive indexed in docs/supplier-email-archive/. | 21 Nov |

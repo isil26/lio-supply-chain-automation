@@ -1,0 +1,18 @@
+# Supplier Chaser email archive
+
+Team Gmail snapshot taken on **21 Nov 2026 at 20:02:11 CET**. It contains **8 email chains and 56 messages** across 6 suppliers (29 sent messages and 27 supplier replies).
+
+Each JSON file contains the original-language bodies, sender and recipient, email timestamps, Message-IDs and reply headers. Files group messages by the `[SOONY-…]` tag in the email subject. The `chase_id` field links a message to its internal Supplier Chaser record when available. Use `in_reply_to` and `references` to trace replies within a chain.
+
+| Component | Supplier | Email chain | Messages | Latest email |
+| --- | --- | --- | ---: | --- |
+| Game cards (`CMP-GAM-001`) | Hwaseong Memory (`SUP-0010`) | [1DBFEC33AB](1DBFEC33AB.json) | 10 | 21 Nov 20:00:44 CET |
+| Game cards (`CMP-GAM-001`) | Boise Semi (`SUP-0011`) | [66F6864D51](66F6864D51.json) | 5 | 21 Nov 20:01:05 CET |
+| Game cards (`CMP-GAM-001`) | Boise Semi (`SUP-0011`) | [C86B928B4D](C86B928B4D.json) | 4 | 21 Nov 19:27:50 CET |
+| Sleeves (`CMP-GAM-004`) | Karton Nowak (`SUP-0028`) | [06E83D9DBA](06E83D9DBA.json) | 8 | 21 Nov 19:53:58 CET |
+| Sleeves (`CMP-GAM-004`) | Guangzhou PackRight (`SUP-0029`) | [C8BDCDDABE](C8BDCDDABE.json) | 4 | 21 Nov 19:43:59 CET |
+| Art books (`CMP-GAM-008`) | Karton Nowak (`SUP-0028`) | [6F967080CF](6F967080CF.json) | 8 | 21 Nov 19:50:44 CET |
+| Statues (`CMP-GAM-010`) | Pune Diecast Works (`SUP-0018`) | [153839FA41](153839FA41.json) | 11 | 21 Nov 20:01:03 CET |
+| Statues (`CMP-GAM-010`) | Dongguan Precision Housings (`SUP-0019`) | [9D6AD72E97](9D6AD72E97.json) | 6 | 21 Nov 20:01:59 CET |
+
+For newer messages, use the [live supplier mailbox](https://soony-manti-live.vercel.app/?mail=1).

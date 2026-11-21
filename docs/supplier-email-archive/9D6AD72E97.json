@@ -1,0 +1,97 @@
+{
+  "thread_id": "9D6AD72E97",
+  "supplier_id": "SUP-0019",
+  "supplier": "Dongguan Precision Housings",
+  "material": "CMP-GAM-010",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T17:30:50+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "chen.jie.dg-precision@suppliers.juliansibbing.de",
+      "subject": "[SOONY-9D6AD72E97] 上市库存和交付时间确认",
+      "message_id": "<179528225065.84625.6546587548531426866@gmail.com>",
+      "chase_id": "9D6AD72E97",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "Chen Jie，您好。\n\n请确认在汉堡交付截止时间（22 Nov 20:00 CET）之前，能否提供 3,400 件 CMP-GAM-010。请告知可供数量、最早提货时间、运单号和适用的到货报价。本邮件仅为询价和信息确认。\n\nSoony 上市团队\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T17:33:22+00:00",
+      "from": "Chen Jie <chen.jie.dg-precision@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-9D6AD72E97] 上市库存和交付时间确认",
+      "message_id": "<010201a1ff2b7e06-6c4a35cf-d0c1-4639-a04c-6a54eb0e8591-000000@eu-west-1.amazonses.com>",
+      "chase_id": "9D6AD72E97",
+      "in_reply_to": "<179528225065.84625.6546587548531426866@gmail.com>",
+      "references": [
+        "<179528225065.84625.6546587548531426866@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n根据我们的记录，无法在11月22日20:00 CET截止时间前在汉堡提供3,400件CMP-GAM-010。最近一票相关海运为NHSU6120458，包含PO 4500318719的10,000件CMP-GAM-010，预计于11月27日抵达汉堡。\n\n我们需要向物流团队确认抵港后的最早提货安排。该业务条款为FOB盐田，因此我们无法提供到汉堡的到货报价；PO 4500318719的产品单价为88.38 CNY/件。\n\n您好，\n\nAccording to our records, we cannot make 3,400 units of CMP-GAM-010 available in Hamburg before the deadline of 20:00 CET on 22 November. The nearest relevant sea shipment is NHSU6120458, containing 10,000 units of CMP-GAM-010 for PO 4500318719, with ETA Hamburg on 27 November.\n\nWe would need to check with the logistics team regarding the earliest pickup arrangement after arrival. The business term is FOB Yantian, so we cannot provide a delivered-arrival quotation to Hamburg; the unit price on PO 4500318719 is CNY 88.38 per unit.\n\nBest regards,\n\nChen Jie\nDongguan Precision Housings Co., Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:24:15+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "chen.jie.dg-precision@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-9D6AD72E97] 上市库存和交付时间确认",
+      "message_id": "<179528545507.94817.16555413740681530566@gmail.com>",
+      "chase_id": "671A4673FC",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n感谢您的回复。\n\n我们理解无法按时交付全部数量。请告知在 2026-11-22 20:00 UTC 前可以分批发运多少件，以及其余数量的最早日期。 为安排提货，请提供可提货日期和时间、提货地址、箱数或托盘数以及毛重。\n\n本邮件仅为信息询问，并非订单。\n\nSoony 上市团队\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:26:49+00:00",
+      "from": "Chen Jie <chen.jie.dg-precision@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-9D6AD72E97] 上市库存和交付时间确认",
+      "message_id": "<010201a1ff5c6d8a-8b5f357c-cd0a-4bce-9868-ecbb3ef2af09-000000@eu-west-1.amazonses.com>",
+      "chase_id": "671A4673FC",
+      "in_reply_to": "<179528545507.94817.16555413740681530566@gmail.com>",
+      "references": [
+        "<179528545507.94817.16555413740681530566@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n截至2026年11月22日20:00 UTC，我们无法分批发运或在汉堡提供CMP-GAM-010。其余10,000件对应PO 4500318719，海运提单号为NHSU6120458，预计最早于11月27日抵达汉堡。\n\n可提货的具体日期和时间、提货地址、箱数/托盘数及毛重需由我们的物流团队确认；目前我手上没有这些装运明细。\n\nHello,\n\nBy 20:00 UTC on 22 November 2026, we cannot dispatch any partial quantity or make CMP-GAM-010 available in Hamburg. The remaining 10,000 units are for PO 4500318719 under sea shipment reference NHSU6120458, with the earliest expected Hamburg arrival on 27 November.\n\nThe specific pickup date and time, pickup address, carton/pallet count and gross weight need to be confirmed by our logistics team; I do not have these shipping details at hand.\n\nBest regards,\n\nChen Jie\nDongguan Precision Housings Co., Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:58:22+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "chen.jie.dg-precision@suppliers.juliansibbing.de",
+      "subject": "[SOONY-9D6AD72E97] 上市库存和交付时间确认",
+      "message_id": "<soony-sunday-recovery-dongguan-20261121@manti.starthackathon.gmail.com>",
+      "chase_id": "9D6AD72E97",
+      "in_reply_to": "<010201a1ff2b7e06-6c4a35cf-d0c1-4639-a04c-6a54eb0e8591-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528225065.84625.6546587548531426866@gmail.com>",
+        "<010201a1ff2b7e06-6c4a35cf-d0c1-4639-a04c-6a54eb0e8591-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "您好：\n\n感谢确认海运货物 NHSU6120458 预计 11 月 27 日到港。对于周日的交付，请单独核查在途海运以外的两种办法：贵司在欧洲的寄售库存、售后备件或经授权可重新分配的同款合格成品，以及工厂已完工并通过检验、可由贵司安排紧急空运的现货。我们需要 CMP-GAM-010 正式量产版，可分批，替代款或样品无法用于装箱。\n\n在汉堡 DC-HAM 包装线上，最迟须在 11 月 22 日星期日 16:00 CET 前移交合计 3,400 件，越早分批交付越好。烦请告知可书面确认的数量、所在地点、批次和合格放行记录、最早提货时间、承运商可用舱位或车辆、清关和到线时间（含时区）、含运费的报价及有效期。若两条路径均无法落实，请直接说明可承诺的数量和最早实际交付时间。\n\n这只是询价。在收到 Soony 书面订单前，请勿订舱、调货或产生费用。\n\nSoony 上市团队\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T19:01:59+00:00",
+      "from": "Chen Jie <chen.jie.dg-precision@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-9D6AD72E97] 上市库存和交付时间确认",
+      "message_id": "<010201a1ff7c9dd2-5ca46735-22c4-43a5-8881-c0ecf4382739-000000@eu-west-1.amazonses.com>",
+      "chase_id": null,
+      "in_reply_to": "<soony-sunday-recovery-dongguan-20261121@manti.starthackathon.gmail.com>",
+      "references": [
+        "<179528225065.84625.6546587548531426866@gmail.com>",
+        "<010201a1ff2b7e06-6c4a35cf-d0c1-4639-a04c-6a54eb0e8591-000000@eu-west-1.amazonses.com>",
+        "<soony-sunday-recovery-dongguan-20261121@manti.starthackathon.gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n我们目前无法书面确认欧洲寄售库存、售后备件或可重新分配的合格成品，也无法确认工厂有已完成检验、可安排紧急空运的CMP-GAM-010现货。有关批次放行、空运舱位、清关、车辆、到线时间及含运费报价，我需要向工厂、物流及相关内部团队核查后才能回复。\n\n因此，目前我们不能承诺在11月22日16:00 CET前向DC-HAM交付任何数量。现有可确认的数量为PO 4500318719项下10,000件，正在海运NHSU6120458上，预计11月27日抵达汉堡；具体到DC-HAM的实际交付时间须由承运商及后续安排确认。我们理解这只是询价，在收到Soony正式书面订单前，不会订舱、调货或产生相关费用。\n\nHello,\n\nAt present, we cannot provide written confirmation of any European consignment stock, after-sales spare parts, or qualified finished goods available for authorised reallocation. We also cannot confirm that inspected CMP-GAM-010 stock is available at the factory for emergency air freight. I need to check internally with our factory, logistics and relevant teams regarding batch release, airfreight space, customs clearance, trucking, line-delivery timing and any freight-inclusive quotation.\n\nTherefore, we cannot currently commit to delivering any quantity to DC-HAM by 16:00 CET on 22 November. The quantity we can confirm is 10,000 units under PO 4500318719, on sea shipment NHSU6120458, with ETA Hamburg of 27 November; the actual delivery time to DC-HAM remains subject to carrier and onward-arrangement confirmation. We understand this is an inquiry only and will not book freight, reallocate goods or incur related costs before receiving a formal written order from Soony.\n\nBest regards,\n\nChen Jie\nDongguan Precision Housings Co., Ltd.\n"
+    }
+  ]
+}

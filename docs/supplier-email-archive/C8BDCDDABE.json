@@ -1,0 +1,64 @@
+{
+  "thread_id": "C8BDCDDABE",
+  "supplier_id": "SUP-0029",
+  "supplier": "Guangzhou PackRight",
+  "material": "CMP-GAM-004",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:38:06+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "lin.hui.packright@suppliers.juliansibbing.de",
+      "subject": "[SOONY-C8BDCDDABE] CMP-GAM-004 C版包装套紧急库存确认",
+      "message_id": "<179528628631.3692.11566283101607704131@gmail.com>",
+      "chase_id": "C8BDCDDABE",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n按照ECN-2026-118，汉堡标准版包装只能使用已获质量放行的CMP-GAM-004 C版包装套。请确认是否有已印制并获质量放行的C版现货，尤其是已在欧洲仓库的货物。我们正查询至少6,000件能否在11月22日20:00 CET前送达DC-HAM并及时投入包装。请提供货物批次、版本证明、可用数量、所在地点、最早提货或交付时间及其时区，以及适用的到货报价。\n\n如果只有B版或没有可及时到货的C版，请告知最早能提供C版的时间。此邮件仅询问可用库存和报价，并非订单、运输预订或版本豁免。\n\nSoony 上市团队\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:40:53+00:00",
+      "from": "Lin Hui <lin.hui.packright@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-C8BDCDDABE] CMP-GAM-004 C版包装套紧急库存确认",
+      "message_id": "<010201a1ff694bdd-98e433ef-b5e5-4b4c-864b-7adde21ba48e-000000@eu-west-1.amazonses.com>",
+      "chase_id": "C8BDCDDABE",
+      "in_reply_to": "<179528628631.3692.11566283101607704131@gmail.com>",
+      "references": [
+        "<179528628631.3692.11566283101607704131@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n我们目前没有已印制并获质量放行的 PR-SL-0604（CMP-GAM-004）C版现货，也没有位于欧洲仓库、可在11月22日20:00 CET前交付至 DC-HAM 的C版货物。我们的记录显示，现有生产及已发运货物均按 Soony 留档的 artwork rev. B 印制；其中集装箱 NHMU7718206 内有150,000件B版包装套，预计于12月3日到达汉堡。\n\n请向我们提供C版 artwork文件及Soony的正式变更通知，以便我们安排工厂确认。C版需按正常交期生产，无法在年底前交付；适用报价也需在收到正式文件后由我们内部核算确认。\n\nDear Soony Launch Team,\n\nWe currently have no printed and quality-released PR-SL-0604 (CMP-GAM-004) sleeves in revision C, nor any revision C stock in a European warehouse that could be delivered to DC-HAM by 20:00 CET on 22 November. Our records show that current production and shipped goods were printed to the artwork rev. B held on file by Soony; this includes 150,000 revision B sleeves in container NHMU7718206, with ETA Hamburg on 3 December.\n\nPlease provide the revision C artwork file and Soony’s formal change notice so that we can arrange the plant review. Revision C requires normal production lead time and cannot be delivered before year-end; the applicable quotation must also be checked internally after receipt of the formal documents.\n\nBest regards,\n\nLin Hui\nGuangzhou PackRight Packaging Co., Ltd.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-21T18:41:45+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "lin.hui.packright@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-C8BDCDDABE] CMP-GAM-004 C版包装套紧急库存确认",
+      "message_id": "<179528650546.4811.5887608728460650025@gmail.com>",
+      "chase_id": "F98D6EF7DF",
+      "in_reply_to": null,
+      "references": [],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n感谢您的回复。\n\n我们理解无法按时交付全部数量。请告知在 22 Nov 20:00 CET 前可以分批发运多少件，以及其余数量的最早日期。\n\n本邮件仅为信息询问，并非订单。\n\nSoony 上市团队\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-21T18:43:59+00:00",
+      "from": "Lin Hui <lin.hui.packright@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-C8BDCDDABE] CMP-GAM-004 C版包装套紧急库存确认",
+      "message_id": "<010201a1ff6c2446-a9fead88-4787-4e8e-a360-5dec505d2766-000000@eu-west-1.amazonses.com>",
+      "chase_id": "F98D6EF7DF",
+      "in_reply_to": "<179528650546.4811.5887608728460650025@gmail.com>",
+      "references": [
+        "<179528650546.4811.5887608728460650025@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "您好，\n\n就C版 PR-SL-0604（CMP-GAM-004）而言，在11月22日20:00 CET前可分批发运的数量为零。我们尚未收到C版文件及正式变更通知，因此无法确认其余数量的具体最早日期；在收到并确认文件后，C版仍需正常生产交期，无法在年底前交付。\n\nDear Soony Launch Team,\n\nFor revision C PR-SL-0604 (CMP-GAM-004), the quantity available for partial shipment by 20:00 CET on 22 November is zero. We have not yet received the revision C file and formal change notice, so we cannot confirm a specific earliest date for the remaining quantity; once the documents are received and confirmed, revision C will still require normal production lead time and cannot be delivered before year-end.\n\nBest regards,\n\nLin Hui\nGuangzhou PackRight Packaging Co., Ltd.\n"
+    }
+  ]
+}
