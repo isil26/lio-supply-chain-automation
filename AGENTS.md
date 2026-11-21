@@ -12,6 +12,9 @@ Humans are on the team too: see `coord/TEAM.md` (roles, branches, checkpoints). 
 
 Looking for work? `coord/OPEN_TASKS.md` lists unclaimed tasks (P1/P2/P3) any person's agent can take.
 
+## Publish everything (mandatory)
+The team only knows what is in the repo. Commit and push every meaningful result, decision, finding, schedule change and status change to `origin/main` as soon as it exists (small commits, `git pull --rebase --autostash origin main` first). Dates and bookings go in `coord/SCHEDULE.md`. Never keep knowledge only in a terminal or chat.
+
 ## Agent names (mandatory)
 Every agent has a unique name and uses it everywhere: the Owner/Agent column in `coord/STATUS.md` and `coord/TASKS.md`, the `FROM`/`TO` in `coord/INBOX.md`, and the git author name of its commits (`git -c user.name="<name>" ...`, message ends `[<name>]`).
 - Claude (lead) = **nick**.
