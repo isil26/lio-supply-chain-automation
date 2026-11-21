@@ -125,7 +125,10 @@ export type SupplierAction = {
   transport?: { mode: string; status: string; messageId: string; time: string };
 };
 
-export type DecisionEffect = { at: string; by?: string | null; sent: boolean; lines: string[]; threadId?: string | null };
+export type MailView = { to?: string | null; subject?: string | null; body?: string | null; status?: string };
+export type DecisionEffect = { at: string; by?: string | null; sent: boolean; lines: string[]; threadId?: string | null; email?: MailView | null };
+/** The email an Approve click causes (GET /api/decisions/<id>/preview, src/chaser/option_mail.py). */
+export type MailPreview = MailView & { mode: "send" | "conversation" | "none"; supplier?: string; note: string; sentAt?: string | null };
 
 export type Approval = {
   id: string;
@@ -241,6 +244,7 @@ export interface DashboardApi {
   getDashboard(): Promise<DashboardData>;
   approveDecision(id: string, by?: string): Promise<{ ok: boolean; status?: string; effect?: DecisionEffect }>;
   reviewDecision(id: string): Promise<{ ok: boolean; status?: string }>;
+  previewDecision?(id: string): Promise<MailPreview | null>;
   sendThread(id: string): Promise<{ ok: boolean }>;
   approveReply(id: number): Promise<{ ok: boolean }>;
   replyThread(id: string, text?: string, scenario?: "on-time" | "delayed" | "complete"): Promise<{ ok: boolean }>;
@@ -287,6 +291,9 @@ class HttpDashboardApi implements DashboardApi {
   }
   reviewDecision(id: string) {
     return json<{ ok: boolean; status?: string }>(`/api/decisions/${id}/review`, { method: "POST", body: "{}" });
+  }
+  previewDecision(id: string) {
+    return json<MailPreview>(`/api/decisions/${id}/preview`);
   }
   sendThread(id: string) {
     return json<{ ok: boolean }>(`/api/threads/${id}/send`, { method: "POST", body: '{"confirm":true}' });

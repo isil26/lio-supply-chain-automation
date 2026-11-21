@@ -718,6 +718,14 @@ def handler(loop):
                             "backendCommit": os.getenv("SOONY_RELEASE_SHA"),
                         })
                         return self.out(health)
+                    preview = re.fullmatch(r"/api/decisions/([a-f0-9]+)/preview", path)
+                    if preview:  # the email an Approve click would send (shown in "Are you sure?")
+                        from src.chaser import option_mail
+                        decision = next((item for item in get_state(con, "options", []) if item["id"] == preview[1]), None)
+                        if not decision:
+                            return self.out({"error": "Decision changed. Refresh."}, 404)
+                        chaser.schema(con)
+                        return self.out(option_mail.preview(con, decision))
                     if path == "/api/actions":
                         value = dashboard(con, include_action_history=True)
                         return self.out({"actions": value["actions"] if value else []})
@@ -886,9 +894,20 @@ def handler(loop):
                                        else f"{status}. Purchasing remains subject to its approval chain.")
                             chaser.activity(con, "Procurement", f'{decision["title"]}: {message}')
                         by = body.get("by")[:80].strip() if isinstance(body.get("by"), str) else None
+                        delivery = mail = None
+                        if status == "approved":  # Gülşah: Approve sends the supplier email (src/chaser/option_mail.py)
+                            from src.chaser import option_mail
+                            try:
+                                mail = option_mail.preview(con, decision)
+                                sync = get_state(con, "sync", {}) or {}
+                                delivery = option_mail.send(con, decision, by or "the team", mail=mail,
+                                                            demo=loop.args.demo or sync.get("mailMode") != "live")
+                            except Exception as exc:  # the approval stands; say why no email went out
+                                delivery = {"status": "not sent", "note": f"Email not sent ({exc.__class__.__name__}: {exc})"}
                         try:
                             queue = (dashboard(con, include_action_history=True) or {}).get("actions", [])
-                            effect = decision_effects.record(con, decision, status, by or None, queue)
+                            effect = decision_effects.record(con, decision, status, by or None, queue,
+                                                             delivery=delivery, mail=mail)
                         except Exception as exc:  # never fail an approval because the summary could not be built
                             effect = {"lines": [f"{status.capitalize()}."], "error": exc.__class__.__name__}
                         return self.out({"ok": True, "approvalId": match[1], "status": status, "effect": effect})
