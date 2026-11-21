@@ -32,7 +32,7 @@ export function AgentTrace({ onEvidence, simulated }: Props) {
       setSelected((current) => current || run?.id || "");
       if (run) {
         const nextTrace = await dashboardApi.getAgentTrace(run.id);
-        setTrace(nextTrace.steps.length ? nextTrace : mockTrace as AgentTraceData);
+        setTrace(nextTrace.steps?.length ? nextTrace : mockTrace as AgentTraceData);
       } else setTrace(mockTrace as AgentTraceData);
       setError("");
     } catch (err) {
@@ -112,7 +112,8 @@ export function AgentTrace({ onEvidence, simulated }: Props) {
   const activeIndex = shownSteps.length ? Math.max(0, shownSteps.length - 1) : -1;
   const activeStep = activeIndex >= 0 ? shownSteps[activeIndex] : undefined;
   const activeRole = activeStep?.agent || "";
-  const triageDecision = (currentRun?.event || "art_book_shortfall").replace(/_/g, " ");
+  const eventName = (event: unknown) => typeof event === "string" ? event : (event as { kind?: string } | undefined)?.kind ?? "";
+  const triageDecision = (eventName(currentRun?.event) || "art_book_shortfall").replace(/_/g, " ");
 
   return <section className={`agent-trace-panel ${present ? "present" : ""}`} aria-labelledby="agent-team-title">
     <div className="agent-trace-heading">
@@ -129,7 +130,7 @@ export function AgentTrace({ onEvidence, simulated }: Props) {
       {replay && <label className="agent-speed">Speed
         <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select>
       </label>}
-      {runs.length > 1 && <label className="agent-trace-button">Run <select value={selected} onChange={(event) => setSelected(event.target.value)}>{runs.map((item) => <option key={item.id} value={item.id}>{item.event}</option>)}</select></label>}
+      {runs.length > 1 && <label className="agent-trace-button">Run <select value={selected} onChange={(event) => setSelected(event.target.value)}>{runs.map((item) => <option key={item.id} value={item.id}>{eventName(item.event) || item.id}</option>)}</select></label>}
     </div>}
     {(recorded || replay) && <p className="agent-trace-recorded">{replay ? "Recorded live agent run · redacted replay" : "Recorded live agent run"} · gpt-4.1-mini · {money(currentRun?.cost ?? totalCost)}</p>}
     {error && <p className="agent-trace-recorded" role="status">{error}</p>}

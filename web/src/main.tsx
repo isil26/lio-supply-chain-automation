@@ -13,6 +13,7 @@ import {
 } from "./api";
 import { AgentTrace } from "./agents/AgentTrace";
 import { MantiLogo, SupplyMap } from "./SupplyMap";
+import { BehindScenes } from "./BehindScenes";
 import "./styles.css";
 
 const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon" | "sun" | "check" | "arrow" }) => {
@@ -66,6 +67,7 @@ function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
   const [dark, setDark] = useState(true);
+  const [behind, setBehind] = useState(false);
   const [threadId, setThreadId] = useState(() => new URLSearchParams(window.location.search).get("thread") || "");
   const [threadsOpen, setThreadsOpen] = useState(() => new URLSearchParams(window.location.search).has("thread"));
   const [dropVisible, setDropVisible] = useState(true);
@@ -216,6 +218,7 @@ function App() {
       <header className="topbar">
         <div className="topbar-left"><MantiLogo/><span className="divider"/><h1>{data.launch.name}</h1></div>
         <div className="top-actions">
+          <button className="behind-button" onClick={() => setBehind(true)}><i className="live"/>See what the agents do</button>
           <Countdown deadline={data.launch.deadline}/>
           {isStaticMode() && <button className="ghost-button" onClick={() => void resetDemo()}>Reset</button>}
           {hostedReplayBuild && <form method="post" action="/logout"><button className="ghost-button" type="submit">Sign out</button></form>}
@@ -348,6 +351,7 @@ function App() {
         <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>
       </details>
     </section>
+    {behind && <BehindScenes activity={data.activity} onClose={() => setBehind(false)} onEvidence={setSource}/>}
     {source && <EvidenceModal source={source} onClose={() => setSource(null)}/>}
   </main>;
 }
