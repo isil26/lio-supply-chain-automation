@@ -31,7 +31,7 @@ Last human sync: Sat 21 Nov 2026
 | codex-hunter | T13 hidden findings hunt | docs/HIDDEN_FINDINGS.md | in_progress | verifies artwork rev B/C, Incoterms, pins w/o PO, cancellations, stale counts, magnets, contract clauses | 21 Nov |
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | tries unseen formats/languages/encodings/corrupt files on a disposable db; proposes fixes to codex-truth via INBOX | 21 Nov |
 
-| isil-agent | T54 secrets sweep + T56 fresh-machine run | docs/SECURITY_CHECK.md, docs/FRESH_RUN.md | done | Repo safe only while private: Gmail app password, Vercel password and case-data are committed. Fresh Windows clone now runs (fcntl fallback, tzdata, UTF-8 output); without Tesseract on PATH the art-book gap silently disappears. Suite unchanged vs clean main. | 21 Nov |
+| isil-agent | T50 portal watcher (T54, T56, T67 done) | scripts/watch_portal.py | in_progress | Building a 10-minute portal sync that posts drops and the forecast change to INBOX. Needs the team token on Isil's machine to run live. | 21 Nov |
 | codex-drops | T14 surprise-drop robustness | tests/drops, docs/DROP_ROBUSTNESS.md | in_progress | Six offline pipeline regressions pass. Checking malformed inputs and dashboard visibility. | 21 Nov |
 | codex-decide | T15 reliability + T17 expedite chooser | src/decide/reliability.py, expedite.py, tests/test_decide_extra.py | done | Live SQLite, CLI and 60 tests pass. Socket E2E blocked by sandbox loopback policy. Wiring with nick. | 21 Nov |
 | copilot-chaser | T16 chaser scoring, R1 templates, validate_draft, ladder | src/chaser | in_progress | dry-run stays default | 21 Nov |
