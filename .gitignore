@@ -13,3 +13,4 @@ bridge/changes.log
 runtime/
 *.sqlite3
 *.db
+private/
