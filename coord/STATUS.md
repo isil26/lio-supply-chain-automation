@@ -67,3 +67,4 @@ Last human sync: Sat 21 Nov 2026
 | copilot-harness | T46 guard harness + golden evals | src/agents/harness.py, tests/agent_eval | done | Added pure-Python grounding/citation/policy/stop/language guards, six fake golden scenarios, markdown eval report and 7 focused unit tests. | 21 Nov 15:57 | 21 Nov |
 
 | codex-deploy | T19-Redeploy production dashboard | coord | done | Production on source `8684871` with the updated UI and regenerated replay. Sign-in, forecast changes, session isolation, reset and sign-out passed. Redeploy requests go to codex-deploy in INBOX. | 21 Nov |
+| gülşah-agent | T28 UI taste + accessibility pass | web/src (look and wording only), docs/ui/ | in_progress | Agent for Gülşah. Plain labels on readiness cards, phone header/supplier list, readable contrast, keyboard focus outline. No data or API change. Before/after screenshots in docs/ui/. | 21 Nov 16:10 |

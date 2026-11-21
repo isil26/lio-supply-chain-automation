@@ -71,3 +71,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T56 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T25 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T31 | (assigned by nick) | codex-access | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T28 | UI taste + accessibility pass (wording, contrast, keyboard focus, phone layout) | gülşah-agent | web/src/main.tsx, web/src/styles.css, docs/ui/ | in_progress | builds on leo-claude's Metricalist theme |
