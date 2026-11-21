@@ -3,7 +3,7 @@ import sqlite3
 import unittest
 
 from src.agents.briefer import build_brief, briefer_agent, validate_brief
-from src.agents.interpreter import interpret_reply, interpreter_agent
+from src.agents.interpreter import evaluate_simulated_replies, interpret_reply, interpreter_agent
 from src.agents.llm_adapter import FakeLLM
 
 
@@ -22,6 +22,12 @@ class RoleTwoTests(unittest.TestCase):
             "parse_reply", "search_documents", "supplier_history",
             "escalate_to_human", "request_review",
         })
+
+    def test_interpreter_evaluates_twelve_simulated_replies(self):
+        report = evaluate_simulated_replies()
+        self.assertEqual(report["replies"], 12)
+        self.assertEqual(report["cost_usd"], 0.0)
+        self.assertGreaterEqual(report["accuracy"], 0.75)
 
     def test_briefer_rejects_ungrounded_number_and_accepts_tool_number(self):
         trace = [{"result": {"price": 12390}}]

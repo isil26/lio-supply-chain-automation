@@ -111,10 +111,10 @@ class AutonomyLoop:
     def _worker(self, run_id: str, event: dict):
         started = time.monotonic()
         try:
+            team = self.team_factory(self.db_path)
             with self._connect() as con:
                 con.execute("UPDATE agent_runs SET status='running' WHERE id=?", (run_id,))
                 trace_start = int(con.execute("SELECT COALESCE(MAX(id), 0) FROM agent_trace").fetchone()[0])
-            team = self.team_factory(self.db_path)
             # Keep each specialist within the per-cycle cap; the harness still
             # evaluates the complete persisted trace after the team finishes.
             for agent in team.agents.values():

@@ -12,6 +12,7 @@ from .knowledge import load_pack
 from .llm_adapter import HTTPAdapter
 from src.chaser.llm import DeterministicFakeLLM
 from .runtime import Agent, Tool
+from .suppliers_sim import PERSONAS, SupplierSim
 from .tools import all_tools
 
 
@@ -76,7 +77,7 @@ def interpret_reply(text: str, known_facts: list[str] | None = None) -> dict[str
         date_quote = date_match.group(0)
     quantity_quote = None
     quantity_match = re.search(
-        r"\b\d[\d,.]*\s*(?:pcs|pieces|units|items|ea|개|件|szt)\b", text, re.I)
+        r"\b\d[\d\s,.]*\s*(?:pcs|pieces|units|items|ea|개|件|szt)\b", text, re.I)
     if quantity_match:
         quantity_quote = quantity_match.group(0)
     quantity = parsed.quantity
@@ -88,12 +89,17 @@ def interpret_reply(text: str, known_facts: list[str] | None = None) -> dict[str
         r"\b(?:booking(?:\s+(?:number|no\.?|reference))?|packing\s+list|"
         r"bill\s+of\s+lading|awb|air\s+waybill|forwarder(?:\s+release)?|"
         r"truck\s+(?:plate|slot)|pallet(?:\s+label)?|lot\s+(?:number|id)|"
-        r"reference\s+(?:number|no\.?))\b(?:[:# -]*[A-Z0-9][A-Z0-9./_-]*)?",
+        r"reference\s+(?:number|no\.?))\b(?:[:# -]*[A-Z0-9./_-]*\d[A-Z0-9./_-]*)",
         text, re.I)
     document_ref = ref_match.group(0).strip() if ref_match else None
-    strength = parsed.commitment_strength
-    if strength == "document_or_booking_reference":
+    if document_ref:
         strength = "documented"
+    elif date_quote and quantity is not None:
+        strength = "date_and_quantity"
+    elif date_quote:
+        strength = "date_only"
+    else:
+        strength = "none"
     quotes = [q for q in (date_quote, quantity_quote, document_ref) if q]
     contradictions = []
     for fact in known_facts or []:
@@ -117,12 +123,38 @@ def interpret_reply(text: str, known_facts: list[str] | None = None) -> dict[str
     }
 
 
+def evaluate_simulated_replies() -> dict[str, Any]:
+    """Run both bounded behaviours for all six personas without an LLM call."""
+    simulator = SupplierSim()
+    rows = []
+    for supplier_id in PERSONAS:
+        first = simulator.reply(supplier_id, "Please confirm the latest status.")
+        second = simulator.reply(
+            supplier_id,
+            "Please provide the named lot, packing list or booking reference and exact quantity.",
+        )
+        for reply in (first, second):
+            interpreted = interpret_reply(reply["text"])
+            expected_document = bool(reply["attachment"])
+            actual_document = bool(interpreted["commitment"]["document_ref"])
+            rows.append({
+                "supplier_id": supplier_id,
+                "turn": reply["turn"],
+                "agreement": expected_document == actual_document,
+            })
+    agreed = sum(row["agreement"] for row in rows)
+    return {"replies": len(rows), "agreed": agreed, "accuracy": agreed / len(rows), "cost_usd": 0.0, "rows": rows}
+
+
 def _demo() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("reply", nargs="?", default="[PL] Możemy zweryfikować 8 000 szt. z zapasu gotowego.")
     parser.add_argument("--fake", action="store_true")
+    parser.add_argument("--evaluate", action="store_true")
     args = parser.parse_args()
-    if args.fake:
+    if args.evaluate:
+        print(json.dumps(evaluate_simulated_replies(), ensure_ascii=False, indent=2))
+    elif args.fake:
         print(json.dumps(interpret_reply(args.reply), ensure_ascii=False, indent=2))
     else:
         result = interpreter_agent().run(args.reply)

@@ -1,0 +1,41 @@
+.agent-trace-panel { grid-column: 1 / -1; padding-bottom: 18px; }
+.agent-trace-heading { align-items: flex-start; }
+.agent-trace-status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.agent-trace-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.agent-trace-controls { display: flex; gap: 8px; margin: 0 22px 14px; }
+.agent-trace-button { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; }
+.agent-trace-button.primary { background: var(--lime); border-color: var(--lime); color: var(--on-accent); font-weight: 600; }
+.agent-trace-button:hover:not(:disabled) { border-color: var(--lime); color: var(--lime); }
+.agent-trace-button.primary:hover:not(:disabled) { color: var(--on-accent); filter: brightness(1.06); }
+.agent-trace-button:focus-visible, .agent-citation:focus-visible { outline: 3px solid color-mix(in srgb, var(--lime) 45%, transparent); outline-offset: 2px; }
+.agent-trace-recorded { margin: 0 22px 14px; color: var(--muted); font-size: 11px; }
+.agent-role-graph { display: flex; align-items: center; padding: 0 22px 16px; overflow-x: auto; }
+.agent-role { min-width: 124px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.agent-role.active { border-color: var(--lime); box-shadow: inset 0 0 0 1px var(--lime); }
+.agent-role small { display: block; color: var(--faint); font-size: 10px; text-transform: uppercase; letter-spacing: .8px; }
+.agent-role strong { display: block; margin-top: 4px; font-size: 13px; }
+.agent-role-arrow { color: var(--faint); padding: 0 8px; font-size: 18px; }
+.agent-timeline { margin: 0 22px; border-top: 1px solid var(--line); }
+.agent-step { display: grid; grid-template-columns: 90px minmax(110px, 1fr) minmax(180px, 1.4fr) 120px 78px; gap: 12px; align-items: center; min-height: 58px; border-bottom: 1px solid var(--line); }
+.agent-step:last-child { border-bottom: 0; }
+.agent-step-agent { color: var(--text); font-weight: 700; font-size: 12px; }
+.agent-step-tool { color: var(--lime); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; overflow-wrap: anywhere; }
+.agent-step-reason { color: var(--muted); font-size: 12px; }
+.agent-step-meta { color: var(--faint); font-size: 11px; text-align: right; }
+.agent-citations { display: flex; gap: 4px; flex-wrap: wrap; }
+.agent-citation { border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); padding: 3px 7px; font-size: 10px; cursor: pointer; max-width: 116px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-citation:hover { border-color: var(--lime); color: var(--lime); }
+.agent-harness { margin: 14px 22px 0; padding: 9px 12px; border-radius: 9px; background: color-mix(in srgb, var(--good) 10%, var(--surface)); color: var(--lime); font-size: 12px; }
+.agent-harness.failed { background: color-mix(in srgb, var(--red) 10%, var(--surface)); color: var(--red); }
+.agent-approvals { margin: 12px 22px 0; padding: 12px; border: 1px solid color-mix(in srgb, var(--amber) 40%, var(--line)); border-radius: 10px; }
+.agent-approvals h3 { margin: 0 0 8px; font-size: 12px; }
+.agent-approval-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; font-size: 12px; }
+.agent-approval-row p { margin: 2px 0 0; color: var(--muted); }
+.agent-approval-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.agent-empty { padding: 24px 22px; color: var(--muted); font-size: 12px; }
+@media (max-width: 720px) {
+  .agent-trace-panel { overflow: hidden; }
+  .agent-step { grid-template-columns: 78px minmax(110px, 1fr); gap: 6px 10px; padding: 10px 0; }
+  .agent-step-reason, .agent-step-meta, .agent-citations { grid-column: 2; }
+  .agent-step-meta { text-align: left; }
+}

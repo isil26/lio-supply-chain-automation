@@ -193,7 +193,6 @@ class Loop:
         self.stop = threading.Event()
         self.drop_files = []
         self.initialized = False
-        self.agents = AutonomyLoop(self.database) if os.getenv("SOONY_AGENTS") == "1" else None
         self.health = {
             "lastCycleTime": None,
             "durationMs": 0,
@@ -230,6 +229,7 @@ class Loop:
         else:
             self.root = args.data
             self.database = args.db
+        self.agents = AutonomyLoop(self.database) if os.getenv("SOONY_AGENTS") == "1" else None
 
     @staticmethod
     def copy(source, dest):
