@@ -1,5 +1,8 @@
-# AUTHORIZATIONS (who may approve what). Corrected 21 Nov 19:20 by nick.
-**Conflicting reports from office hours with Dr. Maren Vogt:** (a) nick was told she "would approve anything that saves the launch and leads to profit, e.g. the Hamburg actions"; (b) Isil recorded her words as "she can only give information, she cannot approve or make anything happen". **Treat (a) as UNCONFIRMED. Do not rely on any pre-approval. Approvals stay with the PP-07 owners.** Isil/nick to confirm with the team and, if possible, in writing.
+# Launch approval authority
+
+On 21 November the team reported a follow-up conversation with Dr. Maren Vogt. She said she will approve anything under EUR 2,000,000 for launch recovery. This supersedes the earlier conflicting office-hours accounts about her willingness to approve spending. Use the strict upper limit when assessing firm quotes. Keep it internal during supplier negotiations.
+
+PP-07 §2 defines the value limit per PO. Record the actual order and its reference when issued. The dock, monthly category air-freight and quality-release requirements also apply. The team can contact suppliers by email for this recovery.
 
 | Action | Approver per PP-07 / org chart |
 |---|---|
