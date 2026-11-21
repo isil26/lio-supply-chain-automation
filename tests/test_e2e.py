@@ -99,8 +99,11 @@ class DemoReplayTest(unittest.TestCase):
         self.assertTrue(data.is_dir(), "Local portal mirror missing. Restore it or set DEMO_DATA_DIR.")
         self.timeout = float(os.environ.get("DEMO_TIMEOUT_SECONDS", "240"))
         self.assertTrue(0 < self.timeout < float("inf"), "DEMO_TIMEOUT_SECONDS must be positive and finite")
-        for folder in ("src", "bridge", "config"):
-            shutil.copytree(ROOT / folder, workspace / folder, ignore=shutil.ignore_patterns("__pycache__"))
+        for directory in ("src", "bridge", "config"):
+            shutil.copytree(ROOT / directory, workspace / directory,
+                            ignore=shutil.ignore_patterns("__pycache__", ".soony_token", "state.json", "changes.log"))
+        (workspace / "docs").mkdir()
+        shutil.copyfile(ROOT / "docs" / "delegations.json", workspace / "docs" / "delegations.json")
         for relative in ("store/docs_cache.sqlite3", "runtime/tessdata"):
             source = ROOT / relative
             if source.exists():
@@ -111,7 +114,7 @@ class DemoReplayTest(unittest.TestCase):
         env = {key: value for key, value in os.environ.items()
                if not key.startswith(("CHASER_", "SOONY_IMAP_", "SOONY_LLM_"))
                and key not in {"SOONY_TOKEN", "SOONY_LOCAL_MODEL", "SOONY_VISION_MODEL", "PYTHONPATH"}}
-        env.update(CHASER_REAL_SMTP="0", SOONY_LLM_PROVIDER="none")
+        env.update(CHASER_REAL_SMTP="0", CHASER_NO_TEAM_MAIL="1", SOONY_LLM_PROVIDER="none", SOONY_AGENTS="0")
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             self.port = listener.getsockname()[1]
@@ -157,6 +160,32 @@ class DemoReplayTest(unittest.TestCase):
                 with self.subTest(material=material):
                     self.assertEqual(gaps.get(material), expected, "Post-drop component gap")
 
+        with timed("Verify action queue review, persistence and dismissal"):
+            code, result = self.request("/api/actions")
+            self.assertEqual(code, 200)
+            queue = result["actions"]
+            self.assertEqual([row["id"] for row in queue], [row["id"] for row in updated["actions"]])
+            self.assertTrue({"recovery", "release_gate", "claims"} <= {row["source"] for row in queue})
+            sleeve = next(row for row in queue if row["source"] == "release_gate" and row["material"] == "CMP-GAM-004")
+            self.assertEqual(sleeve["person"], "Sofia Marchetti")
+            dock_action = next(row for row in queue if "provisional Hamburg dock slot" in row["title"])
+            self.assertTrue(dock_action["evidence"] and dock_action["draft"]["body"])
+            self.assertEqual((dock_action["mode"], dock_action["approverName"]), ("ONE_CLICK", "Katrin Jansen"))
+            path = f'/api/actions/{dock_action["id"]}'
+            self.assertEqual(self.request(path + "/approve", {"by": "Offline test"})[0], 403)
+            actor = {"by": "Katrin Jansen"}
+            status, approved = self.request(path + "/approve", actor)
+            self.assertEqual((status, approved["action"]["status"]), (200, "prepared"))
+            retry_status, retry = self.request(path + "/approve", actor)
+            self.assertEqual((retry_status, retry["action"]["delivery"]), (status, approved["action"]["delivery"]))
+            self.assertEqual(self.request(path + "/done", actor)[1]["action"]["status"], "done")
+            self.assertEqual(self.request(path + "/approve", actor)[0], 409)
+            review = next(row for row in queue if "Karton art-book PO" in row["title"])
+            status, dismissed = self.request(f'/api/actions/{review["id"]}/dismiss', actor)
+            self.assertEqual((status, dismissed["action"]["status"]), (200, "dismissed"))
+            persisted = self.dashboard(lambda snapshot, sync: True)["actions"]
+            self.assertEqual(next(row for row in persisted if row["id"] == review["id"])["status"], "dismissed")
+
         with timed("Approve a pending option and verify persisted state"):
             option = next((row for row in updated["options"] if row["status"] == "pending"), None)
             self.assertIsNotNone(option, "No actionable approval option")
@@ -198,6 +227,7 @@ class DemoReplayTest(unittest.TestCase):
             self.assertIn("Escalate", plan["nextAction"])
             recovery = next(row for row in reply["supplierActions"] if row["case"] == "game_card")
             self.assertEqual(recovery["kind"], "review_recovery")
+            self.assertNotIn(dock_action["id"], {row["id"] for row in reply["actions"]})
             self.assertTrue(all(row["withDock"] == row["after"] for row in recovery["impact"]))
             self.assertEqual(self.request(f'/api/decisions/{recovery["optionId"]}/approve', {})[0], 409)
             self.assertEqual(reply["readiness"], sent["readiness"])

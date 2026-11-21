@@ -79,6 +79,8 @@ export function BestSupplier() {
   const reminders = report?.reminders ?? [];
   const drafts = materials.reduce((n, m) => n + m.negotiations.length, 0) + reminders.filter((r) => r.action === "remind").length;
 
+  // Hosted site: its example ranking is outdated (it predates the real replies); the Supplier offers card shows the real outcome.
+  if (hostedReplayBuild) return null;
   return (
     <section className="card best-supplier" aria-labelledby="best-supplier-title">
       <div className="bsup-head">

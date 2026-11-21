@@ -17,6 +17,7 @@ source_dir="$release/source"
 mkdir -p "$source_dir/deploy" "$source_dir/docs"
 cp -R "$repo/"{bridge,src,web,config} "$source_dir/"
 cp -R "$repo/docs/agent_runs" "$source_dir/docs/"
+cp "$repo/docs/delegations.json" "$source_dir/docs/"
 cp -R "$repo/deploy/vercel" "$source_dir/deploy/"
 python "$ci/fixtures.py" stage "$source_dir" "$ci"
 

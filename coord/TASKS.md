@@ -66,8 +66,8 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T50 | (assigned by nick) | codex-overseer | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T54 | (assigned by nick) | codex-overseer | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T58 | (assigned by nick) | codex-overseer | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
-| T60 | (assigned by nick) | murat-agent | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
-| T55 | (assigned by nick) | murat-agent | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
+| T60 | Synthetic portal drops for disposable offline replay | murat-agent | tests/drops | done | T14 |
+| T55 | Model usage and EUR budget report | murat-agent | scripts/cost_report.py, scripts/status.sh | done | T33, T38b |
 | T48 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T57 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
 | T29 | (assigned by nick) | leo-claude | see coord/OPEN_TASKS.md | assigned, not yet acknowledged | |
@@ -113,6 +113,7 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T50 | Portal watcher: sync every 10 min, post each new/changed file and the forecast change in INBOX (taken over: codex-overseer had not acknowledged for 3 h) | isil-agent | scripts/watch_portal.py | in_progress | - |
 | T78-Mail-Queue | Allow distinct supplier component requests in the same mail worker cycle | murat-agent | src/chaser autosend and send claim, tests, mail runbook | done | T78, T79-Supplier-Loop |
 | T80-Mac-Mail | Enable and verify the Mac-backed real supplier mail workflow | murat-agent | Mac watcher, scoped chaser ingestion and live supplier panel | done | T68, T78-Mail-Queue, T79-Supplier-Loop |
+| T81 | Complete the Action Queue API beyond the live recovery review slice | murat-agent | src/decide/actions.py, scoped orchestrator and live relay | done | T72, T73, T81-Recovery, T83, PP-07 |
 | T81-Recovery | Publish the requested Karton PO, statue sort and Hamburg dock reviews in the live action queue | murat-agent | src/decide/actions.py, scoped orchestrator and Manti review display | done | T81, T80-Mac-Mail |
 | T84 | Break-even with Vogt's numbers (L_CE EUR 120, L_STD EUR 32 unconfirmed) in docs/VOGT_BREAKEVEN.md; refresh after T88 | isil-agent | docs/VOGT_BREAKEVEN.md | done (pre-drop baseline; refresh after T88) | T88 for post-drop numbers |
 | T83 | Send path for actions: approved supplier actions email via the mail agent, internal actions become prepared messages with the EUR case, replies tracked, marked done | mail-agent (gülşah-agent) | src/chaser/actions.py, src/chaser/test_actions.py | done (waits for T81 to call it) | T81 |
@@ -135,3 +136,4 @@ Round 2 open tasks T48-T62 (humans and agents): see coord/OPEN_TASKS.md.
 | T19-CI | Set up push-triggered releases for the protected Soony replay | codex-deploy | .github/workflows/soony-vercel.yml, .github/soony-vercel | in_progress | T19-Vercel |
 | T94-send | T94 send-path side: approval modes on approved actions (AUTO only under a delegation confirmed in writing and information-only; ONE-CLICK waits for a named person; ESCALATE routes to next authority, sends nothing; NEVER blocks), stored per action and logged | gülşah-agent | src/chaser/actions.py, src/chaser/test_actions.py | done (uses src/decide/approvals.evaluate when T93 lands) | T83, T93 |
 | T93-Approvals | Approval engine with delegated authority: AUTO / ONE-CLICK / ESCALATE / NEVER, PP-07 as code, delegations.json, audit log (spec: IMPORTANT.md section 3) | sonnet-approvals | src/decide/approvals.py, docs/delegations.json, docs/APPROVALS.md, tests/test_approvals.py | review | - |
+| T94-Queue | Apply T93 approvals to the action queue and pass verified decisions to T83 | murat-agent | src/orchestrator, scoped release packaging | done | T81, T93-Approvals, T94-send |
