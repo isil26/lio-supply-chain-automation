@@ -145,12 +145,16 @@ def held(con):
 
 def approve(con, chase_id, by):
     """One click on a held email: record who approved it and put it back in the send queue."""
+    from .deadlines import DeadlineHandoff, handoff_reason
+
     if not by or not str(by).strip():
         raise ValueError("a named approver is required")
     _approvals_schema(con)
     row = con.execute("SELECT status FROM chases WHERE id=?", (chase_id,)).fetchone()
     if not row:
         raise KeyError(chase_id)
+    if row[0] == "escalated" and (reason := handoff_reason(con, chase_id)):
+        raise DeadlineHandoff(reason)
     prior = con.execute("SELECT prior_status FROM send_approvals WHERE chase_id=?", (chase_id,)).fetchone()
     restore = (prior[0] if prior and prior[0] else "draft") if row[0] == HELD else row[0]
     stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -176,7 +180,7 @@ def run(con, *, send=None, now=None, prepare=True):
     """Prepare and send drafts. Returns a list of {id, supplier, result}."""
     from . import activity as _activity
     from . import send as chaser_send
-    from . import deals, mail_plan
+    from . import deadlines, deals, mail_plan
     from .supplier_loop import managed
 
     def activity(con, agent, text, kind):
@@ -212,11 +216,11 @@ def run(con, *, send=None, now=None, prepare=True):
     limit = int(os.getenv("CHASER_AUTO_MAX_PER_CYCLE", "0")) or None
     minutes = cooldown_minutes()
     busy = recent_cases(con, minutes, now)
+    results = deadlines.expire_queued(con, now)
     drafts = con.execute("""
         SELECT id,supplier,address,body,supplier_id,material,status FROM chases
         WHERE status IN ('draft','recovery draft') ORDER BY status='recovery draft' DESC,rowid
     """).fetchall()
-    results = []
     for chase_id, supplier, address, body, supplier_id, material, status in drafts:
         if status == "draft":
             try:
@@ -254,6 +258,9 @@ def run(con, *, send=None, now=None, prepare=True):
             continue
         try:
             send(con, chase_id)
+        except deadlines.DeadlineHandoff:
+            results.append({"id": chase_id, "supplier": supplier, "result": "escalated"})
+            continue
         except (PermissionError, ValueError) as exc:
             activity(con, "Mail Agent", f"{supplier}: automatic send failed ({exc}).", "warning")
             results.append({"id": chase_id, "supplier": supplier, "result": "failed"})

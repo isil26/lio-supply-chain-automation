@@ -2,9 +2,11 @@ import json
 import os
 import sqlite3
 import unittest
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 from . import actions, schema
+from .autosend import run
 from .supplier_loop import CARD
 
 SUPPLIER = {"id": "chase-boise", "kind": "supplier", "title": "Ask Boise for the missing cases", "supplierId": "SUP-9",
@@ -68,10 +70,18 @@ class ActionSendTest(unittest.TestCase):
 
     def test_live_send_problem_leaves_it_queued(self):
         con = db()
+        deadline = datetime.now(timezone.utc) + timedelta(days=1)
+        supplier = dict(SUPPLIER, deadline=deadline.isoformat())
         with mock.patch.dict(os.environ, {"CHASER_NO_TEAM_MAIL": "1", "CHASER_SMTP_HOST": ""}):
-            row = actions.on_approve(con, SUPPLIER, "Isil", demo=False)
+            row = actions.on_approve(con, supplier, "Isil", demo=False)
         self.assertEqual(row["status"], "queued")
         self.assertEqual(con.execute("SELECT status FROM chases").fetchone()[0], "draft")
+        transport = mock.Mock()
+        run(con, send=transport, now=deadline, prepare=False)
+        transport.assert_not_called()
+        delivery = actions.get(con, supplier["id"])
+        self.assertEqual(delivery["status"], "escalated")
+        self.assertIn("Procurement", delivery["note"])
 
     def test_t81_recovery_review_shape(self):
         review = {"id": "opt-dock", "status": "awaiting_approval", "title": "Arrange a provisional Hamburg dock slot",

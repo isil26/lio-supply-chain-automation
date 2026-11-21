@@ -310,10 +310,11 @@ def _draft(con, truth, change, contact, gap, due, part):
         INSERT INTO chases(id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
         VALUES(?,?,?,?,?,?,'recovery draft',?,?,?,?)
         ON CONFLICT(id) DO UPDATE SET qty=excluded.qty,body=excluded.body,status=excluded.status,
-          address=excluded.address,language=excluded.language,subject=excluded.subject
+          address=excluded.address,language=excluded.language,subject=excluded.subject,deadline=excluded.deadline
         WHERE chases.status IN ('recovery draft','recovery withdrawn')
           AND (chases.qty<>excluded.qty OR chases.body<>excluded.body OR chases.status<>excluded.status
-               OR chases.address<>excluded.address OR chases.language<>excluded.language)
+               OR chases.address<>excluded.address OR chases.language<>excluded.language
+               OR chases.deadline<>excluded.deadline)
         """, (ref, target, contact["name"], contact["contact_email"], language,
               f"[SOONY-{ref}] {subject.format(**wording)}", material, gap, body, due.isoformat()))
     return ref
@@ -433,12 +434,17 @@ def eligible_draft(con, ref):
 
 def view(con):
     """Combine queued decisions with actual dispatch and matched reply evidence."""
+    from .deadlines import handoff_reason
+
     state = get_state(con, STATE, {})
     actions = state.get("actions", [])
     for item in actions:
         if item["kind"] != "coverage_request":
             continue
         thread = item["threadId"]
+        if reason := handoff_reason(con, thread):
+            item.update(status="escalated", owner="Procurement", detail=reason)
+            continue
         chase = con.execute("SELECT status,deadline FROM chases WHERE id=?", (thread,)).fetchone()
         sent = con.execute("""SELECT time,transport FROM messages WHERE chase_id=? AND side='out'
                              ORDER BY id DESC LIMIT 1""", (thread,)).fetchone()
