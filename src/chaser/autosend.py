@@ -1,7 +1,8 @@
 """Automatic sending for mail-agent (Gülşah's decision, 21 Nov 2026: no human approval per email).
 
 Runs once per orchestrator cycle in live mode only (real SMTP on, not --demo replay):
-  1. prepare: reminder drafts for silent suppliers, negotiation drafts for the best supplier(s);
+  1. prepare: reminder drafts for silent suppliers, an answer to every unanswered supplier reply,
+     negotiation drafts for the best supplier(s);
   2. send: every current draft chase, oldest first.
 
 Safety that stays on:
@@ -82,6 +83,11 @@ def run(con, *, send=None, now=None, prepare=True):
             due_reminders(con, now, save=True)
         except Exception as exc:  # never block sending on a planning error
             activity(con, "Mail Agent", f"Reminder planning skipped ({exc.__class__.__name__}).", "warning")
+        try:
+            from .followup import answer_replies
+            answer_replies(con, save=True)
+        except Exception as exc:
+            activity(con, "Mail Agent", f"Reply answering skipped ({exc.__class__.__name__}).", "warning")
         try:
             from .negotiate import compare
             row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()

@@ -143,3 +143,105 @@ def attachment_evidence(message, limit=4000):
         found.append({"name": name, "type": ctype, "kind": kind, "text": text[:limit].strip(),
                       "needs_review": not text})
     return found
+
+
+# --------------------------------------------------------------------------- answering replies
+
+CANNOT = re.compile(r"\b(?:cannot|can't|can’t|unable|not possible|impossible|no way to)\b|nie (?:możemy|będziemy|jest możliwe)"
+                    r"|无法|不能|不可能|불가|어렵", re.I)
+PICKUP = re.compile(r"\bEXW\b|ex[- ]works|forwarder|pick[- ]?up|collect(?:ion)?|odbi[oó]r|spedytor|自提|提货|픽업|포워더", re.I)
+ANSWER = {
+    "en": {"open": "Hello,\n\nThank you for your reply.",
+           "cannot": "We understand the full quantity is not possible in time. Could you tell us how many units you could ship before {deadline} as a part shipment, and the earliest date for the rest?",
+           "pickup": "To arrange collection, please send the ready-for-pickup date and time, the pickup address, the number of cartons or pallets and the gross weight.",
+           "missing": "To complete our planning, could you also confirm: {items}?",
+           "doc": "Could you send the packing list or the shipping/booking reference once available?",
+           "noted": "We have noted your confirmation and will come back to you after our internal review.",
+           "items": {"quantity": "the quantity you can supply", "eta": "the delivery date to Hamburg", "price": "the delivered unit price"},
+           "close": "This is a request for information only, not an order.\n\nSoony launch team"},
+    "pl": {"open": "Dzień dobry,\n\ndziękujemy za odpowiedź.",
+           "cannot": "Rozumiemy, że pełna ilość nie jest możliwa na czas. Ile sztuk mogliby Państwo wysłać przed {deadline} jako dostawę częściową i jaki jest najwcześniejszy termin dla reszty?",
+           "pickup": "Aby zorganizować odbiór, prosimy o datę i godzinę gotowości do odbioru, adres odbioru, liczbę kartonów lub palet oraz wagę brutto.",
+           "missing": "Prosimy również o potwierdzenie: {items}.",
+           "doc": "Prosimy o przesłanie listy pakunkowej lub numeru przesyłki/rezerwacji, gdy będzie dostępny.",
+           "noted": "Przyjęliśmy Państwa potwierdzenie do wiadomości i wrócimy po wewnętrznej weryfikacji.",
+           "items": {"quantity": "dostępnej ilości", "eta": "terminu dostawy do Hamburga", "price": "ceny jednostkowej z dostawą"},
+           "close": "To jest wyłącznie zapytanie informacyjne, a nie zamówienie.\n\nZespół startowy Soony"},
+    "ko": {"open": "안녕하세요,\n\n회신 감사합니다.",
+           "cannot": "전체 수량이 기한 내 어렵다는 점 이해했습니다. {deadline} 전에 부분 출하로 보낼 수 있는 수량과 나머지 수량의 가장 빠른 날짜를 알려 주시겠습니까?",
+           "pickup": "픽업 준비를 위해 출고 가능 일시, 픽업 주소, 카톤 또는 팔레트 수량, 총중량을 보내 주시기 바랍니다.",
+           "missing": "계획 수립을 위해 다음도 확인 부탁드립니다: {items}.",
+           "doc": "준비되는 대로 패킹 리스트 또는 운송/부킹 번호를 보내 주시겠습니까?",
+           "noted": "확인 내용을 접수했으며 내부 검토 후 다시 연락드리겠습니다.",
+           "items": {"quantity": "공급 가능 수량", "eta": "함부르크 도착일", "price": "도착 기준 단가"},
+           "close": "이 메일은 정보 요청이며 발주가 아닙니다.\n\nSoony 출시 담당팀"},
+    "zh": {"open": "您好，\n\n感谢您的回复。",
+           "cannot": "我们理解无法按时交付全部数量。请告知在 {deadline} 前可以分批发运多少件，以及其余数量的最早日期。",
+           "pickup": "为安排提货，请提供可提货日期和时间、提货地址、箱数或托盘数以及毛重。",
+           "missing": "为完成计划，也请确认：{items}。",
+           "doc": "请在可用时发送装箱单或运输/订舱编号。",
+           "noted": "我们已记录贵司的确认，内部审核后会再与您联系。",
+           "items": {"quantity": "可供数量", "eta": "到达汉堡的日期", "price": "到货单价"},
+           "close": "本邮件仅为信息询问，并非订单。\n\nSoony 上市团队"},
+}
+
+
+def answer_body(language, reply, deadline):
+    """Plain follow-up to a supplier reply: ask for what is missing, never commit."""
+    from .negotiate import parse_offer
+    t = ANSWER.get(language, ANSWER["en"])
+    offer = parse_offer(reply)
+    due = _aware(deadline).strftime("%Y-%m-%d %H:%M UTC") if deadline else "the launch"
+    lines, kinds = [t["open"]], []
+    if CANNOT.search(reply):
+        lines.append(t["cannot"].format(deadline=due)); kinds.append("partial")
+    if PICKUP.search(reply):
+        lines.append(t["pickup"]); kinds.append("pickup")
+    missing = [key for key, value in (("quantity", offer["quantity"]), ("eta", offer["eta"]),
+                                      ("price", offer["unit_price"])) if not value]
+    if "partial" not in kinds and missing:
+        lines.append(t["missing"].format(items=", ".join(t["items"][m] for m in missing))); kinds.append("missing")
+    if offer["commitment"] < 3 and "partial" not in kinds:
+        lines.append(t["doc"]); kinds.append("document")
+    if not kinds:
+        lines.append(t["noted"]); kinds.append("noted")
+    body = "\n\n".join([lines[0], " ".join(lines[1:]), t["close"]])
+    check = Guardrails().validate_draft(body)
+    if not check.ok:
+        raise ValueError("answer failed guardrails: " + "; ".join(check.errors))
+    return body, kinds
+
+
+def answer_replies(con, *, save=False):
+    """Draft an answer for every supplier reply that we have not answered yet."""
+    import sqlite3
+    from .supplier_loop import managed
+
+    con.row_factory = sqlite3.Row
+    rows = con.execute("""
+        SELECT c.*, m.body AS reply, m.external_id AS reply_id
+        FROM chases c JOIN messages m ON m.chase_id = c.id AND m.side = 'in'
+        WHERE m.id = (SELECT max(id) FROM messages WHERE chase_id = c.id)
+          AND coalesce(json_extract(m.transport, '$.mode'), '') <> 'simulated'
+    """).fetchall()
+    out = []
+    for row in rows:
+        row = dict(row)
+        if managed(row["supplier_id"], row["material"]):
+            continue  # the launch-critical loop (supplier_loop.py) answers these itself
+        ref = hashlib.sha256(f"answer:{row['reply_id']}".encode()).hexdigest()[:10].upper()
+        if con.execute("SELECT 1 FROM chases WHERE id=?", (ref,)).fetchone():
+            continue
+        body, kinds = answer_body(row["language"], row["reply"], row["deadline"])
+        subject = row["subject"] if row["subject"].lower().startswith("re:") else "Re: " + row["subject"]
+        item = {"thread_id": row["id"], "supplier": row["supplier"], "draft_id": ref, "asks": kinds, "body": body}
+        if save:
+            with con:
+                con.execute("""INSERT OR IGNORE INTO chases
+                    (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
+                    VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                            (ref, row["supplier_id"], row["supplier"], row["address"], row["language"], subject,
+                             "draft", row["material"], row["qty"], body, row["deadline"]))
+            _activity(con, f"{row['supplier']}: replied. Answer drafted ({', '.join(kinds)}).")
+        out.append(item)
+    return out
