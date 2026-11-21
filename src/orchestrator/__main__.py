@@ -349,6 +349,12 @@ class Loop:
                     chaser.poll(con)
                 except (OSError, chaser.imaplib.IMAP4.error) as exc:
                     sync_error = (sync_error + " " if sync_error else "") + f"Inbox polling failed ({exc.__class__.__name__})."
+                from src.chaser import autosend  # T78 mail-agent: automatic sending (live mode only)
+                if autosend.enabled(self.args.demo):
+                    try:
+                        autosend.run(con)
+                    except Exception as exc:
+                        sync_error = (sync_error + " " if sync_error else "") + f"Automatic email sending failed ({exc.__class__.__name__})."
             chaser.expire(con)
             failed = sync_error is not None
             rejected = checks["rejections"]

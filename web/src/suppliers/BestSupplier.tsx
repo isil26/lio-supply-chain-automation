@@ -67,7 +67,7 @@ export function BestSupplier() {
       const data: Report = await response.json();
       setReport(data);
       const made = data.materials.reduce((n, m) => n + m.negotiations.length, 0) + data.reminders.filter((r) => r.action === "remind").length;
-      setNote(made ? `${made} email draft${made === 1 ? "" : "s"} ready. Review and send them under Agents.` : "Nothing new to draft.");
+      setNote(made ? `${made} email draft${made === 1 ? "" : "s"} ready. The mail agent sends them on its next round.` : "Nothing new to draft.");
     } catch {
       setNote("Could not prepare drafts. Try again.");
     } finally {
@@ -84,9 +84,9 @@ export function BestSupplier() {
       <div className="bsup-head">
         <div>
           <h3 id="best-supplier-title">Best supplier</h3>
-          <p className="card-sub">{example ? "Example with sample replies." : "From the latest supplier replies."} Emails go out only after you send them.</p>
+          <p className="card-sub">{example ? "Example with sample replies." : "From the latest supplier replies."} In live mode the mail agent sends these emails by itself, only to the case suppliers.</p>
         </div>
-        {!example && drafts > 0 && <button className="primary-button" onClick={() => void prepare()} disabled={busy}>{busy ? "Preparing…" : `Prepare ${drafts} email${drafts === 1 ? "" : "s"} for review`}</button>}
+        {!example && drafts > 0 && <button className="primary-button" onClick={() => void prepare()} disabled={busy}>{busy ? "Preparing…" : `Prepare ${drafts} email${drafts === 1 ? "" : "s"} now`}</button>}
       </div>
       {note && <p className="bsup-note" role="status">{note}</p>}
       {error && !report && <p className="empty">{error}</p>}
