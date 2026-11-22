@@ -1,6 +1,5 @@
 'use strict';
 const icons = {
-  brand:'<path fill="#b99aff" stroke="none" d="m12 .8 10.8 5.8L12 12.5 1.2 6.6z"/><path fill="#9574d4" stroke="none" d="M1.2 9.2 10.8 14.4v8.8l-9.6-5.4z"/><path fill="#d5c0ff" stroke="none" d="m13.2 14.4 9.6-5.2v8.6l-9.6 5.4z"/>',
   grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   inbox:'<path d="M4 5h16l2 10v4H2v-4z"/><path d="M3 14h5l2 3h4l2-3h5"/>',
   list:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m6 9 1 1 2-3m2 2h6m-11 5 1 1 2-3m2 2h6"/>',
@@ -22,153 +21,246 @@ const icons = {
 };
 const icon=name=>'<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">'+icons[name]+'</svg>';
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
-const products = {
-  books:{tab:'Art books',icon:'book',tone:'',title:'Reserve 5,900 art books',why:'Karton Nowak can cover the full art-book gap. Confirm the Hamburg delivery slot before placing the order.',value:'€12,390',valueLabel:'5,900 × €2.10 per book',button:'Approve reservation',done:'Reservation approved',owner:'Buyer',due:'Sun ~06:00',timing:'Target Sun 22 Nov around 06:00 CET at the latest. The 24-hour offer expires Sunday morning. Its exact expiry is unconfirmed.',scope:'Approve a free, provisional hold. The buyer still needs to confirm the purchase order and delivery slot.',queue:'Reserve art books',short:'5,900 books · Collector’s',offers:[
-    {key:'kartonBooks',detail:'5,900 available at €2.10 each',summary:'Karton can hold 5,900 finished art books free of charge. The €2.10 unit price is valid for 24 hours from the morning offer. Loading takes up to four hours after a formal order. Warta Trans still needs to confirm the delivery window.'}
-  ]},
-  cards:{tab:'Game cards',icon:'plane',tone:'blue',title:'Secure the 28,000-card handover',why:'Hwaseong’s air lot is already in transit. Get a timed Frankfurt arrival and reserve customs clearance and the Hamburg dock before it lands.',value:'6,800 cards',valueLabel:'Still short after the air lot arrives',button:'Assign to logistics',done:'Assigned to logistics',owner:'Logistics',due:'Tonight',timing:'Start Saturday evening, before the air lot lands. The carrier has yet to confirm a timed arrival.',scope:'Assign Logistics to obtain the flight ETA, customs documents and a timed Hamburg handover.',queue:'Secure card handover',short:'28,000 cards · Both editions',offers:[
-    {key:'hwaseong',detail:'28,000 in transit · handover unconfirmed',summary:'The 28,000-card lot departed Incheon for Frankfurt. The carrier has yet to confirm an arrival time. The remaining 20,000 are expected in Hamburg on 24 November.'},
-    {key:'boise',detail:'36,000 at origin · after launch',summary:'Boise has 36,000 cards packed at its dock. Even premium freight cannot deliver the missing 6,800 in time. A written EXW confirmation or a nominated forwarder is required for release.'}
-  ]},
-  statues:{tab:'Statues',icon:'shield',tone:'',title:'Request a sort of the held statues',why:'Neither supplier can deliver by launch. Ask Quality to inspect the 5,600 units already in Hamburg and release the pieces that pass.',value:'3,400 statues',valueLabel:'Needed for Collector’s boxes',button:'Request quality review',done:'Quality review requested',owner:'Quality & Compliance',due:'Before Sun shift',timing:'Planning target before the Sunday 06:00 pack-out shift. Inspection time and release quantity are unconfirmed.',scope:'Request a full inspection. Quality & Compliance decides which pieces can be released for packing.',queue:'Request statue inspection',short:'3,400 statues · Collector’s',offers:[
-    {key:'pune',detail:'5,000 by sea · 28 Nov',summary:'Pune cannot supply 3,400 statues in Hamburg by cutoff. Its next 5,000 units are due by sea on 28 November.'},
-    {key:'dongguan',detail:'10,000 by sea · 27 Nov',summary:'Dongguan cannot deliver the missing 3,400 by cutoff. Its next sea shipment of 10,000 pieces is due in Hamburg on 27 November.'}
-  ]},
-  sleeves:{tab:'Sleeves',icon:'truck',tone:'warm',title:'Verify the revision C sleeve delivery',why:'Karton’s truck should cover the 6,000-sleeve gap for Standard. Check the signed receipt and revision before counting the stock.',value:'20,000 sleeves',valueLabel:'Already ordered from Karton Nowak',button:'Request receipt check',done:'Receipt check requested',owner:'Hamburg warehouse',due:'Tonight',timing:'Check the Hamburg receipt on Saturday evening, when Warta Trans is due at the warehouse.',scope:'Ask the warehouse to confirm the revision, quantity and signed receipt for the existing shipment.',queue:'Verify sleeve receipt',short:'20,000 sleeves · Standard',offers:[
-    {key:'kartonSleeves',detail:'20,000 rev C · receipt pending',summary:'Warta Trans was due to deliver 20,000 revision C sleeves on Saturday evening. Karton has yet to receive signed proof of delivery. Additional digital production takes at least 36 hours.'},
-    {key:'packright',detail:'No revision C stock for launch',summary:'PackRight has no released revision C sleeves for Sunday. Its revision B stock cannot be used for this launch.'}
-  ]}
-};
-const orderedTasks=['cards','sleeves','books','statues'];
-const editions=[{name:'Collector’s Edition',target:72000,median:62550,icon:'layers',cls:'collector'},{name:'Standard Edition',target:640000,median:614650,icon:'box',cls:'standard'}];
-const views={overview:['Launch overview','Grand Heist 6 · Hamburg distribution center'],offers:['Supplier offers','Compare the replies for each product and choose the next action.'],decisions:['Decision queue','Open decisions, responsible teams and planning deadlines in Hamburg time.'],activity:['Activity log','Decisions recorded in this demo replay.']};
-const replayTime=Date.parse('2026-11-21T20:02:00+01:00'), cutoff=Date.parse('2026-11-22T20:00:00+01:00');
-const stateKey='lio-launch-desk-replay-v1';
-let selected='books', actions={}, started=Date.now();
+const replayStart = Date.parse('2026-11-21T20:44:00+01:00');
+const launch = Date.parse('2026-11-22T20:00:00+01:00');
+const logPrefix = 'manti-demo.decision.';
+const stateKey = 'manti-demo.session';
+const verbs = {approve:'Approve', decline:'Decline', negotiate:'Negotiate'};
+const outcomes = {approve:'Approved', decline:'Declined', negotiate:'Negotiation requested'};
+const baseline = editions.map(e => e.median);
+const number = value => value.toLocaleString('en-US');
+const euros = new Intl.NumberFormat('en-IE', {style:'currency',currency:'EUR',notation:'compact',maximumFractionDigits:2});
+const formatTime = new Intl.DateTimeFormat('en-GB', {timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit'});
+const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const content = document.querySelector('#content');
+const dialog = document.querySelector('#dialog');
+const dialogContent = document.querySelector('#dialog-content');
+let productId = 'books';
+let selectedOffer = products.books.offers[0].key;
+let activeRecordId = null;
+let records = [];
+let started = Date.now();
+let forecast = [...baseline];
+let reviewer = '';
+let currentDraft = null;
+const isArchive = () => location.hash === '#activity';
+const now = () => replayStart + Math.max(0, Date.now()-started);
+const validForecast = values => Array.isArray(values) && values.length === editions.length && values.every(n => Number.isSafeInteger(n) && n >= 0);
+function readRecords(){
+  const saved = [];
+  try {
+    for(const key of Object.keys(localStorage).filter(k => k.startsWith(logPrefix))){
+      const r = JSON.parse(localStorage.getItem(key));
+      if(products[r.product]?.offers.some(o => o.key === r.offer) && Object.hasOwn(verbs,r.action) && validForecast(r.forecast)) saved.push(r);
+    }
+    records = saved.sort((a,b) => b.at-a.at);
+  } catch {}
+}
 try {
-  const saved=JSON.parse(sessionStorage.getItem(stateKey));
-  if(saved && Number.isFinite(saved.started) && saved.actions && typeof saved.actions==='object'){
-    started=saved.started;
-    actions=Object.fromEntries(Object.entries(saved.actions).filter(([id,at])=>Object.hasOwn(products,id)&&Number.isFinite(at)));
+  const state = JSON.parse(sessionStorage.getItem(stateKey));
+  if(state){
+    if(validForecast(state.forecast)) forecast = state.forecast;
+    if(Number.isFinite(state.started)) started = state.started;
+    reviewer = state.reviewer || '';
   }
 } catch {}
-function persist(){try{sessionStorage.setItem(stateKey,JSON.stringify({started,actions}));}catch{}}
-persist();
-const demoNow=()=>replayTime+Math.max(0,Date.now()-started);
-const fmt=value=>value.toLocaleString('en-US');
-const clockFormat=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit'});
-const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const countOpen=()=>Object.keys(products).length-Object.keys(actions).length;
-const currentView=()=>Object.hasOwn(views,location.hash.slice(1))?location.hash.slice(1):'overview';
-const content=document.querySelector('#content'),dialog=document.querySelector('#dialog'),dialogContent=document.querySelector('#dialog-content');
-const title=(name,heading,aside='')=>'<div class="card-heading"><h2 class="card-title">'+icon(name)+heading+'</h2>'+aside+'</div>';
-function statCards(){
-  const metrics=editions.map(e=>{
-    const rate=e.median/e.target*100;
-    return '<article class="stat edition '+e.cls+'"><h2 class="stat-label"><span class="chip-icon">'+icon(e.icon)+'</span>'+e.name+'</h2><div class="metric"><strong>'+fmt(e.target-e.median)+'</strong><span>boxes short</span></div><div class="progress-wrap"><div class="track" aria-hidden="true"><span style="width:'+rate+'%"></span></div><div class="progress-caption"><span>'+fmt(e.median)+' / '+fmt(e.target)+' expected</span><b>'+Math.round(rate)+'%</b></div></div></article>';
+function saveSession(){
+  try { sessionStorage.setItem(stateKey, JSON.stringify({started,forecast,reviewer})); } catch {}
+}
+readRecords();
+saveSession();
+const archivedRecord = () => records.find(r => r.id === activeRecordId);
+const title = (name,heading,aside='') => '<div class="card-heading"><h2 class="card-title">'+icon(name)+heading+'</h2>'+aside+'</div>';
+function statCards(values){
+  const metrics = editions.map((e,i) => {
+    const expected = values[i];
+    const gap = Math.max(0,e.target-expected);
+    const percent = Math.min(100,expected*100/e.target);
+    const exposure = gap*e.unitLoss;
+    const lossLabel = i===0 ? 'Refund exposure' : 'Potential loss¹';
+    return `<article class="stat edition ${gap?'short':'complete'}">
+      <h2 class="stat-label"><span class="chip-icon">${icon(e.icon)}</span>${e.name}</h2>
+      <div class="metric"><strong>${number(gap)}</strong><span>${gap?'boxes short':'short · target met'}</span></div>
+      <div class="progress-wrap"><div class="track"><span style="width:${percent}%"></span></div>
+      <div class="progress-caption"><span>${number(expected)} / ${number(e.target)}</span><b>${Number(percent.toFixed(1))}%</b></div></div>
+      <div class="loss"><span>${lossLabel}</span><b title="€${number(exposure)}">${euros.format(exposure)}</b></div>
+    </article>`;
   }).join('');
-  return '<section class="stats" aria-label="Launch countdown and expected box shortages"><article class="stat countdown"><canvas aria-hidden="true"></canvas><h2 class="stat-label"><span class="chip-icon">'+icon('timer')+'</span>Time to launch</h2><div class="clock-readout" role="timer" aria-label="Time remaining">'+['Hours','Min','Sec'].map((u,i)=>(i?'<em aria-hidden="true">:</em>':'')+'<div><b id="clock-'+i+'">00</b><small>'+u.toUpperCase()+'</small></div>').join('')+'</div><div class="cutoff">Sun, 22 Nov · 20:00 CET</div></article>'+metrics+'</section>';
+  return `<section class="stats" aria-label="Launch forecast"><article class="stat countdown"><canvas aria-hidden="true"></canvas>
+    <h2 class="stat-label"><span class="chip-icon">${icon('timer')}</span>${isArchive()?'Time left at snapshot':'Time to launch'}</h2>
+    <div class="clock-readout" role="timer">${['Hours','Min','Sec'].map((u,i)=>(i?'<em>:</em>':'')+'<div><b id="clock-'+i+'">00</b><small>'+u.toUpperCase()+'</small></div>').join('')}</div>
+    <div class="cutoff">Sun, 22 Nov · 20:00 CET</div></article>${metrics}</section>`;
 }
 function tick(){
-  const left=Math.max(0,Math.ceil((cutoff-demoNow())/1000));
-  [Math.floor(left/3600),Math.floor(left/60)%60,left%60].forEach((n,i)=>{const el=document.getElementById('clock-'+i);if(el)el.textContent=String(n).padStart(2,'0');});
+  const at = isArchive() ? archivedRecord()?.at ?? replayStart : now();
+  const seconds = Math.max(0,Math.ceil((launch-at)/1000));
+  [Math.floor(seconds/3600),Math.floor(seconds/60)%60,seconds%60].forEach((n,i)=>{
+    const el=document.getElementById('clock-'+i);
+    if(el) el.textContent=String(n).padStart(2,'0');
+  });
+}
+function tabs(){
+  return '<div class="tabs" role="tablist" aria-label="Products">'+Object.entries(products).map(([id,p])=>
+    `<button role="tab" id="tab-${id}" aria-controls="product-panel" tabindex="${id===productId?0:-1}" aria-selected="${id===productId}" data-product="${id}">${p.tab}</button>`).join('')+'</div>';
+}
+function emailRows(){
+  const offers = products[productId].offers;
+  return offers.map(o=>{
+    const e=emailEvidence[o.key];
+    const initials=e.supplier.split(' ').slice(0,2).map(word=>word[0]).join('');
+    const pick=offers.length>1&&!isArchive();
+    const body=`<span class="vendor-avatar">${esc(initials)}</span><span class="offer-info"><strong>${esc(e.supplier)}</strong><span>${o.detail}</span></span>`;
+    return `<div class="offer-row ${selectedOffer===o.key?'picked':''}">${pick?`<button class="offer-pick" aria-pressed="${selectedOffer===o.key}" data-select="${o.key}"><span class="radio-dot"></span>${body}</button>`:body}
+      <button class="email-button" data-mail="${o.key}" aria-label="Read email from ${esc(e.supplier)}" title="Read supplier email">${icon('mail')}</button></div>`;
+  }).join('');
 }
 function offerCard(){
-  const p=products[selected];
-  const tabs=Object.entries(products).map(([id,v])=>'<button role="tab" id="tab-'+id+'" aria-controls="product-panel" aria-selected="'+(selected===id)+'" tabindex="'+(selected===id?0:-1)+'" data-product="'+id+'">'+v.tab+'</button>').join('');
-  const emails=p.offers.map(o=>{
-    const e=emailEvidence[o.key];
-    const initials=e.supplier.split(' ').slice(0,2).map(w=>w[0]).join('');
-    return '<div class="offer-row"><span class="vendor-avatar" aria-hidden="true">'+initials+'</span><div class="offer-info"><strong>'+escapeHtml(e.supplier)+'</strong><span>'+o.detail+'</span></div><button class="email-button" data-mail="'+o.key+'" aria-label="Read supplier email from '+escapeHtml(e.supplier)+'" title="Read email">'+icon('mail')+'</button></div>';
-  }).join('');
-  return '<section class="card offers-card">'+title('inbox','Supplier offers','<span class="secondary">By product</span>')+'<div class="tabs" role="tablist" aria-label="Select product">'+tabs+'</div><div role="tabpanel" id="product-panel" aria-labelledby="tab-'+selected+'"><article class="recommend"><div class="rec-top"><div class="rec-label">'+icon('spark')+'Recommended choice</div><span class="rec-due">'+icon('clock')+p.due+'</span></div><h3>'+p.title+'</h3><p>'+p.why+'</p><div class="rec-bottom"><div class="rec-cost"><b>'+p.value+'</b><small>'+p.valueLabel+'</small></div>'+actionButton(selected)+'</div></article><div class="offers-heading"><b>Supplier emails</b><small>'+p.offers.length+(p.offers.length===1?' thread':' threads')+'</small></div>'+emails+'</div></section>';
+  const p=products[productId], r=archivedRecord();
+  let panel;
+  if(isArchive()){
+    panel=r?`<div class="recommend"><div class="rec-label">${icon('history')}Recorded decision</div><h3>${outcomes[r.action]} · ${esc(emailEvidence[r.offer].supplier)}</h3>
+      <p>${esc(r.by)} · ${formatTime.format(r.at)} CET</p><button class="quiet" data-saved="${esc(r.id)}">${icon('mail')}Read saved draft</button></div>`:
+      '<div class="recommend"><h3>No decisions recorded for this product</h3><p>Decisions appear here when a reviewer saves an email draft on the dashboard.</p></div>';
+  } else {
+    const e=emailEvidence[selectedOffer];
+    panel=`<div class="recommend"><div class="rec-top"><div class="rec-label">${icon('spark')}Recommended choice</div><span class="rec-due">${icon('clock')}${p.due}</span></div>
+      <h3>${p.title}</h3><p>${p.why}</p><div class="rec-cost"><b>${p.value}</b><small>${p.valueLabel}</small></div></div>`;
+    return '<section class="card offers-card">'+title('inbox','Supplier offers')+tabs()+
+      `<div role="tabpanel" id="product-panel" aria-labelledby="tab-${productId}">${panel}<div class="offers-heading"><b>Supplier emails</b><small>${p.offers.length} ${p.offers.length===1?'thread':'threads'}</small></div>${emailRows()}
+      <div class="decision-bar"><div class="decision-label">Reply to <b>${esc(e.supplier)}</b></div><div class="decision-buttons">${Object.entries(verbs).map(([k,v])=>`<button class="${k==='approve'?'btn':'outline-btn'}" data-action="${k}">${v}</button>`).join('')}</div></div></div></section>`;
+  }
+  return '<section class="card offers-card">'+title('inbox','Supplier decisions')+tabs()+`<div role="tabpanel" id="product-panel" aria-labelledby="tab-${productId}">${panel}<div class="offers-heading"><b>Supplier emails</b></div>${emailRows()}</div></section>`;
 }
-function actionButton(id){
-  const p=products[id],done=!!actions[id];
-  return '<button class="btn'+(done?' done':'')+'" '+(done?'disabled':'data-approve="'+id+'"')+'>'+icon('check')+(done?p.done:p.button)+'</button>';
+function deadlineCard(){
+  return '<section class="card">'+title('clock','Decision deadlines','<span class="small-count">'+orderedTasks.length+'</span>')+
+    '<div class="deadline-list" role="region" aria-label="Decision deadlines" tabindex="0">'+orderedTasks.map(id=>{
+      const p=products[id];
+      return `<button class="deadline-item" data-task="${id}"><span class="deadline-icon ${p.tone}">${icon(p.icon)}</span><span class="deadline-copy"><b>${p.queue}</b><small>${p.short}</small></span><span class="due">${p.due}</span></button>`;
+    }).join('')+'</div></section>';
 }
-function deadlineCard(full=false){
-  const ids=full?orderedTasks:orderedTasks.filter(id=>!actions[id]);
-  return '<section class="card">'+title('clock','Decision deadlines','<span class="small-count" aria-label="'+countOpen()+' open decisions">'+countOpen()+'</span>')+'<div class="deadline-list">'+ids.map(id=>{
-    const p=products[id];
-    return '<button class="deadline-item" data-task="'+id+'"><span class="deadline-icon '+p.tone+'">'+icon(actions[id]?'check':p.icon)+'</span><span class="deadline-copy"><b>'+p.queue+'</b><small>'+(full?p.owner+' · ':'')+p.short+'</small></span><span class="due'+(actions[id]?' done':'')+'">'+(actions[id]?'Logged':p.due)+'</span></button>';
-  }).join('')+(ids.length?'':'<p class="empty">All four actions are logged. Follow up with the assigned teams.</p>')+'</div></section>';
+function historyCard(){
+  return '<section class="card">'+title('history','Decision history','<span class="small-count">'+records.length+'</span>')+
+    '<div class="deadline-list" role="region" aria-label="Decision history" tabindex="0">'+records.map(r=>
+    `<button class="deadline-item" data-record="${esc(r.id)}" aria-pressed="${activeRecordId===r.id}"><span class="deadline-icon">${icon(products[r.product].icon)}</span><span class="deadline-copy"><b>${products[r.product].tab} · ${outcomes[r.action]}</b><small>${esc(r.by)} · ${esc(emailEvidence[r.offer].supplier)}</small></span><span class="due">${formatTime.format(r.at)}</span></button>`).join('')+
+    (records.length?'':'<p class="empty">No saved decisions yet.</p>')+'</div></section>';
 }
 function insightCard(){
-  return '<section class="card insight">'+title('bulb','Actionable insight')+'<h3>Protect Collector’s boxes first</h3><p>Each missed preorder means a €120 refund. Allocate scarce game cards to Collector’s first and pair the art-book hold with a statue inspection.</p></section>';
-}
-function activityCard(){
-  const entries=Object.entries(actions).sort((a,b)=>b[1]-a[1]);
-  return '<section class="card">'+title('history','Decision history','<span class="small-count">'+entries.length+'</span>')+(entries.length?entries.map(([id,at])=>'<div class="audit-item"><span class="deadline-icon">'+icon('check')+'</span><div><strong>'+products[id].done+'</strong><p>'+products[id].tab+' · '+clockFormat.format(at)+' CET · Simulated</p></div><button class="outline-btn audit-actions" data-undo="'+id+'" aria-label="Undo '+products[id].done+'">Undo</button></div>').join(''):'<p class="empty">Your first approval or assigned action will appear here.</p>')+'</section>';
-}
-function overview(){
-  return statCards()+'<div class="body-grid">'+offerCard()+'<div class="side-stack">'+deadlineCard()+insightCard()+'</div></div><footer class="forecast-foot"><span>'+icon('history')+'Replay starts Sat 21 Nov at 20:02 CET</span><button class="quiet" data-forecast>'+icon('info')+'Forecast details</button></footer>';
+  const r=archivedRecord(), p=products[productId];
+  const h=isArchive()?'Decision context':'Actionable insight';
+  const label=isArchive()?p.queue:'Protect Collector’s boxes first';
+  const description=isArchive()?(r?p.timing:'Select a recorded decision to see its planning window.'):'Each missed preorder means a €120 refund. Prioritize scarce game cards for Collector’s and pair the art-book delivery with a statue inspection.';
+  return '<section class="card insight">'+title('bulb',h)+'<h3>'+label+'</h3><p>'+description+'</p></section>';
 }
 function render(){
-  const view=currentView();
-  document.querySelector('#view-title').textContent=views[view][0];
-  document.querySelector('#view-subtitle').textContent=views[view][1];
-  document.querySelector('#nav-count').textContent=countOpen();
+  const archived=isArchive(), r=archivedRecord();
+  const values=archived?(r?.forecast??baseline):forecast;
+  const heading=archived?'Activity Log':'Dashboard';
+  document.querySelector('#view-title').textContent=heading;
+  document.querySelector('#view-subtitle').textContent=archived?'Grand Heist 6 · Forecast and supplier decisions at the time of review':'Grand Heist 6 · Hamburg distribution center';
+  document.title=heading+' · Manti';
   document.querySelectorAll('[data-nav]').forEach(a=>{
-    if(a.dataset.nav===view)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
-    a.setAttribute('aria-label',views[a.dataset.nav][0]);
+    if(a.dataset.nav===(archived?'activity':'overview')) a.setAttribute('aria-current','page');
+    else a.removeAttribute('aria-current');
   });
-  document.title=views[view][0]+' · Lio Launch Desk';
-  content.innerHTML=view==='overview'?overview():'<div class="focused">'+({offers:offerCard,decisions:()=>deadlineCard(true),activity:activityCard})[view]()+'</div>';
-  tick();drawLaunchCargo(content.querySelector('canvas'));
+  content.classList.toggle('archived',archived);
+  content.innerHTML=statCards(values)+'<div class="forecast-note"><span>¹ Standard assumes €32 per late box. Actual loss is unconfirmed.</span>'+
+    (!archived?'<button data-forecast class="quiet">'+icon('info')+(values.some((v,i)=>v!==baseline[i])?'Edit forecast scenario':'Forecast details')+'</button>':'')+'</div>'+
+    '<div class="body-grid">'+offerCard()+'<div class="side-stack">'+(archived?historyCard():deadlineCard())+insightCard()+'</div></div>'+
+    '<footer class="forecast-foot">Forecast · Sat 19:25 CET &nbsp;·&nbsp; Email replay · Sat 20:44 CET</footer>';
+  tick();
+  drawLaunchCargo(content.querySelector('canvas'));
 }
-function selectProduct(id,focus=false){
-  selected=id;const card=content.querySelector('.offers-card');card.outerHTML=offerCard();if(focus)document.getElementById('tab-'+id).focus();
+function selectRecord(r){
+  if(!r){activeRecordId=null; return;}
+  activeRecordId=r.id;productId=r.product;selectedOffer=r.offer;
 }
-function fields(items){return '<dl>'+items.map(([a,b])=>'<dt>'+a+'</dt><dd>'+b+'</dd>').join('')+'</dl>';}
-function openDialog(contentHtml){
-  dialogContent.innerHTML=contentHtml;
+function selectProduct(id){
+  productId=id; selectedOffer=products[id].offers[0].key;
+  if(isArchive()) selectRecord(records.find(r=>r.product===id));
+  render();
+  document.getElementById('tab-'+id).focus({preventScroll:true});
+}
+function openDialog(markup){
+  dialogContent.innerHTML=markup;
   dialog.setAttribute('aria-labelledby','dialog-title');
-  if(!dialog.open)dialog.showModal();
-}
-function actionDialog(id){
-  const p=products[id];
-  openDialog('<div class="overline">'+p.tab+' · Demo decision</div><h2 id="dialog-title">'+p.title+'</h2><p class="modal-p">'+p.scope+'</p>'+fields([['Owner',p.owner],['Decision window',p.timing],['At stake',p.value+' · '+p.valueLabel]])+'<p class="mini">'+icon('info')+'Demo actions are recorded in this browser.</p><div class="dialog-actions"><button class="outline-btn" data-close>Close</button>'+(actions[id]?'<span class="tag green">'+p.done+'</span>':'<button class="btn" data-confirm="'+id+'">'+icon('check')+p.button+'</button>')+'</div>');
+  if(!dialog.open) dialog.showModal();
 }
 function emailDialog(key){
-  const o=Object.values(products).flatMap(p=>p.offers).find(item=>item.key===key),e=emailEvidence[key];
-  openDialog('<div class="overline">Supplier email</div><h2 id="dialog-title">'+escapeHtml(e.supplier)+'</h2><p class="mini">'+icon('mail')+'Sat, 21 Nov · '+e.time+' CET</p><div class="mail-summary">'+o.summary+'</div><details class="original"><summary>Original email excerpt</summary><p>'+escapeHtml(e.excerpt)+'</p></details>'+fields([['Subject',escapeHtml(e.subject)],['Thread',e.thread]])+'<div class="dialog-actions"><button class="outline-btn" data-close>Close</button></div>');
+  const e=emailEvidence[key], o=products[productId].offers.find(o=>o.key===key);
+  openDialog(`<div class="overline">Supplier email</div><h2 id="dialog-title">${esc(e.supplier)}</h2><p class="mini">Sat 21 Nov · ${e.time} CET</p><p class="mail-summary">${o.summary}</p>
+    <details class="original"><summary>Original email excerpt</summary><p>${esc(e.excerpt)}</p></details><dl><dt>Subject</dt><dd>${esc(e.subject)}</dd><dt>Thread</dt><dd>${e.thread}</dd></dl>`);
+}
+function editDraft(action){
+  const e=emailEvidence[selectedOffer];
+  currentDraft={product:productId,offer:selectedOffer,action};
+  const body=`Hello ${e.supplier} team,\n\n${replyTerms[selectedOffer][action]}\n\nBest regards,\nSoony launch team`;
+  openDialog(`<div class="overline">${products[productId].tab} · ${verbs[action]}</div><h2 id="dialog-title">Review email draft</h2>
+    <p class="modal-p">Save your decision, then open the draft in your email app to send it yourself.</p>
+    <form id="draft-form" class="editor"><div class="to-line">To <strong>${esc(e.supplier)}</strong><small>${esc(e.recipient)}</small></div>
+    <label>Subject<input name="subject" maxlength="350" required value="${esc(e.subject)}"></label>
+    <label>Message<textarea name="body" rows="7" required>${esc(body)}</textarea></label>
+    <label>Decision made by<input name="by" autocomplete="name" maxlength="80" placeholder="Your name" required value="${esc(reviewer)}"></label>
+    <button type="submit" class="btn">Save decision &amp; draft</button></form>`);
+}
+function savedDraft(r){
+  const e=emailEvidence[r.offer];
+  const url='mailto:'+e.recipient+'?subject='+encodeURIComponent(r.subject)+'&body='+encodeURIComponent(r.body);
+  openDialog(`<div class="overline">Saved draft · ${outcomes[r.action]}</div><h2 id="dialog-title">${esc(e.supplier)}</h2><p class="mini">${esc(r.by)} · ${formatTime.format(r.at)} CET</p>
+    <dl><dt>To</dt><dd>${esc(e.recipient)}</dd><dt>Subject</dt><dd>${esc(r.subject)}</dd></dl><p class="mail-summary draft-body">${esc(r.body)}</p>
+    <div class="dialog-actions"><button class="outline-btn" data-close>Close</button><a href="${esc(url)}" class="btn">${icon('mail')}Open in email app</a></div>`);
 }
 function forecastDialog(){
-  openDialog('<div class="overline">Forecast details</div><h2 id="dialog-title">Expected boxes at launch</h2><p class="modal-p">The dashboard uses the median result from 500 packing simulations with Collector’s Edition first. Short boxes are the difference between the launch target and that median.</p>'+fields(editions.map(e=>[e.name,fmt(e.target)+' target − '+fmt(e.median)+' expected = <b>'+fmt(e.target-e.median)+' short</b>']))+'<p class="modal-p">Forecast snapshot · Sat 21 Nov, 19:25 CET. Supplier emails through 20:02 CET. A reservation alone does not change the forecast. Arrival and quality release still matter.</p><div class="dialog-actions"><button class="outline-btn" data-close>Close</button></div>');
+  openDialog(`<div class="overline">Forecast scenario</div><h2 id="dialog-title">Expected boxes at launch</h2><p class="modal-p">The baseline is the median of 500 simulations. Change expected box counts to preview shortages and financial exposure.</p>
+    <form class="editor" id="forecast-form">${editions.map((e,i)=>`<label>${e.name} · target ${number(e.target)}<input type="number" name="edition${i}" required min="0" max="${e.target}" step="1" value="${forecast[i]}"></label>`).join('')}
+    <p class="modal-p">Collector’s exposure uses €120 per missed preorder. Standard uses an unconfirmed €32 per late box. A delayed Standard box can still sell.</p>
+    <div class="dialog-actions"><button type="button" class="outline-btn" data-reset>Restore baseline</button><button class="btn" type="submit">Apply scenario</button></div></form>`);
 }
+dialog.addEventListener('submit',event=>{
+  event.preventDefault();
+  const form=event.target, data=new FormData(form);
+  if(form.id==='forecast-form'){
+    forecast=editions.map((_,i)=>Number(data.get('edition'+i)));saveSession();dialog.close();render();return;
+  }
+  if(form.id!=='draft-form'||!currentDraft) return;
+  for(const field of ['by','subject','body']){
+    if(!data.get(field).trim()){form.elements[field].value='';form.reportValidity();return;}
+  }
+  const record={...currentDraft,id:crypto.randomUUID(),at:now(),by:data.get('by').trim(),subject:data.get('subject').trim(),body:data.get('body').trim(),forecast:[...forecast]};
+  try { localStorage.setItem(logPrefix+record.id,JSON.stringify(record)); }
+  catch { document.querySelector('#draft-form button').textContent='Storage unavailable · retry';return; }
+  reviewer=record.by;saveSession();readRecords();currentDraft=null;render();savedDraft(record);
+});
 document.addEventListener('click',event=>{
-  const btn=event.target.closest('button');
-  if(!btn)return;
+  const btn=event.target.closest('button');if(!btn)return;
   const d=btn.dataset;
   if('close' in d){dialog.close();return;}
-  if(d.product){selectProduct(d.product,true);return;}
-  if(d.mail){emailDialog(d.mail);return;}
-  if(d.approve||d.task){actionDialog(d.approve||d.task);return;}
+  if('reset' in d){forecast=[...baseline];saveSession();dialog.close();render();return;}
   if('forecast' in d){forecastDialog();return;}
-  if(d.confirm&&!actions[d.confirm]){
-    actions[d.confirm]=demoNow();persist();dialog.close();render();notify(products[d.confirm].done+'. Saved to activity log.');
-    const nextFocus=content.querySelector('[data-approve], .btn.done')?.closest('article')?.querySelector('h3')??document.querySelector('#view-title');
-    nextFocus.setAttribute('tabindex','-1');
-    nextFocus.focus({preventScroll:true});
+  if(d.product){selectProduct(d.product);return;}
+  if(d.mail){emailDialog(d.mail);return;}
+  if(d.select){selectedOffer=d.select;render();content.querySelector('[data-select="'+d.select+'"]').focus({preventScroll:true});return;}
+  if(d.action){editDraft(d.action);return;}
+  if(d.saved){savedDraft(records.find(r=>r.id===d.saved));return;}
+  if(d.record){selectRecord(records.find(r=>r.id===d.record));render();content.querySelector('[data-record="'+d.record+'"]').focus({preventScroll:true});return;}
+  if(d.task){
+    const p=products[d.task];
+    openDialog(`<div class="overline">Decision deadline · ${p.owner}</div><h2 id="dialog-title">${p.queue}</h2><p class="modal-p">${p.timing}</p><div class="dialog-actions"><button class="btn" data-review="${d.task}">Review supplier options</button></div>`);return;
   }
-  if(d.undo){
-    delete actions[d.undo];persist();render();notify('Decision undone. The action is open again.');
-    (content.querySelector('[data-undo]')??document.querySelector('#main')).focus({preventScroll:true});
-  }
+  if(d.review){dialog.close();selectProduct(d.review);}
 });
-function notify(message){
-  document.querySelector('#announcer').textContent=message;
-  let toast=document.querySelector('#toast');if(!toast){toast=document.createElement('div');toast.id='toast';toast.ariaHidden='true';document.body.appendChild(toast);}
-  toast.textContent=message;toast.hidden=false;clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>toast.hidden=true,3500);
+dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
+document.addEventListener('keydown',e=>{
+  if(!e.target.closest('[role=tab]'))return;
+  const ids=Object.keys(products),i=ids.indexOf(productId);
+  const next={ArrowLeft:(i+ids.length-1)%ids.length,ArrowRight:(i+1)%ids.length,Home:0,End:ids.length-1}[e.key];
+  if(next!==undefined){e.preventDefault();selectProduct(ids[next]);}
+});
+function navigate(){
+  if(dialog.open)dialog.close();
+  if(isArchive())selectRecord(records[0]);
+  render();
 }
-dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
-document.addEventListener('keydown',event=>{
-  const tab=event.target.closest('[role=tab]');if(!tab)return;
-  const keys=Object.keys(products),index=keys.indexOf(selected);
-  const next={ArrowLeft:(index+keys.length-1)%keys.length,ArrowRight:(index+1)%keys.length,Home:0,End:keys.length-1}[event.key];
-  if(next!==undefined){event.preventDefault();selectProduct(keys[next],true);}
-});
-window.addEventListener('hashchange',()=>{if(dialog.open)dialog.close();render();window.scrollTo(0,0);document.querySelector('#main').focus({preventScroll:true});});
+window.addEventListener('hashchange',()=>{navigate();document.querySelector('#main').focus();window.scrollTo(0,0);});
+window.addEventListener('storage',e=>{if(e.key===null||e.key.startsWith(logPrefix)){readRecords();if(isArchive())render();}});
 window.addEventListener('resize',()=>drawLaunchCargo(content.querySelector('canvas')));
-render();setInterval(tick,1000);
+navigate();setInterval(tick,1000);
