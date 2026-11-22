@@ -15,6 +15,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from bridge.live import PortalMirror
 from src.chaser.agent import SupplierChaser
 from src.chaser.models import Issue
 from src.chaser.store import ChaserStore
@@ -57,6 +58,8 @@ class _ToolContext:
     def __init__(self, db_path: Path | str):
         self.db_path = Path(db_path)
         self.data_root = ROOT / "data"
+        portal = PortalMirror(self.db_path.parent / "portal-sync", self.data_root)
+        self.data_root = portal.current() or self.data_root
 
     def db(self):
         return connect(self.db_path)

@@ -82,6 +82,8 @@ def _trace_steps(rows: list[dict]) -> list[dict]:
             "result_summary": result_summary,
             "reason": row.get("reason") or "",
             "cost": float(row.get("cost") or 0),
+            "input_tokens": int(row.get("input_tokens") or 0),
+            "output_tokens": int(row.get("output_tokens") or 0),
             "latency": float(row.get("latency_ms") or 0),
             "citations": citations,
             "status": row.get("status") or "completed",
@@ -116,6 +118,7 @@ class AutonomyLoop:
         self._last_timer = time.monotonic()
         self._threads: set[threading.Thread] = set()
         self._lock = threading.Lock()
+        self._run_lock = threading.Lock()
         self._ensure_schema()
 
     def _connect(self):
@@ -188,7 +191,11 @@ class AutonomyLoop:
         return {"ok": True, "status": "queued", "run": run_id, "event": event}
 
     def _worker(self, run_id: str, event: dict):
-        started = time.monotonic()
+        # Trace and approval rows are appended to shared tables by each team.
+        with self._run_lock:
+            self._run_team(run_id, event)
+
+    def _run_team(self, run_id: str, event: dict):
         try:
             team = self.team_factory(self.db_path)
             with self._connect() as con:
@@ -201,14 +208,16 @@ class AutonomyLoop:
             result = team.run_event(_json(event))
             with self._connect() as con:
                 trace = [dict(row) for row in con.execute(
-                    "SELECT agent,tool,args,result,reason,cost,latency_ms,"
+                    "SELECT agent,model,tool,args,result,reason,status,cost,latency_ms,"
                     "input_tokens,output_tokens,created_at FROM agent_trace WHERE id>? ORDER BY id",
                     (trace_start,)
                 )]
                 cost = sum(float(row.get("cost") or 0) for row in trace)
                 report = result.get("harness") if isinstance(result, dict) else None
                 status = "blocked by harness" if report and not report.get("ok", False) else "completed"
-                if cost > self.budget_usd:
+                if isinstance(result, dict) and result.get("live_failed"):
+                    status = "error"
+                elif cost > self.budget_usd:
                     status = "budget_exceeded"
                 con.execute(
                     "UPDATE agent_runs SET status=?,cost=?,finished=?,harness_report=?,trace_json=?,reason=?,trace_start=? WHERE id=?",
@@ -226,7 +235,6 @@ class AutonomyLoop:
         finally:
             with self._lock:
                 self._threads.discard(threading.current_thread())
-            _ = started
 
     def stop(self):
         """Disable new work; an in-flight model request is bounded by the runtime timeout."""
@@ -239,7 +247,7 @@ class AutonomyLoop:
         if self.timer_minutes <= 0 or time.monotonic() - self._last_timer < self.timer_minutes * 60:
             return None
         self._last_timer = time.monotonic()
-        return self.submit({"kind": "timer", "changed_files": [], "summary": "Advance open supplier chaser threads"})
+        return self.submit({"kind": "timer", "changed_files": [], "summary": "Advance open supplier chaser threads"}, force=True)
 
     def runs(self, limit: int = 20) -> list[dict]:
         limit = max(1, min(int(limit), 100))

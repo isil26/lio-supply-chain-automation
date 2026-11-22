@@ -97,6 +97,17 @@ class Host:
         args = [sys.executable, "-m", "src.orchestrator", "--data", str(release / "case-data"),
                 "--port", str(self.port)]
         if self.live_mail:
+            key = (self.home / "openai.key").read_text().strip()
+            if not key:
+                raise RuntimeError("The live planner requires an OpenAI credential")
+            env.update({
+                "OPENAI_API_KEY": key, "SOONY_LLM_API_KEY": key,
+                "SOONY_AGENT_MODE": "live", "SOONY_LLM_PROVIDER": "openai_compat",
+                "SOONY_LLM_URL": "https://api.openai.com/v1/chat/completions",
+                "SOONY_AGENT_MODEL": "gpt-4.1-mini", "SOONY_LLM_MODEL": "gpt-4.1-mini",
+                "SOONY_LLM_ALLOW_REMOTE": "1",
+            })
+            env.pop("SOONY_LLM_KEY", None)
             settings = json.loads(config.read_text())
             user, password = settings.get("user"), settings.get("password")
             if not user or not password:

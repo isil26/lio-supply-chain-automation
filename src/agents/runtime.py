@@ -59,8 +59,10 @@ class Agent:
             if time.monotonic() - started > self.timeout_seconds:
                 return {"status": "timeout", "reason": "wall-clock budget exceeded"}
             try:
+                request_started = time.monotonic()
                 response = self.llm.chat(messages, [self._spec(t) for t in self.tools.values()],
                                          self.system_prompt, self.model)
+                latency_ms = (time.monotonic() - request_started) * 1000
                 calls = response.get("tool_calls", [])
                 usage = response.get("usage", {})
                 total_input_tokens += int(usage.get("input_tokens", 0))
@@ -82,17 +84,21 @@ class Agent:
             if not calls:
                 text = response.get("text", "")
                 record(db, agent=self.name, model=self.model, step=step, result=text, reason="final",
-                       cost=total_cost, input_tokens=total_input_tokens, output_tokens=total_output_tokens)
+                       cost=cost, latency_ms=latency_ms, input_tokens=usage.get("input_tokens", 0),
+                       output_tokens=usage.get("output_tokens", 0))
                 return {"status": "completed", "text": text, "cost": total_cost,
                         "input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
             assistant_call = []
             tool_results = []
-            call_cost = cost / max(1, len(calls))
             for index, call in enumerate(calls):
                 name, args = call.get("name"), call.get("arguments", {})
                 tool = self.tools.get(name)
                 call_id = str(call.get("id") or f"{step}-{name}-{index}")
                 assistant_call.append({"id": call_id, "name": name, "arguments": args})
+                # Attribute each completion's usage once, including parallel calls.
+                metrics = {"cost": cost, "latency_ms": latency_ms,
+                           "input_tokens": usage.get("input_tokens", 0),
+                           "output_tokens": usage.get("output_tokens", 0)} if index == 0 else {}
                 try:
                     if not tool:
                         raise ValueError(f"tool not allowed: {name}")
@@ -137,15 +143,14 @@ class Agent:
                     if not deduplicated:
                         reason = call.get("reason", "model selected tool")
                         record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,
-                               result=result, reason=reason, cost=call_cost,
-                               input_tokens=usage.get("input_tokens", 0),
-                               output_tokens=usage.get("output_tokens", 0))
+                               result=result, reason=reason, **metrics)
+                    elif index == 0 and cost:
+                        record(db, agent=self.name, model=self.model, step=step,
+                               reason="used cached tool result", **metrics)
                 except Exception as exc:
                     result = {"error": str(exc)}
                     record(db, agent=self.name, model=self.model, step=step, tool=name, args=args,
-                           result=result, reason="tool rejected", status="error", cost=call_cost,
-                           input_tokens=usage.get("input_tokens", 0),
-                           output_tokens=usage.get("output_tokens", 0))
+                           result=result, reason="tool rejected", status="error", **metrics)
                 tool_results.append((name, call_id, result))
             messages.append({"role": "assistant", "content": response.get("text", ""),
                              "tool_calls": assistant_call})
@@ -174,21 +179,22 @@ class Team:
             CREATE TABLE IF NOT EXISTS agent_mailbox
             (id INTEGER PRIMARY KEY, sender TEXT, recipient TEXT, task TEXT, result TEXT, status TEXT, ts REAL);""")
         self.db.commit()
+        self.mailbox_start = self.db.execute("SELECT COALESCE(MAX(id), 0) FROM agent_mailbox").fetchone()[0]
 
     def delegate(self, sender, agent, task):
         if agent not in self.agents:
             raise ValueError(f"unknown agent: {agent}")
         if self.db.execute(
-            "SELECT 1 FROM agent_mailbox WHERE sender=? AND recipient=? LIMIT 1",
-            (sender, agent),
+            "SELECT 1 FROM agent_mailbox WHERE sender=? AND recipient=? AND id>? LIMIT 1",
+            (sender, agent, self.mailbox_start),
         ).fetchone():
             return {"status": "skipped", "reason": "specialist already delegated once"}
-        self.db.execute("INSERT INTO agent_mailbox(sender,recipient,task,status,ts) VALUES(?,?,?,?,?)",
+        message = self.db.execute("INSERT INTO agent_mailbox(sender,recipient,task,status,ts) VALUES(?,?,?,?,?)",
                         (sender, agent, task, "running", time.time()))
         self.db.commit()
         result = self.agents[agent].run(task, self.db)
-        self.db.execute("UPDATE agent_mailbox SET result=?, status=? WHERE id=(SELECT max(id) FROM agent_mailbox)",
-                        (json.dumps(result, default=str), result.get("status", "completed")))
+        self.db.execute("UPDATE agent_mailbox SET result=?, status=? WHERE id=?",
+                        (json.dumps(result, default=str), result.get("status", "completed"), message.lastrowid))
         self.db.commit()
         return result
 

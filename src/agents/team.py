@@ -79,43 +79,7 @@ def _result_citations(value: Any) -> list[dict]:
 class AgentTeam(Team):
     def __init__(self, agents, db_path=":memory:", llm=None):
         super().__init__(agents, db_path)
-        columns = {row[1] for row in self.db.execute("PRAGMA table_info(activity)").fetchall()}
-        time_column = next((row for row in self.db.execute("PRAGMA table_info(activity)").fetchall()
-                            if row[1] == "time"), None)
-        if time_column and time_column[4] is None:
-            rows = [dict(row) for row in self.db.execute(
-                "SELECT id,time,agent,action,type,tool,input_ref,output_ref,status,citation,created_at FROM activity"
-            ).fetchall()]
-            self.db.execute("""CREATE TABLE activity_team_new (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                time TEXT NOT NULL DEFAULT '',
-                agent TEXT, action TEXT, type TEXT,
-                tool TEXT, input_ref TEXT, output_ref TEXT, status TEXT, citation TEXT,
-                created_at REAL
-            )""")
-            for row in rows:
-                self.db.execute(
-                    """INSERT INTO activity_team_new
-                       (id,time,agent,action,type,tool,input_ref,output_ref,status,citation,created_at)
-                       VALUES (:id,:time,:agent,:action,:type,:tool,:input_ref,:output_ref,:status,:citation,:created_at)""",
-                    row,
-                )
-            self.db.execute("DROP TABLE activity")
-            self.db.execute("ALTER TABLE activity_team_new RENAME TO activity")
-            columns = {row[1] for row in self.db.execute("PRAGMA table_info(activity)").fetchall()}
-        for name, definition in (
-            ("tool", "TEXT"),
-            ("input_ref", "TEXT"),
-            ("output_ref", "TEXT"),
-            ("status", "TEXT"),
-            ("citation", "TEXT"),
-            ("created_at", "REAL"),
-        ):
-            if name not in columns:
-                self.db.execute(f"ALTER TABLE activity ADD COLUMN {name} {definition}")
-        self.db.commit()
         self.llm = llm
-        self.rounds = 0
         self.db.execute("""CREATE TABLE IF NOT EXISTS agent_approvals (
             id INTEGER PRIMARY KEY AUTOINCREMENT, agent TEXT, tool TEXT, args TEXT, status TEXT
         )""")
@@ -125,16 +89,11 @@ class AgentTeam(Team):
         """Triage an event; fall back to a fixed specialist order if no model plan exists."""
         event_lower = event.casefold()
         triage = self.agents["triage"]
+        self.mailbox_start = self.db.execute("SELECT COALESCE(MAX(id), 0) FROM agent_mailbox").fetchone()[0]
+        self.trace_start = self.db.execute("SELECT COALESCE(MAX(id), 0) FROM agent_trace").fetchone()[0]
+        self.approval_start = self.db.execute("SELECT COALESCE(MAX(id), 0) FROM agent_approvals").fetchone()[0]
         triage_result = triage.run(event, self.db)
-        before = self.db.execute("SELECT count(*) FROM agent_mailbox").fetchone()[0]
-
-        mailbox_before = before
-        # A model can delegate specialists through the triage tool.
-        if mailbox_before <= self.db.execute("SELECT count(*) FROM agent_mailbox").fetchone()[0] and self.rounds == 0:
-            pass
-
-        results = {}
-        results["triage"] = triage_result
+        results = {"triage": triage_result}
 
         if triage_result.get("status") in {"error", "timeout", "budget_exceeded"}:
             results["live_failed"] = {
@@ -144,15 +103,15 @@ class AgentTeam(Team):
             results["trace"] = activity(self.db, 100)
             results["pending_approvals"] = [
                 dict(row) for row in self.db.execute(
-                    "SELECT * FROM agent_approvals WHERE status='pending' ORDER BY id"
+                    "SELECT * FROM agent_approvals WHERE status='pending' AND id>? ORDER BY id", (self.approval_start,)
                 ).fetchall()
             ]
             return self._finish(results)
 
         # Expose specialist returns from real triage delegation in the event result.
         mailbox = self.db.execute(
-            "SELECT recipient,result,status FROM agent_mailbox WHERE sender=? ORDER BY id",
-            ("triage",),
+            "SELECT recipient,result,status FROM agent_mailbox WHERE sender=? AND id>? ORDER BY id",
+            ("triage", self.mailbox_start),
         ).fetchall()
         for row in mailbox:
             recipient = row["recipient"]
@@ -163,11 +122,7 @@ class AgentTeam(Team):
             except Exception:
                 results[recipient] = {"status": row["status"], "text": row["result"]}
 
-        recipients = {
-            row["recipient"] for row in self.db.execute(
-                "SELECT recipient FROM agent_mailbox WHERE sender='triage'"
-            )
-        }
+        recipients = {row["recipient"] for row in mailbox}
         if "planner" in recipients and "chaser" not in recipients:
             results["chaser"] = self.delegate(
                 "triage", "chaser",
@@ -176,16 +131,14 @@ class AgentTeam(Team):
             )
 
         # Fixed, honest fallback: no LLM response means deterministic specialist order.
-        if not self.db.execute(
-            "SELECT 1 FROM agent_mailbox WHERE recipient != 'triage' LIMIT 1"
-        ).fetchone():
+        if not recipients:
             results.update(self._fixed_fallback(event_lower))
 
         results["verified"] = self._verification_summary(event_lower)
         results["trace"] = activity(self.db, 100)
         results["pending_approvals"] = [
             dict(row) for row in self.db.execute(
-                "SELECT * FROM agent_approvals WHERE status='pending' ORDER BY id"
+                "SELECT * FROM agent_approvals WHERE status='pending' AND id>? ORDER BY id", (self.approval_start,)
             ).fetchall()
         ]
         return self._finish(results)
@@ -193,7 +146,7 @@ class AgentTeam(Team):
     def _finish(self, results: dict) -> dict:
         trace_rows = [dict(row) for row in self.db.execute(
             "SELECT agent,model,step,tool,args,result,reason,cost,latency_ms,"
-            "input_tokens,output_tokens,created_at FROM agent_trace ORDER BY id"
+            "input_tokens,output_tokens,created_at FROM agent_trace WHERE id>? ORDER BY id", (self.trace_start,)
         ).fetchall()]
         final_text = " ".join(
             str(value.get("text", "")) for value in results.values() if isinstance(value, dict)
@@ -216,14 +169,10 @@ class AgentTeam(Team):
         results["harness"] = report
         results["trace"] = activity(self.db, 100)
         if not report["ok"]:
-            self.db.execute("UPDATE agent_approvals SET status='blocked by harness' WHERE status='pending'")
-            if self.db.execute(
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='decisions'"
-            ).fetchone():
-                self.db.execute(
-                    "UPDATE decisions SET status='blocked by harness', "
-                    "payload=json_set(payload, '$.status', 'blocked by harness') WHERE status='pending'"
-                )
+            # The runtime queues model proposals in agent_approvals. Buyer decisions
+            # are owned by the procurement workflow and may predate this event.
+            self.db.execute("UPDATE agent_approvals SET status='blocked by harness' WHERE status='pending' AND id>?",
+                            (self.approval_start,))
             self.db.commit()
             results["proposal_status"] = "blocked by harness"
         else:
@@ -327,7 +276,7 @@ class AgentTeam(Team):
 def build_team(db_path="store/soony.db", llm=None) -> AgentTeam:
     db_path = str(db_path)
     if llm is None:
-        llm = FakeLLM() if os.getenv("SOONY_AGENT_MODE") == "simulated" else HTTPAdapter()
+        llm = FakeLLM([]) if os.getenv("SOONY_AGENT_MODE") == "simulated" else HTTPAdapter()
 
     team_ref = {"team": None}
 
@@ -346,7 +295,7 @@ def build_team(db_path="store/soony.db", llm=None) -> AgentTeam:
         )
 
     triage = Agent("triage", TRIAGE_PROMPT, [delegate_tool("triage")],
-                   llm=llm, max_steps=2, budget_usd=0.50)
+                   llm=llm, max_steps=2, budget_usd=0.50, timeout_seconds=300)
     analyst = Agent("analyst", ANALYST_PROMPT,
                     _registry_tools(db_path, ROLE_TOOLS["analyst"]),
                     llm=llm, max_steps=3, budget_usd=0.40)
