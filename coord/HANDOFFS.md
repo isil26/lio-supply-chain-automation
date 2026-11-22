@@ -601,3 +601,9 @@ Verified all five identities on the public dashboard, the shared login and its o
 ## Manti-Hackathon-Login — Existing team credentials on Google Cloud
 
 The public sign-in gateway now accepts the same five usernames and password as the hackathon rehearsal. Tested each username in a fresh session on the public domain and verified the signed-in username, React dashboard, supplier threads and live mail mode. Offer history continues to use the selected account. Anyone viewing the dashboard as “Shared team login” can sign out and use their own username. [Live dashboard](https://soony-manti-live.vercel.app/react#dashboard)
+
+## 22 Nov · T-Manti-Demo-Restore · manti-agent-map
+
+Published the selected version B of Launch Desk as application revision `a8958a4` and promoted it in `367847a`. The dashboard uses the demo layout for the forecast, supplier recommendations, email rows, approval ceiling, deadlines and unit price comparison. Activity Log uses the recorded supplier decisions and reviewers. Offers, pricing, negotiation records, account rules and private imports use the existing backend.
+
+The signed-in public root and React URLs served the same JavaScript and CSS as the tested build. The API returned two editions, eight offers and five price limits. Checked the product switch and draft preview on production. At 1360 px and 390 px, all 17 agents appeared in a single map with 128 events in the stream 16 px below it. Tested recording a negotiation and viewing its named history in a separate local replay.
