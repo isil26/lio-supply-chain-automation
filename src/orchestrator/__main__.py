@@ -34,6 +34,7 @@ from src.decide.actions import action_queue, mark_action, recovery_reviews, sour
 from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
+from src.orchestrator.portal_update import portal_baseline, portal_update
 from src.orchestrator import action_approvals, decision_effects
 from src.orchestrator.numbers import numbers_report
 from src.truth import LOCAL, readiness
@@ -368,6 +369,8 @@ def dashboard(con, *, include_action_history=False):
     costs = std_costs(con)
     missed = customer_inputs().get("missed_copy_cost_eur", {})
     queue_reviews = recovery_reviews(con, truth, actions, supplier_actions, include_pending=True)
+    supply_network = network(con, truth["site"], {risk["id"] for risk in risks if risk["gap"]})
+    location = (supply_network.get("hub") or {}).get("name") or truth["site"]
     return {
         "launch": {"name": truth["name"].strip(" -–•"), "deadline": truth["deadline"], "location": truth["site"]},
         "readiness": [{"edition": "CE" if pid.endswith("-CE") else "STD", "percent": round(row["packed"] / row["target"] * 100, 1),
@@ -395,10 +398,10 @@ def dashboard(con, *, include_action_history=False):
         ),
         "approval": approval, "options": actions, "blockedApprovals": blocked,
         "pastDecisions": decision_effects.past(con),
-        "drop": snapshot.get("drop"),
+        "drop": portal_update(snapshot.get("drop"), truth, actions, location),
         "sync": snapshot.get("sync"), "dataHealth": health,
         "model": truth["model"], "dataQuality": truth["data_quality"],
-        "network": network(con, truth["site"], {risk["id"] for risk in risks if risk["gap"]}),
+        "network": supply_network,
     }
 
 
@@ -615,6 +618,7 @@ class Loop:
                         drop = {"id": now(), "title": title, "detail": detail, "time": now(), "changes": changed, "drafts": draft_count}
                         if self.portal and manifest:
                             drop["source"] = "portal"
+                            drop.update(portal_baseline(before, truth))
                         save_state(con, "drop", drop)
                         chaser.activity(con, "Data Bridge", detail)
             if new_portal:

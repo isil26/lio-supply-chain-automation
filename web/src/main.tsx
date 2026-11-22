@@ -114,6 +114,7 @@ function App() {
   const [mailView, setMailView] = useState(() => new URLSearchParams(window.location.search).get("mail") === "1");
   const [threadsOpen, setThreadsOpen] = useState(() => Boolean(threadId) || mailView);
   const [dropVisible, setDropVisible] = useState(true);
+  const [requestedAction, setRequestedAction] = useState<{ id: string } | null>(null);
   const [decisionBusy, setDecisionBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
   const [source, setSource] = useState<Source | null>(null);
@@ -148,7 +149,7 @@ function App() {
   const supplierActions = (mailView ? data?.mailHistory?.actions : data?.supplierActions)?.filter((item) => item.case !== "recovery");
   const recoveryActions = data?.supplierActions?.filter((item) => item.case === "recovery");
 
-  if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading launch state…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
+  if (!data) return <main className="loading-screen"><div className="loader"/><strong>{error || "Loading the launch forecast…"}</strong>{error && <button onClick={() => void refresh()}>Retry</button>}</main>;
 
   // Next step = the open option that saves the most copies in the forecast; falls back to the backend's pick.
   const copiesSaved = (option: { modeled_impact?: Record<string, { medianDelta?: number; expectedDelta?: number }> } | null | undefined) =>
@@ -315,24 +316,38 @@ function App() {
 
       {data.sync?.error && <div className="notice alert" role="alert">{data.sync.error}</div>}
       {data.sync?.portal?.error && <div className="notice alert" role="alert">
-        {data.sync.portal.error} {data.sync.portal.snapshot ? "Showing the last verified portal snapshot." : "Showing the bundled snapshot."}
+        {data.sync.portal.error} {data.sync.portal.snapshot ? "Showing the last verified Lio files." : "Showing the original case files."}
       </div>}
       {data.sync?.portal?.status === "verified" && data.sync.portal.checkedAt && data.sync.portal.snapshot && (
-        <p className="muted">Portal checked {etaDate.format(new Date(data.sync.portal.checkedAt))} · {formatNumber(health?.filesSeen)} files verified</p>
+        <p className="muted">Last Lio check · {etaDate.format(new Date(data.sync.portal.checkedAt))} · {formatNumber(health?.filesSeen)} files verified</p>
       )}
       {error && <div className="notice alert">{error}<button className="link-button" onClick={() => setError("")}>Dismiss</button></div>}
       {dropVisible && data.drop && (pendingDrop || isStaticMode() || hostedReplayBuild) && <div className="notice">
-        <span>New supplier files</span>
+        <span>{pendingDrop ? "Supplier files are ready to apply." : "Supplier update replay"}</span>
         <button className="primary-button small" onClick={() => void runSync(hostedReplayBuild && !pendingDrop)} disabled={syncBusy}>{syncBusy ? "Updating…" : hostedReplayBuild && !pendingDrop ? "Reset" : "Update"}</button>
       </div>}
-      {data.drop?.source === "portal" && data.sync?.portal?.snapshot && <div className="notice" role="status">
-        <span>{data.drop.title} · {data.drop.detail}</span>
-      </div>}
+      {data.drop?.source === "portal" && data.sync?.portal?.snapshot && <section className="portal-update" aria-label="Latest Lio update">
+        <header><h2>{data.drop.receipts ? data.drop.title : "Latest Lio update"}</h2>
+          <time dateTime={data.drop.time}>{etaDate.format(new Date(data.drop.time))} CET</time></header>
+        {data.drop.receipts?.map((receipt) => <div className="portal-receipt" key={`${receipt.evidence.file}-${receipt.evidence.row}`}>
+          <p><strong>{receipt.headline}</strong> {receipt.balance}</p>
+          <div className="portal-links"><button className="link-button" onClick={() => setSource(receipt.evidence)}>View receipt</button>
+            {receipt.action && <button className="link-button" onClick={() => setRequestedAction({ id: receipt.action!.id })}>{receipt.action.title} →</button>}
+          </div>
+        </div>)}
+        {data.drop.findings?.map((finding) => <div className="portal-receipt" key={finding.title}>
+          <p>{finding.title}</p><button className="link-button" onClick={() => setSource(finding.evidence)}>View evidence</button>
+        </div>)}
+        {!!data.drop.forecasts?.length && <p className="portal-forecast">{data.drop.forecasts.join(" ")}</p>}
+        {!!data.drop.changes?.length && <details><summary>See changed files</summary><ul>{data.drop.changes.map(change =>
+          <li key={change.file}>{change.action === "removed" ? <span>{change.file} (removed)</span> :
+            <button className="link-button" onClick={() => setSource({ file: change.file })}>{change.file}</button>}</li>)}</ul></details>}
+      </section>}
 
       <section className="strip" aria-label="Launch status">
         <div className="strip-main">
           <strong className="strip-number">{onTrack ? "On track" : formatNumber(totalShort)}</strong>
-          <span>{onTrack ? "for Sunday 20:00" : "copies short on Sunday"}</span>
+          <span>{onTrack ? "to meet the launch target" : "copies below target in the median forecast"}</span>
         </div>
         {!onTrack && shortEur != null && <div className="strip-item"><strong>≈ {euro(shortEur)}</strong>
           <span>at stake{!useMiss ? " (standard cost)" : data.readiness.some((row) => row.missCostConfirmed === false)
@@ -347,7 +362,7 @@ function App() {
 
       {(() => {
         const listed = (data.options ?? []).filter((option) => option.status !== "blocked" || option.approvalMode);
-        if (!hostedReplayBuild) return <ActionList options={listed}
+        if (!hostedReplayBuild) return <ActionList requestedAction={requestedAction} options={listed}
           reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
           onDecide={(id, review, by) => void decide(id, review, by)} onEvidence={setSource} onOpenThread={selectThread}
@@ -376,16 +391,16 @@ function App() {
       {data.inboundTimeline && <ArrivalTimeline timeline={data.inboundTimeline}/>}
 
       <section className="card">
-        <h3>Missing parts</h3>
+        <h3>Largest component shortages</h3>
         {missing.length ? <ol className="missing">
           {missing.map((risk) => {
             const evidence = riskEvidence(risk);
             return <li key={`${risk.rank}-${risk.id ?? risk.component}`}>
-              <span className="part-name"><strong>{shortName(risk.component)}</strong>{(risk.inbound ?? 0) > 0 && <small>{formatNumber(risk.inbound)} still on the way</small>}</span>
-              <span className="missing-right"><b>{formatNumber(gapOf(risk))}</b>{evidence && <button className="link-button" onClick={() => setSource(evidence)}>Why?</button>}</span>
+              <span className="part-name"><strong>{shortName(risk.component)}</strong>{(risk.inbound ?? 0) > 0 && <small>{formatNumber(risk.inbound)} expected before cutoff</small>}</span>
+              <span className="missing-right"><b>{formatNumber(gapOf(risk))} short</b>{evidence && <button className="link-button" onClick={() => setSource(evidence)}>View evidence</button>}</span>
             </li>;
           })}
-        </ol> : <p className="empty">None</p>}
+        </ol> : <p className="empty">The current plan covers every required component.</p>}
       </section>
 
       <Offers/>
@@ -406,13 +421,13 @@ function App() {
       </section>}
 
       <details className="card agents" open={threadsOpen} onToggle={(event) => setThreadsOpen(event.currentTarget.open)}>
-        <summary><h3>Agents</h3><span className="muted">{drafts} emails ready · {reviews} files to check</span></summary>
+        <summary><h3>Supplier correspondence and activity</h3><span className="muted">{drafts} email drafts · {reviews} files to review</span></summary>
         {data.mailHistory && <div className="actions">
           <button className="ghost-button" aria-pressed={!mailView} onClick={() => openMail(false)}>{data.sync?.mailMode === "live" ? "Live supplier threads" : "Demo threads"}</button>
           <button className="ghost-button" aria-pressed={mailView} onClick={() => openMail(true)}>Verified team mailbox</button>
         </div>}
         {mailView && <p className="muted">{data.mailHistory?.status === "ready"
-          ? (visibleThreads?.length ? "Read-only history reconciled from team Gmail." : "No verified chaser email found in the team mailbox.")
+          ? (visibleThreads?.length ? "Messages verified against the team mailbox." : "The team mailbox has no verified supplier messages yet.")
           : data.mailHistory?.status === "unavailable" ? "Mailbox check unavailable. Previously verified messages remain visible."
           : "Waiting for a read-only mailbox check."}{data.mailHistory?.checkedAt && <> · Checked {etaDate.format(new Date(data.mailHistory.checkedAt))} CET</>}</p>}
         {supplierActions && supplierActions.length > 0 && <SupplierActions actions={supplierActions} select={selectThread} mailView={mailView} onEvidence={setSource}/>}
@@ -496,7 +511,7 @@ function App() {
           </div>}
         </div>
         <ul className="activity">
-          {data.activity.slice(0, 5).map((item) => <li key={item.id}><strong>{item.agent}</strong> {item.action}</li>)}
+          {data.activity.slice(0, 5).map((item) => <li key={item.id}><strong>{item.agent}</strong> {item.time && <time>{item.time} · </time>}{item.action}</li>)}
         </ul>
         <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>
       </details>

@@ -195,7 +195,12 @@ export type DashboardData = {
   recordedAgentRun?: RecordedAgentRun | null;
   approval: Approval | null;
   options?: Approval[];
-  drop: { title: string; detail: string; time: string; source?: "portal" } | null;
+  drop: { title: string; detail: string; time: string; source?: "portal";
+    changes?: { file: string; action: string }[];
+    forecasts?: string[];
+    findings?: { title: string; evidence: Source }[];
+    receipts?: { headline: string; balance: string; evidence: Source; action: { id: string; title: string } | null }[];
+  } | null;
   sync?: { error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string; mailMode?: "live" | "dry-run";
     portal?: { status?: "verified" | "unavailable"; checkedAt?: string; appliedAt?: string; snapshot?: string | null; error?: string | null } };
   documentReviews?: SourceReview[];
