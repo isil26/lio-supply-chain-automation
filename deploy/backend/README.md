@@ -1,6 +1,6 @@
 # Team live backend
 
-[Manti Live](https://soony-manti-live.vercel.app) runs on `instance-20261122-003928` in `europe-west8-a`. Each team member signs in as `isil`, `murat`, `nick`, `leo` or `gulsah` with their private production password. The separate Vercel replay uses its packaged snapshot.
+[Manti Live](https://soony-manti-live.vercel.app) runs on `instance-20261122-003928` in `europe-west8-a`. Each team member signs in as `isil`, `murat`, `nick`, `leo` or `gulsah` with the hackathon password `12345`. The separate Vercel replay uses its packaged snapshot.
 
 ## Work on the server
 
@@ -24,7 +24,7 @@ The registered team mailbox configuration is in `mail-history.json`. The live wo
 
 GitHub Actions updates `/srv/lio/main.git` from development `main`. The application revision in [live-revision](live-revision) feeds `/srv/lio/production.git`. The VM watcher fetches that production mirror every 30 seconds, stages the build, checks dashboard readiness and falls back to its previous release on a startup failure. State lives outside the release directories. The working checkout can advance independently.
 
-The production Vercel gateway authenticates named accounts and forwards the signed-in identity to the VM. Provision the same five account verifiers in the private `SOONY_USERS_JSON` setting on both gateways. The VM runs with `SOONY_DEMO_ACCOUNTS=0`. The existing shared password and active shared sessions also work. A shared user can view offers and switch accounts to decide. The Activity Log records the individual username on approvals, declines and confirmed negotiations. Historical decisions retain their original attribution. [Named-login configuration](../vercel/README.md#sign-in-and-audit-activity)
+The production Vercel gateway authenticates named accounts and forwards the signed-in identity to the VM. The public hackathon sign-in uses the existing verifiers from `deploy/vercel/demo-users.json` in its production `SOONY_USERS_JSON` setting. The VM must recognize those five usernames when the gateway forwards a signed-in request. The VM runs with `SOONY_DEMO_ACCOUNTS=0`. The existing shared password and active shared sessions also work. A shared user can view offers and switch accounts to decide. The Activity Log records the individual username on approvals, declines and confirmed negotiations. Historical decisions retain their original attribution. [Named-login configuration](../vercel/README.md#sign-in-and-audit-activity)
 
 For the `soony-manti-live` Vercel project, build with `bash deploy/vercel/package-vm.sh FRESH_DEPLOY_DIRECTORY`. It packages the pinned application with the VM transport. The project holds `LIO_VM_FORWARD_KEY`, the gateway token and the existing session configuration as server-only settings. Stage a production build with `--skip-domain`, verify signed-out denial, login, `/api/health`, `/api/dashboard` and `/react`, then promote the tested deployment. `/api/health` reports the running `backendCommit`.
 

@@ -597,3 +597,7 @@ Read-only production checks verified a live mail connection, a verified portal s
 The production dashboard now accepts the five team usernames with individual private passwords. The existing shared password and shared sessions still open the dashboard. A shared user can review offers and switch accounts before making a decision. Historical shared entries keep their original attribution. A confirmed negotiation records the operator, time, reviewed message and available options. Sending the negotiation email remains a separate human action.
 
 Verified all five identities on the public dashboard, the shared login and its offer-decision restriction, live mail mode, the portal snapshot, private upload sessions, and logout. An isolated HTTP workflow on the VM confirmed all three offer decisions appeared under the correct usernames. The candidate passed 61 Python and five gateway tests. Backend revision `3d25917`. [Manti Live](https://soony-manti-live.vercel.app/react#dashboard)
+
+## Manti-Hackathon-Login — Existing team credentials on Google Cloud
+
+The public sign-in gateway now accepts the same five usernames and password as the hackathon rehearsal. Tested each username in a fresh session on the public domain and verified the signed-in username, React dashboard, supplier threads and live mail mode. Offer history continues to use the selected account. Anyone viewing the dashboard as “Shared team login” can sign out and use their own username. [Live dashboard](https://soony-manti-live.vercel.app/react#dashboard)

@@ -164,4 +164,4 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Manti-Demo-Restore | Restore the supplied demo design on the connected dashboard and deploy the unified Agents tab | manti-agent-map | dashboard presentation, scoped frontend release | in_progress | T-Agents-Tab |
 
-| Manti-Hackathon-Login | Use the existing five rehearsal credentials on the live hackathon dashboard | manti-dashboard | sign-in settings and verification | in_progress | Manti-Named-Live |
+| Manti-Hackathon-Login | Use the existing five rehearsal credentials on the live hackathon dashboard | manti-dashboard | sign-in settings and verification | done | Manti-Named-Live |

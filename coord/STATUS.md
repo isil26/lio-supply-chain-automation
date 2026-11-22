@@ -185,4 +185,4 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-agent-map | T-Manti-Demo-Restore | Dashboard presentation and release | in_progress | Verified the single map above the stream on production. Selected demo B is connected to forecast, supplier, pricing and audited decision APIs; layout and negotiation history checked in isolated replay. Publishing the dashboard. | 22 Nov |
 
-| manti-dashboard | Manti-Hackathon-Login | Reproduced the rejected rehearsal password at the live sign-in and staged the corrected setting | in_progress | Verify each public login | 22 Nov |
+| manti-dashboard | Manti-Hackathon-Login | All five rehearsal logins verified individually on the public Google Cloud dashboard | done | Activity Log attribution uses the selected username | 22 Nov |
