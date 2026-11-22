@@ -83,6 +83,10 @@ def schema(con):
         deal_id TEXT NOT NULL, revision TEXT NOT NULL, action TEXT NOT NULL, actor TEXT,
         decided_at TEXT, note TEXT, email_id TEXT UNIQUE, terms TEXT NOT NULL,
         PRIMARY KEY (deal_id, revision))""")
+    con.execute("""CREATE TABLE IF NOT EXISTS deal_negotiations (
+        deal_id TEXT NOT NULL, revision TEXT NOT NULL, actor TEXT NOT NULL,
+        decided_at TEXT NOT NULL, message TEXT NOT NULL, terms TEXT NOT NULL,
+        PRIMARY KEY (deal_id, revision, actor, message))""")
 
 
 def _digest(data):
@@ -165,10 +169,7 @@ def _review(q, text, total, cutoff, now, expired, superseded, moq, kind, carrier
     return "quoted","Review the quantity, delivered terms and signer before requesting a reservation."
 
 
-def _archive(con, old, *, capture_options=False):
-    if old["status"] not in ("approved","declined"):
-        return
-    revision = old["revision"] or "legacy"
+def _decision_terms(con, old, capture_options):
     terms = {k:old.get(k) for k in (*TERMS,"source_message","excerpt")}
     if capture_options:
         cursor = con.execute("""SELECT id,supplier,thread_id,quantity,order_quantity,price_eur,total_eur,
@@ -177,10 +178,39 @@ def _archive(con, old, *, capture_options=False):
                                 ORDER BY best DESC,supplier""", (old["material"], old["required_by"]))
         names = [column[0] for column in cursor.description]
         terms["alternatives"] = [dict(zip(names, row)) for row in cursor]
+    return json.dumps(terms, ensure_ascii=False)
+
+
+def _archive(con, old, *, capture_options=False):
+    if old["status"] not in ("approved","declined"):
+        return
+    revision = old["revision"] or "legacy"
     con.execute("""INSERT OR IGNORE INTO deal_decision_history
         (deal_id,revision,action,actor,decided_at,note,email_id,terms) VALUES(?,?,?,?,?,?,?,?)""",
         (old["id"],revision,old["status"],old["decided_by"],old["decided_at"],old["note"],old["email_id"],
-         json.dumps(terms, ensure_ascii=False)))
+         _decision_terms(con, old, capture_options)))
+
+
+def record_negotiation(con, deal_id, revision, actor, message):
+    if not isinstance(actor, str) or not actor.strip():
+        raise ValueError("Enter the name of the person reviewing this offer.")
+    if not isinstance(message, str) or not message.strip() or len(message) > 1000:
+        raise ValueError("Enter a negotiation message of up to 1,000 characters.")
+    with con:
+        if not con.in_transaction:
+            con.execute("BEGIN IMMEDIATE")
+        schema(con)
+        deal = _stored(con, deal_id)
+        if not revision or deal["revision"] != revision or deal["offer_state"] == "superseded":
+            raise ValueError("The offer has changed. Refresh before starting a negotiation.")
+        when = _now()
+        inserted = con.execute("""INSERT INTO deal_negotiations
+            (deal_id,revision,actor,decided_at,message,terms) VALUES(?,?,?,?,?,?)
+            ON CONFLICT(deal_id,revision,actor,message) DO NOTHING""",
+            (deal_id, revision, actor.strip(), when, message.strip(), _decision_terms(con, deal, True)))
+        if inserted.rowcount:
+            con.execute("INSERT INTO activity(time,agent,action,type) VALUES(?,?,?,?)",
+                        (when, actor.strip(), f"Started negotiation with {deal['supplier']} for {deal['material']}.", "info"))
 
 
 def _offer_row(quote, text, source, cutoff, now, fx, superseded):
@@ -311,7 +341,10 @@ def list_deals(con):
     rows = [dict(zip(cols,r)) for r in con.execute("SELECT * FROM deals ORDER BY material,best DESC,eligible DESC,score DESC")]
     history = {}
     for deal,rev,action,actor,when,note,mail,terms in con.execute(
-            "SELECT deal_id,revision,action,actor,decided_at,note,email_id,terms FROM deal_decision_history ORDER BY rowid DESC"):
+            """SELECT deal_id,revision,action,actor,decided_at,note,email_id,terms FROM deal_decision_history
+               UNION ALL
+               SELECT deal_id,revision,'negotiation started',actor,decided_at,message,NULL,terms FROM deal_negotiations
+               ORDER BY decided_at DESC"""):
         history.setdefault(deal,[]).append(dict(revision=rev,action=action,by=actor,at=when,note=note,email_id=mail,terms=json.loads(terms)))
     superseded = superseded_threads(con)
     for row in rows:

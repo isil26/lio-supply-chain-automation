@@ -952,7 +952,7 @@ def handler(loop, gateway_token=None):
                             return self.out({"error": str(exc)}, 409)
                         loop.trigger.set()
                         return self.out({"ok": True})
-                    deal = re.fullmatch(r"/api/deals/([a-f0-9]{12,16})/(approve|decline)", path)
+                    deal = re.fullmatch(r"/api/deals/([a-f0-9]{12,16})/(approve|decline|negotiate)", path)
                     if deal:  # T90 mail-agent: record the decision and draft the supplier email
                         from src.chaser import deals as supplier_deals
                         supplier_deals.schema(con)
@@ -965,6 +965,9 @@ def handler(loop, gateway_token=None):
                         if not isinstance(body.get("revision"), str) or not body["revision"]:
                             return self.out({"error": "Refresh the offer before recording a decision."}, 409)
                         try:
+                            if deal[2] == "negotiate":
+                                supplier_deals.record_negotiation(con, deal[1], body["revision"], body.get("by"), body.get("message"))
+                                return self.out({"ok": True})
                             row = supplier_deals.decide(con, deal[1], deal[2], body.get("by")[:80] if isinstance(body.get("by"), str) else None,
                                                         (str(body["note"])[:500] if body.get("note") else None),
                                                         revision=body["revision"], confirm_held=body.get("confirmHeld") is True)

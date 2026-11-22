@@ -8,7 +8,7 @@ from threading import Barrier
 from unittest.mock import patch
 
 from . import schema
-from .deals import check_draft, decide, is_decision_draft, list_deals, signer, sync
+from .deals import check_draft, decide, is_decision_draft, list_deals, record_negotiation, signer, sync
 
 DEADLINE = "2026-11-22T20:00:00+01:00"
 NOW = datetime(2026, 11, 21, 12, tzinfo=timezone.utc)
@@ -90,6 +90,29 @@ class DealsTest(unittest.TestCase):
                     ("B1", "B1i2", "in", "Boise", "Quantity: 6,800 pcs, ETA 2026-11-22 06:00, USD 11.20 per unit", "2026-11-21T10:00:00+00:00"))
         sync(con, DEADLINE, now=NOW, model=False)
         self.assertEqual(next(d for d in list_deals(con)["deals"] if d["supplier"] == "Boise Semi")["status"], "changed")
+
+    def test_negotiation_preserves_offer_and_distinct_reviewers(self):
+        con = db()
+        sync(con, DEADLINE, now=NOW, model=False)
+        deal = self.boise(con)
+        message = "Can you deliver the first lot on Friday?"
+        for actor in ("isil", "isil", "leo"):
+            record_negotiation(con, deal["id"], deal["revision"], actor, message)
+        with self.assertRaises(ValueError):
+            record_negotiation(con, deal["id"], "stale revision", "leo", message)
+        result = self.boise(con)
+        self.assertEqual(result["status"], "pending")
+        self.assertEqual(con.execute("SELECT count(*) FROM chases WHERE status='draft'").fetchone()[0], 0)
+        self.assertEqual({e["by"] for e in result["history"]}, {"isil", "leo"})
+        self.assertEqual(len(result["history"]), 2)
+        self.assertEqual(result["history"][0]["note"], message)
+        self.assertTrue(result["history"][0]["terms"]["alternatives"])
+        decide(con, deal["id"], "approve", "murat", revision=deal["revision"])
+        other = next(item for item in list_deals(con)["deals"] if item["id"] != deal["id"])
+        decide(con, other["id"], "decline", "gulsah", revision=other["revision"])
+        events = {(e["action"], e["by"]) for item in list_deals(con)["deals"] for e in item["history"]}
+        self.assertEqual(events, {("negotiation started", "isil"), ("negotiation started", "leo"),
+                                  ("approved", "murat"), ("declined", "gulsah")})
 
     def test_repeated_review_and_refresh_queue_one_response(self):
         con = db()

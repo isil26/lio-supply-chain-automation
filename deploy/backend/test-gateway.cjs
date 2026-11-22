@@ -121,6 +121,8 @@ test('the live relay requires a provisioned account to forward a write', async (
   assert.equal((await send()).status, 200);
   assert.equal(actor, 'Shared team login');
   delete process.env.SOONY_SHARED_EDGE_ACCOUNT;
+  process.env.SOONY_DEMO_ACCOUNTS = '0';
+  assert.equal((await fetch(site + '/api/dashboard', { headers })).status, 401);
   delete process.env.SOONY_USERS_JSON;
   delete process.env.SOONY_DEMO_ACCOUNTS;
   assert.equal((await send()).status, 503);

@@ -206,7 +206,8 @@ module.exports = async function control(request, response, mode) {
   if ((op === 'home' || op === 'login' || target === '/live' || target === '/react' || target === '/game-cards') && method === 'GET' && !user && !trustedGateway) {
     return loginPage(response, false, upstream ? (["/live", "/react", "/game-cards"].includes(target) ? target : loginReturn(url.searchParams)) : "/");
   }
-  if (!user && !(trustedGateway && method === 'GET')) return respond(response, 401, { error: 'Team login required' });
+  const serviceRead = trustedGateway && method === 'GET' && process.env.SOONY_DEMO_ACCOUNTS !== '0';
+  if (!user && !serviceRead) return respond(response, 401, { error: 'Team login required' });
   if (op === 'session' && method === 'GET') return respond(response, 200, { user });
   if (op === 'uploads') {
     if (!user) return respond(response, 401, { error: 'Team login required' });
