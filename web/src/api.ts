@@ -48,6 +48,8 @@ export type Risk = {
 export type Activity = {
   id: string;
   agent: string;
+  timestamp?: string | null;
+  citation?: Source | string | null;
   action: string;
   time: string;
   type: "analysis" | "sent" | "warning";
@@ -191,7 +193,7 @@ export type DashboardData = {
     evidence?: Source | null; threadId?: string | null; replyId?: number | null;
   }[];
   mailHistory?: { status: "ready" | "checking" | "unavailable"; checkedAt?: string; threads: SupplierThread[]; actions?: SupplierAction[] } | null;
-  agents?: { enabled: boolean; mode?: string };
+  agents?: { enabled: boolean; mode?: string; runs?: AgentRun[] };
   recordedAgentRun?: RecordedAgentRun | null;
   approval: Approval | null;
   options?: Approval[];

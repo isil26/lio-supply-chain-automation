@@ -176,3 +176,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-import | T-Data-Import-Live-QA | Public gateway, private scenario | done | Identical ZIP and API repeats skipped all 303 and 332 files respectively. The shared forecast matched before and after. The private scenario was closed. | 22 Nov |
 
 | manti-dashboard | T-Manti-Offers | Product ceilings, price comparison and historical supplier choices live | done | Eight offers across five products, all limits off. Verified sign-in and the private Data import route on production. | 22 Nov |
+
+| manti-agent-map | T-Agents-Tab | Agent map, workspace navigation and event timestamps | done | Verified the 17-agent map, real rehearsal tool pulse, replay and compact layout. | 22 Nov |

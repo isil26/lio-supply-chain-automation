@@ -180,6 +180,19 @@ class RecoveryReviewTests(unittest.TestCase):
 
 
 class ExportTests(unittest.TestCase):
+    def test_activity_preserves_operational_and_specialist_timestamps(self):
+        with closing(sqlite3.connect(":memory:")) as con:
+            con.row_factory = sqlite3.Row
+            chaser.schema(con)
+            con.execute("ALTER TABLE activity ADD COLUMN created_at REAL")
+            con.executemany("INSERT INTO activity(time,agent,action,type,created_at) VALUES(?,?,?,?,?)", [
+                ("2026-11-21T10:00:00+00:00", "Data Bridge", "Synced", "analysis", None),
+                ("", "analyst", "Completed", "analysis", 1.25),
+            ])
+            rows = dashboard_activity(con, [], lambda stamp: stamp, docs=[])
+        self.assertEqual(rows[0]["timestamp"], "1970-01-01T00:00:01.250000+00:00")
+        self.assertEqual(rows[1]["timestamp"], "2026-11-21T10:00:00+00:00")
+
     def test_activity_from_sqlite_includes_the_tool_chain_and_original_citation(self):
         source = "suppliers/SUP-1/notices/notice.pdf"
         cite = {"file": source, "page": 1, "quote": "暂停发货"}
