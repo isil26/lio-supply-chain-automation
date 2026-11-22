@@ -7,7 +7,7 @@ Seven regressions run with `python -m unittest discover -s tests/drops -v`. Twen
 | Drop | Pipeline and dashboard result |
 |---|---|
 | German notice PDF | Extracted generic `what` only. ETA, forecast and options held steady without a warning. |
-| German and Japanese MIME emails | Both appeared as added files. Document discovery ignores `.eml`, so neither yielded facts, a warning or forecast/option changes. |
+| German and Japanese MIME emails | Fixed 22 Nov (nick): `.eml` is now read as a notice. Headers and body are cited, the body goes through the notice parser, and attachments (PDF, scans, XLSX, DOCX, text; max 10, 20 MB each) are extracted with `file.eml#attachment` citations. Unsupported attachments raise a warning. The email still carries the review flag "verify email and any attachments". Fixture: `tests/drops/synthetic/hwaseong-delay.eml`. |
 | Order confirmation PDF | Standard layout surfaced a cited PO discrepancy in truth. A date-first, re-columned acknowledgment extracted only the PO, with no parser error or warning. Both left shipment forecasts and options intact. |
 | Reordered and renamed stock CSV | Known aliases, semicolon UTF-16 with DD.MM.YYYY and comma Windows-1252 with MM/DD/YYYY both parsed. Decimal-comma quantities summed to 81. Drop banner showed replacement. |
 | UTF-16 and Windows-1252 PO CSV | Typed ingestion committed €2.40. Document reconciliation reopened the same file as UTF-8 and threw. The worker preserved the previous forecast and options and published `sync.error`. |

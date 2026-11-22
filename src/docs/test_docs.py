@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from src.docs import documents, load_table, read_jsonl
 from src.docs.extract import extract_file, merge_translation
-from src.docs.parsers import contract, notice, order, receipt_text, workbook
+from src.docs.parsers import classify, contract, notice, order, receipt_text, workbook
 from src.docs.pipeline import digest, run_pipeline
 from src.docs.providers import LocalVisionClient, configured_clients
 from src.docs.schema import Facts
@@ -268,6 +268,28 @@ class PipelineTests(unittest.TestCase):
                 self.assertEqual(methods, {"pdf_text", "llm_text"})
                 self.assertEqual([e["status"] for e in activity], ["succeeded", "succeeded", "accepted", "rejected"])
                 self.assertEqual(activity[2]["citation"]["quote"], raw)
+
+    def test_supplier_email_body_and_attachments_are_extracted_with_citations(self):
+        from email.message import EmailMessage
+        message = EmailMessage()
+        message["From"], message["To"] = "logistics@suppliers.example", "team@example.com"
+        message["Subject"], message["Date"] = "Delay notice", "Sun, 22 Nov 2026 06:10:00 +0000"
+        message.set_content("Delay notice\nRevised FRA ETA 2026-11-23 for the air lot.")
+        message.add_attachment("Attachment title\nSecond line of the attached notice.".encode(),
+                               maintype="application", subtype="octet-stream", filename="update.txt")
+        message.add_attachment(b"MZ", maintype="application", subtype="octet-stream", filename="tool.exe")
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "reply.eml"
+            path.write_bytes(bytes(message))
+            self.assertEqual(classify(str(path)), "notice")
+            facts, pages, methods, warnings = extract_file(path, "reply.eml", "notice", None)
+        self.assertEqual(facts.first("subject"), "Delay notice")
+        self.assertEqual(facts.first("what"), "Revised FRA ETA 2026-11-23 for the air lot.")
+        self.assertEqual(facts.first("attachment"), "update.txt")
+        self.assertIn("reply.eml#update.txt", {entry["source_file"] for entry in facts["what"]})
+        self.assertEqual((pages, "text" in methods, "email" in methods), (2, True, True))
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("tool.exe", warnings[0])
 
     def test_llm_environment_can_select_models_and_disable_the_provider(self):
         config = {"SOONY_LLM_MODEL": "text", "SOONY_LLM_VISION_MODEL": "vision",

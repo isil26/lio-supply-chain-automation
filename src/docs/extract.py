@@ -16,6 +16,12 @@ from .parsers import PARSERS, workbook
 from .schema import DELIVERY_NOTE, Facts, quantity
 
 TEXT_KINDS = {"notice", "contract", "price_list"}
+MAX_EMAIL_ATTACHMENTS = 10
+MAX_ATTACHMENT = 20 * 1024**2
+# Email attachments are read as the document type a supplier most plausibly sends.
+ATTACHMENT_KINDS = {".pdf": "notice", ".jpg": "receiving", ".jpeg": "receiving", ".png": "receiving",
+                    ".tif": "receiving", ".tiff": "receiving", ".webp": "receiving",
+                    ".xlsx": "workbook", ".docx": "notice", ".txt": "notice", ".md": "notice"}
 TRANSLATED_FIELDS = {
     "what", "impact", "effective_at", "ends_at", "capacity", "penalties", "force_majeure",
     "lead_time", "moq", "payment", "liability", "qualification", "term", "translation_en",
@@ -161,7 +167,33 @@ def extract_file(path, source, kind, ocr, vision=None, translator=None, activity
             text = body.get_content(errors="replace").strip()
             if text:
                 facts.add("body", text, None, text[:450])
-        return facts, 1, {"email"}, warnings
+                if kind in PARSERS:
+                    PARSERS[kind](facts, text, 1, 1.0)
+        methods, pages = {"email"}, 1
+        attachments = [part for part in message.iter_attachments() if part.get_filename()][:MAX_EMAIL_ATTACHMENTS]
+        for part in attachments:
+            name = Path(part.get_filename()).name
+            suffix = Path(name).suffix.lower()
+            payload = part.get_payload(decode=True)
+            if suffix not in ATTACHMENT_KINDS or not isinstance(payload, bytes) or len(payload) > MAX_ATTACHMENT:
+                warnings.append(f"Attachment {name} was not read (unsupported type or too large)")
+                continue
+            with tempfile.TemporaryDirectory(prefix="soony-eml-") as folder:
+                inner = Path(folder) / name
+                inner.write_bytes(payload)
+                try:
+                    found, count, inner_methods, inner_warnings = extract_file(
+                        inner, f"{source}#{name}", ATTACHMENT_KINDS[suffix], ocr, vision, translator, activity)
+                except (OSError, ValueError) as exc:
+                    warnings.append(f"Attachment {name} could not be read: {exc}")
+                    continue
+            for field, entries in found.items():
+                facts.setdefault(field, []).extend(entries)
+            facts.add("attachment", name, None, name)
+            methods |= inner_methods
+            pages += count
+            warnings.extend(inner_warnings)
+        return facts, pages, methods, warnings
     if path.suffix.lower() == ".docx":
         text = docx_text(path)
         if text.strip():
