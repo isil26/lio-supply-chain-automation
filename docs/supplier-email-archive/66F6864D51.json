@@ -225,6 +225,171 @@
       ],
       "body_content_type": "text/plain",
       "body": "Hello,\n\nNo quantity from the Boise lot can reach Europe before 22 November at 20:00 CET, whether shipped as a split or in full. The 36,000 cards remain packed and available for release once Soony confirms EXW Boise in writing or nominates its forwarder.\n\nAfter release, the booked ORD–FRA air service is expected to arrive in Frankfurt approximately two days later. The earliest date for the remaining quantity therefore depends on when release is authorized and on onward customs and road handling into Hamburg.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T04:16:20+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": " Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179532098009.123461.11423876568284770089@gmail.com>",
+      "chase_id": "C55532B25F",
+      "in_reply_to": "<010201a1ff9edf24-71e2506b-6cdb-45b3-82c4-be5996698840-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528982962.31533.8469799915132328557@gmail.com>",
+        "<010201a1ff9edf24-71e2506b-6cdb-45b3-82c4-be5996698840-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nCould you provide a firm written quote for CMP-GAM-001? We still need available quantity, unit price and currency, delivery date and time at the receiving site.\n\nPlease restate the complete offer for the same lot in one reply: Quantity (units), Unit price (currency per unit), Delivery (YYYY-MM-DD, time and zone), and quote expiry. Itemize any freight charge separately. If the requested window is unavailable, quote the earliest feasible partial delivery.\n\nThis is a request for information only.\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T04:20:11+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a2017ba90b-f9cd35c3-5277-4153-8842-49fe3e7733db-000000@eu-west-1.amazonses.com>",
+      "chase_id": "C55532B25F",
+      "in_reply_to": "<179532098009.123461.11423876568284770089@gmail.com>",
+      "references": [
+        "<179528982962.31533.8469799915132328557@gmail.com>",
+        "<010201a1ff9edf24-71e2506b-6cdb-45b3-82c4-be5996698840-000000@eu-west-1.amazonses.com>",
+        "<179532098009.123461.11423876568284770089@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nOur available offer is 36,000 units of CMP-GAM-001 at USD 10.93 per unit, EXW Boise, under PO 4500318769. The goods are packed and available for release upon Soony’s written confirmation of EXW Boise or nomination of your forwarder.\n\nWe cannot quote a delivery date and time at the receiving site, as delivery beyond Boise is not included under Sales Agreement PC-0011-2023 §4.1. The booked ORD–FRA service can depart after release, with Frankfurt arrival expected approximately two days later; no partial quantity can reach Hamburg within the requested 22 November window.\n\nFreight, insurance, and duties are separate for Soony’s account. Logistics must confirm any freight amount and quote validity before I can provide an itemized transport quote.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T04:46:34+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": " Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179532279491.141960.11511016715354759689@gmail.com>",
+      "chase_id": "4BCBF33F0D",
+      "in_reply_to": "<010201a2017ba90b-f9cd35c3-5277-4153-8842-49fe3e7733db-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179532098009.123461.11423876568284770089@gmail.com>",
+        "<010201a2017ba90b-f9cd35c3-5277-4153-8842-49fe3e7733db-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nCould you provide a firm written quote for CMP-GAM-001? We still need delivery date and time at the receiving site.\n\nPlease confirm these previously stated terms for the same lot: available quantity: 36000 · unit price and currency: 10.93 USD\n\nPlease restate the complete offer for the same lot in one reply: Quantity (units), Unit price (currency per unit), Delivery (YYYY-MM-DD, time and zone), and quote expiry. Itemize any freight charge separately. If the requested window is unavailable, quote the earliest feasible partial delivery.\n\nThis is a request for information only.\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T04:50:14+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a201972d88-a1953bc6-8a1b-4482-899a-5d36a852d710-000000@eu-west-1.amazonses.com>",
+      "chase_id": "4BCBF33F0D",
+      "in_reply_to": "<179532279491.141960.11511016715354759689@gmail.com>",
+      "references": [
+        "<179532098009.123461.11423876568284770089@gmail.com>",
+        "<010201a2017ba90b-f9cd35c3-5277-4153-8842-49fe3e7733db-000000@eu-west-1.amazonses.com>",
+        "<179532279491.141960.11511016715354759689@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nConfirmed for the packed lot under PO 4500318769:\n\nQuantity: 36,000 units CMP-GAM-001\nUnit price: USD 10.93 per unit\nDelivery: EXW Boise; no receiving-site delivery date or time is included or can be quoted under Sales Agreement PC-0011-2023 §4.1.\nQuote expiry: The applicable acknowledged order terms remain subject to the existing PO and formal release authorization; this email is not a new quote.\n\nThe lot is available for release once Soony confirms EXW Boise in writing or nominates its forwarder. The booked ORD–FRA service can proceed after release, with Frankfurt arrival expected approximately two days later; no partial delivery can reach Hamburg within the requested window.\n\nFreight, insurance, and duties are for Soony’s account and would be separately invoiced if Boise arranges transport. Logistics must confirm the amount before an itemized freight quote can be issued.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T05:18:38+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": " Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179532471875.141960.7947284152206560693@gmail.com>",
+      "chase_id": "C14995CC7D",
+      "in_reply_to": "<010201a201972d88-a1953bc6-8a1b-4482-899a-5d36a852d710-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179532279491.141960.11511016715354759689@gmail.com>",
+        "<010201a201972d88-a1953bc6-8a1b-4482-899a-5d36a852d710-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nCould you provide a firm written quote for CMP-GAM-001? We still need delivery date and time at the receiving site.\n\nPlease restate the complete offer for the same lot in one reply: Quantity (units), Unit price (currency per unit), Delivery (YYYY-MM-DD, time and zone), and quote expiry. Itemize any freight charge separately. If the requested window is unavailable, quote the earliest feasible partial delivery.\n\nThis is a request for information only.\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T05:22:09+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a201b4663d-6a45c085-5e3e-43ae-a86f-a9383b3f7e0d-000000@eu-west-1.amazonses.com>",
+      "chase_id": "C14995CC7D",
+      "in_reply_to": "<179532471875.141960.7947284152206560693@gmail.com>",
+      "references": [
+        "<179532279491.141960.11511016715354759689@gmail.com>",
+        "<010201a201972d88-a1953bc6-8a1b-4482-899a-5d36a852d710-000000@eu-west-1.amazonses.com>",
+        "<179532471875.141960.7947284152206560693@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nFor the existing packed lot under PO 4500318769:\n\nQuantity: 36,000 units CMP-GAM-001\nUnit price: USD 10.93 per unit\nDelivery: EXW Boise. A delivery date and time at DC-HAM are not part of our offer and cannot be firmed until Soony authorizes release and the carrier, customs, and onward road arrangements are confirmed.\nQuote expiry: This is not a new quote; the acknowledged order terms remain in effect pending formal release authorization.\n\nNo partial quantity can reach Hamburg within the 22 November requested window. The booked air service can move after written EXW confirmation from Soony or forwarder nomination, with Frankfurt arrival expected approximately two days after release.\n\nFreight, insurance, and duties are separate for Soony’s account under Sales Agreement PC-0011-2023 §4.1. Logistics must confirm any itemized freight charge.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T07:40:00+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": " Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179533320002.141960.10354624707529205112@gmail.com>",
+      "chase_id": "74CE98E2E0",
+      "in_reply_to": "<010201a201b4663d-6a45c085-5e3e-43ae-a86f-a9383b3f7e0d-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179532471875.141960.7947284152206560693@gmail.com>",
+        "<010201a201b4663d-6a45c085-5e3e-43ae-a86f-a9383b3f7e0d-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nFollowing up on our outstanding quote request.\n\nCould you provide a firm written quote for CMP-GAM-001? We still need delivery date and time at the receiving site.\n\nPlease restate the complete offer for the same lot in one reply: Quantity (units), Unit price (currency per unit), Delivery (YYYY-MM-DD, time and zone), and quote expiry. Itemize any freight charge separately. If the requested window is unavailable, quote the earliest feasible partial delivery.\n\nThis is a request for information only.\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T07:42:21+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a20234c09f-2326692f-27a6-4323-83e4-4a96ba2dc807-000000@eu-west-1.amazonses.com>",
+      "chase_id": "74CE98E2E0",
+      "in_reply_to": "<179533320002.141960.10354624707529205112@gmail.com>",
+      "references": [
+        "<179532471875.141960.7947284152206560693@gmail.com>",
+        "<010201a201b4663d-6a45c085-5e3e-43ae-a86f-a9383b3f7e0d-000000@eu-west-1.amazonses.com>",
+        "<179533320002.141960.10354624707529205112@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nI can confirm the existing order terms, but I cannot issue a firm delivered quote to the receiving site. The 36,000-unit CMP-GAM-001 lot is USD 10.93 per unit, EXW Boise, under PO 4500318769.\n\nA firm DC-HAM delivery date and time requires Soony’s written EXW release or forwarder nomination, plus carrier, customs, and onward-road confirmation. No partial quantity can arrive in Hamburg within the 22 November window; after release, Frankfurt arrival is expected approximately two days later.\n\nFreight, insurance, and duties are separate for Soony’s account pursuant to Sales Agreement PC-0011-2023 §4.1. Logistics would need to confirm any freight charge and quote validity.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T08:11:05+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "m.ortiz.boise-semi@suppliers.juliansibbing.de",
+      "subject": " Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<179533506546.141960.3567382096180499679@gmail.com>",
+      "chase_id": "CA764D48BC",
+      "in_reply_to": "<010201a20234c09f-2326692f-27a6-4323-83e4-4a96ba2dc807-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179533320002.141960.10354624707529205112@gmail.com>",
+        "<010201a20234c09f-2326692f-27a6-4323-83e4-4a96ba2dc807-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nCould you provide a firm written quote for CMP-GAM-001? We still need available quantity, delivery date and time at the receiving site.\n\nPlease confirm these previously stated terms for the same lot: unit price and currency: 10.93 USD\n\nPlease restate the complete offer for the same lot in one reply: Quantity (units), Unit price (currency per unit), Delivery (YYYY-MM-DD, time and zone), and quote expiry. Itemize any freight charge separately. If the requested window is unavailable, quote the earliest feasible partial delivery.\n\nThis is a request for information only.\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T08:15:06+00:00",
+      "from": "Megan Ortiz <m.ortiz.boise-semi@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-66F6864D51] Earliest release and air options for CMP-GAM-001",
+      "message_id": "<010201a20252bda6-4d5224e4-7649-4138-a36e-b322f25adebe-000000@eu-west-1.amazonses.com>",
+      "chase_id": "CA764D48BC",
+      "in_reply_to": "<179533506546.141960.3567382096180499679@gmail.com>",
+      "references": [
+        "<179533320002.141960.10354624707529205112@gmail.com>",
+        "<010201a20234c09f-2326692f-27a6-4323-83e4-4a96ba2dc807-000000@eu-west-1.amazonses.com>",
+        "<179533506546.141960.3567382096180499679@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nConfirmed: the available quantity is 36,000 units of CMP-GAM-001 at USD 10.93 per unit, EXW Boise, for PO 4500318769.\n\nWe cannot provide a firm delivery date or time at the receiving site because the agreed delivery term is EXW Boise, pursuant to Sales Agreement PC-0011-2023 §4.1. The lot will be released upon Soony’s written EXW confirmation or nomination of a forwarder; after release, Frankfurt arrival is expected approximately two days later. No partial quantity can reach Hamburg within the requested 22 November window.\n\nFreight, insurance, and duties are separate for Soony’s account. Logistics must confirm the freight charge and any transport quote validity; the existing acknowledged product terms are not a new quote.\n\nBest regards,\n\nMegan Ortiz\nBoise Semiconductor Inc.\n"
     }
   ]
 }

@@ -302,6 +302,39 @@
       ],
       "body_content_type": "text/plain",
       "body": "Dzień dobry,\n\nmogę poprosić Warta Trans o niewiążącą kalkulację transportu dedykowanego/premium dla 5 900 artbooków, w tym wariantu z przyspieszonym przejazdem. Nie mam obecnie potwierdzonych danych o dostępności pojazdu, liczbie palet lub kartonów, godzinach granicznych ani o ewentualnej dopłacie.\n\nKurs PO 7703M jest planowany z CMP-GAM-005; nie znam jego bieżącej lokalizacji ani wolnej pojemności, więc możliwość dołożenia artbooków musi potwierdzić przewoźnik. Warta musi również potwierdzić, czy niedzielne przyjęcie w DC-HAM i przekazanie na linię są możliwe; ten ostatni etap wymaga uzgodnienia z odbiorcą w Hamburgu.\n\nPrzekażę zapytanie bez dokonywania płatnej rezerwacji i wrócę z wyraźnie oznaczoną ofertą przewoźnika lub kalkulacją wstępną.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T03:26:34+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<179531799496.79089.12863903333472527417@gmail.com>",
+      "chase_id": "943327C022",
+      "in_reply_to": "<010201a1ff9f253e-2f30b8d2-42af-4a5d-9039-7aedd1adad2c-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<soony-karton-5900-premium-freight-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff9f253e-2f30b8d2-42af-4a5d-9039-7aedd1adad2c-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nCzy jest już wycena przewoźnika dla CMP-GAM-008? Prosimy o liczbę sztuk, które mogą dotrzeć do miejsca odbioru, godzinę przekazania, dopłatę oraz termin ważności wyceny. Czy część ładunku może dotrzeć wcześniej?\n\nTo wyłącznie zapytanie informacyjne.\n\nZespół zakupów\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T03:28:46+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-6F967080CF] Grand Heist 6 – rezerwacja 5 900 artbooków i oferta dostawy",
+      "message_id": "<010201a2014c98d8-51483d36-a8ad-4d66-831d-c04794000127-000000@eu-west-1.amazonses.com>",
+      "chase_id": "943327C022",
+      "in_reply_to": "<179531799496.79089.12863903333472527417@gmail.com>",
+      "references": [
+        "<soony-karton-5900-premium-freight-20261121@manti.starthackathon.gmail.com>",
+        "<010201a1ff9f253e-2f30b8d2-42af-4a5d-9039-7aedd1adad2c-000000@eu-west-1.amazonses.com>",
+        "<179531799496.79089.12863903333472527417@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nnie otrzymałam jeszcze odpowiedzi Warta Trans ani potwierdzonej wyceny dla transportu CMP-GAM-008. Nie mogę więc obecnie potwierdzić liczby sztuk, godziny przekazania, dopłaty, terminu ważności ani możliwości wcześniejszej dostawy części ładunku.\n\nGotowe artbooki nadal pozostają w naszym magazynie; wysyłka wymaga pisemnej dyspozycji uprawnionych zakupów Soony.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
     }
   ]
 }

@@ -1,0 +1,140 @@
+{
+  "thread_id": "A0343435B3",
+  "supplier_id": "SUP-0028",
+  "supplier": "Karton Nowak",
+  "material": "CMP-GAM-008",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T04:05:45+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "[SOONY-A0343435B3] Conditional hold for CMP-GAM-008",
+      "message_id": "<179532034556.107871.11714516100735765720@gmail.com>",
+      "chase_id": "A0343435B3",
+      "in_reply_to": "<010201a2014c98d8-51483d36-a8ad-4d66-831d-c04794000127-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179531799496.79089.12863903333472527417@gmail.com>",
+        "<010201a2014c98d8-51483d36-a8ad-4d66-831d-c04794000127-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Karton Nowak team,\n\nRegarding CMP-GAM-008:\nIf your earlier price of 2.1 EUR per unit and free hold are still available, please reserve up to 5,900 units without charge. Please confirm the quantity held, hold expiry and unit price in writing. Please quote partial delivery, freight surcharge and handover time separately for review.\n\nAny dispatch, booking or cost requires separate written authorization.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T04:09:19+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-A0343435B3] Conditional hold for CMP-GAM-008",
+      "message_id": "<010201a20171b651-8ec6f221-f0ab-4c10-bd8a-5cb5bcb8cb60-000000@eu-west-1.amazonses.com>",
+      "chase_id": "A0343435B3",
+      "in_reply_to": "<179532034556.107871.11714516100735765720@gmail.com>",
+      "references": [
+        "<179531799496.79089.12863903333472527417@gmail.com>",
+        "<010201a2014c98d8-51483d36-a8ad-4d66-831d-c04794000127-000000@eu-west-1.amazonses.com>",
+        "<179532034556.107871.11714516100735765720@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nWe can propose to reserve up to 5,900 finished CMP-GAM-008 art books from our available stock at EUR 2.10 per unit, subject to formal written confirmation. I need to check internally how long we can hold this quantity without charge and the separate terms for any partial delivery or freight.\n\nNo dispatch, transport booking or cost will be initiated without Soony’s separate written authorization.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T04:35:54+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-A0343435B3] Conditional hold for CMP-GAM-008",
+      "message_id": "<179532215487.127568.6953220361202904400@gmail.com>",
+      "chase_id": "956B281BA0",
+      "in_reply_to": "<010201a20171b651-8ec6f221-f0ab-4c10-bd8a-5cb5bcb8cb60-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179532034556.107871.11714516100735765720@gmail.com>",
+        "<010201a20171b651-8ec6f221-f0ab-4c10-bd8a-5cb5bcb8cb60-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nCould you provide a firm written quote for CMP-GAM-008? We still need available quantity, delivery date and time at the receiving site.\n\nPlease restate the complete offer for the same lot in one reply: Quantity (units), Unit price (currency per unit), Delivery (YYYY-MM-DD, time and zone), and quote expiry. Itemize any freight charge separately. If the requested window is unavailable, quote the earliest feasible partial delivery.\n\nThis is a request for information only.\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T04:39:11+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-A0343435B3] Conditional hold for CMP-GAM-008",
+      "message_id": "<010201a2018d113d-dacc9ebc-921a-4cc8-a9e8-4f9c36ba9845-000000@eu-west-1.amazonses.com>",
+      "chase_id": "956B281BA0",
+      "in_reply_to": "<179532215487.127568.6953220361202904400@gmail.com>",
+      "references": [
+        "<179532034556.107871.11714516100735765720@gmail.com>",
+        "<010201a20171b651-8ec6f221-f0ab-4c10-bd8a-5cb5bcb8cb60-000000@eu-west-1.amazonses.com>",
+        "<179532215487.127568.6953220361202904400@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nFor the same lot, our current offer is: Quantity: up to 5,900 units CMP-GAM-008; unit price: EUR 2.10 per unit; availability: 8,000 finished units are in our store. We can hand the goods over to a carrier within 4 hours of Soony’s written order; I need to confirm a firm DC-HAM delivery date and time, as well as the separate freight charge, with Warta Trans.\n\nThe rush offer sent this morning remains valid for 24 hours from its issue. This is information only; no goods or transport will be released without separate written authorization.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T05:07:25+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-A0343435B3] Conditional hold for CMP-GAM-008",
+      "message_id": "<179532404519.141960.11002459560689436823@gmail.com>",
+      "chase_id": "5F88BC38BF",
+      "in_reply_to": "<010201a2018d113d-dacc9ebc-921a-4cc8-a9e8-4f9c36ba9845-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179532215487.127568.6953220361202904400@gmail.com>",
+        "<010201a2018d113d-dacc9ebc-921a-4cc8-a9e8-4f9c36ba9845-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nCould you provide a firm written quote for CMP-GAM-008? We still need delivery date and time at the receiving site.\n\nPlease restate the complete offer for the same lot in one reply: Quantity (units), Unit price (currency per unit), Delivery (YYYY-MM-DD, time and zone), and quote expiry. Itemize any freight charge separately. If the requested window is unavailable, quote the earliest feasible partial delivery.\n\nThis is a request for information only.\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T05:10:48+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-A0343435B3] Conditional hold for CMP-GAM-008",
+      "message_id": "<010201a201aa0152-b6704914-4c9d-431c-b994-46ffedef8522-000000@eu-west-1.amazonses.com>",
+      "chase_id": "5F88BC38BF",
+      "in_reply_to": "<179532404519.141960.11002459560689436823@gmail.com>",
+      "references": [
+        "<179532215487.127568.6953220361202904400@gmail.com>",
+        "<010201a2018d113d-dacc9ebc-921a-4cc8-a9e8-4f9c36ba9845-000000@eu-west-1.amazonses.com>",
+        "<179532404519.141960.11002459560689436823@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nI cannot provide a firm receiving-site delivery date and time until Warta Trans confirms truck availability. Our offer remains: Quantity: up to 5,900 units CMP-GAM-008; unit price: EUR 2.10 per unit; freight: to be quoted separately following carrier confirmation; handover: within 4 hours of Soony’s written order.\n\nThe offer expires 24 hours after the rush offer issued this morning. No dispatch or transport booking will take place without separate written authorization from Soony.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    },
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T07:29:46+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "Re: [SOONY-A0343435B3] Conditional hold for CMP-GAM-008",
+      "message_id": "<179533258656.141960.13975923121616083651@gmail.com>",
+      "chase_id": "97D062A324",
+      "in_reply_to": "<010201a201aa0152-b6704914-4c9d-431c-b994-46ffedef8522-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179532404519.141960.11002459560689436823@gmail.com>",
+        "<010201a201aa0152-b6704914-4c9d-431c-b994-46ffedef8522-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello,\n\nFollowing up on our outstanding quote request.\n\nCould you provide a firm written quote for CMP-GAM-008? We still need delivery date and time at the receiving site.\n\nPlease restate the complete offer for the same lot in one reply: Quantity (units), Unit price (currency per unit), Delivery (YYYY-MM-DD, time and zone), and quote expiry. Itemize any freight charge separately. If the requested window is unavailable, quote the earliest feasible partial delivery.\n\nThis is a request for information only.\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T07:32:33+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-A0343435B3] Conditional hold for CMP-GAM-008",
+      "message_id": "<010201a2022bc70a-14338091-73f3-49d8-bcc3-178498471ad0-000000@eu-west-1.amazonses.com>",
+      "chase_id": "97D062A324",
+      "in_reply_to": "<179533258656.141960.13975923121616083651@gmail.com>",
+      "references": [
+        "<179532404519.141960.11002459560689436823@gmail.com>",
+        "<010201a201aa0152-b6704914-4c9d-431c-b994-46ffedef8522-000000@eu-west-1.amazonses.com>",
+        "<179533258656.141960.13975923121616083651@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nI am still awaiting Warta Trans’s confirmation for a firm delivery slot at DC-HAM, so I cannot quote a receiving-site date and time yet. The available quantity remains up to 5,900 units of CMP-GAM-008 at EUR 2.10 per unit, with handover to the carrier within 4 hours of Soony’s written order.\n\nFreight will be quoted separately once the carrier confirms. The rush offer expires 24 hours after its issue this morning; no dispatch, booking or cost will be incurred without separate written authorization.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    }
+  ]
+}

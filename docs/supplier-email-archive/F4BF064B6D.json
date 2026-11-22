@@ -1,0 +1,41 @@
+{
+  "thread_id": "F4BF064B6D",
+  "supplier_id": "SUP-0028",
+  "supplier": "Karton Nowak",
+  "material": "CMP-GAM-004",
+  "messages": [
+    {
+      "direction": "outbound",
+      "date": "2026-11-22T03:59:49+00:00",
+      "from": "manti.starthackathon@gmail.com",
+      "to": "a.nowak.karton-nowak@suppliers.juliansibbing.de",
+      "subject": "[SOONY-F4BF064B6D] Firm quote request for CMP-GAM-004",
+      "message_id": "<179531998991.107871.9596196528298817652@gmail.com>",
+      "chase_id": "F4BF064B6D",
+      "in_reply_to": "<010201a1ff7546e4-a4fc02ca-d8aa-4d2c-85e2-150a8a8ce10b-000000@eu-west-1.amazonses.com>",
+      "references": [
+        "<179528707057.9605.12888685485775821323@gmail.com>",
+        "<010201a1ff7546e4-a4fc02ca-d8aa-4d2c-85e2-150a8a8ce10b-000000@eu-west-1.amazonses.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Hello Karton Nowak team,\n\nRegarding CMP-GAM-004:\nYour earlier correspondence mentioned 0.081 EUR per unit. Please confirm the available quantity, unit price and currency, earliest delivery and quote expiry. Please quote any additional transport separately.\n\nAny dispatch, booking or cost requires separate written authorization.\n\nSoony launch team\n"
+    },
+    {
+      "direction": "inbound",
+      "date": "2026-11-22T04:03:33+00:00",
+      "from": "Agnieszka Nowak <a.nowak.karton-nowak@suppliers.juliansibbing.de>",
+      "to": "manti.starthackathon@gmail.com",
+      "subject": "Re: [SOONY-F4BF064B6D] Firm quote request for CMP-GAM-004",
+      "message_id": "<010201a2016c7050-45d26043-d515-498e-94a8-c330a969eb33-000000@eu-west-1.amazonses.com>",
+      "chase_id": "F4BF064B6D",
+      "in_reply_to": "<179531998991.107871.9596196528298817652@gmail.com>",
+      "references": [
+        "<179528707057.9605.12888685485775821323@gmail.com>",
+        "<010201a1ff7546e4-a4fc02ca-d8aa-4d2c-85e2-150a8a8ce10b-000000@eu-west-1.amazonses.com>",
+        "<179531998991.107871.9596196528298817652@gmail.com>"
+      ],
+      "body_content_type": "text/plain",
+      "body": "Dzień dobry,\n\nThe EUR 0.081 per unit was the §3.2 rush price for CMP-GAM-004: Annex A price of EUR 0.060 plus 35%. Our earlier rush offer was valid for 24 hours and has now expired.\n\nDuring the current maintenance shutdown, the digital line can produce up to 15,000 sleeves within 36 hours of your written order; delivery to DC-HAM would follow by express truck. Please confirm the quantity required, and I will check whether we can issue a renewed firm quotation, including transport shown separately.\n\nPozdrawiam serdecznie,\nAgnieszka Nowak\nKarton Nowak Sp. z o.o.\n"
+    }
+  ]
+}
