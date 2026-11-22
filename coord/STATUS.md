@@ -181,6 +181,8 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-dashboard | T-Manti-18984 | Promoted bd37f16 on GCP and matched both public entry points to the local build byte for byte | done | Existing production login, supplier data, agent runs and import status verified | 22 Nov |
 
+| manti-header | T-Manti-Header | Workspace navigation and forecast control | done | Verified all four routes at 320px and 1280px with the concurrent branding changes. | 22 Nov |
+
 | manti-dashboard | Manti-Named-Live | Verified all five private named logins on production and tested offer attribution on the VM | done | Shared access preserved. Offer decisions require an individual account. | 22 Nov |
 
 | manti-agent-map | T-Manti-Demo-Restore | Matched dashboard B and verified production | done | Manti Live serves a8958a4. Public desktop and phone showed one 17-agent map with the populated event stream 16 px below it. | 22 Nov |
