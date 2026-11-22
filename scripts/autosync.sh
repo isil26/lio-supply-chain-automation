@@ -11,6 +11,8 @@ while true; do
   if ! git diff --cached --quiet; then
     if git diff --cached --name-only | grep -qE '(^|/)(\.soony_token|\.env)$|^data/|^store/|node_modules/'; then
       echo "$ts BLOCKED: sensitive path staged"; git reset -q
+    elif ! "$PY" scripts/check_mail_credentials.py --staged; then
+      echo "$ts BLOCKED: mailbox credential in index"
     elif ! $PY -m compileall -q src >/dev/null 2>&1; then
       echo "$ts SKIP: python does not compile, will retry"; git reset -q
     else
@@ -37,6 +39,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>" && echo "$ts committe
   if git status -sb | head -1 | grep -q "no branch"; then
     echo "$ts rebase still in progress, resolve by hand"
   else
+    "$PY" scripts/check_mail_credentials.py --history HEAD || { sleep "$INTERVAL"; continue; }
     git push -q origin main 2>&1 | tail -1
     echo "$ts in sync at $(git rev-parse --short HEAD)"
   fi
