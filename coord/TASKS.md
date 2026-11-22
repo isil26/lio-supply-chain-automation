@@ -160,6 +160,8 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Manti-18984 | Promote the dashboard served on port 18984 to the operational GCP website | manti-dashboard | production release and acceptance | done | T-Agents-Tab, T-Manti-Offers |
 
+| T-Manti-Header | Move workspace navigation into a header and remove the Live badge and forecast details control | manti-header | web/src/main.tsx, web/src/desk/Forecast.tsx, header stylesheet | done | T-Manti-Demo-Restore |
+
 | Manti-Named-Live | Individual team accounts and auditable negotiations on Google Cloud | manti-dashboard | production authentication and offer history | done | T-Manti-18984 |
 
 | T-Manti-Demo-Restore | Restore the supplied demo design on the connected dashboard and deploy the unified Agents tab | manti-agent-map | dashboard presentation, scoped frontend release | done | T-Agents-Tab |
