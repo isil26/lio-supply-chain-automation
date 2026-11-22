@@ -12,6 +12,7 @@ type Deal = {
   offer_state?: "quoted" | "incomplete" | "late" | "unavailable" | "expired" | "superseded" | "approval_required";
   offer_kind?: "goods" | "freight"; carrier?: string | null; freight_charge?: number | null;
   review_reason?: string;
+  drafts?: Partial<Record<"approve" | "decline", { subject: string; body: string }>>;
   history?: { revision: string; action: string; by: string; at: string; terms: { order_quantity?: number; total_eur?: number; signer?: string } }[];
   id: string; supplier_id?: string; eta_text?: string | null; supplier: string; material: string; needed: number; quantity: number | null;
   unit_price: number | null; currency: string | null; price_eur: number | null; total_eur: number | null;
@@ -166,7 +167,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread 
   const materials = [...allMaterials.filter(short), ...covered];
   const current = tab && materials.includes(tab) ? tab : materials[0];
   const rows = data.deals.filter((d) => d.material === current);
-  const best = data.best.filter((d) => d.material === current);
+  const best = data.best.filter((d) => d.material === current && d.eligible && ["pending", "changed"].includes(d.status));
   const tabNote = current ? data.notes?.[current] : undefined;
 
   const selected = rows.find(d=>d.id===choice) ?? best[0] ?? rows[0];
@@ -200,7 +201,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread 
         {best.length>0 && tabNote && <p>{tabNote}</p>}
       </div>
       <div className="supplier-list" aria-label="Select a supplier offer">{rows.map(d=><button key={d.id} aria-pressed={selected?.id===d.id} onClick={()=>{setChoice(d.id);setReply(null);setNote(null);}}>
-        <span><b>{country(d)}</b><small>{d.quantity?.toLocaleString("en-US") ?? "Unknown"} units · {arrives(d)}</small></span><span>{d.best?"Recommended":STATUS[d.status]}</span></button>)}</div>
+        <span><b>{country(d)}</b><small>{d.quantity?.toLocaleString("en-US") ?? "Unknown"} units · {arrives(d)}</small></span><span>{best.some(offer=>offer.id===d.id)?"Recommended":STATUS[d.status]}</span></button>)}</div>
       {selected && <div className="offer-selected" key={selected.id}>
         <p><b>{selected.supplier}</b> · {unit(selected)} · {eur(selected.total_eur)} total</p>
         {selected.conditions && <p>{selected.conditions}</p>}
@@ -218,9 +219,13 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread 
         {draft.action==="negotiate" ? <><label>Message to {selected.supplier}<textarea rows={6} value={draft.body} onChange={e=>setReply({...draft,body:e.target.value})}/></label>
           {example || !selected.address ? <small className="muted">Copy this draft into your supplier correspondence.</small> :
           <a className="ghost-button" href={`mailto:${encodeURIComponent(selected.address)}?subject=${encodeURIComponent("Re: "+product(selected.material))}&body=${encodeURIComponent(draft.body)}`}>Open in email app</a>}</> : <>
-          <p>{example?"Practice decision for ":draft.action==="approve"?"Queue a nonbinding reservation request to ":"Queue a decline email to "}<b>{selected.supplier}</b> · {(selected.order_quantity??selected.quantity)?.toLocaleString("en-US")} units · {eur(selected.total_eur)}.</p>
+          <p><strong>To</strong> · {selected.address || selected.supplier}</p>
+          <strong>{selected.drafts?.[draft.action]?.subject ?? product(selected.material)}</strong>
+          <p className="supplier-email-preview">{selected.drafts?.[draft.action]?.body ?? (example
+            ? draft.action === "approve" ? `Could you hold ${selected.order_quantity ?? selected.quantity} units of ${product(selected.material)} without charge and confirm the hold expiry? A separate purchase order is required before dispatch.` : "Thank you for the offer. We will not proceed with it for now."
+            : "Reload the offer to preview the current supplier message.")}</p>
           {!example && !currentUser && <label>Reviewed by<input autoComplete="name" maxLength={80} value={reviewer} onChange={e=>onReviewer(e.target.value)}/></label>}
-          <button className="primary-button" disabled={!available || !!busy || (!example&&!currentUser&&!reviewer.trim())} onClick={()=>{void decide(selected,draft.action as "approve"|"decline");setReply(null);}}>{draft.action==="approve"?"Confirm reservation request":"Confirm decline"}</button></>}
+          <button className="primary-button" disabled={!available || !!busy || (!example && (!selected.drafts?.[draft.action] || (!currentUser && !reviewer.trim())))} onClick={()=>{void decide(selected,draft.action as "approve"|"decline");setReply(null);}}>{example?"Record practice decision":"Confirm and queue email"}</button></>}
           <button className="link-button" onClick={()=>setReply(null)}>Cancel</button>
         </section>}
       </div>}

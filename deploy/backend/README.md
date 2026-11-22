@@ -24,7 +24,7 @@ The registered team mailbox configuration is in `mail-history.json`. The live wo
 
 GitHub Actions updates `/srv/lio/main.git` from development `main`. The application revision in [live-revision](live-revision) feeds `/srv/lio/production.git`. The VM watcher fetches that production mirror every 30 seconds, stages the build, checks dashboard readiness and falls back to its previous release on a startup failure. State lives outside the release directories. The working checkout can advance independently.
 
-Production stays at `3d2f658` by the operator’s decision to preserve the current login. Enabling named live accounts later requires private account verifiers on both gateways, an updated watcher and a coordinated backend and Vercel rollout. [Named-login configuration](../vercel/README.md#sign-in-and-audit-activity)
+Production uses the existing password-only Vercel sign-in and session format independently of the backend release. The VM maps authenticated requests from that edge to the dedicated shared account configured in its private service settings. The Activity Log displays that identity for shared-login actions. Rehearsals retain individual account names. [Named-login configuration](../vercel/README.md#sign-in-and-audit-activity)
 
 For the `soony-manti-live` Vercel project, build with `bash deploy/vercel/package-vm.sh FRESH_DEPLOY_DIRECTORY`. It packages the pinned application with the VM transport. The project holds `LIO_VM_FORWARD_KEY`, the gateway token and the existing session configuration as server-only settings. Stage a production build with `--skip-domain`, verify signed-out denial, login, `/api/health`, `/api/dashboard` and `/react`, then promote the tested deployment. `/api/health` reports the running `backendCommit`.
 

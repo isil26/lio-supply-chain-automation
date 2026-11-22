@@ -3,7 +3,8 @@ const VIEWS = /^\/(?:live|react|game-cards|assets\/[\w.-]+)?$/;
 
 function liveTarget(url, localDashboard = false) {
   const rewritten = url.pathname === '/control' ? url.searchParams.get('live') : null;
-  const path = rewritten ?? url.pathname;
+  const home = url.pathname === '/control' && url.searchParams.get('op') === 'home';
+  const path = rewritten ?? (home ? '/' : url.pathname);
   let decoded;
   try { decoded = decodeURIComponent(path); } catch { return null; }
   if (decoded.includes('\\') || decoded.split('/').some((segment) => segment === '.' || segment === '..')) return null;

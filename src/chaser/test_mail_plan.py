@@ -139,6 +139,9 @@ class MailPlanningTest(unittest.TestCase):
             firm, = deals.list_deals(self.db)["best"]
             self.assertEqual(firm["total_eur"], 400)
             decision = deals.decide(self.db, firm["id"], "approve", "Buyer", revision=firm["revision"])
+            preview = firm["drafts"]["approve"]
+            self.assertEqual(tuple(self.db.execute("SELECT subject, body FROM chases WHERE id=?", (decision["email_id"],)).fetchone()),
+                             (preview["subject"], preview["body"]))
             first = autosend.run(self.db, now=clock)
             self.assertEqual([r["id"] for r in first if r["result"]=="sent"], [decision["email_id"]])
             message = client.send_message.call_args.args[0]
