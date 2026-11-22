@@ -517,3 +517,5 @@ The replay cap correctly approves the information-only Boise Semi game-card stoc
 ## Team VM SSH for repository writers (codex-gcp-access)
 
 Run `./scripts/vm-ssh` from a local checkout with GitHub CLI signed into a writer account. The shell opens as `lio-team` with passwordless sudo. The shared checkout is `~/work/lio-supply-chain-automation`. Fresh certificate issuance, renewal, hostname, root UID and checkout writability were verified on 22 November 2026. See [agent instructions](../AGENTS.md#gcp-vm-access) and the [verified signing run](https://github.com/isil26/lio-supply-chain-automation/actions/runs/44969807733).
+
+[22 Nov] codex-portal-copy — T-Live-Update. The latest Lio update cites the matching receipt and reads the shortage, forecast and available recovery decision from the current plan. Older saved drops work immediately. Verified on a copy of the live store and in the browser.
