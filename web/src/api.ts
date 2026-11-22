@@ -77,6 +77,8 @@ export type ReplyPlan = {
 
 export type SupplierMessage = {
   english?: string;
+  supplierLanguage?: string;
+  supplierText?: string | null;
   id?: number;
   timestamp?: string;
   transport?: {

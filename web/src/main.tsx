@@ -1,8 +1,8 @@
-import { MailAmounts } from "./MailAmounts";
+import { EmailBody } from "./EmailBody";
 import { ExchangeContext } from "./currency";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type SupplierMessage, type Source } from "./api";
+import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type Source, type SupplierMessage } from "./api";
 import { AgentGraph } from "./agents/AgentGraph";
 import { UploadData, type UploadResult } from "./UploadData";
 import { Offers } from "./suppliers/Offers";
@@ -26,6 +26,10 @@ const threadFromUrl = () => {
   const query = new URLSearchParams(location.search);
   return query.get("thread") || (query.get("mail")==="1" ? "mailbox" : null);
 };
+
+function mailKey(message: SupplierMessage) {
+  return message.transport?.messageId || [message.side, message.timestamp ?? message.time, message.text.trim()].join("\n");
+}
 
 function AccountMenu({user}: {user: string}) {
   const menu = useRef<HTMLDetailsElement>(null);
@@ -59,13 +63,6 @@ function AccountMenu({user}: {user: string}) {
       else setSigningOut(true);
     }}><span>{user}</span><button className="quiet" disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</button></form>
   </details>;
-}
-
-function ThreadBody({message}: {message: SupplierMessage}) {
-  const [original,setOriginal] = useState(false);
-  const translated = message.english && message.english !== message.text;
-  return <>{translated && <button className="quiet" onClick={()=>setOriginal(!original)}>{original ? "Show English" : "Show original"}</button>}
-    <p className="draft-body">{original ? message.text : message.english || message.text}</p><MailAmounts text={original ? message.text : message.english || message.text}/></>;
 }
 
 function App() {
@@ -123,6 +120,15 @@ function App() {
   const subtitle=page.id==="agents"?"Agent activity":page.id==="import"?"Case files":archive?"Supplier decisions and reviewers":locationLabel;
   const threads=[...(data.mailHistory?.threads??[]),...data.threads];
   const thread=threadId==="mailbox"?threads[0]:threads.find(t=>t.id===threadId);
+  // A verified archive copy may predate the reply shown in a current offer.
+  const messages = new Map<string, SupplierMessage>();
+  for (const copy of threads.filter(t => thread && t.id === thread.id)) {
+    for (const message of copy.messages) {
+      const key = mailKey(message);
+      if (!messages.has(key)) messages.set(key, message);
+    }
+  }
+  const correspondence = [...messages.values()].sort((a,b) => (Date.parse(a.timestamp ?? "") || 0) - (Date.parse(b.timestamp ?? "") || 0));
   const closeThread=()=>{
     setThreadId(null);
     const url=new URL(location.href);
@@ -161,8 +167,8 @@ function App() {
         </div>}
       </main></div>
     {threadId&&<Dialog title={thread?.supplier??"Supplier email"} label="Email thread" close={closeThread}>
-      {thread?<><p className="mini">{thread.subject}</p>{thread.messages.map((m,i)=><article className="thread-message" key={m.id??i}>
-        <b>{m.transport?.from??m.sender}</b><small>{m.timestamp?displayDate(m.timestamp):m.time} · {m.transport?.status?.replace(/_/g," ")??thread.status}</small><ThreadBody message={m}/></article>)}</>:
+      {thread?<><p className="mini">{thread.subject}</p>{correspondence.map(m=><article className="thread-message" key={thread.id+":"+mailKey(m)}>
+        <b>{m.transport?.from??m.sender}</b><small>{m.timestamp?displayDate(m.timestamp):m.time} · {m.transport?.status?.replace(/_/g," ")??thread.status}</small><EmailBody original={m.text} english={m.english} supplierText={m.supplierText} supplierLanguage={m.supplierLanguage}/></article>)}</>:
         <p className="modal-p">This email thread is unavailable in the current workspace.</p>}</Dialog>}
     {source&&<Dialog title={file??"Source evidence"} label="Source evidence" close={()=>setSource(null)}>
       <p className="mini">{source.page?"Page "+source.page:source.row?"Row "+source.row:"Source location"}</p>{source.quote&&<p className="mail-summary">{source.quote}</p>}

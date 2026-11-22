@@ -28,14 +28,39 @@ def language(text, hint=None):
     return hint
 
 
-@lru_cache(maxsize=3)
-def _model(path):
+@lru_cache(maxsize=6)
+def _decoder(path):
     import ctranslate2
-    import sentencepiece
-    tokenizer = sentencepiece.SentencePieceProcessor(model_file=str(path / "sentencepiece.model"))
+    if (path / "bpe.model").is_file():
+        from sacremoses import MosesDetokenizer, MosesTokenizer
+        from subword_nmt.apply_bpe import BPE
+        with (path / "bpe.model").open(encoding="utf-8") as stream:
+            bpe = BPE(stream)
+        source, target = MosesTokenizer(lang="en"), MosesDetokenizer(lang="pl")
+        def encode(phrase):
+            return bpe.segment_tokens(source.tokenize(phrase))
+        def decode(tokens):
+            return target.detokenize(" ".join(tokens).replace("@@ ", "").split())
+    else:
+        import sentencepiece
+        tokenizer = sentencepiece.SentencePieceProcessor(model_file=str(path / "sentencepiece.model"))
+        def encode(phrase):
+            return tokenizer.encode(phrase, out_type=str)
+        def decode(tokens):
+            return "".join(tokens).replace("▁", " ").strip()
     model = ctranslate2.Translator(str(path / "model"), device="cpu", compute_type="int8",
                                    inter_threads=1, intra_threads=1)
-    return tokenizer, model
+
+    def translate(phrases):
+        results = []
+        for phrase in phrases:
+            tokens = encode(phrase)
+            chunks = [tokens[i:i+220] for i in range(0, len(tokens), 220)]
+            output = model.translate_batch(chunks, beam_size=4, max_decoding_length=420,
+                                           max_input_length=0, replace_unknowns=True)
+            results.append(" ".join(decode(x.hypotheses[0]) for x in output))
+        return results
+    return translate
 
 
 # Item keys, PO numbers, prices, quantities and times must survive neural decoding verbatim.
@@ -83,17 +108,7 @@ def to_english(text, hint, is_english):
     if path is None or not (path / "model/model.bin").is_file():
         return None
     with _LOAD:
-        tokenizer, model = _model(path)
-
-    def decode(phrases):
-        results = []
-        for phrase in phrases:
-            tokens = tokenizer.encode(phrase, out_type=str)
-            chunks = [tokens[i:i+220] for i in range(0, len(tokens), 220)]
-            output = model.translate_batch(chunks, beam_size=4, max_decoding_length=420,
-                                           max_input_length=0, replace_unknowns=True)
-            results.append(" ".join("".join(x.hypotheses[0]).replace("▁", " ").strip() for x in output))
-        return results
+        decode = _decoder(path)
 
     lines = text.splitlines()
     for index, line in enumerate(lines):
@@ -102,3 +117,59 @@ def to_english(text, hint, is_english):
         sentences = [s for s in re.split(r"(?<=[.!?])\s+|(?<=[。！？])", line.strip()) if s]
         lines[index] = " ".join(_preserve(s,en,decode) for s,en in zip(sentences,decode(sentences)))
     return dict(english="\n".join(lines), language=LANGUAGES[code], summary=None, source="translated")
+
+
+@lru_cache(maxsize=1)
+def _language_detector():
+    from lingua import Language, LanguageDetectorBuilder
+    return LanguageDetectorBuilder.from_languages(
+        Language.ENGLISH, Language.POLISH, Language.CHINESE, Language.KOREAN).build()
+
+
+def _is_english_prose(text):
+    if not re.search(r"[a-zA-Z]", text):
+        return False
+    detected = _language_detector().detect_language_of(text)
+    return detected is not None and detected.name == "ENGLISH"
+
+
+# Names and company details following a conventional closing belong to the signature.
+SIGNATURE = re.compile(r"^(?:best regards|kind regards|regards|thank you|sincerely|pozdrawiam(?: serdecznie)?|"
+                       r"z poważaniem|감사합니다|此致敬礼|此致)[,，.。!！]?[ \t]*\r?$", re.I | re.M)
+
+# A dropped negative can turn a supplier's refusal into an apparent commitment.
+NEGATIVE = re.compile(r"\b(?:cannot|can't|will not|won't|do not|does not|no(?!\.))\b", re.I)
+NEGATION = {"pl": re.compile(r"\b(?:nie|bez|brak\w*|żad\w*|niemoż\w*|niedostępn\w*)\b", re.I),
+            "ko": re.compile(r"없|않|아니|아닙|불가|못|금지|안\s"),
+            "zh": re.compile(r"[不无無未没沒非勿零免]|禁止")}
+
+
+def to_supplier(text, code):
+    """Translate English prose in place. Preserve paragraph breaks and native-language text."""
+    path = model_root() / f"en-{code}"
+    if not (path / "model/model.bin").is_file():
+        return None
+    signature = ""
+    for closing in reversed(list(SIGNATURE.finditer(text))):
+        rest = text[closing.end():].strip().splitlines()
+        # A short sentence under "Thank you" can still be part of the request.
+        if len(rest) <= 4 and all(
+            "@" in line or all(not word[:1].islower() or word in {"de", "van", "von", "z", "o.o."}
+                               for word in line.split()) for line in rest
+        ):
+            text, signature = text[:closing.end()], text[closing.end():]
+            break
+    parts = re.split(r"(\r?\n+|(?<=[.!?])[\t ]+|(?<=[。！？]))", text)
+    positions = [i for i in range(0, len(parts), 2) if _is_english_prose(parts[i])]
+    if positions:
+        with _LOAD:
+            translate = _decoder(path)
+        phrases = [parts[i] for i in positions]
+        for i, phrase, result in zip(positions, phrases, translate(phrases), strict=True):
+            result = _preserve(phrase, result, translate)
+            if not result.strip() or (len(phrase.split()) >= 4 and _is_english_prose(result)):
+                return None
+            if NEGATIVE.search(phrase) and not NEGATION[code].search(result):
+                return None
+            parts[i] = result
+    return "".join(parts) + signature

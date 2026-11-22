@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { hostedReplayBuild, isStaticMode } from "../api";
 import sample from "./offers-sample.json";
-import { MailAmounts } from "../MailAmounts";
+import { EmailBody } from "../EmailBody";
 import { nativePrice, rateSource, type ExchangeRates } from "../currency";
 import { Dialog, Heading, Icon } from "../desk/UI";
 import { PriceCeiling, unitEuros, type PricePolicy } from "./ProductPricing";
@@ -40,7 +40,7 @@ type Deal = {
 type Data = { exchangeRates?: ExchangeRates; limits?: Record<string, PricePolicy>; deals: Deal[]; best: Deal[]; notes?: Record<string, string>; as_of?: string; gaps?: Record<string, number> };
 type Reply = {deal: Deal; action: Decision | "negotiate"; body: string};
 let practiceSession: Data | null = null;
-type English = { original?: string; english: string | null; summary: string | null; language: string | null; source: string; error?: string };
+type English = { original?: string; english: string | null; supplierText?: string | null; supplierLanguage?: string; summary: string | null; language: string | null; source: string; error?: string };
 
 async function postDecision(path: string, payload: object) {
   const response = await fetch(path, {
@@ -72,7 +72,6 @@ function gist(d: Deal, rates?:ExchangeRates) {
 
 function EmailPreview({ deal, example }: { deal: Deal; example: boolean }) {
   const [result, setResult] = useState<English | null>(null);
-  const [original, setOriginal] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (example || !deal.excerpt) return;
@@ -91,14 +90,9 @@ function EmailPreview({ deal, example }: { deal: Deal; example: boolean }) {
   if (!deal.excerpt) return <p className="modal-p">No supplier message is available.</p>;
   const sourceText = result?.original ?? deal.excerpt;
   const english = example ? deal.english_excerpt ?? deal.excerpt : result?.english;
-  return <section className="email-preview">
-    <div className="preview-heading"><b>{original ? "Original email" : "English preview"}</b>
-      {english !== sourceText && <button className="quiet" aria-pressed={original} onClick={()=>setOriginal(!original)}>{original ? "Show English" : "Show original"}</button>}</div>
-    {original || english ? <p className="draft-body">{original ? sourceText : english}</p>
-      : result ? <p role="status">English translation is unavailable. <button className="quiet" onClick={()=>setAttempt(n=>n+1)}>Retry</button></p>
-      : <p role="status">Loading English translation…</p>}
-    {(original || english) && <MailAmounts text={original ? sourceText : english!}/>}
-  </section>;
+  return <EmailBody original={sourceText} english={english} supplierLanguage={result?.supplierLanguage}
+    supplierText={result?.supplierText} loading={!example && !result}
+    onRetry={example ? undefined : () => setAttempt(n => n + 1)}/>;
 }
 
 // Suppliers are shown by name and country of origin, e.g. "Hwaseong Memory (South Korea)".
