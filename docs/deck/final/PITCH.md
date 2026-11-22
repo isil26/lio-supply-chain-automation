@@ -8,7 +8,7 @@ Deck: [Manti-pitch-deck-final.pdf](../Manti-pitch-deck-final.pdf) · Timing: [TI
 
 **[Slide 2]** Nobody has time to read everything a supply chain produces. For one launch, Soony had 308 files and 93 supplier emails in four languages, and one weekend left.
 
-**[Slide 3]** SAP counts stock that isn't there. It books 80,000 art books when 8,000 arrived. It counts statues that failed inspection. Even after 28,000 game cards were flown in, 6,800 are still missing. That puts €1.95 million at risk this weekend.
+**[Slide 3]** SAP counts stock that isn't there. It books 80,000 art books when 8,000 arrived. It counts statues that failed inspection. Our starting forecast put about €1.95 million at risk this weekend. Even after 28,000 game cards were flown in, 6,800 are still missing.
 
 **[Slide 4]** Dr. Vogt, Soony's Head of Procurement, told us three things: a missing Collector's copy costs €120, she wants things to act on rather than another screen to watch, and named signers approve. So our screen opens with a list of actions, not charts. Felix asked for a product that keeps working after this weekend, at any company. So we built agents that act.
 
