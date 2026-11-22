@@ -33,9 +33,10 @@ UID = re.compile(rb"\bUID (\d+)")
 MAIL_ADDED = re.compile(rb"^\* \d+ EXISTS$")
 IDLE_DURATION = 25 * 60
 ARCHIVE_NOTE = (
-    "New Gmail messages trigger an archive refresh while the mail host is online. "
+    "The [VM archive workflow](../../.github/workflows/lio-vm.yml) checks for new Gmail messages "
+    "every five minutes. "
     "Use the [live supplier mailbox](https://soony-manti-live.vercel.app/?mail=1) "
-    "for attachment files."
+    "for the latest messages and attachments."
 )
 CREDENTIAL = re.compile(
     r"(?i)(?:\b(?:password|passwd|api[_ -]?key|access[_ -]?token|authorization)\s*[:=]\s*\S"

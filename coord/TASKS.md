@@ -139,3 +139,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T103-Login | Individual control-room login and user-attributed actions | codex-login | login gateway, actor propagation, dashboard account controls and focused checks | done | T68, T94-Queue |
 | T-Live-Update | Reconcile the live portal banner and clarify the dashboard copy | codex-portal-copy | Portal update projection and home page | done | T50-Live-Portal |
 | T-GCP-Live | Move live hosting and mailbox archive from Mac to GCP and route Vercel | codex-gcp-access | deploy/backend, live Vercel transport, ops | done | T-GCP-SSH |
+
+| T93-Mail-VM | Verify and document GitHub archive publishing on GCP | codex-mail-archive | supplier archive index, sync script and own coordination notes | done | T93-Mail-Events |

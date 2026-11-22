@@ -16,4 +16,4 @@ Each JSON file contains the original-language bodies, sender and recipient, emai
 | Statues (`CMP-GAM-010`) | Pune Diecast Works (`SUP-0018`) | [153839FA41](153839FA41.json) | 19 | 21 Nov 20:31:05 CET |
 | Statues (`CMP-GAM-010`) | Dongguan Precision Housings (`SUP-0019`) | [9D6AD72E97](9D6AD72E97.json) | 10 | 21 Nov 20:39:36 CET |
 
-New Gmail messages trigger an archive refresh while the mail host is online. Use the [live supplier mailbox](https://soony-manti-live.vercel.app/?mail=1) for attachment files.
+The [VM archive workflow](../../.github/workflows/lio-vm.yml) checks for new Gmail messages every five minutes. Use the [live supplier mailbox](https://soony-manti-live.vercel.app/?mail=1) for the latest messages and attachments.
