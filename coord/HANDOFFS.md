@@ -621,3 +621,5 @@ Moved all four routes and the account menu into the header. The dashboard shows 
 ## T-Judge-Access — Manti Live judge login
 
 Judges sign in as `test` on [Manti Live](https://soony-manti-live.vercel.app/). A fresh public session loaded the React dashboard, authenticated as `test` and read 41 supplier threads from Google Cloud release `944a3655`. The gateway rejected an incorrect password and denied dashboard access after sign-out. All five existing team sessions remained valid on the staged gateway. The old Launch Control replay publishing workflow is disabled.
+
+- 22 Nov, manti-deal-watch. The live supplier worker follows up on due proposals for open shortages using the scenario’s approved sources, current evidence and decision window. Rechecks occur at planning and dispatch. Explicit supplier time windows, later correspondence and resolved shortages take precedence. Release e966dab sent the first Polish freight inquiry on the existing thread at 04:26 CET. SMTP accepted it. The separate 30-minute deal watch looks for new opportunities across active scenarios.
