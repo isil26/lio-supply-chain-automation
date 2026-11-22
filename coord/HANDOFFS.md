@@ -582,4 +582,4 @@ The VM passed 35 supplier and upload tests and five gateway tests. A disposable 
 
 ## T-Agents-Tab — Manti agent network
 
-Open the Agents item in the workspace rail or go to `/react#agents`. The overview displays nine operational roles and eight specialists. The map pulses for newly observed activity. Selecting a node filters the feed, and replay steps through recent events. The timestamp projection accepts operational ISO dates and specialist epoch seconds. The production build, 22 focused checks and a local dry-run browser rehearsal passed. The change is available in the development worktree.
+Open Agents in the workspace rail or go to `/react#agents`. The nine Operations agents appear first, followed by the eight Specialists. Each map has a dedicated event stream on the right and independent selection and replay controls. On phones the stream follows its map. Newly observed events light the corresponding nodes. Verified both builds, 22 focused tests, and stream placement at desktop, compact and phone widths.

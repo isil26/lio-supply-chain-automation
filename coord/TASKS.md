@@ -156,4 +156,4 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Manti-Offers | Per-product reservation thresholds, recommendation controls, product chart and decision archive | manti-dashboard | supplier offer UI, offer policy and targeted dashboard layout | done | T-Manti-UI, T-Data-Import |
 
-| T-Agents-Tab | Build the Manti Agents tab with a live product-agent map and activity graphs | manti-agent-map | Agent graphs, workspace navigation and activity timestamps | done | T100 |
+| T-Agents-Tab | Stack Operations and Specialists with separate event streams on one Agents tab | manti-agent-map | Agent graphs and layout | done | T100 |
