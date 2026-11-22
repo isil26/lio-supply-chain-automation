@@ -1,89 +1,89 @@
-# AGENTS OVERVIEW — generated 2026-11-22T14:27+01:00 by overview-agent. Do not edit; run `python scripts/overview.py`.
-Machine-readable: `coord/agents_overview.json`. Head: `b8112c1` T78: refresh agents overview (92 agents, 9 in progress) [overview-agent]
+# AGENTS OVERVIEW — generated 2026-11-22T15:08+01:00 by overview-agent. Do not edit; run `python scripts/overview.py`.
+Machine-readable: `coord/agents_overview.json`. Head: `d529d3e` T78: refresh agents overview (92 agents, 9 in progress) [overview-agent]
 
 **92 agents**: 62 done, 12 unknown, 9 in progress, 5 review, 3 outdated, 1 assigned. 16 INBOX requests look unanswered. Hand-written project picture: `coord/OVERVIEW.md` (nick).
 
 | Agent | State | Current task | Last activity | Last commit | Attention |
 |---|---|---|---|---|---|
-| overview-agent | in_progress | T78 team overview digest | 10 min ago | `b8112c1` T78: refresh agents overview (92 agents, 9 in prog |  |
-| nick | in_progress | T100 agent live view (spec + delegation) | 43 min ago | `0360963` Pitch script: backup slides 7-9 |  |
-| manti-live-model | in_progress | T-Live-OpenAI | 2 h 03 min ago | `1c52169` Merge remote-tracking branch 'origin/main' | stale? |
-| manti-desk-signals | in_progress | T-Dashboard-Signals | 8 h 52 min ago | `fb63f8f` Merge dashboard changes with the current supplier  | stale? |
-| manti-judge | in_progress | T-Judge-Access | 10 h 18 min ago | `a14cce2` T-Judge-Access: Reconcile the judge handoff with t | stale? |
-| codex-deploy | in_progress | T19-CI push-triggered protected Vercel release | 14 h 07 min ago | `f792338` T86: Flag Manti Live email preview release blocker | 1 open request(s) to it, stale? |
+| overview-agent | in_progress | T78 team overview digest | 40 min ago | `d529d3e` T78: refresh agents overview (92 agents, 9 in prog |  |
+| nick | in_progress | T100 agent live view (spec + delegation) | 84 min ago | `0360963` Pitch script: backup slides 7-9 |  |
+| manti-live-model | in_progress | T-Live-OpenAI | 2 h 43 min ago | `1c52169` Merge remote-tracking branch 'origin/main' | stale? |
+| manti-desk-signals | in_progress | T-Dashboard-Signals | 9 h 32 min ago | `fb63f8f` Merge dashboard changes with the current supplier  | stale? |
+| manti-judge | in_progress | T-Judge-Access | 10 h 59 min ago | `a14cce2` T-Judge-Access: Reconcile the judge handoff with t | stale? |
+| codex-deploy | in_progress | T19-CI push-triggered protected Vercel release | 14 h 47 min ago | `f792338` T86: Flag Manti Live email preview release blocker | 1 open request(s) to it, stale? |
 | codex-methods | in_progress | Product research and evaluations | unknown | - |  |
 | copilot-pack | in_progress | T73 pack-out optimizer + numbered allocation | unknown | - |  |
 | copilot-gate2 | in_progress | T72b artwork revision extraction -> gate HUMAN on sleeve | unknown | - |  |
 | codex-access | assigned | T31 (assigned by nick) | unknown | - | 1 open request(s) to it |
-| codex-overseer | review | T-Mail-Planning | 17 h 28 min ago | `14da2fc` T-Mail-Planning: Reconcile T94 approvals and combi | 2 open request(s) to it |
-| sonnet-approvals | review | T93-Approvals Approval engine with delegated authority: AUTO / ONE-CLI | 17 h 41 min ago | `fc133d9` autosync: 7 files [nick] |  |
+| codex-overseer | review | T-Mail-Planning | 18 h 09 min ago | `14da2fc` T-Mail-Planning: Reconcile T94 approvals and combi | 2 open request(s) to it |
+| sonnet-approvals | review | T93-Approvals Approval engine with delegated authority: AUTO / ONE-CLI | 18 h 21 min ago | `fc133d9` autosync: 7 files [nick] |  |
 | Copilot | review | T6 UI prototype (mock data) | unknown | - | 2 open request(s) to it |
 | codex-hosted | review | T53 authenticated recorded AI reasoning | unknown | - | 1 open request(s) to it |
 | sonnet-ui | review | T95-UI-next | unknown | - |  |
-| nick (Gülşah's final-deck thread) | unknown | - | 2 h 32 min ago | - |  |
-| nick (Gülşah's review thread) | unknown | - | 4 h 02 min ago | - |  |
-| codex-site-consolidation | unknown | - | 15 h 26 min ago | `55b8c5a` T98: Record approved jury mailbox release [codex-s |  |
-| codex-approval-watch | unknown | - | 16 h 23 min ago | `98d6bd3` T94: Restrict simulated authority to offline repla |  |
-| supply-rescue | outdated | T81-Supplier-Rescue | 17 h 47 min ago | `8f39c0a` T81: Close Boise and Dongguan Sunday alternatives  |  |
-| karton-order | unknown | - | 18 h 02 min ago | `c8fd0af` T81: Record Karton acceptance of the Warta window  |  |
-| codex-murat-handoff | unknown | - | 19 h 02 min ago | `bc713cf` T81: Ask Murat agent to claim and implement the Ac |  |
-| codex-vogt | unknown | - | 19 h 43 min ago | `e7b9a17` T19: Send Işıl the five office-hours decisions [co |  |
-| Copilot #3 | unknown | - | 23 h 41 min ago | - |  |
+| nick (Gülşah's final-deck thread) | unknown | - | 3 h 13 min ago | - |  |
+| nick (Gülşah's review thread) | unknown | - | 4 h 43 min ago | - |  |
+| codex-site-consolidation | unknown | - | 16 h 07 min ago | `55b8c5a` T98: Record approved jury mailbox release [codex-s |  |
+| codex-approval-watch | unknown | - | 17 h 03 min ago | `98d6bd3` T94: Restrict simulated authority to offline repla |  |
+| supply-rescue | outdated | T81-Supplier-Rescue | 18 h 28 min ago | `8f39c0a` T81: Close Boise and Dongguan Sunday alternatives  |  |
+| karton-order | unknown | - | 18 h 42 min ago | `c8fd0af` T81: Record Karton acceptance of the Warta window  |  |
+| codex-murat-handoff | unknown | - | 19 h 43 min ago | `bc713cf` T81: Ask Murat agent to claim and implement the Ac |  |
+| codex-vogt | unknown | - | 20 h 23 min ago | `e7b9a17` T19: Send Işıl the five office-hours decisions [co |  |
+| Copilot #3 | unknown | - | 24 h 22 min ago | - |  |
 | Codex #3 | outdated | T9 technical depth | unknown | - |  |
 | copilot-planner | outdated | T47d planner option ids + summary + chaser draft reach | unknown | - |  |
 | ALL AGENTS ON OTHER MACHINES (codex- | unknown | - | unknown | - |  |
 | any new ones) | unknown | - | unknown | - |  |
 | their humans | unknown | - | unknown | - |  |
 | codex-deploy) | unknown | - | unknown | - | 1 open request(s) to it |
-| manti-live-entry | done | T-Public-Live-Entry | 2 h 00 min ago | `af70d06` Record verified public live entry [manti-live-entr |  |
-| Codex | done | T5 decisions, T7 live integration and replay, T8 submission | 2 h 17 min ago | `2ed1b63` Guard OpenAI and Vercel credentials in commits and | 2 open request(s) to it |
-| manti-guest | done | T-Public-Access | 2 h 31 min ago | `943d573` T-Public-Access: Record verified Manti Live releas |  |
-| codex-card-replay | done | T98-Card-Replay | 2 h 42 min ago | `23228dc` coord: Label pitch exposure as the starting foreca |  |
-| codex-mail-archive | done | T93-Mail-VM | 5 h 02 min ago | `c2addee` Sync verified supplier mail from the VM [codex-mai |  |
-| manti-mail-body | done | T-Full-Mail-Language | 8 h 49 min ago | `f409b5b` T-Full-Mail-Language: Record verified Manti Live d |  |
-| manti-forecast-desk | done | T-Quote-Followups-FX | 9 h 07 min ago | `46def17` T-Quote-Followups-FX: Record verified Manti Live s |  |
-| manti-deal-watch | done | T-Server-Deal-Watch | 9 h 27 min ago | `1a7138c` T-Server-Deal-Watch: Record production worker revi |  |
-| manti-interactions | done | T-Button-Review | 9 h 30 min ago | `0b92935` T-Button-Review: Record Manti Live deployment veri |  |
-| isil-agent | done | T84 break-even with EUR 120 / EUR 32; T50 watcher running (needs team  | 9 h 47 min ago | `4a74192` Add business case: customers, savings, pricing, au | 1 open request(s) to it |
-| manti-agent-map | done | T-Manti-Brand | 10 h 20 min ago | `8d8043e` T-Manti-Brand: Verify combined header and branding |  |
-| manti-header | done | T-Manti-Header | 10 h 22 min ago | `7bf474e` T-Manti-Header: Promote PR #6 to Manti Live [manti |  |
-| manti-dashboard | done | Manti-Hackathon-Login | 10 h 40 min ago | `1da8089` Manti-Hackathon-Login: Record the verified team si |  |
-| manti-import | done | T-Data-Import-Live-QA | 11 h 23 min ago | `75fe674` T-Data-Import-Live-QA: Record verified public impo |  |
-| codex-upload | done | T102-Live | 11 h 27 min ago | `f500652` T102-Live: Record verified production file and ZIP |  |
-| codex-chaser-deadline | done | T101-Chaser-Deadline | 11 h 49 min ago | `5edf790` T101: Hand off expired supplier email to Procureme |  |
-| codex-login | done | T103-Login | 11 h 55 min ago | `deef9aa` T103: Share the verified hosted rehearsal link wit |  |
-| codex-gcp-access | done | T-GCP-Live | 11 h 59 min ago | `c303974` T-GCP-Live: Record verified cutover and check arch |  |
-| codex-portal-copy | done | T-Live-Update | 12 h 13 min ago | `f89d566` T-Live-Update: Show reconciled shortages and link  |  |
-| gülşah-agent | done | T71 live agent map | 13 h 36 min ago | `f634526` Offers: keep a tab for every case part, covered on | 2 open request(s) to it |
-| codex-e2e | done | T12 replay delegation regression | 16 h 19 min ago | `f9d61de` autosync: 4 files [nick] |  |
-| leo-claude | done | T6 redesign: Manti by Lio dark dashboard + supply map | 17 h 26 min ago | `23117f1` coord: leo-claude routine-only auto-approve note [ | 4 open request(s) to it |
-| murat-agent | done | T94-Queue | 17 h 27 min ago | `288f656` T94: Keep the action-first spending cap inside wri | 3 open request(s) to it |
-| mail-agent | done | T90 offers table + Approve/Decline | 18 h 07 min ago | - | 1 open request(s) to it |
-| sonnet-engine | done | T88 re-ingest the 19:25 drop + engine inputs | 18 h 27 min ago | - |  |
-| sonnet-profit | done | T92 profit plan | 18 h 41 min ago | `e90b1b4` autosync: 6 files [nick] |  |
-| copilot-harness | done | T46 guard harness + golden evals | 20 h 16 min ago | `dff07f4` autosync: 1 files [nick] |  |
-| copilot-gate | done | T72 Release Gate | 21 h 21 min ago | - |  |
-| copilot-triage | done | T67 event taxonomy + materiality triage | 21 h 35 min ago | - |  |
-| copilot-viz | done | T71 live agent visualization + Present mode | 21 h 35 min ago | - |  |
-| copilot-claims | done | T69 money on the table | 21 h 39 min ago | - |  |
-| copilot-loop2 | done | T41b trace endpoint, German notice citation | 21 h 39 min ago | - |  |
-| copilot-fix2 | done | T47b fix live eval failures (loops, citations, briefer policy) | 21 h 57 min ago | - |  |
-| copilot-loop | done | T41 autonomy loop + agent APIs | 22 h 02 min ago | - |  |
-| copilot-reader | done | T63 reader follow-up: mandatory vision for configured scans + handwrit | 22 h 05 min ago | - |  |
-| copilot-roles | done | T64 reply interpreter + T65 briefer | 22 h 09 min ago | - |  |
-| copilot-trace | done | T44 agent trace panel | 22 h 09 min ago | - |  |
-| copilot-tools | done | T39 agent tool layer | 22 h 14 min ago | - |  |
-| copilot-live | done | T38b make live agent path real, first live run with gpt-4.1-mini | 22 h 25 min ago | - |  |
-| copilot-know | done | T45 knowledge pack + role cards | 22 h 30 min ago | - |  |
-| copilot-agents | done | T40 multi-agent team | 22 h 35 min ago | - |  |
-| copilot-state | done | T34 state hardening | 22 h 38 min ago | - |  |
-| copilot-runtime | done | T38 multi-agent runtime | 22 h 41 min ago | - |  |
-| copilot-sim | done | T42 simulated supplier agents | 22 h 41 min ago | - |  |
-| copilot-llm | done | T33 shared LLM client | 22 h 44 min ago | - |  |
-| copilot-chaser | done | T16 chaser scoring, R1 templates, validate_draft, ladder | 23 h 02 min ago | - |  |
-| copilot-ui | done | T10 static replay | 23 h 11 min ago | - | 1 open request(s) to it |
-| copilot-deck | done | T8 pitch deck | 23 h 37 min ago | - |  |
-| Copilot #2 | done | T4 supplier chaser implementation | 24 h 11 min ago | - | 1 open request(s) to it |
+| manti-live-entry | done | T-Public-Live-Entry | 2 h 40 min ago | `af70d06` Record verified public live entry [manti-live-entr |  |
+| Codex | done | T5 decisions, T7 live integration and replay, T8 submission | 2 h 58 min ago | `2ed1b63` Guard OpenAI and Vercel credentials in commits and | 2 open request(s) to it |
+| manti-guest | done | T-Public-Access | 3 h 11 min ago | `943d573` T-Public-Access: Record verified Manti Live releas |  |
+| codex-card-replay | done | T98-Card-Replay | 3 h 23 min ago | `23228dc` coord: Label pitch exposure as the starting foreca |  |
+| codex-mail-archive | done | T93-Mail-VM | 5 h 43 min ago | `c2addee` Sync verified supplier mail from the VM [codex-mai |  |
+| manti-mail-body | done | T-Full-Mail-Language | 9 h 29 min ago | `f409b5b` T-Full-Mail-Language: Record verified Manti Live d |  |
+| manti-forecast-desk | done | T-Quote-Followups-FX | 9 h 48 min ago | `46def17` T-Quote-Followups-FX: Record verified Manti Live s |  |
+| manti-deal-watch | done | T-Server-Deal-Watch | 10 h 08 min ago | `1a7138c` T-Server-Deal-Watch: Record production worker revi |  |
+| manti-interactions | done | T-Button-Review | 10 h 11 min ago | `0b92935` T-Button-Review: Record Manti Live deployment veri |  |
+| isil-agent | done | T84 break-even with EUR 120 / EUR 32; T50 watcher running (needs team  | 10 h 28 min ago | `4a74192` Add business case: customers, savings, pricing, au | 1 open request(s) to it |
+| manti-agent-map | done | T-Manti-Brand | 11 h 01 min ago | `8d8043e` T-Manti-Brand: Verify combined header and branding |  |
+| manti-header | done | T-Manti-Header | 11 h 03 min ago | `7bf474e` T-Manti-Header: Promote PR #6 to Manti Live [manti |  |
+| manti-dashboard | done | Manti-Hackathon-Login | 11 h 21 min ago | `1da8089` Manti-Hackathon-Login: Record the verified team si |  |
+| manti-import | done | T-Data-Import-Live-QA | 12 h 04 min ago | `75fe674` T-Data-Import-Live-QA: Record verified public impo |  |
+| codex-upload | done | T102-Live | 12 h 07 min ago | `f500652` T102-Live: Record verified production file and ZIP |  |
+| codex-chaser-deadline | done | T101-Chaser-Deadline | 12 h 30 min ago | `5edf790` T101: Hand off expired supplier email to Procureme |  |
+| codex-login | done | T103-Login | 12 h 35 min ago | `deef9aa` T103: Share the verified hosted rehearsal link wit |  |
+| codex-gcp-access | done | T-GCP-Live | 12 h 39 min ago | `c303974` T-GCP-Live: Record verified cutover and check arch |  |
+| codex-portal-copy | done | T-Live-Update | 12 h 54 min ago | `f89d566` T-Live-Update: Show reconciled shortages and link  |  |
+| gülşah-agent | done | T71 live agent map | 14 h 16 min ago | `f634526` Offers: keep a tab for every case part, covered on | 2 open request(s) to it |
+| codex-e2e | done | T12 replay delegation regression | 16 h 59 min ago | `f9d61de` autosync: 4 files [nick] |  |
+| leo-claude | done | T6 redesign: Manti by Lio dark dashboard + supply map | 18 h 07 min ago | `23117f1` coord: leo-claude routine-only auto-approve note [ | 4 open request(s) to it |
+| murat-agent | done | T94-Queue | 18 h 08 min ago | `288f656` T94: Keep the action-first spending cap inside wri | 3 open request(s) to it |
+| mail-agent | done | T90 offers table + Approve/Decline | 18 h 48 min ago | - | 1 open request(s) to it |
+| sonnet-engine | done | T88 re-ingest the 19:25 drop + engine inputs | 19 h 08 min ago | - |  |
+| sonnet-profit | done | T92 profit plan | 19 h 22 min ago | `e90b1b4` autosync: 6 files [nick] |  |
+| copilot-harness | done | T46 guard harness + golden evals | 20 h 57 min ago | `dff07f4` autosync: 1 files [nick] |  |
+| copilot-gate | done | T72 Release Gate | 22 h 02 min ago | - |  |
+| copilot-triage | done | T67 event taxonomy + materiality triage | 22 h 16 min ago | - |  |
+| copilot-viz | done | T71 live agent visualization + Present mode | 22 h 16 min ago | - |  |
+| copilot-claims | done | T69 money on the table | 22 h 20 min ago | - |  |
+| copilot-loop2 | done | T41b trace endpoint, German notice citation | 22 h 20 min ago | - |  |
+| copilot-fix2 | done | T47b fix live eval failures (loops, citations, briefer policy) | 22 h 38 min ago | - |  |
+| copilot-loop | done | T41 autonomy loop + agent APIs | 22 h 43 min ago | - |  |
+| copilot-reader | done | T63 reader follow-up: mandatory vision for configured scans + handwrit | 22 h 46 min ago | - |  |
+| copilot-roles | done | T64 reply interpreter + T65 briefer | 22 h 50 min ago | - |  |
+| copilot-trace | done | T44 agent trace panel | 22 h 50 min ago | - |  |
+| copilot-tools | done | T39 agent tool layer | 22 h 55 min ago | - |  |
+| copilot-live | done | T38b make live agent path real, first live run with gpt-4.1-mini | 23 h 06 min ago | - |  |
+| copilot-know | done | T45 knowledge pack + role cards | 23 h 11 min ago | - |  |
+| copilot-agents | done | T40 multi-agent team | 23 h 16 min ago | - |  |
+| copilot-state | done | T34 state hardening | 23 h 19 min ago | - |  |
+| copilot-runtime | done | T38 multi-agent runtime | 23 h 22 min ago | - |  |
+| copilot-sim | done | T42 simulated supplier agents | 23 h 22 min ago | - |  |
+| copilot-llm | done | T33 shared LLM client | 23 h 25 min ago | - |  |
+| copilot-chaser | done | T16 chaser scoring, R1 templates, validate_draft, ladder | 23 h 43 min ago | - |  |
+| copilot-ui | done | T10 static replay | 23 h 52 min ago | - | 1 open request(s) to it |
+| copilot-deck | done | T8 pitch deck | 24 h 18 min ago | - |  |
+| Copilot #2 | done | T4 supplier chaser implementation | 24 h 52 min ago | - | 1 open request(s) to it |
 | Codex #2 | done | T2 doc extraction (OC pdf, delivery-note images, notices, contracts) | unknown | - | 2 open request(s) to it |
 | codex-truth | done | T9 technical depth | unknown | - | 1 open request(s) to it |
 | codex-sens | done | T11 readiness sensitivity | unknown | - |  |
@@ -97,7 +97,7 @@ Machine-readable: `coord/agents_overview.json`. Head: `b8112c1` T78: refresh age
 | sonnet-pack | done | T73 pack-out optimizer rebuilt on truth.readiness | unknown | - |  |
 | sonnet-gate | done | T89 Release Gate v2 | unknown | - |  |
 | sonnet-wire | done | T74 register Release Gate + packplan as agent tools | unknown | - |  |
-| Murat (human) | unknown | - | 10 h 23 min ago | `5488e08` Merge pull request #6 from isil26/codex/manti-head |  |
+| Murat (human) | unknown | - | 11 h 03 min ago | `5488e08` Merge pull request #6 from isil26/codex/manti-head |  |
 
 ## Needs attention
 - **nick** (in_progress)
@@ -203,7 +203,7 @@ Machine-readable: `coord/agents_overview.json`. Head: `b8112c1` T78: refresh age
 - T73 has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins; lines 93, 95).
 - T72b has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins; lines 94, 96).
 - T74 has 2 rows with 2 different titles in TASKS.md (re-owned or ID reused; last row wins; lines 98, 105).
-- 14 of the last 400 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership.
+- 13 of the last 400 commits are nick's autosync; agents that never commit themselves (most copilot-*) only show up through STATUS rows or dir ownership.
 
 ## Unclaimed open tasks
 - T35: Triage agent (orchestrator-workers, closed tool whitelist, <=3 rounds, falls back to fixed order)
