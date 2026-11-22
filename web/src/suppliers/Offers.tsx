@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { hostedReplayBuild, isStaticMode } from "../api";
 import sample from "./offers-sample.json";
-import "./offers.css";
+import { Dialog, Heading, Icon } from "../desk/UI";
 import { PriceCeiling, PriceChart, unitEuros, type PricePolicy } from "./ProductPricing";
 
 type Alternative = { id: string; supplier: string; thread_id?: string; quantity?: number; price_eur?: number; total_eur?: number; eta?: string };
@@ -78,7 +78,7 @@ const COUNTRY: Record<string, string> = {
 };
 const PRODUCT: Record<string, string> = {
   "CMP-GAM-001": "Game cards", "CMP-GAM-010": "Statues", "CMP-GAM-008": "Art books",
-  "CMP-GAM-004": "Cover sleeves", "CMP-GAM-003": "Card cases", "CMP-GAM-007": "Collector's boxes",
+  "CMP-GAM-004": "Sleeves", "CMP-GAM-003": "Game cases", "CMP-GAM-007": "Collector's boxes",
 };
 function country(d: Deal) {
   const origin = d.supplier_id ? COUNTRY[d.supplier_id] : undefined;
@@ -132,6 +132,10 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
   const [choice, setChoice] = useState<string | null>(null);
   const [reply, setReply] = useState<{id:string; revision?:string; action:"approve"|"decline"|"negotiate"; body:string; recorded?:boolean} | null>(null);
   const [loadError,setLoadError] = useState(false);
+  const [emailId, setEmailId] = useState<string | null>(null);
+  const [eventKey, setEventKey] = useState<string | null>(null);
+  const [switchAccount,setSwitchAccount] = useState(false);
+  const [details, setDetails] = useState(false);
   const [tab, setTab] = useState<string | null>(null);
 
   async function load() {
@@ -187,9 +191,11 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     }
   }
 
-  if (!data) return <><section className="card offers"><h3>Supplier offers</h3><p role="status">{loadError ? "Supplier offers could not be loaded." : "Loading supplier offers…"}</p>{loadError && <button className="ghost-button" onClick={()=>void load()}>Retry</button>}</section><aside className="decision-side">{children}</aside></>;
+  if (!data) return <><section className="card offers-card"><Heading icon="inbox">{archive ? "Supplier decisions" : "Supplier offers"}</Heading><p role="status">{loadError ? "Supplier offers could not be loaded." : "Loading supplier offers…"}</p>{loadError && <button className="quiet" onClick={()=>void load()}>Retry</button>}</section><aside className="side-stack">{archive ? null : children}</aside></>;
   // Every part from the case keeps its tab; short parts come first, covered ones are marked "covered" (Gülşah, 22 Nov).
   const allMaterials = [...new Set(data.deals.map((d) => d.material))];
+  const order = ["CMP-GAM-008","CMP-GAM-001","CMP-GAM-010","CMP-GAM-004","CMP-GAM-003"];
+  allMaterials.sort((a,b)=>(order.includes(a)?order.indexOf(a):order.length)-(order.includes(b)?order.indexOf(b):order.length));
   const short = (m: string) => !data.gaps || !(m in data.gaps) || (data.gaps[m] ?? 0) > 0;
   const covered = allMaterials.filter((m) => !short(m));
   const materials = [...allMaterials.filter(short), ...covered];
@@ -203,6 +209,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
   const available = selected?.eligible && ["changed","pending"].includes(selected.status);
   const held = selected?.eligible && selected.status === "approved" && selected.awaiting_send;
   function prepare(action:"approve"|"decline"|"negotiate") {
+    if (sharedAccount) { setSwitchAccount(true);return; }
     const d = selected;
     const ask = d.offer_kind==="freight" ? "Please compare standard and priority freight, including the first pickup, guaranteed handover and all-in charge."
       : d.offer_state==="late" || d.offer_state==="unavailable" ? "Could you offer an earlier partial lot, local stock or an alternative shipping point? Please confirm quantities, delivery windows and any premium."
@@ -236,10 +243,10 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
       setBusy(null);
     }
   }
-  const history = rows.flatMap(d => {
+  const history = data.deals.flatMap(d => {
     const events: DecisionEvent[] = d.history?.length ? d.history : d.decided_by
       ? [{action:d.status, by:d.decided_by, at:d.decided_at, terms:{}}] : [];
-    return events.map((event, index) => ({d, event, key:d.id + "-" + index}));
+    return events.map((event, index) => ({d, event, key:[d.id, event.at, event.revision, event.action, event.by, index].join("-")}));
   }).sort((a,b) => (b.event.at || "").localeCompare(a.event.at || ""));
   async function saveLimit(value: number) {
     if (!policy) return;
@@ -265,72 +272,76 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     }
     await load();
   }
-  return <><section className="card offers" aria-labelledby="offers-title"><h3 id="offers-title">{archive ? "Supplier decisions" : "Supplier offers"}</h3>
-    {example && <small className="muted">Practice offers · decisions stay in this browser</small>}
-    {loadError && <p role="status">Showing the last loaded offers. <button className="link-button" onClick={()=>void load()}>Retry</button></p>}
-    {note && <p className="offers-note" role="status">{note}</p>}
+  const record = history.find(r=>r.key===eventKey && r.d.material===current) ?? history.find(r=>r.d.material===current);
+  const threadCount = new Set(rows.map(d=>d.thread_id??d.id)).size;
+  const mail = rows.find(d=>d.id===emailId);
+  const chooseTab = (id:string) => {setTab(id);setChoice(null);setReply(null);setNote(null);setEventKey(null);};
+  return <><section className="card offers-card"><Heading icon="inbox">{archive?"Supplier decisions":"Supplier offers"}</Heading>
+    {example && <p className="mini">Practice offers · decisions stay in this browser</p>}
+    {loadError && <p role="status">Showing the last loaded offers. <button className="quiet" onClick={()=>void load()}>Retry</button></p>}
+    {note && <p className="mail-summary" role="status">{note}</p>}
     {!materials.length ? <p className="empty">Offers appear as suppliers reply.</p> : <>
-      <div className="offers-tabs" aria-label="Products">{materials.map(m=><button key={m} className={current===m?"is-on":""} aria-pressed={current===m}
-        onClick={()=>{setTab(m);setChoice(null);setReply(null);setNote(null);}}>{product(m)}</button>)}</div>
-      {archive && <div className="offer-history">
-        <h4>Recorded decisions</h4>
-        {history.length ? history.map(({d,event,key}) => <article className="supplier-event" key={key}>
-          <strong>{d.supplier} · {event.action}</strong><p>{event.by} {event.at && " · " + when(event.at)}</p>
-          {(event.terms.order_quantity != null || event.terms.total_eur != null) && <p>
-            {[event.terms.order_quantity != null && event.terms.order_quantity.toLocaleString("en-US")+" units",
-              event.terms.total_eur != null && eur(event.terms.total_eur)+" total"].filter(Boolean).join(" · ")}
-          </p>}
-          {event.note && <p>{event.note}</p>}
-          {event.terms.alternatives?.length ? <details open><summary>Options at decision time</summary>
-            {event.terms.alternatives.map(a => <div className="historical-option" key={a.id}><span>{a.supplier} {a.id===d.id && <b>· {event.action}</b>}</span>
-              <small>{a.quantity?.toLocaleString("en-US") ?? "Unconfirmed"} units · {a.price_eur ? unitEuros(a.price_eur)+"/unit" : "Price unconfirmed"}{a.eta && " · "+when(a.eta)}</small>
-              {a.thread_id && <button className="link-button" onClick={()=>openThread(a.thread_id!)}>Open supplier email</button>}</div>)}</details>
-            : <p className="muted">The original comparison was not recorded.</p>}
-        </article>) : <p className="empty">No decision recorded for this product.</p>}
-      </div>}
-      {archive && <h4>Supplier offers on file</h4>}
-      {selected && <div className="offer-recommendation offer-selected" key={selected.id}>
-        <small>{archive ? "Offer on file" : best.some(d=>d.id===selected.id) ? "Recommended choice" : "Selected offer"}</small>
-        <strong>{country(selected)}</strong>
-        <p>{product(current)} · {unit(selected)}{selected.total_eur != null && " · " + eur(selected.total_eur) + " total"}</p>
-        {tabNote && <p>{tabNote}</p>}
-        {selected.conditions && <p>{selected.conditions}</p>}
-        {(selected.excerpt || selected.quantity!=null) && <Words key={selected.id+selected.revision} d={selected} example={example}/>}
-        {selected.thread_id && <button className="link-button" onClick={()=>openThread(selected.thread_id!)}>Open supplier email</button>}
-        <details><summary>Offer terms and evidence</summary><p>{gist(selected)}</p><p>{[selected.carrier,selected.payment_terms,selected.signer&&"Signer · "+selected.signer,selected.required_by&&"Required by "+when(selected.required_by),selected.expires_at&&"Expires "+when(selected.expires_at),selected.p_on_time!=null&&"On time "+Math.round(selected.p_on_time*100)+"%",selected.list_price!=null&&"Contract price "+selected.list_price].filter(Boolean).join(" · ")}</p>
-        {selected.history?.map((h,i)=><p key={i}>{when(h.at)} · {h.by} · {h.action} · {eur(h.terms.total_eur??null)}</p>)}</details>
-        {!available && <p className="muted">{held ? "Automatically approved · email awaiting your review" : selected.review_reason || STATUS[selected.status]}{selected.decided_by && " · "+selected.decided_by}</p>}
-        {!archive && sharedAccount && <form method="post" action="/logout" className="offers-actions">
-          <p>Use your individual account to record an offer decision.</p><button className="ghost-button" type="submit">Switch account</button>
-        </form>}
-        {!archive && !sharedAccount && <div className="offers-actions">
-          <button className="primary-button" disabled={(!available && !held) || !!busy} onClick={()=>prepare("approve")}>{held ? "Review supplier email" : "Approve"}</button>
-          <button className="ghost-button" disabled={!available || !!busy} onClick={()=>prepare("decline")}>Decline</button>
-          <button className="ghost-button" disabled={!!busy || selected.status==="superseded"} onClick={()=>prepare("negotiate")}>Negotiate</button>
-        </div>}
-        {!archive && draft && <section className="reply-review"><h4>{draft.action==="negotiate"?"Negotiation draft":draft.action==="approve"?"Review reservation request":"Review decline"}</h4>
+      <div className="tabs" role="tablist" aria-label="Products">{materials.map((m,i)=><button key={m} role="tab" id={"tab-"+m} aria-controls="product-panel" tabIndex={current===m?0:-1} aria-selected={current===m}
+        onClick={()=>chooseTab(m)} onKeyDown={e=>{
+          const next=({ArrowRight:i+1,ArrowLeft:i-1,Home:0,End:materials.length-1} as Record<string,number>)[e.key];
+          if(next==null)return;
+          e.preventDefault();const id=materials[(next+materials.length)%materials.length];chooseTab(id);document.getElementById("tab-"+id)?.focus();
+        }}>{product(m)}</button>)}</div>
+      <div role="tabpanel" id="product-panel" aria-labelledby={"tab-"+current}>
+        {archive ? <div className="recommend">{record ? <><div className="rec-label"><Icon name="history"/>Recorded decision</div>
+          <h3>{record.d.supplier} · {record.event.action}</h3><p>{record.event.by} · {when(record.event.at)}</p>
+          <button className="quiet" onClick={()=>setDetails(true)}><Icon name="mail"/>Read decision</button></> :
+          <><h3>No decisions recorded for this product</h3><p>Reviewed offers and negotiations appear here.</p></>}</div> :
+          selected && <div className="recommend"><div className="rec-top"><div className="rec-label"><Icon name="spark"/>{best.some(d=>d.id===selected.id)?"Recommended choice":"Selected offer"}</div>
+            {selected.expires_at && <span className="rec-due">{when(selected.expires_at)}</span>}</div>
+            <h3>{selected.supplier}</h3><p>{selected.review_reason || selected.conditions || tabNote || gist(selected)}</p>
+            <div className="rec-cost"><b>{selected.total_eur!=null?eur(selected.total_eur):unit(selected)}</b>
+              {selected.total_eur!=null && <small>{(selected.order_quantity??selected.quantity)?.toLocaleString("en-US")} × {unit(selected)} per unit</small>}</div>
+            {!available && (held || selected.decided_by) && <p>{held?"Automatically approved · email awaiting review":STATUS[selected.status]}{selected.decided_by && " · "+selected.decided_by}</p>}
+            <div className="decision-buttons"><button className="btn" disabled={(!available&&!held)||!!busy} onClick={()=>prepare("approve")}>{held?"Review supplier email":"Approve"}</button>
+              <button className="outline-btn" disabled={!available||!!busy} onClick={()=>prepare("decline")}>Decline</button>
+              <button className="outline-btn" disabled={!!busy||selected.status==="superseded"} onClick={()=>prepare("negotiate")}>Negotiate</button></div></div>}
+        <div className="offers-heading"><b>Supplier emails</b><small>{threadCount} {threadCount===1?"thread":"threads"}</small></div>
+        {rows.map(d=>{
+          const body=<><span className="vendor-avatar">{d.supplier.split(/\s+/).slice(0,2).map(w=>w[0]).join("")}</span>
+            <span className="offer-info"><strong>{d.supplier}</strong><span>{d.quantity==null?"Quantity unconfirmed":d.quantity.toLocaleString("en-US")+" available"} · {unit(d)}</span></span></>;
+          return <div className={"offer-row "+(selected?.id===d.id?"picked":"")} key={d.id}>
+            {rows.length>1 && !archive ? <button className="offer-pick" aria-pressed={selected?.id===d.id} onClick={()=>{setChoice(d.id);setReply(null);setNote(null);}}><span className="radio-dot"/>{body}</button> : body}
+            <button className="email-button" aria-label={"Read email from "+d.supplier} onClick={()=>setEmailId(d.id)}><Icon name="mail"/></button></div>;
+        })}
+        {!archive && policy && <PriceCeiling key={current+":"+policy.limit} policy={policy} product={product(current)} save={saveLimit} readOnly={sharedAccount}/>}
+      </div></>}
+  </section><aside className="side-stack">{archive ? <section className="card"><Heading icon="history" count={history.length}>Decision history</Heading>
+    <div className="deadline-list" tabIndex={0} aria-label="Decision history">{history.map(r=>
+      <button className="deadline-item" key={r.key} aria-pressed={record?.key===r.key} onClick={()=>{chooseTab(r.d.material);setEventKey(r.key);}}>
+        <span className="deadline-icon"><Icon name="history"/></span><span className="deadline-copy"><b>{product(r.d.material)} · {r.event.action}</b><small>{r.event.by} · {r.d.supplier}</small></span>
+        {r.event.at && <span className="due">{when(r.event.at)}</span>}</button>)}{!history.length && <p className="empty">No saved decisions yet.</p>}</div></section> :
+    <>{children}{rows.length>0 && <PriceChart rows={rows} product={product(current)}/>}</>}</aside>
+  {!archive && switchAccount && <Dialog title="Sign in to review offers" label="Supplier decision" close={()=>setSwitchAccount(false)}>
+    <p className="modal-p">Use your individual account so the decision is recorded in your name.</p>
+    <form className="dialog-actions" action="/logout" method="post"><button className="btn">Switch account</button></form></Dialog>}
+  {mail && <Dialog title={mail.supplier} label="Supplier email" close={()=>setEmailId(null)}>
+    <p className="mail-summary">{gist(mail)}</p>{mail.excerpt && <p className="draft-body">{mail.excerpt}</p>}
+    <Words d={mail} example={example}/>{mail.thread_id && <div className="dialog-actions"><button className="btn" onClick={()=>{setEmailId(null);openThread(mail.thread_id!);}}>Open email thread</button></div>}</Dialog>}
+  {archive && details && record && <Dialog title={record.d.supplier} label="Recorded decision" close={()=>setDetails(false)}>
+    <p className="mini">{record.event.action} · {record.event.by} · {when(record.event.at)}</p>
+    {record.event.note && <p className="mail-summary draft-body">{record.event.note}</p>}
+    {record.event.terms.total_eur!=null && <p>{eur(record.event.terms.total_eur)} total</p>}
+    {(record.event.terms.alternatives??[]).map(a=><div className="offer-row" key={a.id}><div className="offer-info"><strong>{a.supplier}</strong><span>{a.quantity?.toLocaleString("en-US")??"Unconfirmed"} units · {a.price_eur==null?"Price unconfirmed":unitEuros(a.price_eur)+"/unit"}</span></div>
+      {a.thread_id && <button className="email-button" aria-label={"Read email from "+a.supplier} onClick={()=>{setDetails(false);openThread(a.thread_id!);}}><Icon name="mail"/></button>}</div>)}</Dialog>}
+  {!archive && draft && selected && <Dialog label={product(current)+" · "+draft.action} title="Review email draft" close={()=>setReply(null)}><div className="editor">
         {draft.action==="negotiate" ? <><label>Message to {selected.supplier}<textarea rows={6} maxLength={1000} readOnly={draft.recorded || !!busy} value={draft.body} onChange={e=>setReply({...draft,body:e.target.value})}/></label>
           {!draft.recorded && !example && !currentUser && <label>Reviewed by<input autoComplete="name" maxLength={80} value={reviewer} onChange={e=>onReviewer(e.target.value)}/></label>}
-          {!draft.recorded ? <button className="primary-button" disabled={!!busy || !draft.body.trim() || (!example && !currentUser && !reviewer.trim())} onClick={()=>void recordNegotiation()}>Record negotiation</button> :
+          {!draft.recorded ? <button className="btn" disabled={!!busy || !draft.body.trim() || (!example && !currentUser && !reviewer.trim())} onClick={()=>void recordNegotiation()}>Record negotiation</button> :
           example || !selected.address ? <small className="muted">Copy this draft into your supplier correspondence.</small> :
-          <a className="ghost-button" href={`mailto:${encodeURIComponent(selected.address)}?subject=${encodeURIComponent("Re: "+product(selected.material))}&body=${encodeURIComponent(draft.body)}`}>Open in email app</a>}</> : <>
+          <a className="outline-btn" href={`mailto:${encodeURIComponent(selected.address)}?subject=${encodeURIComponent("Re: "+product(selected.material))}&body=${encodeURIComponent(draft.body)}`}>Open in email app</a>}</> : <>
           <p><strong>To</strong> · {selected.address || selected.supplier}</p>
           <strong>{selected.drafts?.[draft.action]?.subject ?? product(selected.material)}</strong>
           <p className="supplier-email-preview">{selected.drafts?.[draft.action]?.body ?? (example
             ? draft.action === "approve" ? `Could you hold ${selected.order_quantity ?? selected.quantity} units of ${product(selected.material)} without charge and confirm the hold expiry? A separate purchase order is required before dispatch.` : "Thank you for the offer. We will not proceed with it for now."
             : "Reload the offer to preview the current supplier message.")}</p>
           {!example && !currentUser && <label>Reviewed by<input autoComplete="name" maxLength={80} value={reviewer} onChange={e=>onReviewer(e.target.value)}/></label>}
-          <button className="primary-button" disabled={(!available && !held) || !!busy || (!example && (!selected.drafts?.[draft.action] || (!currentUser && !reviewer.trim())))} onClick={()=>{void decide(selected,draft.action as "approve"|"decline");setReply(null);}}>{example?"Record practice decision":"Confirm and queue email"}</button></>}
-          <button className="link-button" disabled={!!busy} onClick={()=>setReply(null)}>{draft.recorded ? "Close" : "Cancel"}</button>
-        </section>}
-      </div>}
-      <div className="supplier-list" aria-label="Compare supplier offers">{rows.map(d => <button key={d.id} aria-pressed={selected?.id===d.id}
-        onClick={()=>{setChoice(d.id);setReply(null);setNote(null);}}>
-        <span><b>{country(d)}</b><small>{d.quantity?.toLocaleString("en-US") ?? "Unknown"} units · {arrives(d)}</small></span>
-        <span>{best.some(offer=>offer.id===d.id) ? "Recommended" : STATUS[d.status]}</span></button>)}</div>
-      {!archive && policy && <PriceCeiling key={current + ":" + policy.limit} policy={policy} product={product(current)} save={saveLimit} readOnly={sharedAccount}/>}
-    </>}
-  </section><aside className="decision-side">{children}
-    {!archive && rows.length > 0 && <section className="card"><PriceChart rows={rows} product={product(current)} limit={policy?.limit ?? 0}/></section>}
-  </aside></>;
+          <button className="btn" disabled={(!available && !held) || !!busy || (!example && (!selected.drafts?.[draft.action] || (!currentUser && !reviewer.trim())))} onClick={()=>{void decide(selected,draft.action as "approve"|"decline");setReply(null);}}>{example?"Record practice decision":"Confirm and queue email"}</button></>}
+          <button className="quiet" disabled={!!busy} onClick={()=>setReply(null)}>{draft.recorded ? "Close" : "Cancel"}</button>
+  </div></Dialog>}</>;
 }
