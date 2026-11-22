@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Approval, DashboardData, DecisionEffect, MailPreview, MailView, PastDecision, Source } from "./api";
 
 type Review = NonNullable<DashboardData["recoveryApprovals"]>[number];
@@ -16,6 +16,7 @@ type Props = {
   autoBy?: string | null;
   onAutoLimit?: (limitEur: number) => void;
   practiceNote?: string;
+  requestedAction?: { id: string } | null;
   onOpenThread?: (threadId: string) => void;
   onPreview?: (id: string) => Promise<MailPreview | null>;
   past?: PastDecision[];
@@ -94,7 +95,7 @@ function PastList({ rows, onOpenThread }: { rows: PastDecision[]; onOpenThread?:
 
 const STATUS: Record<string, string> = { approved: "Approved", review: "Under review", blocked: "Blocked", sent: "Sent", replied: "Replied", done: "Done" };
 
-export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit, practiceNote, onOpenThread, onPreview, past }: Props) {
+export function ActionList({ requestedAction, options, reviews, costOf, busy, readOnly, onDecide, onEvidence, autoLimit, autoIds, autoBy, onAutoLimit, practiceNote, onOpenThread, onPreview, past }: Props) {
   const shortName = (name?: string | null) => name ? name.replace(/^((?:Dr\.|Prof\.)\s+)?.*\s(\S+)$/, (_, title = "", last) => `${title}${last}`) : "";
   const nearest = STOPS.reduce((best, stop, i) => Math.abs(stop - autoLimit) < Math.abs(STOPS[best] - autoLimit) ? i : best, 0);
   const [stop, setStop] = useState(nearest);
@@ -103,6 +104,25 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
   const [open, setOpen] = useState<string>("");
   const [confirming, setConfirming] = useState<string>("");
   const [tab, setTab] = useState<"open" | "past">("open");
+  const focusDecision = useRef(false);
+  useEffect(() => {
+    if (!requestedAction) return;
+    focusDecision.current = true;
+    setTab("open");
+    setShowAll(true);
+    setOpen(requestedAction.id);
+    const visible = document.getElementById(`decision-${requestedAction.id}`);
+    if (visible) {
+      visible.focus();
+      focusDecision.current = false;
+    }
+  }, [requestedAction]);
+  useLayoutEffect(() => {
+    if (focusDecision.current && open && tab === "open" && showAll) {
+      document.getElementById(`decision-${open}`)?.focus();
+      focusDecision.current = false;
+    }
+  }, [open, tab, showAll]);
   // Live approval needs a successful preview: nobody confirms a message they could not see (codex-deploy, 22 Nov).
   const [preview, setPreview] = useState<MailPreview | null | "loading" | "failed">(null);
   const ask = (id: string) => {
@@ -188,7 +208,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
         const decisionLabel = automatic
           ? card.mode?.simulated ? "Simulated approval" : "Auto-approved"
           : STATUS[card.status] ?? card.status;
-        return <li key={card.id} className={`ac-item ${index === 0 ? "top" : ""}`}>
+        return <li key={card.id} id={`decision-${card.id}`} tabIndex={-1} className={`ac-item ${index === 0 ? "top" : ""}`}>
           <div className="ac-main">
             {!decided && b.text && <span className={`ac-badge ${b.cls}`} title={b.hint ?? undefined}>{b.text}</span>}
             <strong className="ac-title">{card.title}</strong>
@@ -196,7 +216,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
           </div>
           <div className="ac-value">
             {card.copies > 0 ? <><b>+{num(card.copies)}</b><span>copies{card.gain ? ` · ≈ ${euro(card.gain)}` : ""}</span></>
-              : card.price ? <><b>{euro(card.price)}</b><span>cost</span></> : card.price === 0 ? <span className="muted">no cost</span> : <span className="muted">no gain modelled</span>}
+              : card.price ? <><b>{euro(card.price)}</b><span>cost</span></> : card.price === 0 ? <span className="muted">no cost</span> : <span className="muted">packing impact not estimated</span>}
           </div>
           <div className="ac-buttons">
             {decided ? <span className={`ac-status ${automatic ? "auto" : ""}`}>{decisionLabel}</span>
@@ -206,9 +226,9 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
             <button className="link-button" onClick={() => setOpen(open === card.id ? "" : card.id)} aria-expanded={open === card.id}>{open === card.id ? "Less" : "Why"}</button>
           </div>
           {confirming === card.id && !decided && <div className="ac-confirm" role="alertdialog" aria-label={`Confirm: ${card.title}`}>
-            <strong>Are you sure?</strong>
-            {preview === "loading" ? <p className="muted">Loading the message this sends…</p>
-              : preview === "failed" ? <p role="alert">The message this click would send could not be loaded, so approving is paused. Refresh the page and try again.</p>
+            <strong>Approve this action?</strong>
+            {preview === "loading" ? <p className="muted">Loading the approval preview…</p>
+              : preview === "failed" ? <p role="alert">The approval preview is unavailable. Refresh the page to try again.</p>
               : preview ? <>
                 <p>{preview.note} {costLine(card.option)}</p>
                 {preview.mode !== "none" && <Email mail={preview.mode === "internal" ? { ...preview, to: `${preview.recipientName} (via ${preview.to})` } : preview}
@@ -225,8 +245,8 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
             <p className="ac-effect-head">What happened</p>
             <ul>{(card.effect?.lines ?? [automatic
               ? "Approved automatically under a written delegation."
-              : card.status === "review" ? "Sent back for review."
-              : "Approved."])
+              : card.status === "blocked" ? (card.mode?.reason || "This action is blocked.")
+              : card.status === "review" ? "Sent back for review." : decisionLabel])
               .map((line, i) => <li key={i}>{replied(line, card.effect)}</li>)}</ul>
             {card.effect?.email && <Email mail={card.effect.email} label={card.effect.email.status === "ongoing" ? "The ongoing email with the supplier" : card.effect.email.status === "sent" ? "The message that went out" : "The message"}/>}
             {card.effect?.reply && <Email mail={{ to: card.effect.reply.from, body: card.effect.reply.body }} label={`Reply · ${when.format(new Date(card.effect.reply.at))}`} from/>}
@@ -236,7 +256,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
             <p>{card.why}</p>
             {b.hint && <p className="muted">{b.hint}</p>}
             <div className="ac-links">
-              {card.evidence && <button className="link-button" onClick={() => onEvidence(card.evidence!)}>Source</button>}
+              {card.evidence && <button className="link-button" onClick={() => onEvidence(card.evidence!)}>View source</button>}
               {card.threadId && onOpenThread && <button className="link-button" onClick={() => onOpenThread(card.threadId!)}>Supplier reply</button>}
             </div>
           </div>}

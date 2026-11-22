@@ -156,3 +156,4 @@ Last human sync: Sat 21 Nov 2026
 | codex-gcp-access | T-GCP-SSH | Team GCP VM and repository SSH onboarding | done | Repo writers can run `./scripts/vm-ssh` for an eight-hour login with passwordless sudo. Verified fresh issuance, renewal, root UID 0, and the clean writable checkout. | 22 Nov |
 
 | codex-login | T103-Login | hosted login, live gateway and dashboard account controls | done | Verified five demo accounts, browser login/logout, server-side attribution and the offline end-to-end rehearsal. Live-mail cutover requires named accounts and the updated watcher. | 22 Nov |
+| codex-portal-copy | T-Live-Update | Portal banner and home page | done | Verified the live-store receipt, current gap, and keyboard navigation to its open recovery action. | 22 Nov |
