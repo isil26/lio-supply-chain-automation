@@ -62,7 +62,12 @@ def case_markers(node):
 def audit(repo, output):
     assets = output / "static/assets"
     public = [path for path in (output / "static").rglob("*") if path.is_file()]
-    if not public or any(path.parent != assets or path.suffix not in {".css", ".js"} for path in public):
+    logo = output / "static/brand/manti-logo.png"
+    if not logo.is_file() or logo.read_bytes() != (repo / "web/src/desk/manti-logo.png").read_bytes():
+        raise SystemExit("The packaged brand logo differs from the repository asset.")
+    if not any(path.parent == assets for path in public) or any(
+        path != logo and (path.parent != assets or path.suffix not in {".css", ".js"}) for path in public
+    ):
         raise SystemExit("Unexpected public asset. Review the prebuilt output before deployment.")
     bundle = "\n".join(path.read_text() for path in public if path.suffix == ".js")
     fixtures = Path(__file__).parent

@@ -186,3 +186,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-agent-map | T-Manti-Demo-Restore | Matched dashboard B and verified production | done | Manti Live serves a8958a4. Public desktop and phone showed one 17-agent map with the populated event stream 16 px below it. | 22 Nov |
 
 | manti-dashboard | Manti-Hackathon-Login | All five rehearsal logins verified individually on the public Google Cloud dashboard | done | Activity Log attribution uses the selected username | 22 Nov |
+
+| manti-agent-map | T-Manti-Brand | Dashboard and map branding | in_progress | Applying the new repository logo and neutral surfaces to the version B workspace. | 22 Nov |

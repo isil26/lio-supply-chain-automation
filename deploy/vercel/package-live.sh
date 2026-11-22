@@ -11,7 +11,8 @@ if [ -e "$output" ]; then
   exit 2
 fi
 function_dir="$output/functions/control.func"
-mkdir -p "$function_dir"
+mkdir -p "$function_dir" "$output/static/brand"
+cp "$here/../../web/src/desk/manti-logo.png" "$output/static/brand/"
 cp "$here/control.cjs" "$function_dir/index.cjs"
 cp "$here/"{accounts.cjs,demo-users.json,login.html,live.cjs} "$function_dir/"
 cp "$here/function-config.json" "$function_dir/.vc-config.json"

@@ -5,7 +5,7 @@ if [[ $# != 1 ]]; then echo 'Usage: package-vm.sh FRESH_DEPLOY_DIRECTORY' >&2; e
 revision=$(cat "$here/../backend/live-revision")
 source_dir=$(mktemp -d)
 trap 'rm -rf "$source_dir"' EXIT
-git -C "$here/../.." archive "$revision" deploy/vercel | tar -x -C "$source_dir"
+git -C "$here/../.." archive "$revision" deploy/vercel web/src/desk/manti-logo.png | tar -x -C "$source_dir"
 bash "$source_dir/deploy/vercel/package-live.sh" "$@"
 function_dir="$1/.vercel/output/functions/control.func"
 mv "$function_dir/index.cjs" "$function_dir/control.cjs"

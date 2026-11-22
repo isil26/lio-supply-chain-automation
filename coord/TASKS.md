@@ -165,3 +165,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-Manti-Demo-Restore | Restore the supplied demo design on the connected dashboard and deploy the unified Agents tab | manti-agent-map | dashboard presentation, scoped frontend release | done | T-Agents-Tab |
 
 | Manti-Hackathon-Login | Use the existing five rehearsal credentials on the live hackathon dashboard | manti-dashboard | sign-in settings and verification | done | Manti-Named-Live |
+
+| T-Manti-Brand | Use the new Manti logo and neutralize green background tints on the connected dashboard and agent map | manti-agent-map | frontend branding and production release | in_progress | T-Manti-Demo-Restore |

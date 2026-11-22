@@ -1,4 +1,8 @@
-.sidebar .brand-by {display:none}
+.manti-logo {display:block;width:134px;height:auto}
+@media (min-width:761px) and (max-width:1000px) {
+  .sidebar .manti-logo {width:38px;height:18px;object-fit:cover;object-position:left}
+}
+@media (max-width:760px) {.sidebar .manti-logo {width:103px}}
 .session,.nav-group a i {display:flex;align-items:center;gap:8px}
 .account {position:relative}
 .account summary {list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:50%;padding:4px 8px;color:var(--sub);font-size:.76rem}
@@ -9,10 +13,9 @@
 .thread-message {padding:14px 0;border-top:1px solid var(--line);line-height:1.5}
 .thread-message small {display:block;color:var(--muted);margin:4px 0 10px}
 .loading-screen {min-height:100dvh;display:grid;align-content:center;justify-content:center;gap:12px}
-.desk-tools,.actions-card {--ink:var(--text);--surface:var(--card);--accent:#b5c9bd;--accent-soft:#2c3732;--ok-text:#a0d3b0;--plate:#202429}
+.desk-tools,.actions-card {--ink:var(--text);--surface:var(--card);--accent:#d0d0d6;--accent-soft:#343438;--ok-text:#a0d3b0;--plate:var(--card)}
 .desk-tools .net-core .brand {height:auto;padding:0}
-.desk-tools .net-core .brand-name {display:block}
-.desk-tools button:is(.primary-button,.ghost-button,.link-button),.actions-card button {background:#303a36;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+.desk-tools button:is(.primary-button,.ghost-button,.link-button),.actions-card button {background:#343438;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
 .actions-card {padding:0;margin-top:12px;border:0;background:none}
 .actions-card .ac-list {list-style:none;padding:0}
 .actions-card .ac-item {display:grid;gap:10px}
@@ -22,8 +25,8 @@
 .actions-card .ac-email {white-space:pre-wrap;overflow-wrap:anywhere}
 .deadline-copy {min-width:0}
 .offer-info,.deadline-copy,.recommend {overflow-wrap:anywhere}
-@media (min-width:761px) and (max-width:1000px) {.nav-group a span,.sidebar .brand-name {display:none}}
-@media (max-width:640px) {.nav-group a span {display:none}.nav-group a[aria-current=page] span {display:inline}.sidebar .brand-name {display:inline}}
+@media (min-width:761px) and (max-width:1000px) {.nav-group a span {display:none}}
+@media (max-width:640px) {.nav-group a span {display:none}.nav-group a[aria-current=page] span {display:inline}}
 .import-page { max-width: 1060px; }
 .import-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .import-source { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin: 0; }

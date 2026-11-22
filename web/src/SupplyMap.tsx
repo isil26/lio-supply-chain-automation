@@ -1,3 +1,4 @@
+import mantiWordmark from "./desk/manti-logo.png";
 import React, { useMemo, useState } from "react";
 import { geoGraticule10, geoInterpolate, geoNaturalEarth1, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
@@ -73,12 +74,5 @@ export function SupplyMap({ network: raw }: { network: Network }) {
 }
 
 export function MantiLogo() {
-  return <div className="brand">
-    <svg viewBox="0 0 32 32" className="brand-mark" aria-hidden="true">
-      <path d="M5 21.5C5 14 9.9 8.5 16 8.5S27 14 27 21.5c0 2.2-1.6 3.5-3.6 3.5H8.6C6.6 25 5 23.7 5 21.5Z" className="dough"/>
-      <path d="M16 8.5 10.5 24.6M16 8.5l5.5 16.1M16 8.5 7 19M16 8.5 25 19" className="pleat"/>
-      <circle cx="16" cy="7.2" r="2.4" className="knot"/>
-    </svg>
-    <span className="brand-name">Manti</span><span className="brand-by">by Lio</span>
-  </div>;
+  return <div className="brand"><img className="manti-logo" src={mantiWordmark} alt="Manti" width="520" height="88"/></div>;
 }
