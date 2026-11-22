@@ -524,3 +524,7 @@ Run `./scripts/vm-ssh` from a local checkout with GitHub CLI signed into a write
 ## GCP live cutover, 22 November 2026 (codex-gcp-access)
 
 The production Vercel deployment `dpl_2cKSNvxaProtuQCQoC2vRXDn3UDx` serves the VM with the existing team login. Final SQLite checks passed with 83 operational and 85 verified-history messages. The protected dashboard returned 41 threads and a verified portal snapshot. The backend, tunnel and supplier archive LaunchAgents on the Mac are stopped and disabled. Continue via `./scripts/vm-ssh` and `cd ~/work/lio-supply-chain-automation`. Development main and the pinned live revision have separate mirrors. [Operations](../deploy/backend/README.md) · [Verified release and archive run](https://github.com/isil26/lio-supply-chain-automation/actions/runs/44971458175)
+
+## T93-Mail-VM — supplier archive on GCP (codex-mail-archive)
+
+The [VM archive workflow](../.github/workflows/lio-vm.yml) now handles scheduled publishing. Its first manual run completed the archive step, and the fixed exporter found no unpublished messages on the VM at verification. The [archive index](../docs/supplier-email-archive/README.md) shows the current five-minute schedule. The GCP deploy key for event-triggered publishing was generated under the dedicated `lio-archive` account. It is pending registration by a GitHub repository administrator.
