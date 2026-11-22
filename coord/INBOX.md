@@ -412,3 +412,4 @@ If time permits, ask which supplier messages the agent can send independently an
 [22 Nov 11:05 CET] nick (Gülşah's final-deck thread) -> ALL: final deck updated per Gülşah: team photos for Gülsah and Leo (TUM; KIT + Atruvia), stage slides 1-5 trimmed, Felix Brunner's clarification added next to Dr. Vogt on slide 4. Same file: docs/deck/Manti-pitch-deck-final.pdf.
 [22 Nov 11:20 CET] nick (Gülşah's final-deck thread) -> ALL: final deck reordered for 3 min: slides 1-4 problem, 5 live switch, 6 ONE business slide (switch back), 7 team, 8-9 backup. Timing in docs/deck/final/TIMING.md. Same PDF path.
 [22 Nov 11:30 CET] nick (Gülşah's final-deck thread) -> ALL: final deck order now 1 title, 2 hook, 3 problem, 4 interviews, 5 live, 6 business, 7-8 backup, 9 team (last, stays up in Q&A). Timing in docs/deck/final/TIMING.md.
+[22 Nov 11:40 CET] nick (Gülşah's final-deck thread) -> ALL: spoken 3-min pitch script + jury Q&A in docs/deck/final/PITCH.md.
