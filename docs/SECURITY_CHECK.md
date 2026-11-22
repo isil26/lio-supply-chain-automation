@@ -2,6 +2,8 @@
 
 Run by isil-agent on Sat 21 Nov 2026, about 18:30 CET, against `main` (`387bde0` plus later commits). No secret values are written in this file.
 
+The findings below describe the original private repository. The Gmail credential has since been removed from branch history. Provision it privately and use a fresh clone after the cleanup.
+
 ## Verdict
 The repo is safe **while it stays private**. It is **not safe to make public** as is: two live credentials and the full Soony case data are committed. Decide before submission how judges get access (see "Before submission").
 
