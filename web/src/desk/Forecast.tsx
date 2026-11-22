@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { DashboardData } from "../api";
 import { drawLaunchCargo } from "./cargo";
-import { Dialog, Icon } from "./UI";
+import { Icon } from "./UI";
 
 export const displayDate = (value: string, withTime = true) => {
   const date = new Date(value);
@@ -33,12 +33,10 @@ function Clock({deadline}: {deadline: string}) {
 }
 
 export function Forecast({data}: {data: DashboardData}) {
-  const [open, setOpen] = useState(false);
-  const [preview, setPreview] = useState<Record<string,number> | null>(null);
   const rows = [...data.readiness].sort((a,b) => Number(b.edition==="CE")-Number(a.edition==="CE"));
-  return <><section className="stats" aria-label="Launch forecast"><Clock deadline={data.launch.deadline}/>
+  return <section className="stats" aria-label="Launch forecast"><Clock deadline={data.launch.deadline}/>
     {rows.map(r => {
-      const expected = preview?.[r.edition] ?? r.p50 ?? r.packed;
+      const expected = r.p50 ?? r.packed;
       const gap = Math.max(0, r.target - expected);
       const percent = r.target ? Math.min(100, 100*expected/r.target) : 100;
       const unit = r.missCostEur ?? r.stdCostEur;
@@ -50,13 +48,5 @@ export function Forecast({data}: {data: DashboardData}) {
         <div className="loss"><span>{r.missCostEur==null?"At standard cost":r.missCostConfirmed===false?"Potential loss · estimate":r.edition==="CE"?"Refund exposure":"Potential loss"}</span>
           <b title={unit==null?undefined:"€"+count(unit*gap)}>{unit==null?"Unpriced":money.format(unit*gap)}</b></div>
       </article>;
-    })}</section><div className="forecast-note"><button className="quiet" onClick={()=>setOpen(true)}><Icon name="info"/>Forecast details</button>
-      {preview && <button className="quiet" onClick={()=>setPreview(null)}>Scenario preview · Restore baseline</button>}</div>
-    {open && <Dialog title="Expected boxes at launch" label="Forecast scenario" close={()=>setOpen(false)}>
-      <p className="modal-p">The baseline uses the current median forecast. Adjust the expected boxes to preview shortages and financial exposure.</p>
-      <form className="editor" onSubmit={e=>{e.preventDefault(); const form=new FormData(e.currentTarget); setPreview(Object.fromEntries(rows.map(r=>[r.edition,Number(form.get(r.edition))])));setOpen(false);}}>
-        {rows.map(r=><label key={r.edition}>{edition(r.edition)} · target {count(r.target)}
-          <input type="number" name={r.edition} required min={0} max={Math.max(r.target,r.p50??r.packed)} step={1} defaultValue={preview?.[r.edition]??r.p50??r.packed}/></label>)}
-        <div className="dialog-actions"><button className="outline-btn" type="button" onClick={()=>{setPreview(null);setOpen(false);}}>Restore baseline</button><button className="btn">Apply scenario</button></div>
-      </form></Dialog>}</>;
+    })}</section>;
 }

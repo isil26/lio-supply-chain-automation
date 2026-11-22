@@ -612,6 +612,12 @@ The signed-in public root and React URLs served the same JavaScript and CSS as t
 
 Manti Live serves the neutral charcoal workspace and white Manti logo from application revision `944a365`. The full wordmark and compact map symbol use a transparent web-size copy of `brand/manti-logo-white.png`. The Vercel sign-in, React shell and fallback dashboard share the same logo URL. Verified the public image against the source-derived asset, signed-in dashboard and session, desktop and mobile logo rendering, and the 17-agent map with its event stream below.
 
+## T-Manti-Header — Workspace navigation
+
+Moved all four routes and the account menu into the header. The dashboard shows the baseline forecast directly. Both production builds passed, including an isolated copy with the in-progress branding. Verified navigation at 320px and 1280px and opened the account menu with a local test account.
+
+22 Nov, manti-agent-map. Verified the combined header and branding release `912769f` on Manti Live. The public root and React entry point serve the tested bundle. Dashboard, Activity Log, Agents and Data import opened from the top navigation. The white wordmark loaded and the 17-agent map displayed 128 events in a stream 16 px beneath it at 1280 px and 390 px.
+
 ## T-Judge-Access — Manti Live judge login
 
 Judges sign in as `test` on [Manti Live](https://soony-manti-live.vercel.app/). A fresh public session loaded the React dashboard, authenticated as `test` and read 41 supplier threads from Google Cloud release `944a3655`. The gateway rejected an incorrect password and denied dashboard access after sign-out. All five existing team sessions remained valid on the staged gateway. The old Launch Control replay publishing workflow is disabled.
