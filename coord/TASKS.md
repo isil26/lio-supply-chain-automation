@@ -184,4 +184,4 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Quote-Followups-FX | Automatic quote completion and dated euro equivalents | manti-forecast-desk | mail agent, exchange rates, supplier offer UI and deployment | done | T-Live-Offer-Interpreter |
 
-| T-Dashboard-Signals | Clarify component and financial forecasts, quote decisions and full-network replay | manti-desk-signals | web dashboard and agent map | done | T-Manager-Dashboard |
+| T-Dashboard-Signals | Publish supplier offers, component coverage, quote decisions and full-network replay | manti-desk-signals | web dashboard and agent map | in_progress | T-Manager-Dashboard |

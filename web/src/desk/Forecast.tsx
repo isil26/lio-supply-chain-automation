@@ -12,7 +12,7 @@ export const displayDate = (value: string, withTime = true) => {
 };
 const count = (n: number) => n.toLocaleString("en-US");
 const money = new Intl.NumberFormat("en-IE", {style:"currency", currency:"EUR", notation:"compact", maximumFractionDigits:2});
-export const editionName = (id: string) => id === "CE" ? "Collector’s Edition" : id === "STD" ? "Standard Edition" : id;
+const editionName = (id: string) => id === "CE" ? "Collector’s Edition" : id === "STD" ? "Standard Edition" : id;
 
 function Clock({deadline}: {deadline: string}) {
   const [now, setNow] = useState(Date.now);

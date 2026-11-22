@@ -7,7 +7,6 @@ import { AgentGraph } from "./agents/AgentGraph";
 import { UploadData, type UploadResult } from "./UploadData";
 import { Offers } from "./suppliers/Offers";
 import { ComponentCoverage } from "./desk/ComponentCoverage";
-import { LaunchExposure } from "./desk/LaunchExposure";
 import { Deadlines } from "./desk/Deadlines";
 import { Forecast, displayDate } from "./desk/Forecast";
 import { Dialog, Icon } from "./desk/UI";
@@ -131,7 +130,7 @@ function App() {
     if(url.hash.startsWith("#message-"))url.hash="#dashboard";
     history.replaceState(null,"",url);
   };
-  const dashboardSidebar=<Deadlines key={imported?.id??"live"} practiceKey={imported?.id??"workspace"} data={data} practice={!!imported||hostedReplayBuild||isStaticMode()} refresh={refresh} onThread={setThreadId} onEvidence={setSource}/>;
+  const dashboardSidebar=<><ComponentCoverage risks={data.risks}/><Deadlines key={imported?.id??"live"} practiceKey={imported?.id??"workspace"} data={data} practice={!!imported||hostedReplayBuild||isStaticMode()} refresh={refresh} onThread={setThreadId} onEvidence={setSource}/></>;
   const file=source?.source_file??source?.file;
   return <ExchangeContext.Provider value={data.exchangeRates}><a className="skip" href="#main" onClick={event=>{
     event.preventDefault();
@@ -155,8 +154,7 @@ function App() {
         <div className="desk-tools theme-dark manti-workspace" hidden={page.id!=="import"}>{isStaticMode()?<p>Open the connected workspace to import data.</p>:<UploadData onResult={showUpload}/>}</div>
         {page.id==="agents"&&<div className="desk-tools theme-dark manti-workspace"><AgentGraph key={imported?.id??"workspace"} data={data} scenario={!!imported} stale={!!error} onEvidence={setSource}/></div>}
         {home&&<div id="content" className={archive?"archived":undefined}>
-          {!archive&&<><Forecast key={imported?.id??"workspace"} data={data}/>
-            <div className="body-grid forecast-charts"><LaunchExposure readiness={data.readiness}/><ComponentCoverage risks={data.risks}/></div></>}
+          {!archive&&<Forecast key={imported?.id??"workspace"} data={data}/>}
           <div className="body-grid">{imported?<><section className="card"><h2>{archive?"Supplier decisions":"Supplier offers"}</h2><p className="empty">This private forecast uses your imported files. <a className="quiet" href="#import">Manage import</a></p></section>
             {!archive&&<aside className="side-stack">{dashboardSidebar}</aside>}</>:
             <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={setThreadId}>{dashboardSidebar}</Offers>}</div>
