@@ -146,6 +146,8 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T101-Chaser-Deadline | Revalidate queued supplier mail at dispatch and route expired requests to Procurement | codex-chaser-deadline | src/chaser, Action Queue projection | done | T78-Mail-Queue, T81 |
 
-| T102-Upload | Ingest individual files or ZIP archives into an isolated launch scenario | codex-upload | scoped orchestrator, ingestion upload adapter, web and gateway | done (live relay release pending) | T1, T50-Live-Portal, T98 |
+| T102-Upload | Ingest individual files or ZIP archives into an isolated launch scenario | codex-upload | scoped orchestrator, ingestion upload adapter, web and gateway | done | T1, T50-Live-Portal, T98 |
 
 | T-Data-Import | Add the Data import tab with ZIP and preconfigured portal sources and duplicate handling | manti-import | web, orchestrator, ingest, docs and bridge | done | T102-Upload |
+
+| T102-Live | Verify uploads through the production Manti Live relay | codex-upload | production smoke test and release handoff | done | T102, T-Data-Import |
