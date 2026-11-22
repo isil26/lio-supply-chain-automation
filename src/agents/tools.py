@@ -61,6 +61,10 @@ class _ToolContext:
         portal = PortalMirror(self.db_path.parent / "portal-sync", self.data_root)
         self.data_root = portal.current() or self.data_root
 
+    def draft_store(self):
+        # The dry-run chaser and the operational planner use different mail schemas.
+        return ChaserStore(self.db_path.with_name(self.db_path.name + ".agent-drafts.sqlite"))
+
     def db(self):
         return connect(self.db_path)
 
@@ -256,7 +260,7 @@ def _draft_email(ctx, args):
         with ctx.db() as con:
             issue_data["deadline"] = ctx.truth(con)["deadline"]
     issue = Issue.from_dict(issue_data)
-    store = ChaserStore(ctx.db_path)
+    store = ctx.draft_store()
     existing = next((thread for thread in store.list_threads()
                      if thread["supplier_id"] == issue.supplier_id
                      and thread["component"] == issue.component
@@ -271,14 +275,14 @@ def _draft_email(ctx, args):
 def _send_email(ctx, args):
     if args.get("mode", "dry-run") != "dry-run":
         raise PermissionError("agent send_email is restricted to dry-run")
-    result = SupplierChaser(ChaserStore(ctx.db_path), data_root=ctx.data_root).send(
+    result = SupplierChaser(ctx.draft_store(), data_root=ctx.data_root).send(
         str(args["draft_id"]), mode="dry-run"
     )
     return _result(result)
 
 
 def _parse_reply(ctx, args):
-    result = SupplierChaser(ChaserStore(ctx.db_path), data_root=ctx.data_root).parse_reply(
+    result = SupplierChaser(ctx.draft_store(), data_root=ctx.data_root).parse_reply(
         str(args["thread_id"]), str(args["text"])
     )
     return _result(result)

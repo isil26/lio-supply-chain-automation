@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from src.agents.tools import all_tools
+from src.agents.tools import _ToolContext, all_tools
 
 
 class ToolRegistryTests(unittest.TestCase):
@@ -20,6 +20,19 @@ class ToolRegistryTests(unittest.TestCase):
         self.assertEqual({tool["name"] for tool in tools}, expected)
         self.assertTrue(all(callable(tool["handler"]) for tool in tools))
         self.assertTrue(next(tool for tool in tools if tool["name"] == "send_email")["needs_approval"])
+
+    def test_draft_store_preserves_operational_mail(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "soony.db"
+            with sqlite3.connect(path) as con:
+                con.execute("CREATE TABLE messages(id INTEGER PRIMARY KEY, chase_id TEXT, parsed TEXT)")
+                con.execute("INSERT INTO messages VALUES(1, 'thread', 'original')")
+            store = _ToolContext(path).draft_store()
+            self.assertNotEqual(store.path, path)
+            self.assertEqual(store.list_threads(), [])
+            with sqlite3.connect(path) as con:
+                self.assertEqual(con.execute("SELECT parsed FROM messages").fetchone(), ("original",))
+                self.assertIsNone(con.execute("SELECT name FROM sqlite_master WHERE name='messages_legacy'").fetchone())
 
     def test_request_review_is_persisted_with_citation(self):
         with tempfile.TemporaryDirectory() as directory:
