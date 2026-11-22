@@ -180,3 +180,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-agent-map | T-Agents-Tab | Agent graphs and layout | done | Verified one 17-agent map and a full-width event stream below it on desktop and phone, including selection and replay. | 22 Nov |
 
 | manti-dashboard | T-Manti-18984 | Promoted bd37f16 on GCP and matched both public entry points to the local build byte for byte | done | Existing production login, supplier data, agent runs and import status verified | 22 Nov |
+
+| manti-dashboard | Manti-Named-Live | Connecting the five team usernames to production offer decisions and recording negotiations | in_progress | Production sign-in and activity verification | 22 Nov |

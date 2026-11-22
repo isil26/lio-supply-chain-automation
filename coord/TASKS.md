@@ -159,3 +159,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-Agents-Tab | Combine all agents in the main map with one event stream below | manti-agent-map | Agent graphs and layout | done | T100 |
 
 | T-Manti-18984 | Promote the dashboard served on port 18984 to the operational GCP website | manti-dashboard | production release and acceptance | done | T-Agents-Tab, T-Manti-Offers |
+
+| Manti-Named-Live | Individual team accounts and auditable negotiations on Google Cloud | manti-dashboard | production authentication and offer history | in_progress | T-Manti-18984 |
