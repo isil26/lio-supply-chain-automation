@@ -8,6 +8,9 @@ model it says so instead of guessing.
 """
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import Path
+import json
 import hashlib
 import re
 
@@ -33,13 +36,21 @@ def schema(con):
     con.execute("CREATE TABLE IF NOT EXISTS translations (hash TEXT PRIMARY KEY, language TEXT, english TEXT, summary TEXT)")
 
 
+@lru_cache(maxsize=1)
+def archived_previews():
+    path = Path(__file__).resolve().parents[2] / "config" / "supplier_email_translations.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
 def translate(con, text, client=None):
     schema(con)
     if not text:
         return {"english": None, "summary": None, "language": None, "source": "empty"}
+    key = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    if saved := archived_previews().get(key):
+        return {"language": saved["language"], "english": saved["english"], "summary": None, "source": "translated"}
     if looks_english(text):
         return {"english": text, "summary": None, "language": "English", "source": "original"}
-    key = hashlib.sha256(text.encode("utf-8")).hexdigest()
     row = con.execute("SELECT language, english, summary FROM translations WHERE hash=?", (key,)).fetchone()
     if row:
         return {"language": row[0], "english": row[1], "summary": row[2], "source": "translated"}
@@ -63,4 +74,5 @@ def english(con, deal_id, client=None):
     row = con.execute("SELECT excerpt FROM deals WHERE id=?", (deal_id,)).fetchone()
     if row is None:
         raise KeyError(deal_id)
-    return translate(con, row[0] or "", client)
+    original = row[0] or ""
+    return {**translate(con, original, client), "original": original}

@@ -173,3 +173,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-Judge-Access | Provision the judge login on Manti Live and retire the old hosted replay after backend verification | manti-judge | live account settings and replay hosting | in_progress | Manti-Hackathon-Login |
 
 | T-Supplier-Promises | Automatically follow up on due supplier proposals for open shortages | manti-deal-watch | src/chaser promise planning and dispatch | done | T-Mail-Planning |
+
+| T-Manager-Dashboard | Manager forecast, component controls, decision actions and reviewed supplier emails | manti-forecast-desk | dashboard UI, decision and offer endpoints and focused verification | in_progress | T-Manti-Header |

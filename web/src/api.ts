@@ -178,7 +178,21 @@ export type Network = {
   shipments: { id: string; supplier: string; mode: string; status: string; lat: number; lon: number; eta: string; atRisk: boolean }[];
 };
 
+export type DeskAction = {
+  id: string; title: string; task?: string; source: string; status: string; owner: string; ownerRole?: string;
+  approver?: string; dueAt?: string; why: string; optionId?: string; threadId?: string;
+  evidence: (Source | string)[]; contact?: {name: string; phone: string}; costEur?: number | null;
+};
+
+export function recordDeskAction(id: string, outcome: "done" | "dismiss", by: string, note: string) {
+  return json<{ok: boolean; action: DeskAction}>(`/api/actions/${id}/${outcome}`, {
+    method:"POST", body:JSON.stringify({by, note})
+  });
+}
+
 export type DashboardData = {
+  teamReviewEmail?: string | null;
+  actions?: DeskAction[];
   currentUser?: string | null;
   launch: { name: string; deadline: string; location: string };
   readiness: Readiness[];
@@ -203,7 +217,7 @@ export type DashboardData = {
     findings?: { title: string; evidence: Source }[];
     receipts?: { headline: string; balance: string; evidence: Source; action: { id: string; title: string } | null }[];
   } | null;
-  sync?: { error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string; mailMode?: "live" | "dry-run";
+  sync?: { time?: string; error?: string | null; warnings?: SourceReview[]; pendingDrop?: number; lastSync?: string; detail?: string; mode?: string; mailMode?: "live" | "dry-run";
     portal?: { status?: "verified" | "unavailable"; checkedAt?: string; appliedAt?: string; snapshot?: string | null; error?: string | null } };
   documentReviews?: SourceReview[];
   dataHealth?: { filesSeen: number; filesParsed: number; needsReview: number; errors: number; lastSyncAgeSeconds: number | null };

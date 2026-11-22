@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type Source } from "./api";
 import { AgentGraph } from "./agents/AgentGraph";
 import { UploadData, type UploadResult } from "./UploadData";
 import { Offers } from "./suppliers/Offers";
+import { ComponentCoverage } from "./desk/ComponentCoverage";
 import { Deadlines } from "./desk/Deadlines";
 import { Forecast, displayDate } from "./desk/Forecast";
 import { Dialog, Icon } from "./desk/UI";
@@ -18,7 +19,7 @@ const pages = [
   {id:"agents", label:"Agents", icon:"network"},
   {id:"import", label:"Data import", icon:"upload"},
 ] as const;
-const currentPage = () => pages.find(p=>"#"+p.id===location.hash) ?? pages[0];
+const currentPage = () => pages.find(p=>"#"+p.id===location.hash.split("?")[0]) ?? pages[0];
 const threadFromUrl = () => {
   const query = new URLSearchParams(location.search);
   return query.get("thread") || (query.get("mail")==="1" ? "mailbox" : null);
@@ -32,9 +33,13 @@ function App() {
   const [source,setSource] = useState<Source|null>(null);
   const [threadId,setThreadId] = useState<string|null>(threadFromUrl);
   const [reviewer,setReviewer] = useState(()=>{try{return localStorage.getItem("soony-reviewer")??"";}catch{return "";}});
+  const dashboardRequest = useRef(0);
   const refresh = useCallback(async()=>{
-    try {setBase(await dashboardApi.getDashboard());setError("");}
-    catch(e){setError(e instanceof Error?e.message:"Launch forecast unavailable.");}
+    const request = ++dashboardRequest.current;
+    try {
+      const latest = await dashboardApi.getDashboard();
+      if (request === dashboardRequest.current) {setBase(latest);setError("");}
+    } catch(e){if (request === dashboardRequest.current) setError(e instanceof Error?e.message:"Launch forecast unavailable.");}
   },[]);
   const showUpload = useCallback((result:UploadResult|null)=>setImported(result),[]);
   useEffect(()=>{
@@ -67,7 +72,7 @@ function App() {
     if(url.hash.startsWith("#message-"))url.hash="#dashboard";
     history.replaceState(null,"",url);
   };
-  const deadlines=<Deadlines key={imported?.id??"live"} data={data} practice={!!imported||hostedReplayBuild||isStaticMode()} refresh={refresh} onThread={setThreadId} onEvidence={setSource}/>;
+  const dashboardSidebar=<><ComponentCoverage risks={data.risks}/><Deadlines key={imported?.id??"live"} data={data} practice={!!imported||hostedReplayBuild||isStaticMode()} refresh={refresh} onThread={setThreadId} onEvidence={setSource}/></>;
   const file=source?.source_file??source?.file;
   return <><a className="skip" href="#main" onClick={event=>{
     event.preventDefault();
@@ -88,15 +93,16 @@ function App() {
       </div>
     </header>
       <main id="main" tabIndex={-1}><header className="page-title"><div><h1>{page.label}</h1><p>{data.launch.name} · {subtitle}{imported?" · Private scenario":replay?" · Demo replay":""}</p></div>
-        <span className="date-chip"><Icon name="calendar"/>{displayDate(new Date().toISOString(),false)}</span></header>
+        {data.sync?.time && <span className="date-chip"><Icon name="clock"/>Updated {displayDate(data.sync.time)}</span>}</header>
+        {data.sync?.error && <p className="mail-summary" role="status">The last sync failed. Showing the last available forecast.</p>}
         {error&&<p className="mail-summary" role="alert">{error} <button className="quiet" onClick={refresh}>Retry</button></p>}
         <div className="desk-tools theme-dark manti-workspace" hidden={page.id!=="import"}>{isStaticMode()?<p>Open the connected workspace to import data.</p>:<UploadData onResult={showUpload}/>}</div>
         {page.id==="agents"&&<div className="desk-tools theme-dark manti-workspace"><AgentGraph key={imported?.id??"workspace"} data={data} scenario={!!imported} stale={!!error} onEvidence={setSource}/></div>}
         {home&&<div id="content" className={archive?"archived":undefined}>
           {!archive&&<Forecast key={imported?.id??"workspace"} data={data}/>}
           <div className="body-grid">{imported?<><section className="card"><h2>{archive?"Supplier decisions":"Supplier offers"}</h2><p className="empty">This private forecast uses your imported files. <a className="quiet" href="#import">Manage import</a></p></section>
-            {!archive&&<aside className="side-stack">{deadlines}</aside>}</>:
-            <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={setThreadId}>{deadlines}</Offers>}</div>
+            {!archive&&<aside className="side-stack">{dashboardSidebar}</aside>}</>:
+            <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={setThreadId}>{dashboardSidebar}</Offers>}</div>
         </div>}
       </main></div>
     {threadId&&<Dialog title={thread?.supplier??"Supplier email"} label="Email thread" close={closeThread}>

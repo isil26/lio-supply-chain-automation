@@ -369,6 +369,9 @@ def action_queue(con, truth, options, reviews, other, missed, *, include_history
             "Procurement", deadline, detail, [{"text": f"Supplier thread SOONY-{parent or chase_id}"}],
             material=material, threadId=parent or chase_id, replyId=reply, priority=1,
         ))
+    contacts = ({row["supplier_id"]: row for row in rows(con, "supplier")} if _table(con, "suppliers") else suppliers)
+    source_options = {option["id"]: option for option in options}
+    recovery_by_title = {review["title"]: review for review in reviews}
     result = {}
     for item in candidates:
         action = dict(item)
@@ -379,6 +382,30 @@ def action_queue(con, truth, options, reviews, other, missed, *, include_history
                               if isinstance(row, dict) else row for row in action["evidence"]]
         encoded = json.dumps([action, supplier, profile.get("contact_email")], ensure_ascii=False, sort_keys=True).encode()
         action_id = hashlib.sha256(encoded).hexdigest()[:24]
+        # Enrich the human handoff after deriving its ID so existing decisions keep their history.
+        option = source_options.get(action.get("optionId"), {})
+        review = recovery_by_title.get(action["title"], {}) if action["source"] == "recovery" else {}
+        review_id = review.get("id", "")
+        task = option.get("kind") or action.get("recoveryKind") or action["source"]
+        if review_id.startswith("receive-"):
+            task = "pickup" if action.get("approvalKind") == "dock_slot" else "receipt"
+        action["task"] = task
+        supplier_id = option.get("supplier_id") or supplier
+        if action["source"] == "claims":
+            supplier_id = next((sid for sid in contacts if action["title"].endswith(" " + sid)), None)
+        contact = contacts.get(supplier_id, {})
+        if action["source"] == "claims" and contact.get("name"):
+            action["title"] = f"Review late-delivery claims for {contact['name']}"
+        if contact.get("phone"):
+            action["contact"] = {"name": contact["name"], "phone": contact["phone"]}
+        if review.get("threadId"):
+            action["threadId"] = review["threadId"]
+        elif supplier_id and material and not action.get("threadId") and _table(con, "messages"):
+            latest = con.execute("""SELECT c.id FROM chases c JOIN messages m ON m.chase_id=c.id
+                                    WHERE c.supplier_id=? AND c.material=? AND m.side='in'
+                                    ORDER BY julianday(m.time) DESC,m.id DESC LIMIT 1""", (supplier_id, material)).fetchone()
+            if latest:
+                action["threadId"] = latest[0]
         previously_routed = deliveries.get(action_id, {}).get("kind")
         if (include_history and supplier and material and action.get("qty") and profile.get("contact_email")
                 and not supplier_loop.managed(supplier, material)

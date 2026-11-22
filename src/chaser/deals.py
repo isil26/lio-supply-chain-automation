@@ -351,8 +351,12 @@ def list_deals(con):
         row["history"] = history.get(row["id"],[])
         if row["offer_state"]=="superseded" or row["thread_id"] in superseded:
             row.update(status="superseded", eligible=0, best=0)
-        if row["eligible"] and (row["status"] in ("pending", "changed") or (row["status"] == "approved" and row["awaiting_send"])):
-            row["drafts"] = {action: _decision_email(row, action) for action in EMAIL}
+        open_offer = row["status"] in ("pending", "changed") and row["offer_state"] not in ("superseded", "expired")
+        row["drafts"] = {}
+        if open_offer:
+            row["drafts"]["decline"] = _decision_email(row, "decline")
+        if row["eligible"] and (open_offer or (row["status"] == "approved" and row["awaiting_send"])):
+            row["drafts"]["approve"] = _decision_email(row, "approve")
     return {"deals":rows,"best":[r for r in rows if r["best"]]}
 
 
@@ -394,14 +398,16 @@ def _stored(con, deal_id):
     return dict(zip((column[0] for column in cursor.description), record))
 
 
-def _current(con, deal):
+def _current(con, deal, action):
     from .negotiate import quotes_from_db
     quote = next((q for q in quotes_from_db(con, deal["material"], use_thread_deadlines=True)
                   if q.supplier_id == deal["supplier_id"] and q.thread_id == deal["thread_id"]), None)
     source = _source(con, quote) if quote else None
     if not source or source["source_hash"] != deal["source_hash"] or deal["thread_id"] in superseded_threads(con):
         raise ValueError("The supplier evidence has changed. Refresh to review the latest terms.")
-    if deal["offer_state"] != "quoted" or not deal["eligible"]:
+    if deal["offer_state"] in ("superseded", "expired"):
+        raise ValueError(deal["review_reason"] or "This offer is closed.")
+    if action == "approve" and (deal["offer_state"] != "quoted" or not deal["eligible"]):
         raise ValueError(deal["review_reason"] or "This offer needs more evidence.")
     deadline = con.execute("SELECT deadline FROM chases WHERE id=?", (deal["thread_id"],)).fetchone()
     expires = [deal.get("expires_at"), deadline[0] if deadline else None]
@@ -412,8 +418,8 @@ def _current(con, deal):
 def is_decision_draft(con, chase_id):
     if not con.execute("SELECT 1 FROM sqlite_master WHERE name='deals'").fetchone():
         return False
-    return bool(con.execute("""SELECT 1 FROM deals WHERE email_id=? AND eligible=1
-                               AND status IN ('approved','declined')""", (chase_id,)).fetchone())
+    return bool(con.execute("""SELECT 1 FROM deals WHERE email_id=?
+                               AND ((eligible=1 AND status='approved') OR status='declined')""", (chase_id,)).fetchone())
 
 
 def check_draft(con, chase_id):
@@ -434,7 +440,7 @@ def check_draft(con, chase_id):
     if (deal["revision"] != archived[1] or deal["email_id"] != chase_id
             or deal["status"] not in ("approved","declined")):
         raise ValueError("This response belongs to a superseded offer.")
-    _current(con,deal)
+    _current(con, deal, "decline" if deal["status"] == "declined" else "approve")
     return True
 
 
@@ -442,11 +448,13 @@ def _decision_email(deal, action):
     lang = deal["language"] if deal["language"] in EMAIL[action] else "en"
     freight = deal["offer_kind"] == "freight"
     subject, body = FREIGHT_RESERVATION[lang] if freight and action == "approve" else EMAIL[action][lang]
-    eta = datetime.fromisoformat(deal["eta"]).astimezone(ZoneInfo("Europe/Berlin")).strftime("%d %b %H:%M %Z")
-    role = ROLE_LOCAL.get(lang, {}).get(deal["signer"],deal["signer"])
-    price = deal["freight_charge"] if freight else deal["unit_price"]
-    values = {"material":deal["material"],"qty":f"{deal['order_quantity']:,}",
-              "price":f"{price:g} {deal['currency']}","eta":eta,"signer":role,"carrier":deal["carrier"]}
+    values = {"material": deal["material"]}
+    if action == "approve":
+        eta = datetime.fromisoformat(deal["eta"]).astimezone(ZoneInfo("Europe/Berlin"))
+        role = ROLE_LOCAL.get(lang, {}).get(deal["signer"], deal["signer"])
+        price = deal["freight_charge"] if freight else deal["unit_price"]
+        values.update(qty=f"{deal['order_quantity']:,}", price=f"{price:g} {deal['currency']}",
+                      eta=eta.strftime("%d %b %H:%M %Z"), signer=role, carrier=deal["carrier"])
     email_id = hashlib.sha256(f"deal:{deal['id']}:{deal['revision']}:{action}".encode()).hexdigest()[:10].upper()
     return {"id": email_id, "subject": f"[SOONY-{email_id}] " + subject.format(**values), "body": body.format(**values)}
 
@@ -457,11 +465,11 @@ def _queue_email(con, deal, draft, lang):
         (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,parent_thread_id,based_on_reply_id)
         VALUES(?,?,?,?,?,?,?,?,?,?,(SELECT deadline FROM chases WHERE id=?),?,(SELECT id FROM messages WHERE external_id=?))""",
                 (email_id, deal["supplier_id"],deal["supplier"],deal["address"],lang,subj,"draft",
-                 deal["material"],deal["order_quantity"],draft["body"],deal["thread_id"],deal["thread_id"],deal["source_message"]))
+                 deal["material"],deal["order_quantity"] or 0,draft["body"],deal["thread_id"],deal["thread_id"],deal["source_message"]))
     return email_id
 
 
-def decide(con, deal_id, action, by=None, note=None, *, revision=None, defer_send=False, confirm_held=False):
+def decide(con, deal_id, action, by=None, note=None, *, revision=None, defer_send=False, confirm_held=False, message=None):
     """Record one immutable buyer decision and enqueue one nonbinding response per revision."""
     if action not in EMAIL:
         raise ValueError("Action must be approve or decline.")
@@ -473,7 +481,7 @@ def decide(con, deal_id, action, by=None, note=None, *, revision=None, defer_sen
         deal = _stored(con,deal_id)
         if not revision or deal["revision"] != revision:
             raise ValueError("The offer has changed. Refresh before deciding.")
-        _current(con,deal)
+        _current(con, deal, action)
         status = "approved" if action=="approve" else "declined"
         release_held = bool(confirm_held and action == "approve" and deal["status"] == "approved" and deal["awaiting_send"])
         if confirm_held and not release_held and deal["status"] != "approved":
@@ -486,6 +494,10 @@ def decide(con, deal_id, action, by=None, note=None, *, revision=None, defer_sen
             raise ValueError("Enter the name of the person reviewing this offer.")
         by = by.strip()
         draft = _decision_email(deal, action)
+        if message is not None:
+            if not isinstance(message, str) or not message.strip() or len(message) > 1000:
+                raise ValueError("Enter an email message of 1 to 1,000 characters.")
+            draft["body"] = message
         text = draft["body"]
         lang = deal["language"] if deal["language"] in EMAIL[action] else "en"
         check = Guardrails().validate_draft(text)

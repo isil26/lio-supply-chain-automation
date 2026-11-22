@@ -825,6 +825,7 @@ def handler(loop, gateway_token=None):
                             from src.chaser import autosend
                             value["autoSend"] = autosend.enabled(loop.args.demo)
                             value["currentUser"] = self.account()
+                            value["teamReviewEmail"] = os.getenv("CHASER_INTERNAL_TO") or os.getenv("CHASER_SENDER")
                         if value is not None and loop.agents:
                             value["agents"] = {
                                 "enabled": loop.agents.enabled,
@@ -973,7 +974,8 @@ def handler(loop, gateway_token=None):
                                 return self.out({"ok": True})
                             row = supplier_deals.decide(con, deal[1], deal[2], body.get("by")[:80] if isinstance(body.get("by"), str) else None,
                                                         (str(body["note"])[:500] if body.get("note") else None),
-                                                        revision=body["revision"], confirm_held=body.get("confirmHeld") is True)
+                                                        revision=body["revision"], confirm_held=body.get("confirmHeld") is True,
+                                                        message=body.get("message"))
                         except KeyError:
                             return self.out({"error": "Unknown offer. Refresh the page."}, 404)
                         except ValueError as exc:

@@ -167,7 +167,10 @@ export function AgentGraph({ data, scenario, stale, onEvidence }: {
   const reportedRoles = recording?.coverage === "summary_only"
     ? recording.reported_summary.roles.map(role => role.role) : run?.roles;
   const events = useMemo(() => [...signals, ...history], [signals, history]);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(() => {
+    const requested = new URLSearchParams(location.hash.split("?")[1]).get("agent");
+    return requested ? findAgent(requested)?.name ?? null : null;
+  });
   const [replay, setReplay] = useState<{ events: Signal[]; index: number } | null>(null);
   const frame = replay?.events[replay.index];
   useEffect(() => {

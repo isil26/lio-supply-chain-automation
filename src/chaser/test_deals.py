@@ -148,7 +148,7 @@ class DealsTest(unittest.TestCase):
         self.assertEqual(con.execute("SELECT status FROM chases WHERE id=?", (approved["email_id"],)).fetchone()[0],"superseded")
         self.assertEqual(revised["history"][0]["terms"]["total_eur"],original["total_eur"])
 
-    def test_non_quotes_cannot_be_approved_or_declined(self):
+    def test_non_quotes_can_only_be_declined_while_current(self):
         cases = [
             ("Quantity: 6,800 pcs, ETA 2026-11-22 06:00. Freight EUR 1,200 total.", "incomplete"),
             ("Quantity: 6,800 pcs, EUR 10 per unit. Quote expires 2026-11-22 06:00.", "incomplete"),
@@ -164,9 +164,35 @@ class DealsTest(unittest.TestCase):
                 d = self.boise(con)
                 self.assertEqual(d["offer_state"], expected)
                 self.assertFalse(d["eligible"])
-                for action in ("approve","decline"):
+                with self.assertRaises(ValueError):
+                    decide(con, d["id"], "approve", "Buyer", revision=d["revision"])
+                if expected == "superseded":
+                    self.assertFalse(d["drafts"])
                     with self.assertRaises(ValueError):
-                        decide(con, d["id"], action, revision=d["revision"])
+                        decide(con, d["id"], "decline", "Buyer", revision=d["revision"])
+                else:
+                    self.assertEqual(set(d["drafts"]), {"decline"})
+                    text = "Thank you for checking. We will pass on this offer."
+                    result = decide(con, d["id"], "decline", "Buyer", revision=d["revision"], message=text)
+                    self.assertEqual(result["status"], "declined")
+                    self.assertTrue(is_decision_draft(con, result["email_id"]))
+                    self.assertTrue(check_draft(con, result["email_id"]))
+                    self.assertEqual(con.execute("SELECT body FROM chases WHERE id=?",
+                                                 (result["email_id"],)).fetchone()[0], text)
+
+    def test_edited_reservation_is_validated_and_retries_preserve_the_reviewed_email(self):
+        con = db()
+        sync(con, DEADLINE, now=NOW, model=False)
+        offer = self.boise(con)
+        for invalid in ("  ", "x" * 1001, "We commit to buy everything."):
+            with self.assertRaises(ValueError):
+                decide(con, offer["id"], "approve", "Buyer", revision=offer["revision"], message=invalid)
+        self.assertEqual(self.boise(con)["status"], "pending")
+        message = "Please confirm whether a free hold is possible until Sunday."
+        first = decide(con, offer["id"], "approve", "Buyer", revision=offer["revision"], message=message)
+        again = decide(con, offer["id"], "approve", "Buyer", revision=offer["revision"], message="Different text")
+        self.assertEqual(first["email_id"], again["email_id"])
+        self.assertEqual(con.execute("SELECT body FROM chases WHERE id=?", (first["email_id"],)).fetchone()[0], message)
 
     def test_paid_freight_is_a_single_service_charge(self):
         con = db()

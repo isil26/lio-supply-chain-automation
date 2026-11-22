@@ -238,7 +238,8 @@
    "status": "pending",
    "decided_by": null,
    "decided_at": null,
-   "catalog_eur": 0.1794
+   "catalog_eur": 0.1794,
+   "english_excerpt": "Our records show that 350,000 PR-CC-0312 (CMP-GAM-003) units under purchase order 4500318738, line 00020, were loaded in NHSU4471921 and discharged in Hamburg on 19 November. After handover to Nordhav under FOB Yantian terms, we cannot confirm how many can be collected before 20:00 CET on 22 November, when the balance will be available, or the German pickup address, carton or pallet count, or gross weight."
   }
  ],
  "notes": {

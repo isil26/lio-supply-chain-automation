@@ -194,3 +194,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-judge | T-Judge-Access | Verified the judge login and connected dashboard on Manti Live | in_progress | The old replay publishing workflow is disabled. Vercel is awaiting manual confirmation to pause traffic. | 22 Nov |
 
 | manti-deal-watch | T-Supplier-Promises | src/chaser | done | Manti Live sent the first due follow-up autonomously at 04:26 CET. The registered mail server accepted the request. 130 mail tests and 31 orchestrator tests passed. | 22 Nov |
+
+| manti-forecast-desk | T-Manager-Dashboard | Update the connected dashboard and verify the forecast and decision email paths | in_progress | Dashboard, offers and decision actions | 22 Nov |

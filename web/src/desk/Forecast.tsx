@@ -4,6 +4,7 @@ import { drawLaunchCargo } from "./cargo";
 import { Icon } from "./UI";
 
 export const displayDate = (value: string, withTime = true) => {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) withTime = false;
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return value || "Time unconfirmed";
   return new Intl.DateTimeFormat("en-GB", {timeZone:"Europe/Berlin", weekday:"short", day:"numeric", month:"short",
@@ -36,17 +37,19 @@ export function Forecast({data}: {data: DashboardData}) {
   const rows = [...data.readiness].sort((a,b) => Number(b.edition==="CE")-Number(a.edition==="CE"));
   return <section className="stats" aria-label="Launch forecast"><Clock deadline={data.launch.deadline}/>
     {rows.map(r => {
-      const expected = r.p50 ?? r.packed;
+      const forecast = Number.isFinite(r.p50);
+      const expected = forecast ? r.p50 : r.packed;
       const gap = Math.max(0, r.target - expected);
       const percent = r.target ? Math.min(100, 100*expected/r.target) : 100;
-      const unit = r.missCostEur ?? r.stdCostEur;
-      return <article key={r.edition} className={'stat edition '+(gap?'short':'complete')}>
+      const unit = r.missCostEur;
+      const basis = unit == null ? "No loss per missed copy supplied" : `€${count(unit)} per missing box · ${r.missCostConfirmed ? "confirmed rate" : "assumed rate"}`;
+      return <article key={r.edition} className={'stat edition '+(!forecast ? "unforecast" : gap ? "short" : "complete")}>
         <h2 className="stat-label"><span className="chip-icon"><Icon name={r.edition==="CE"?"box":"layers"}/></span>{edition(r.edition)}</h2>
-        <div className="metric"><strong>{count(gap)}</strong><span>{gap ? "boxes short" : "short · target met"}</span></div>
+        <div className="metric"><strong>{count(forecast ? gap : expected)}</strong><span>{!forecast ? "boxes packed" : gap ? "boxes short at launch" : "short · target met"}</span></div>
         <div className="progress-wrap"><div className="track"><span style={{width:percent+"%"}}/></div>
-          <div className="progress-caption"><span>{count(expected)} / {count(r.target)}</span><b>{Number(percent.toFixed(1))}%</b></div></div>
-        <div className="loss"><span>{r.missCostEur==null?"At standard cost":r.missCostConfirmed===false?"Potential loss · estimate":r.edition==="CE"?"Refund exposure":"Potential loss"}</span>
-          <b title={unit==null?undefined:"€"+count(unit*gap)}>{unit==null?"Unpriced":money.format(unit*gap)}</b></div>
+          <div className="progress-caption"><span>{forecast ? "Median forecast" : "Packed"} · {count(expected)} / {count(r.target)}</span><b>{Number(percent.toFixed(1))}%</b></div></div>
+        <div className="loss"><span title={basis}>Estimated loss</span>
+          <b title={basis}>{!forecast || (gap > 0 && unit == null) ? "Unavailable" : money.format((unit ?? 0)*gap)}</b></div>
       </article>;
     })}</section>;
 }
