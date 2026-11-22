@@ -69,15 +69,15 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 
 ## GCP VM access
 
-Use your own team-authorized Google Cloud identity. The project owner can share the exact SSH command from **Compute Engine → VM instances → SSH menu → View gcloud command**. The command contains the VM name, zone and project ID and can be shared in the repo. Keep private keys, login codes and tokens on your workstation.
-
-For the first connection, sign in locally with `gcloud auth login` if needed. Use the values from the console command and preserve any tunnel flag it includes.
+Sign in to the Google Cloud CLI with your own team-authorized account (`gcloud auth login`). This command opens a shell on the team's VM.
 
 ```sh
-gcloud compute ssh VM_NAME --project=PROJECT_ID --zone=ZONE --command='hostname && id -un'
+gcloud compute ssh instance-20261122-003928 --zone=europe-west8-a --project=project-291aca52-5088-472a-997
 ```
 
-A successful check prints the remote hostname and Linux user. Omit `--command` to open an interactive shell. If Google Cloud denies access, give the project owner the account from `gcloud auth list --filter=status:ACTIVE --format='value(account)'` and the permission error so they can check your access to this VM.
+To check access from a script, append `--command='hostname && id -un'`. On 22 November 2026 this returned `instance-20261122-003928` and the connecting user's Linux username. On first use, `gcloud` may register your public SSH key and wait for it to propagate. Keep the private key on your workstation.
+
+If access is denied, send the project owner the permission error and the account shown by `gcloud auth list --filter=status:ACTIVE --format='value(account)'` so they can check access for that identity.
 
 ## Repo map
 - `bridge/` data sync from portal API (token in `.soony_token`) | `data/` synced files (gitignored)
