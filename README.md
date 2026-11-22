@@ -1,8 +1,22 @@
 # Soony Launch Control Room
 
-Team Manti’s private START Hack prototype for the Soony Grand Heist 6 launch at DC-HAM. The control room reconciles supplier, ERP and receiving evidence, forecasts the two packing lines, and queues supplier follow-ups and decisions.
+**Team Manti · START Hack Munich 2026 · Lio case "Keep the Line Running"**
 
-Judges can sign in to [Manti Live](https://soony-manti-live.vercel.app/) as `test` with the password supplied by the team.
+Soony's Grand Heist 6 ships Sunday 22 Nov at 20:00 from Hamburg, and the last 20% is not packed. SAP says the launch is fine. Our agents read the messy supplier paperwork (Excel, PDFs, scans in Korean, Chinese, Polish and English), find where SAP is wrong, email the suppliers, and hand Soony's buyers a short list of decisions with the euros at stake. A person approves anything binding.
+
+| For the jury | Link |
+|---|---|
+| Live product | [soony-manti-live.vercel.app](https://soony-manti-live.vercel.app/) · sign in as `test`, password supplied by the team |
+| Pitch deck | [PDF](docs/deck/Manti-pitch-deck.pdf) · [web version](docs/deck/index.html) · [speaker notes](docs/deck/SPEAKER_NOTES.md) |
+| Demo video | Submitted with the hand-in (3 min) |
+| Business case | [docs/BUSINESS_CASE.md](docs/BUSINESS_CASE.md) |
+| Real supplier emails sent and answered | [docs/supplier-email-archive](docs/supplier-email-archive/README.md) (11 threads, 115 messages, 4 languages) |
+| What we learned from Soony's team | [docs/OFFICE_HOURS.md](docs/OFFICE_HOURS.md) |
+| Findings hidden in the data | [FINDINGS.md](FINDINGS.md) |
+
+**What the agents do.** A sync agent pulls every new portal drop and diffs it by checksum. Readers turn rows, PDFs and OCR'd scans into facts that cite file, page and quote. Triage, Analyst, Verifier, Planner and Chaser agents work on a shared state with a closed set of tools (`src/agents/tools.py`): they find gaps, reject claims without a source, compare Plan B options with a price, write and send supplier emails, read the replies, and escalate to the named Soony signer when a decision needs approval. Role cards: [docs/AGENT_ROLES.md](docs/AGENT_ROLES.md).
+
+The repository is private because it contains Soony's case data, which may not leave the team.
 
 ## Shared server
 
@@ -63,4 +77,4 @@ Rows have source positions. Document facts carry the filename, page and original
 
 The API is loopback only. `GET /api/dashboard` drives the UI, `GET /api/truth` exports readiness and the forecast inputs, and `GET /api/documents` returns extracted evidence. `GET /api/source/<path>` opens source evidence from the local mirror. `POST /api/sync` schedules a refresh or releases the staged drop in replay. Approval and thread actions are described in [DECISIONS.md](coord/DECISIONS.md).
 
-Keep `data/`, `store/`, browser and model caches, and credentials inside the team workspace. [Findings](private/FINDINGS.md) records source references. [Demo and business case](private/submission/DEMO.md) covers the walkthrough and break-even assumptions.
+Keep `data/`, `store/`, browser and model caches, and credentials inside the team workspace. [Findings](FINDINGS.md) records source references. The [3-minute pitch](docs/PITCH_3MIN.md) and [business case](docs/BUSINESS_CASE.md) cover the walkthrough and break-even assumptions.
