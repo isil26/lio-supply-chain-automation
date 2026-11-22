@@ -1,10 +1,15 @@
 """Run the Soony sync, extraction, readiness, decision and supplier workflows."""
 import argparse
+import base64
+import hmac
+import hashlib
+import secrets
 import json
 import mimetypes
 import os
 import re
 import shutil
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -700,9 +705,27 @@ class Loop:
             self.trigger.clear()
 
 
-def handler(loop):
+def handler(loop, gateway_token=None):
     class Handler(BaseHTTPRequestHandler):
+        def gateway_request(self):
+            if not gateway_token:
+                return True
+            supplied = self.headers.get("Authorization", "").encode()
+            return hmac.compare_digest(supplied, ("Bearer " + gateway_token).encode())
+
+        def account(self):
+            if not gateway_token:
+                return None
+            try:
+                encoded = self.headers.get("X-Soony-User", "")
+                return base64.b64decode(encoded + "=" * (-len(encoded) % 4), altchars=b"-_",
+                                        validate=True).decode() or None
+            except ValueError:
+                return None
+
         def do_GET(self):
+            if not self.gateway_request():
+                return self.out({"error": "Sign in through the control room."}, 401)
             if not self.local_request():
                 return self.out({"error": "Use the loopback address"}, 403)
             path = urlsplit(self.path).path
@@ -739,6 +762,7 @@ def handler(loop):
                         if value is not None:
                             from src.chaser import autosend
                             value["autoSend"] = autosend.enabled(loop.args.demo)
+                            value["currentUser"] = self.account()
                         if value is not None and loop.agents:
                             value["agents"] = {
                                 "enabled": loop.agents.enabled,
@@ -807,6 +831,11 @@ def handler(loop):
             self.send_header("Content-Type", content)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("X-Content-Type-Options", "nosniff")
+            if target in {CONTROL_ROOM / "control-room.html", CONTROL_ROOM / "game-card-replay.html"}:
+                script = re.search(rb"<script>(.*?)</script>", body, re.S)[1]
+                digest = base64.b64encode(hashlib.sha256(script).digest()).decode()
+                self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; "
+                                 f"script-src 'self' 'sha256-{digest}'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
             if source:
                 self.send_header("Content-Security-Policy", "sandbox")
                 if content in {"text/html", "application/javascript", "image/svg+xml"}:
@@ -815,6 +844,8 @@ def handler(loop):
             self.wfile.write(body)
 
         def do_POST(self):
+            if not self.gateway_request() or (gateway_token and not self.account()):
+                return self.out({"error": "Sign in through the control room."}, 401)
             if not self.local_request() or self.headers.get_content_type() != "application/json":
                 return self.out({"error": "Local JSON request required"}, 403)
             path = urlsplit(self.path).path
@@ -825,6 +856,8 @@ def handler(loop):
                 body = json.loads(self.rfile.read(length)) if length else {}
                 if not isinstance(body, dict):
                     raise ValueError("Request body must be an object")
+                if gateway_token:
+                    body["by"] = body["setBy"] = self.account()
                 if path == "/api/sync":
                     if loop.args.demo:
                         loop.promote_drop()
@@ -1016,8 +1049,14 @@ def handler(loop):
                     return self.out({"error": "New evidence is being processed. Refresh before approving."}, 409)
                 if supplier and body.get("confirm") is not True:
                     return self.out({"error": "Review and confirm the supplier draft before sending."}, 409)
+                actor = by.strip()
+                if (getattr(loop.args, "game_card_replay", False) and loop.args.demo and
+                        action.get("material") == "CMP-GAM-001" and action.get("recoveryKind") == "short_ship_balance"):
+                    note = f"Simulated approval in the game-card replay, run by {actor}."
+                    actor = action["approverName"]
                 delivery = action_approvals.approve(
-                    con, action, by.strip(), note, demo=loop.args.demo or sync.get("mailMode") != "live")
+                    con, action, actor,
+                    note, demo=loop.args.demo or sync.get("mailMode") != "live")
                 status = delivery["status"]
                 if delivery.get("waitingFor"):
                     return self.out({"ok": True, "action": action, "waitingFor": delivery["waitingFor"]}, 202)
@@ -1094,6 +1133,15 @@ def main():
         except (ValueError, sqlite3.Error) as exc:
             parser.exit(1, f"Cannot read launch numbers: {exc}\n")
         return
+    # The hosted watcher runs its own gateway. Standalone HTTP runs start the same gateway locally.
+    backend_token = os.environ.get("SOONY_BACKEND_TOKEN")
+    standalone = not backend_token
+    if not args.once and standalone:
+        if not args.demo and not os.environ.get("SOONY_USERS_JSON"):
+            parser.error("Configure SOONY_USERS_JSON for live access or use --demo for the team rehearsal.")
+        if not shutil.which("node"):
+            parser.error("Install Node.js 22 or newer to run the sign-in gateway.")
+        backend_token = secrets.token_hex(32)
     loop = Loop(args)
     if args.once:
         loop.cycle(sync=True)
@@ -1109,7 +1157,7 @@ def main():
         settings = json.loads(history_config.read_text())
         history_db = history_config.with_name("mail-history.db")
         os.environ["SOONY_MAIL_HISTORY_DB"] = str(history_db)
-    with ThreadingHTTPServer(("127.0.0.1", args.port), handler(loop)) as server:
+    with ThreadingHTTPServer(("127.0.0.1", 0 if standalone else args.port), handler(loop, backend_token)) as server:
         thread = threading.Thread(target=loop.background, daemon=True)
         thread.start()
         if settings and history_db:
@@ -1117,8 +1165,26 @@ def main():
                              args=(loop.stop, loop.database, history_db, settings), daemon=True).start()
         print(f"Launch Control Room at http://127.0.0.1:{args.port} (Ctrl-C to stop)", flush=True)
         try:
-            server.serve_forever()
+            if standalone:
+                env = {**os.environ, "SOONY_GATEWAY_PORT": str(args.port), "SOONY_LOCAL_DASHBOARD": "1",
+                       "SOONY_LIVE_UPSTREAM": f"http://127.0.0.1:{server.server_port}",
+                       "SOONY_LIVE_UPSTREAM_TOKEN": backend_token, "SOONY_LIVE_GATEWAY_TOKEN": "",
+                       "SOONY_DEMO_ACCOUNTS": "1" if args.demo else "0",
+                       "SOONY_REPLAY_KEY": os.environ.get("SOONY_REPLAY_KEY") or secrets.token_hex(32)}
+                threading.Thread(target=server.serve_forever, daemon=True).start()
+                def terminate(_signal, _frame):
+                    raise SystemExit(0)
+                previous = signal.signal(signal.SIGTERM, terminate)
+                try:
+                    subprocess.run(["node", str(ROOT / "deploy/backend/gateway.cjs")], env=env, check=True)
+                finally:
+                    signal.signal(signal.SIGTERM, previous)
+                    server.shutdown()
+            else:
+                server.serve_forever()
         except KeyboardInterrupt:
+            pass
+        finally:
             loop.stop.set()
             loop.trigger.set()
 

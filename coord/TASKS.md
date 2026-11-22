@@ -136,4 +136,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-GCP-SSH | Self-service VM SSH for repository writers | codex-gcp-access | VM access helper, workflow and documentation | done | Team VM |
 
+| T103-Login | Individual control-room login and user-attributed actions | codex-login | login gateway, actor propagation, dashboard account controls and focused checks | done | T68, T94-Queue |
 | T-Live-Update | Reconcile the live portal banner and clarify the dashboard copy | codex-portal-copy | Portal update projection and home page | done | T50-Live-Portal |

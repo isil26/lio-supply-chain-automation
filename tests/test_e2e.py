@@ -2,6 +2,8 @@
 
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+import base64
+import secrets
 import http.client
 import json
 import os
@@ -51,10 +53,13 @@ class DemoReplayTest(unittest.TestCase):
     def request(self, path, body=None):
         connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
         try:
+            headers = {"Authorization": "Bearer " + self.backend_token}
             if body is None:
-                connection.request("GET", path)
+                connection.request("GET", path, headers=headers)
             else:
-                connection.request("POST", path, json.dumps(body), {"Content-Type": "application/json"})
+                actor = body.get("by", "Rehearsal runner")
+                headers.update({"Content-Type": "application/json", "X-Soony-User": base64.urlsafe_b64encode(actor.encode()).decode()})
+                connection.request("POST", path, json.dumps(body), headers)
             response = connection.getresponse()
             return response.status, json.load(response)
         finally:
@@ -123,6 +128,8 @@ class DemoReplayTest(unittest.TestCase):
                if not key.startswith(("CHASER_", "SOONY_IMAP_", "SOONY_LLM_"))
                and key not in {"SOONY_TOKEN", "SOONY_LOCAL_MODEL", "SOONY_VISION_MODEL", "PYTHONPATH"}}
         env.update(CHASER_REAL_SMTP="0", CHASER_NO_TEAM_MAIL="1", SOONY_LLM_PROVIDER="none", SOONY_AGENTS="0")
+        self.backend_token = secrets.token_hex(32)
+        env["SOONY_BACKEND_TOKEN"] = self.backend_token
         env.pop("APPROVALS_KILL_SWITCH", None)
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

@@ -21,11 +21,13 @@
 <body>
 <main>
   <h1>Soony Launch Control Room</h1>
-  <p>Enter the team password to open the private supplier-drop replay.</p>
+  <p>Sign in to open the private supplier-drop replay.</p>
   <!-- LOGIN_ERROR -->
   <form method="post" action="/login">
     <!-- LOGIN_RETURN -->
-    <label for="password">Team password</label>
+    <label for="username">Username</label>
+    <input id="username" name="username" autocomplete="username" required maxlength="80" autocapitalize="none" spellcheck="false">
+    <label for="password">Password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
     <button type="submit">Sign in</button>
   </form>

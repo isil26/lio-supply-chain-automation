@@ -18,7 +18,7 @@ fi
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 cp -R "$repo/web/src" "$work/"
-cp "$repo/web/"{index.html,package.json,package-lock.json,tsconfig*.json,vite.config.ts} "$work/"
+cp "$repo/web/"{index.html,check-gateway.cjs,package.json,package-lock.json,tsconfig*.json,vite.config.ts} "$work/"
 if [ -d "${SOONY_WEB_NODE_MODULES:-$repo/web/node_modules}" ]; then
   dependencies=$(cd -- "${SOONY_WEB_NODE_MODULES:-$repo/web/node_modules}" && pwd)
   ln -s "$dependencies" "$work/node_modules"
@@ -32,7 +32,7 @@ mkdir -p "$function_dir" "$output/static"
 cp "$here/output-config.json" "$output/config.json"
 cp "$here/function-config.json" "$function_dir/.vc-config.json"
 cp "$here/control.cjs" "$function_dir/index.cjs"
-cp "$here/live.cjs" "$function_dir/live.cjs"
+cp "$here/"{accounts.cjs,demo-users.json,live.cjs} "$function_dir/"
 cp "$here/login.html" "$function_dir/login.html"
 cp "$work/dist/index.html" "$function_dir/app.html"
 cp -R "$work/dist/assets" "$output/static/"

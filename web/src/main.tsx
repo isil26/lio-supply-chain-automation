@@ -309,7 +309,7 @@ function App() {
           <button className="behind-button" onClick={() => setBehind(true)}><i className="live"/>See what the agents do</button>
           <Countdown deadline={data.launch.deadline}/>
           {isStaticMode() && <button className="ghost-button" onClick={() => void resetDemo()}>Reset</button>}
-          {hostedReplayBuild && <form method="post" action="/logout"><button className="ghost-button" type="submit">Sign out</button></form>}
+          {data.currentUser && <form method="post" action="/logout"><span>{data.currentUser} </span><button className="ghost-button" type="submit">Sign out</button></form>}
           <button className="icon-button" onClick={() => setDark((value) => !value)} title="Toggle theme" aria-label="Toggle theme"><Icon name={dark ? "sun" : "moon"}/></button>
         </div>
       </header>

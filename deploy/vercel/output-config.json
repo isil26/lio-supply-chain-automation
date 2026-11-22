@@ -4,6 +4,7 @@
     { "src": "^/$", "dest": "/control?op=home" },
     { "src": "^/login$", "dest": "/control?op=login" },
     { "src": "^/logout$", "dest": "/control?op=logout" },
+    { "src": "^/api/session$", "dest": "/control?op=session" },
     { "src": "^/api/dashboard$", "dest": "/control?op=dashboard" },
     { "src": "^/api/sync$", "dest": "/control?op=sync" },
     { "src": "^/api/replay/reset$", "dest": "/control?op=reset" },
