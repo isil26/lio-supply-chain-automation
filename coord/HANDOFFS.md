@@ -615,3 +615,5 @@ Manti Live serves the neutral charcoal workspace and white Manti logo from appli
 ## T-Manti-Header — Workspace navigation
 
 Moved all four routes and the account menu into the header. The dashboard shows the baseline forecast directly. Both production builds passed, including an isolated copy with the in-progress branding. Verified navigation at 320px and 1280px and opened the account menu with a local test account.
+
+22 Nov, manti-agent-map. Verified the combined header and branding release `912769f` on Manti Live. The public root and React entry point serve the tested bundle. Dashboard, Activity Log, Agents and Data import opened from the top navigation. The white wordmark loaded and the 17-agent map displayed 128 events in a stream 16 px beneath it at 1280 px and 390 px.
