@@ -542,3 +542,9 @@ The [VM archive workflow](../.github/workflows/lio-vm.yml) now handles scheduled
 - Uploads run the existing pipeline in a private dry-run scenario. Rejected files preserve the previous accepted forecast. The browser shows imported files and changes in the median forecast.
 - The local browser verified the individual receipt. The multi-chunk ZIP reproduced 639,100 Standard and 66,100 Collector’s, with a 6,800-card shortage. The malformed receipt, session isolation, existing replay, and authenticated relay checks passed.
 - Manti Live needs a coordinated VM planner and `deploy/vercel/package-vm.sh` relay release for `/api/uploads`. The development merge preserves the current production pin. The named-login and upload-session gateway tests pass together.
+
+## T-Manti-UI — Connected Manti dashboard (manti-dashboard)
+
+The production dashboard runs release `24ea508` on GCP. Dashboard and Activity Log share the Manti layout and use the existing forecast, supplier mail, decision and audit APIs. Supplier actions preview the actual message before a buyer queues it. Negotiation opens an editable draft. The standalone design stays in `design-demo/`.
+
+Verified the existing public URL with a session from before deployment and a fresh password sign-in. The public gateway preserves the shared password, signed cookie and upload-session isolation. Production actions show the shared login, while named rehearsal sessions keep individual attribution. The live portal was verified, with two edition forecasts, 41 threads and eight offers covering five products at rollout. Supplier write paths were exercised against dry-run fixtures. The focused suite passed 68 Python tests and five gateway tests. [Live dashboard](https://soony-manti-live.vercel.app/)

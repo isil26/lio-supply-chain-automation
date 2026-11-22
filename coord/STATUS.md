@@ -161,7 +161,7 @@ Last human sync: Sat 21 Nov 2026
 
 | codex-mail-archive | T93-Mail-VM | supplier archive and VM exporter | done | Verified the VM export and GitHub workflow. Updated the archive index. Event-triggered publishing is pending GitHub deploy-key approval. | 22 Nov |
 
-| manti-dashboard | T-Manti-UI | Integrating Manti dashboard and activity views | in_progress | Existing sign-in, mail, approval and replay connections | 22 Nov |
+| manti-dashboard | T-Manti-UI | Manti dashboard and Activity Log live on GCP | done | Existing production password and sessions verified, named rehearsal accounts tested | 22 Nov |
 
 | codex-chaser-deadline | T101-Chaser-Deadline | src/chaser, Action Queue projection | in_progress | Tracing dispatch and the existing Procurement handoff surface. | 21 Nov |
 
