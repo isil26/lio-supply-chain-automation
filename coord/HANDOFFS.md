@@ -571,3 +571,11 @@ On 22 November 2026 the public gateway served revision `dcf9e9bed22e`. One fresh
 | API repeat | 332 | 0 | 332 |
 
 Each repeat retained the same scenario result and forecast. The API and ZIP shared 303 paths, of which 302 were unchanged when switching sources. A separate sign-in saw an idle import session. The shared dashboard medians were 639,100 Standard and 66,100 Collector’s before and after the test. The private test scenario was closed and verified idle.
+
+## T-Manti-Offers — Product limits and historical comparisons (manti-dashboard)
+
+Release `40dd2f6` serves the updated dashboard and retains the Data import workspace. Each product has a EUR-per-unit ceiling, initially off. The chart compares supplier quotes with the supplier catalogue at case FX rates. The next planning review can approve an eligible recommended goods offer for an outstanding shortage within the ceiling. Its reviewed email requires a human to queue it. Purchase-order signing follows the existing workflow.
+
+The Activity Log records the alternatives available when a new decision is taken, the outcome and the account responsible. Historical decisions without a saved comparison retain their available evidence. The standalone design demo reproduces the layout in `design-demo/`.
+
+The VM passed 35 supplier and upload tests and five gateway tests. A disposable HTTP fixture verified enable, persistence, actor attribution and disable. A browser rehearsal verified automatic approval, human email review and the historical comparison. Read-only checks on the public URL verified the deployed bundle, account, portal, Data import, eight offers, five independently scaled limits and all five off. [Manti Live](https://soony-manti-live.vercel.app/)

@@ -154,4 +154,4 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Data-Import-Live-QA | Verify both import sources and repeat imports through the public Manti Live gateway in a private scenario | manti-import | import verification and coordination | done | T-Data-Import |
 
-| T-Manti-Offers | Per-product reservation thresholds, recommendation controls, product chart and decision archive | manti-dashboard | supplier offer UI, offer policy and targeted dashboard layout | in_progress | T-Manti-UI, T-Data-Import |
+| T-Manti-Offers | Per-product reservation thresholds, recommendation controls, product chart and decision archive | manti-dashboard | supplier offer UI, offer policy and targeted dashboard layout | done | T-Manti-UI, T-Data-Import |
