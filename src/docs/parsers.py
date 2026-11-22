@@ -364,4 +364,6 @@ def classify(source):
         return "price_list" if path.suffix.lower() == ".xlsx" else "notice"
     if "receiving" in path.parts:
         return "inspection" if "inspection" in path.name.lower() else "receiving"
+    if path.suffix.lower() == ".eml":
+        return "notice"
     return "workbook" if path.suffix.lower() == ".xlsx" else "context"
