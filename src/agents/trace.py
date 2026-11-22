@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from datetime import datetime, timezone
 
 
 def _redact_text(value):
@@ -33,7 +34,7 @@ def ensure_trace(db):
                         "result": "TEXT", "reason": "TEXT", "cost": "REAL", "latency_ms": "REAL",
                         "input_tokens": "INTEGER DEFAULT 0", "output_tokens": "INTEGER DEFAULT 0",
                         "created_at": "REAL", "status": "TEXT"},
-        "activity": {"agent": "TEXT", "action": "TEXT", "type": "TEXT", "tool": "TEXT", "input_ref": "TEXT",
+        "activity": {"time": "TEXT", "agent": "TEXT", "action": "TEXT", "type": "TEXT", "tool": "TEXT", "input_ref": "TEXT",
                      "output_ref": "TEXT", "status": "TEXT", "citation": "TEXT", "created_at": "REAL"},
     }
     for table, columns in wanted.items():
@@ -47,7 +48,10 @@ def record(db, *, agent, model, step, tool=None, args=None, result=None, reason=
            cost=0.0, latency_ms=0.0, status="completed", input_tokens=0, output_tokens=0):
     ensure_trace(db)
     now = time.time()
-    summary = result if isinstance(result, str) else json.dumps(result, sort_keys=True, default=str)[:1000]
+    summary = result if isinstance(result, str) else json.dumps(result, sort_keys=True, default=str)
+    if isinstance(result, dict) and len(summary) > 8000:
+        summary = json.dumps({"preview": summary[:1000], "citations": result.get("citations", [])[:8]},
+                             ensure_ascii=False, default=str)
     summary = _redact_text(summary)
     args_json = _redact_text(json.dumps(args or {}, default=str))
     reason = _redact_text(reason)
@@ -59,12 +63,12 @@ def record(db, *, agent, model, step, tool=None, args=None, result=None, reason=
         if name not in columns:
             db.execute(f"ALTER TABLE agent_trace ADD COLUMN {name} {definition}")
     db.execute("""INSERT INTO agent_trace
-        (agent,model,step,tool,args,result,reason,cost,latency_ms,input_tokens,output_tokens,created_at)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
-               (agent, model, step, tool, args_json, summary, reason,
-                cost, latency_ms, input_tokens, output_tokens, now))
-    db.execute("INSERT INTO activity(agent,action,type,tool,status,created_at) VALUES(?,?,?,?,?,?)",
-               (agent, f"{tool or 'model'}: {reason}".strip(), "analysis", tool, status, now))
+        (agent,model,step,tool,args,result,reason,cost,latency_ms,input_tokens,output_tokens,created_at,status)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               (agent, model or os.getenv("SOONY_AGENT_MODEL"), step, tool, args_json, summary, reason,
+                cost, latency_ms, input_tokens, output_tokens, now, status))
+    db.execute("INSERT INTO activity(time,agent,action,type,tool,status,created_at) VALUES(?,?,?,?,?,?,?)",
+               (datetime.now(timezone.utc).isoformat(timespec="seconds"), agent, f"{tool or 'model'}: {reason}".strip(), "analysis", tool, status, now))
     db.commit()
 
 

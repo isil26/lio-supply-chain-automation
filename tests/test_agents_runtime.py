@@ -51,6 +51,23 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(seen, [5])
         self.assertEqual(db.execute("select count(*) from agent_trace").fetchone()[0], 2)
 
+    def test_live_usage_and_timestamp_on_operations_database(self):
+        db = sqlite3.connect(":memory:")
+        db.execute("CREATE TABLE activity(id INTEGER PRIMARY KEY, time TEXT NOT NULL, agent TEXT NOT NULL, "
+                   "action TEXT NOT NULL, type TEXT NOT NULL)")
+        llm = FakeLLM([
+            {"tool_calls": [{"name": "first"}, {"name": "second"}],
+             "usage": {"input_tokens": 100, "output_tokens": 10}},
+            {"text": "done", "usage": {"input_tokens": 20, "output_tokens": 5}},
+        ])
+        agent = Agent("analyst", "", [Tool("first", lambda: 1), Tool("second", lambda: 2)],
+                      llm=llm, model="gpt-4.1-mini")
+        self.assertEqual(agent.run("review", db)["status"], "completed")
+        totals = db.execute("SELECT sum(input_tokens), sum(output_tokens), sum(cost) FROM agent_trace").fetchone()
+        self.assertEqual(tuple(totals)[:2], (120, 15))
+        self.assertAlmostEqual(totals[2], usage_cost("gpt-4.1-mini", {"input_tokens": 120, "output_tokens": 15}))
+        self.assertEqual(db.execute("SELECT count(*) FROM activity WHERE time IS NOT NULL").fetchone()[0], 3)
+
     def test_gate_and_whitelist(self):
         called = []
         llm = FakeLLM([{"text": "", "tool_calls": [
