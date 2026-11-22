@@ -153,4 +153,4 @@ Last human sync: Sat 21 Nov 2026
 
 | codex-card-replay | T98-Card-Replay | truth receipt/shipment reconciliation, regression and focused demo | done | Corrected live snapshot has 98,100 cards on hand, zero eligible inbound and a 6,800 gap. 500-run p50 639,100 STD / 66,100 CE. Focused browser replay recorded Felix’s simulated approval. 60 focused tests and the existing end-to-end demo passed. | 21 Nov |
 
-| codex-gcp-access | T-GCP-SSH | Team GCP VM and repository SSH onboarding | in_progress | Prepared the non-sudo lio-team account and writable ~/work on the VM. Verified the repo host key. Team authentication is pending. | 22 Nov |
+| codex-gcp-access | T-GCP-SSH | Team GCP VM and repository SSH onboarding | done | Repo writers can run `./scripts/vm-ssh` for an eight-hour login with passwordless sudo. Verified fresh issuance, renewal, root UID 0, and the clean writable checkout. | 22 Nov |
