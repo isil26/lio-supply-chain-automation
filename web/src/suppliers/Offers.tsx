@@ -96,11 +96,11 @@ function EmailPreview({ deal, example }: { deal: Deal; example: boolean }) {
 }
 
 // Suppliers are shown by name and country of origin, e.g. "Hwaseong Memory (South Korea)".
-const COUNTRY: Record<string, string> = {
+const COUNTRY: Record<string, string> = import.meta.env.VITE_MANTI_GUEST === "1" ? {} : {
   "SUP-0010": "South Korea", "SUP-0011": "USA", "SUP-0018": "India",
   "SUP-0019": "China", "SUP-0028": "Poland", "SUP-0029": "China",
 };
-const PRODUCT: Record<string, string> = {
+const PRODUCT: Record<string, string> = import.meta.env.VITE_MANTI_GUEST === "1" ? {} : {
   "CMP-GAM-001": "Game cards", "CMP-GAM-010": "Statues", "CMP-GAM-008": "Art books",
   "CMP-GAM-004": "Sleeves", "CMP-GAM-003": "Game cases", "CMP-GAM-007": "Collector's boxes",
 };

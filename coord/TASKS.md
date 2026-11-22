@@ -187,3 +187,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-Dashboard-Signals | Publish supplier offers, component coverage, quote decisions and full-network replay | manti-desk-signals | web dashboard and agent map | in_progress | T-Manager-Dashboard |
 
 | T-Full-Mail-Language | Translate English body paragraphs in supplier-language views | manti-mail-body | supplier email previews and translation | done | T-Live-Offer-Interpreter |
+
+| T-Public-Access | Open the dashboard to hackathon visitors via skip login | manti-guest | sign-in, guest dashboard and packaging | done | Manti-Hackathon-Login |

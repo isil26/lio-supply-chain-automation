@@ -8,22 +8,26 @@
   :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #141416; color: #f4f4f5; }
   body { display: grid; min-height: 100vh; place-items: center; margin: 0; }
   main { box-sizing: border-box; width: min(90vw, 420px); padding: 2rem; border: 1px solid #444449; border-radius: 16px; background: #222225; }
-  .brand-label { display: block; width: 128px; height: auto; margin-bottom: 1.25rem; }
+  .brand-label { display: block; width: min(180px, 100%); height: auto; margin-bottom: 1.5rem; }
   p { color: #c3c3c7; margin-top: .25rem; }
   h1 { font-size: 1.75rem; line-height: 1.15; margin: .25rem 0 .6rem; }
   form { display: grid; gap: .65rem; margin-top: 1.5rem; }
   input, button { font: inherit; border-radius: 7px; padding: .65rem .75rem; }
   input { width: 100%; box-sizing: border-box; border: 1px solid #5b5b62; background: #141416; color: inherit; }
   button { border: 0; background: #d5d5d9; color: #212125; font-weight: 700; cursor: pointer; }
+  .guest { margin-top: .65rem; }
+  .guest button { border: 1px solid #777780; background: transparent; color: inherit; }
+  .guest button:hover { background: #323236; }
+  details { margin-top: 1.25rem; }
   :focus-visible { outline: 2px solid #92ddff; outline-offset: 3px; }
   [role="alert"] { margin: .75rem 0 0; color: #ffb5b5; }
 </style>
 </head>
 <body>
 <main>
-  <img class="brand-label" src="/brand/manti-logo.png" width="128" height="22" alt="Manti">
+  <img class="brand-label" src="/brand/manti-logo.png" width="520" height="88" alt="Manti">
   <h1>Soony Launch Control Room</h1>
-  <p>Sign in to open the launch dashboard.</p>
+  <p>Sign in to the live workspace or explore the public demo with sample data.</p>
   <!-- LOGIN_ERROR -->
   <form method="post" action="/login">
     <!-- LOGIN_RETURN -->
@@ -34,6 +38,9 @@
     <label for="password">Password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
     <button type="submit">Sign in</button>
+  </form>
+  <form class="guest" method="get" action="/demo/index.html">
+    <button type="submit">skip login</button>
   </form>
   <!-- SHARED_LOGIN_START -->
   <details><summary>Use the shared team login</summary>

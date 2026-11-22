@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-FIXTURES = {"offers-sample.json": "offers-sample.json", "sample.json": "best-supplier-sample.json"}
+FIXTURES = {"offers-sample.json": "../../web/guest/offers.json", "sample.json": "best-supplier-sample.json"}
 
 
 def replace(path, before, after):
@@ -65,8 +65,12 @@ def audit(repo, output):
     logo = output / "static/brand/manti-logo.png"
     if not logo.is_file() or logo.read_bytes() != (repo / "web/src/desk/manti-logo.png").read_bytes():
         raise SystemExit("The packaged brand logo differs from the repository asset.")
+    demo = output / "static/demo"
+    if not (demo / "index.html").is_file():
+        raise SystemExit("The public demo entry is missing.")
     if not any(path.parent == assets for path in public) or any(
-        path != logo and (path.parent != assets or path.suffix not in {".css", ".js"}) for path in public
+        path not in {logo, demo / "index.html", demo / "brand/manti-logo.png"}
+        and (path.parent not in {assets, demo / "assets"} or path.suffix not in {".css", ".js"}) for path in public
     ):
         raise SystemExit("Unexpected public asset. Review the prebuilt output before deployment.")
     bundle = "\n".join(path.read_text() for path in public if path.suffix == ".js")

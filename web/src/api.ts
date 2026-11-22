@@ -292,6 +292,7 @@ export interface DashboardApi {
 }
 
 export const hostedReplayBuild = import.meta.env.VITE_SOONY_HOSTED_REPLAY === "1";
+export const publicDemo = import.meta.env.VITE_MANTI_GUEST === "1";
 
 export function resetHostedReplay() {
   return json<{ ok: boolean }>("/api/replay/reset", { method: "POST", body: "{}" });
@@ -538,7 +539,7 @@ export class StaticDashboardApi implements DashboardApi {
 }
 
 const search = new URLSearchParams(window.location.search);
-const forcedMock = search.get("mock") === "1";
+const forcedMock = publicDemo || search.get("mock") === "1";
 const forcedStatic = search.get("static") === "1" || import.meta.env.VITE_STATIC === "1";
 
 export function isStaticMode() {

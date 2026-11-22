@@ -1,6 +1,7 @@
 {
   "version": 3,
   "routes": [
+    { "src": "^/demo/(.*)$", "headers": { "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'" }, "continue": true },
     { "src": "^/$", "dest": "/control?op=home" },
     { "src": "^/login$", "dest": "/control?op=login" },
     { "src": "^/logout$", "dest": "/control?op=logout" },

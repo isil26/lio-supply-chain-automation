@@ -2,7 +2,7 @@ import { EmailBody } from "./EmailBody";
 import { ExchangeContext } from "./currency";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type Source, type SupplierMessage } from "./api";
+import { dashboardApi, hostedReplayBuild, isStaticMode, publicDemo, type DashboardData, type Source, type SupplierMessage } from "./api";
 import { AgentGraph } from "./agents/AgentGraph";
 import { UploadData, type UploadResult } from "./UploadData";
 import { Offers } from "./suppliers/Offers";
@@ -93,7 +93,7 @@ function App() {
     let timer: number;
     const poll = async () => {
       await refresh();
-      if (active && !hostedReplayBuild) timer = window.setTimeout(poll, 5000);
+      if (active && !hostedReplayBuild && !publicDemo) timer = window.setTimeout(poll, 5000);
     };
     void poll();
     return ()=>{ active = false; window.clearTimeout(timer); };
@@ -151,9 +151,10 @@ function App() {
           </a>)}
         </nav>
         {data.currentUser&&<AccountMenu user={data.currentUser}/>}
+        {publicDemo&&<a className="quiet" href="/">Sign in</a>}
       </div>
     </header>
-      <main id="main" tabIndex={-1}><header className="page-title"><div><h1>{page.label}</h1><p>{data.launch.name} · {subtitle}{imported?" · Private scenario":replay?" · Demo replay":""}</p></div>
+      <main id="main" tabIndex={-1}><header className="page-title"><div><h1>{page.label}</h1><p>{data.launch.name} · {subtitle}{imported?" · Private scenario":publicDemo?" · Public demo":replay?" · Demo replay":""}</p></div>
         {data.sync?.time && <span className="date-chip"><Icon name="clock"/>Updated {displayDate(data.sync.time)}</span>}</header>
         {data.sync?.error && <p className="mail-summary" role="status">The last sync failed. Showing the last available forecast.</p>}
         {error&&<p className="mail-summary" role="alert">{error} {retryButton}</p>}

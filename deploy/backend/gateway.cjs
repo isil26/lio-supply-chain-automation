@@ -13,6 +13,24 @@ if (!accounts() ||
 }
 const port = Number(process.env.SOONY_GATEWAY_PORT || '8790');
 http.createServer((request, response) => {
+  const pathname = request.url.split('?')[0];
+  if (request.method === 'GET' && /^\/demo\/(index\.html|brand\/manti-logo\.png|assets\/[\w-]+\.(?:js|css))$/.test(pathname)) {
+    const asset = createReadStream(join(__dirname, '../../web/dist', pathname));
+    asset.on('error', error => {
+      if (error.code === 'ENOENT' && pathname === '/demo/index.html') {
+        // The Python-only local demo can still open the hosted public dashboard.
+        response.writeHead(302, { Location: 'https://soony-manti-live.vercel.app/demo/index.html' });
+      } else {
+        response.statusCode = 404;
+      }
+      response.end();
+    });
+    const types = { html: 'text/html; charset=utf-8', js: 'text/javascript', css: 'text/css', png: 'image/png' };
+    response.setHeader('Content-Type', types[pathname.split('.').pop()]);
+    response.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'");
+    asset.pipe(response);
+    return;
+  }
   // Vercel serves this same public logo from its static directory.
   if (request.method === 'GET' && request.url === '/brand/manti-logo.png') {
     const logo = createReadStream(join(__dirname, '../../web/src/desk/manti-logo.png'));

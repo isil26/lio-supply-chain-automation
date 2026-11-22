@@ -24,6 +24,11 @@ test('live gateway requires team sign-in and forwards authorized JSON', async (t
     SOONY_LIVE_GATEWAY_TOKEN: 'test-preview-token',
   });
   const gateway = await listener(control, t);
+  const welcome = await fetch(gateway + '/');
+  const page = await welcome.text();
+  assert.match(page, /<img[^>]+src="\/brand\/manti-logo\.png"[^>]+alt="Manti"/);
+  assert.match(page, /<form[^>]+method="get" action="\/demo\/index\.html">\s*<button[^>]*>skip login<\/button>/);
+  assert.equal(welcome.headers.get('set-cookie'), null);
   assert.equal((await fetch(gateway + '/api/dashboard')).status, 401);
   assert.equal(received, 0);
   const origin = gateway.replace('http:', 'https:');

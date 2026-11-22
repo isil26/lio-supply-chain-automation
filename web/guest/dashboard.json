@@ -1,0 +1,22 @@
+{
+  "launch": {"name": "Sample launch", "deadline": "2026-12-10T18:00:00+01:00", "location": "Distribution center"},
+  "readiness": [
+    {"edition": "STD", "percent": 80, "packed": 8000, "target": 10000, "p50": 8800, "missCostEur": 12},
+    {"edition": "CE", "percent": 60, "packed": 1200, "target": 2000, "p50": 1200, "missCostEur": 30}
+  ],
+  "risks": [
+    {"id": "cards", "component": "Game cards", "required": 2800, "onHand": 600, "inbound": 200, "gap": 2000},
+    {"id": "statues", "component": "Statues", "required": 800, "onHand": 0, "inbound": 0, "gap": 800}
+  ],
+  "activity": [
+    {"id": "quote", "agent": "Interpreter", "action": "Found an offer for 1,600 game cards in the supplier reply.", "time": "09:15", "type": "analysis"},
+    {"id": "compare", "agent": "Planner", "action": "Compared two game card offers against the launch shortfall.", "time": "09:12", "type": "analysis"},
+    {"id": "gap", "agent": "Readiness Engine", "action": "Flagged a 2,000-unit game card shortfall.", "time": "09:10", "type": "warning"}
+  ],
+  "actions": [
+    {"id": "sample-cards", "source": "planner", "title": "Review game card coverage", "why": "Compare the available quantities in the two supplier offers.", "owner": "Buyer", "status": "pending", "evidence": []}
+  ],
+  "threads": [],
+  "approval": null,
+  "drop": null
+}

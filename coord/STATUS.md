@@ -210,3 +210,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-desk-signals | T-Dashboard-Signals | Restoring Supplier offers directly below the forecast cards and publishing the approved dashboard | in_progress | Verifying production | 22 Nov |
 
 | manti-mail-body | T-Full-Mail-Language | Verified full supplier-language previews and exact received messages | done | Eight offers, thirteen mixed or bilingual replies, three local model directions and 146 mail tests checked | 22 Nov |
+
+| manti-guest | T-Public-Access | Verified the branded login and guest dashboard locally | ready | Production publication awaits approval | 22 Nov |
