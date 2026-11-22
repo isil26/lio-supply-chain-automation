@@ -101,6 +101,19 @@ class IngestionSanityTest(unittest.TestCase):
         self.assertEqual(replay["bridge_files"], [])
         self.assertEqual(replay["tables"]["open_shipments"], {"rows": 2, "added": 0, "removed": 0})
 
+    def test_overlapping_exports_and_repeated_rows_count_once(self):
+        copy = "soony/erp/open_shipments_update.csv"
+        self.write(copy, b"shipment_id,status,eta\nSHP-1,arrived_port,2026-11-19\n"
+                         b"SHP-2,in_transit,2026-11-20\nSHP-2,in_transit,2026-11-20\n")
+        self.run_ingest()
+        self.assertEqual(self.query("SELECT shipment_id, source_row FROM open_shipments "
+                                    "WHERE source_sheet = '' ORDER BY shipment_id"),
+                         [("SHP-1", 2), ("SHP-2", 3)])
+        del self.manifest[SHIPMENTS]
+        self.run_ingest()
+        self.assertEqual(self.query("SELECT source FROM open_shipments WHERE shipment_id='SHP-1' "
+                                    "AND source_sheet=''"), [(copy,)])
+
     def test_changed_removed_and_invalid_inputs(self):
         self.run_ingest()
         self.write(SHIPMENTS, b"Shipment,Shipment Status,ETA\nSHP-1,in_delivery,2026-11-20\n")

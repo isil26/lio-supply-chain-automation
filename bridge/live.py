@@ -24,11 +24,14 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def fetch(path, token):
+def fetch(path, token, *, limit=None):
     req = Request(BASE + path, headers={"Authorization": f"Bearer {token}"})
     try:
         with build_opener(NoRedirect()).open(req, timeout=15) as response:
-            return response.read()
+            body = response.read() if limit is None else response.read(limit + 1)
+            if limit is not None and len(body) > limit:
+                raise PortalError("Portal response exceeded the expected size.")
+            return body
     except HTTPError as error:
         raise PortalError(f"Portal API returned HTTP {error.code}.") from None
     except (OSError, URLError):
@@ -57,6 +60,13 @@ def inventory(body):
     except (TypeError, ValueError, KeyError):
         raise PortalError("Portal file inventory is invalid.") from None
     return files
+
+
+def download_file(name, token, digest, size):
+    body = fetch("/api/v1/files/" + quote(name), token, limit=size)
+    if len(body) != size or sha256(body).hexdigest() != digest:
+        raise PortalError("A portal file changed during download or failed its hash check.")
+    return body
 
 
 def _verified(path, digest, size):
@@ -114,10 +124,7 @@ class PortalMirror:
                         shutil.copyfile(existing / name, target)
                         break
                 else:
-                    body = fetch("/api/v1/files/" + quote(name), token)
-                    if len(body) != size or sha256(body).hexdigest() != digest:
-                        raise PortalError("A portal file changed during download or failed its hash check.")
-                    target.write_bytes(body)
+                    target.write_bytes(download_file(name, token, digest, size))
             state = self.manifest(data)
             state.parent.mkdir()
             state.write_text(manifest, encoding="utf-8")

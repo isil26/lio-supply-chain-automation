@@ -14,6 +14,8 @@ export type UploadResult = {
 
 type UploadState = {
   status: "idle" | "unavailable" | "uploading" | "processing" | "ready" | "rejected";
+  portal?: { configured: boolean; endpoint: string };
+  report?: { name: string; files: UploadResult["files"] };
   id?: string;
   name?: string;
   error?: string;
@@ -53,13 +55,15 @@ function encode(chunk: Blob): Promise<string> {
 
 export function UploadData({ onResult }: { onResult: (result: UploadResult | null) => void }) {
   const picker = useRef<HTMLInputElement>(null);
-  const [state, setState] = useState<UploadState>({ status: "unavailable" });
+  const [state, setState] = useState<UploadState | null>(null);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [reload, setReload] = useState(0);
   const lastResult = useRef<string | undefined>(undefined);
 
   useEffect(() => {
+    if (sending) return;
     let active = true;
     let timer: number;
     const refresh = async () => {
@@ -67,89 +71,111 @@ export function UploadData({ onResult }: { onResult: (result: UploadResult | nul
         const next = await request();
         if (!active) return;
         setState(next);
-        if (next.result && lastResult.current !== next.result.id) {
-          lastResult.current = next.result.id;
-          onResult(next.result);
+        if (lastResult.current !== next.result?.id) {
+          lastResult.current = next.result?.id;
+          onResult(next.result ?? null);
         }
-        if (next.status === "processing") timer = window.setTimeout(refresh, 900);
+        if (next.status === "processing") timer = window.setTimeout(refresh, 1200);
       } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : "Upload status is unavailable.");
+        if (active) setError(err instanceof Error ? err.message : "Import status is unavailable.");
       }
     };
     void refresh();
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [onResult, sending]);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [onResult, sending, reload]);
 
-  const upload = async (file: File) => {
-    if (!file.size || file.size > MAX_SIZE) {
+  const run = async (file?: File) => {
+    if (file && (!file.size || file.size > MAX_SIZE)) {
       setError("Choose a nonempty file up to 64 MB.");
       return;
     }
-    const id = crypto.randomUUID();
+    setSending(true);
     setError("");
     setProgress(0);
-    setSending(true);
+    const id = crypto.randomUUID();
     try {
-      for (let offset = 0; offset < file.size; offset += CHUNK_SIZE) {
-        const slice = file.slice(offset, offset + CHUNK_SIZE);
-        const chunk = await encode(slice);
-        const next = await request({ id, name: file.name, size: file.size, offset, chunk });
-        setState(next);
-        setProgress(Math.round(100 * (offset + slice.size) / file.size));
+      if (file) {
+        for (let offset = 0; offset < file.size; offset += CHUNK_SIZE) {
+          const slice = file.slice(offset, offset + CHUNK_SIZE);
+          await request({ id, name: file.name, size: file.size, offset, chunk: await encode(slice) });
+          setProgress(Math.round(100 * (offset + slice.size) / file.size));
+        }
+      } else {
+        await request({ id, source: "portal" });
       }
+      setState(previous => ({ ...previous, id, status: "processing", name: file?.name ?? "Challenge API" }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : "Import failed.");
     } finally {
       setSending(false);
     }
   };
 
   const reset = async () => {
+    setSending(true);
     try {
-      setState(await request({ reset: true }));
+      await request({ reset: true });
       lastResult.current = undefined;
       onResult(null);
       setError("");
+      window.location.hash = "dashboard";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not close the upload scenario.");
+      setError(err instanceof Error ? err.message : "Could not close the import scenario.");
+    } finally {
+      setSending(false);
     }
   };
 
-  const ingested = state.result?.files.filter((file) => file.status === "ingested").length ?? 0;
-  const forecastChanges = state.result?.dashboard.readiness.flatMap((edition) => {
-    const before = state.result?.before.find((row) => row.edition === edition.edition)?.p50;
-    if (before == null || before === edition.p50) return [];
-    const label = edition.edition === "CE" ? "Collector’s" : "Standard";
-    return [`${label} ${before.toLocaleString()} → ${edition.p50.toLocaleString()}`];
-  }) ?? [];
-  if (hostedReplayBuild && state.status === "unavailable") return null;
-  return <section className="notice upload-data" aria-label="Upload case data">
-    <div>
-      <strong>Upload case data</strong>
-      <p className="muted">Choose one file or a ZIP up to 64 MB. The uploaded data runs in a dry-run forecast.</p>
-      <div role="status">
-        {sending ? `Uploading ${progress}%…` : state.status === "processing" ? `Processing ${state.name}…` :
-          state.status === "ready" ? `${ingested} imported · ${(state.result?.files.length ?? 0) - ingested} unchanged · Forecast recalculated` :
-          state.status === "unavailable" ? "Upload processing is unavailable." : ""}
-        {state.status === "ready" && forecastChanges.length > 0 && <div>{forecastChanges.join(" · ")}</div>}
-      </div>
-      {(error || state.error) && <p role="alert">{error || state.error}</p>}
-      {state.status === "ready" && state.result && <details>
-        <summary>Files processed</summary>
-        <ul>{state.result.files.map((file) => <li key={file.name}>{file.name} · {file.status}</li>)}</ul>
-      </details>}
+  const busy = sending || state?.status === "processing";
+  const disabled = !state || state.status === "unavailable" || busy;
+  const report = state?.report;
+  const imported = report?.files.filter(file => file.status === "ingested").length ?? 0;
+  const skipped = (report?.files.length ?? 0) - imported;
+  const forecastChanges = imported ? state?.result?.dashboard.readiness.flatMap(edition => {
+    const before = state.result?.before.find(row => row.edition === edition.edition)?.p50;
+    if (before == null || before === edition.p50 || edition.p50 == null) return [];
+    return [`${edition.edition === "CE" ? "Collector’s" : "Standard"} ${before.toLocaleString()} → ${edition.p50.toLocaleString()}`];
+  }) : [];
+
+  return <div className="import-page">
+    <div className="import-sources">
+      <section className="card import-source">
+        <svg className="source-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M10 5v2m0 2v2m0 2v2"/><rect x="8.5" y="16" width="3" height="2.5" rx=".5"/></svg>
+        <h2>ZIP archive</h2>
+        <p>Upload the challenge ZIP or a single case file, up to 64 MB.</p>
+        <input ref={picker} type="file" accept={ACCEPT} hidden onChange={event => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = "";
+          if (file) void run(file);
+        }}/>
+        <div className="source-action"><button className="primary-button" disabled={disabled} onClick={() => picker.current?.click()}>Choose file or ZIP</button></div>
+      </section>
+      <section className="card import-source">
+        <svg className="source-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 3 12l5 7m8-14 5 7-5 7m-3-16-2 18"/></svg>
+        <h2>Challenge API</h2>
+        <p>Fetch the latest files from the Lio portal using the team’s server connection.</p>
+        {state?.portal && <code className="import-endpoint">{state.portal.endpoint}</code>}
+        <div className="source-action"><button className="ghost-button" disabled={disabled || !state?.portal?.configured} onClick={() => void run()}>Import from API</button></div>
+        {state?.portal && !state.portal.configured && <small>The server needs the team portal credential.</small>}
+      </section>
     </div>
-    <div className="actions">
-      <input ref={picker} type="file" accept={ACCEPT} hidden onChange={(event) => {
-        const file = event.currentTarget.files?.[0];
-        event.currentTarget.value = "";
-        if (file) void upload(file);
-      }}/>
-      <button type="button" className="primary-button small" disabled={sending || state.status === "processing" || state.status === "unavailable"} onClick={() => picker.current?.click()}>Choose file or ZIP</button>
-      {lastResult.current && <button type="button" className="ghost-button small" disabled={sending || state.status === "processing"} onClick={() => void reset()}>Return to launch dashboard</button>}
+    <p className="muted import-note">Both sources update your private forecast scenario. Files with identical content are skipped.</p>
+    <div role="status" aria-live="polite">
+      {sending ? (progress > 0 ? `Uploading · ${progress}%` : "Submitting import…") :
+        state?.status === "processing" ? `Checking ${state.name}…` :
+        state?.status === "uploading" ? "Upload incomplete. Choose the file again to retry." :
+        state?.status === "unavailable" ? "The import service is unavailable." : !state && !error ? "Connecting to the import service…" : ""}
+      {!busy && report && <section className="card import-result"><h2>Last completed import</h2>
+        <p>{report.name} · <strong>{imported} imported</strong> · {skipped} skipped</p>
+        {forecastChanges && forecastChanges.length > 0 && <p>{forecastChanges.join(" · ")}</p>}
+        <details><summary>File details ({report.files.length})</summary><ul>{report.files.map((file, index) =>
+          <li key={index}><span>{file.name}</span><strong>{file.status === "ingested" ? "Imported" : "Skipped"}</strong></li>)}</ul></details>
+      </section>}
     </div>
-  </section>;
+    {(error || state?.error) && <div className="notice alert" role="alert">{error || state?.error}
+      {error && <button className="link-button" onClick={() => { setError(""); setReload(value => value + 1); }}>Refresh status</button>}
+    </div>}
+    {state?.result && !busy && <div className="actions"><a className="source-link" href="#dashboard">View scenario forecast</a>
+      <button className="ghost-button" onClick={() => void reset()}>Close scenario</button></div>}
+  </div>;
 }

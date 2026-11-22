@@ -34,6 +34,8 @@ EXTENSIONS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"
 
 def source_paths(data):
     paths = {path for path in data.rglob("*") if path.suffix.lower() == ".eml"}
+    # ERP workbooks can be supporting evidence outside the typed CSV exports.
+    paths.update((data / "soony/erp").glob("*.xlsx"))
     for supplier in (data / "suppliers").glob("SUP-*"):
         for bucket in ("order_confirmations", "contracts", "notices"):
             paths.update((supplier / bucket).rglob("*"))

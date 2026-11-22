@@ -32,7 +32,7 @@ class PortalMirrorTest(TestCase):
         self.get = patch("bridge.live.fetch", side_effect=self.portal).start()
         self.addCleanup(patch.stopall)
 
-    def portal(self, path, token):
+    def portal(self, path, token, **kwargs):
         self.assertEqual(token, "test-only-bearer")
         if path == "/api/v1/files":
             return json.dumps({"files": [{"path": name, "sha256": sha256(body).hexdigest(), "bytes": len(body)}
@@ -59,7 +59,7 @@ class PortalMirrorTest(TestCase):
         start = self.mirror.refresh()
         self.mirror.accept(start)
         self.files[NEW] = b"new"
-        self.get.side_effect = lambda path, token: self.portal(path, token) if path == "/api/v1/files" else b"bad"
+        self.get.side_effect = lambda path, token, **kwargs: self.portal(path, token) if path == "/api/v1/files" else b"bad"
         with self.assertRaisesRegex(PortalError, "hash check"):
             self.mirror.refresh()
         self.assertEqual(self.mirror.current(), start)
