@@ -24,10 +24,10 @@ The live planner reviews active shortages, registered sources, recovery options 
 
 ## Supplier email translation
 
-The supplier translator reads new Polish, Korean and Chinese correspondence from the operational and verified mailboxes. It uses local CPU models and caches English by the original message hash. Install the runtime and pinned model packages on a new host before starting the service.
+The supplier translator prepares English and supplier-language views of Polish, Korean and Chinese correspondence from the operational and verified mailboxes. Local CPU models translate English passages in mixed-language emails. Both previews retain the message as received. The worker caches supplier-language views by message hash and target language. Install the runtime and both model directions on the host.
 
 ```sh
-sudo /opt/lio/venv/bin/pip install --only-binary=:all: ctranslate2==4.6.0 sentencepiece==0.2.1
+sudo /opt/lio/venv/bin/pip install --only-binary=:all: ctranslate2==4.6.0 sentencepiece==0.2.1 sacremoses==0.1.1 subword-nmt==0.3.8 lingua-language-detector==2.1.1
 sudo /opt/lio/venv/bin/python deploy/backend/install_translation_models.py
 ```
 

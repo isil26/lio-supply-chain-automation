@@ -32,12 +32,35 @@ def looks_english(text):
 
 def schema(con):
     con.execute("CREATE TABLE IF NOT EXISTS translations (hash TEXT PRIMARY KEY, language TEXT, english TEXT, summary TEXT)")
+    con.execute("""CREATE TABLE IF NOT EXISTS supplier_language_views
+                   (hash TEXT, language TEXT, body TEXT NOT NULL, PRIMARY KEY(hash,language))""")
 
 
 @lru_cache(maxsize=1)
 def archived_previews():
     path = Path(__file__).resolve().parents[2] / "config" / "supplier_email_translations.json"
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def supplier_view(con, text, hint, *, prepare=False):
+    if not text:
+        return {}
+    code = local_translation.language(text, hint)
+    if code not in local_translation.LANGUAGES:
+        return {}
+    key = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    name = local_translation.LANGUAGES[code]
+    row = con.execute("SELECT body FROM supplier_language_views WHERE hash=? AND language=?", (key, code)).fetchone()
+    body = row[0] if row else None
+    if body is None and prepare:
+        try:
+            body = local_translation.to_supplier(text, code)
+        except (ImportError, RuntimeError, OSError, ValueError):
+            logging.getLogger(__name__).exception("Supplier-language preview failed for %s", code)
+        if body:
+            with con:
+                con.execute("INSERT OR IGNORE INTO supplier_language_views VALUES(?,?,?)", (key, code, body))
+    return {"supplierLanguage": name, "supplierText": body}
 
 
 def _cached(con, text, hint=None):
@@ -91,7 +114,8 @@ def english(con, deal_id, client=None):
     if row is None:
         raise KeyError(deal_id)
     original = row[0] or ""
-    return {**translate(con, original, client, row[1]), "original": original}
+    return {**translate(con, original, client, row[1]), "original": original,
+            **supplier_view(con, original, row[1], prepare=True)}
 
 
 def annotate(con, threads):
@@ -103,6 +127,9 @@ def annotate(con, threads):
                 cached = _cached(con, text, thread.get("language"))
                 if cached and cached["source"] == "translated":
                     msg["english"] = cached["english"]
+                elif cached and cached["source"] == "original":
+                    msg["english"] = text
+                msg.update(supplier_view(con, text, thread.get("language")))
 
 
 def run(stop, database, history_database=None):
@@ -127,6 +154,7 @@ def run(stop, database, history_database=None):
                         seen.add((body,lang))
                         if not _cached(con, body, lang):
                             translate(con, body, hint=lang)
+                        supplier_view(con, body, lang, prepare=True)
         except (OSError, ValueError, sqlite3.Error):
             logging.getLogger(__name__).exception("Supplier translation worker will retry")
         stop.wait(15)

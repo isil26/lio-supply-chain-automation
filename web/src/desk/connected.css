@@ -64,6 +64,8 @@
 .email-preview {margin-top:14px}
 .preview-heading {justify-content:space-between;margin-bottom:10px;font-size:.85rem}
 .email-preview .draft-body {line-height:1.55;font-size:.91rem}
+.email-languages {display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.email-languages [aria-pressed="true"] {font-weight:700;text-decoration:underline;text-underline-offset:3px}
 .decision-context {margin:16px 0 12px;line-height:1.55;color:var(--sub);font-size:.92rem}
 .handoff-links {display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .decision-feedback {color:var(--sub);font-size:.85rem;line-height:1.5;margin-bottom:10px}
