@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Manti Pitch Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: 1920px 1080px; margin: 0; }
+  :root { --bg:#050505; --ink:#f4f1ec; --mut:#9a9690; --line:#2e2c2a; --card:#121110; --green:#5fbf7f; --red:#e36b6b; --amber:#f0b45a; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink); font-family: "Inter Tight", Inter, "Helvetica Neue", Arial, sans-serif; }
+  .s { width: 1920px; height: 1080px; position: relative; overflow: hidden; padding: 96px 112px; page-break-after: always; break-after: page; display: flex; flex-direction: column; }
+  .s:last-child { page-break-after: auto; }
+  h1 { font-size: 92px; line-height: 1; letter-spacing: -0.045em; font-weight: 800; }
+  h2 { font-size: 68px; line-height: 1.04; letter-spacing: -0.04em; font-weight: 800; max-width: 1500px; }
+  .kick { font-size: 22px; letter-spacing: .18em; text-transform: uppercase; color: var(--mut); font-weight: 600; margin-bottom: 22px; }
+  .sub { font-size: 32px; color: var(--mut); margin-top: 22px; line-height: 1.3; max-width: 1400px; }
+  img[src*="manti-logo"] { mix-blend-mode: screen; }
+  .logo { position: absolute; left: 112px; bottom: 56px; height: 46px; }
+  .pg { position: absolute; right: 112px; bottom: 64px; color: #5b5853; font-size: 20px; }
+  .src { position: absolute; left: 380px; bottom: 66px; color: #5b5853; font-size: 18px; }
+  .card { background: var(--card); border: 1.5px solid var(--line); border-radius: 28px; padding: 40px 44px; }
+  .light { background: #f0ece6; color: #0b0b0b; border: none; }
+  .big { font-size: 84px; font-weight: 800; letter-spacing: -0.045em; line-height: 1; }
+  .lab { font-size: 20px; letter-spacing: .14em; text-transform: uppercase; color: var(--mut); font-weight: 600; }
+  .txt { font-size: 27px; line-height: 1.35; color: #d8d4ce; }
+  .g { color: var(--green); } .r { color: var(--red); } .a { color: var(--amber); }
+  .row { display: flex; gap: 32px; }
+  .grow { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- 1 TITLE -->
+<section class="s" style="justify-content:center;">
+  <div style="position:absolute; right:112px; top:96px; text-align:right;">
+    <div style="font-size:26px; color:var(--mut);">22 Nov 2026</div>
+    <div style="font-size:34px; font-weight:800; margin-top:6px;">START Hack Munich</div>
+    <div style="font-size:26px; color:var(--mut); margin-top:4px;">Track Lio · Keep the Line Running</div>
+  </div>
+  <img src="img/manti-logo-white.png" style="width:900px; margin-left:-30px;">
+  <div style="font-size:44px; font-weight:600; letter-spacing:-0.02em; margin-top:40px; max-width:1300px; line-height:1.2;">
+    AI agents that read everything a supply chain produces, chase the suppliers, and hand procurement a short list of decisions.
+  </div>
+</section>
+
+<!-- 2 HOOK -->
+<section class="s">
+  <h2>Nobody has time to read everything a supply chain produces</h2>
+  <div class="row" style="flex:1; align-items:center; gap:60px; margin-top:20px;">
+    <img src="img/scale.png" style="width:1000px;">
+    <div style="display:flex; flex-direction:column; gap:34px;">
+      <div><div class="big">308</div><div class="txt">files for one launch: Excel, PDFs, scans</div></div>
+      <div><div class="big">93</div><div class="txt">supplier emails in 4 languages</div></div>
+      <div><div class="big a">104,900</div><div class="txt">copies still to pack (Sat 13:00), launch Sun 20:00</div></div>
+    </div>
+  </div>
+  <img class="logo" src="img/manti-logo-white.png"><div class="pg">2</div>
+</section>
+
+<!-- 3 PROBLEM AT SOONY -->
+<section class="s">
+  <div class="kick">The problem at Soony · Grand Heist 6 launch</div>
+  <h2>SAP counts stock that isn't usable. Only the paperwork shows it.</h2>
+  <div class="sub">Sunday 20:00: 640,000 Standard + 72,000 Collector's copies must leave the Hamburg warehouse. One missing part stops the packing line.</div>
+  <div class="row" style="margin-top:48px;">
+    <div class="card grow">
+      <div class="lab">Art books</div>
+      <div style="display:flex; align-items:baseline; gap:22px; margin:18px 0 14px;"><span class="big r">5,900</span><span class="txt">short</span></div>
+      <div class="txt"><b>SAP: no gap.</b> A goods receipt booked 80,000 where 8,000 arrived. Only a handwritten note on the delivery slip shows it.</div>
+    </div>
+    <div class="card grow">
+      <div class="lab">Statues</div>
+      <div style="display:flex; align-items:baseline; gap:22px; margin:18px 0 14px;"><span class="big r">3,400</span><span class="txt">short</span></div>
+      <div class="txt"><b>SAP: no gap.</b> A lot that failed quality inspection still counts as stock.</div>
+    </div>
+    <div class="card grow">
+      <div class="lab">Game cards</div>
+      <div style="display:flex; align-items:baseline; gap:22px; margin:18px 0 14px;"><span class="big r">6,800</span><span class="txt">short</span></div>
+      <div class="txt">34,800 short on paper. 28,000 were flown in. The rest is held at the supplier's dock.</div>
+    </div>
+  </div>
+  <div style="margin-top:40px; display:flex; align-items:baseline; gap:28px;">
+    <span class="big a" style="font-size:96px;">€1.95M</span>
+    <span class="txt" style="font-size:30px;">at stake this weekend: 9,450 Collector's × €120 + 25,350 Standard × €32 copies not packed</span>
+  </div>
+  <img class="logo" src="img/manti-logo-white.png"><div class="src">Source: Soony case data, our forecast (500 runs, median)</div><div class="pg">3</div>
+</section>
+
+<!-- 4 INTERVIEW -->
+<section class="s">
+  <div class="kick">What we learned by asking</div>
+  <h2>Dr. Maren Vogt, Head of Procurement, told us what hurts</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:22px 36px; margin-top:36px; align-items:stretch;">
+    <div class="card light" style="padding:28px 38px;"><div style="font-size:33px; font-weight:700; letter-spacing:-0.02em; line-height:1.2;">“199.99 off the shelf, but we get 120. We have to fund these if it doesn't happen.”</div></div>
+    <div class="card" style="padding:26px 38px; display:flex; flex-direction:column; justify-content:center;"><div class="lab">So we built</div><div class="txt" style="margin-top:12px; font-size:27px;">Every action shows the <b>euros at stake</b>: €120 per missing Collector's copy, €32 per Standard. Collector's comes first.</div></div>
+    <div class="card light" style="padding:28px 38px;"><div style="font-size:33px; font-weight:700; letter-spacing:-0.02em; line-height:1.2;">No more dashboards. She wants things she can act on.</div><div style="font-size:22px; color:#555; margin-top:14px;">(her point, as reported to the team)</div></div>
+    <div class="card" style="padding:26px 38px; display:flex; flex-direction:column; justify-content:center;"><div class="lab">So we built</div><div class="txt" style="margin-top:12px; font-size:27px;">A <b>to-do list, not a dashboard</b>: each item has an owner, a deadline and a ready email.</div></div>
+    <div class="card light" style="padding:28px 38px;"><div style="font-size:33px; font-weight:700; letter-spacing:-0.02em; line-height:1.2;">She gives information. Named signers approve.</div></div>
+    <div class="card" style="padding:26px 38px; display:flex; flex-direction:column; justify-content:center;"><div class="lab">So we built</div><div class="txt" style="margin-top:12px; font-size:27px;">Agents <b>route each decision to the right signer</b> (Soony's PP-07 policy) and escalate when the role is vacant.</div></div>
+  </div>
+  <img class="logo" src="img/manti-logo-white.png"><div class="src">Office hours, Sat 21 Nov 19:00</div><div class="pg">4</div>
+</section>
+
+<!-- 5 LIVE -->
+<section class="s" style="justify-content:center;">
+  <div class="kick" style="color:var(--green);">● Live now</div>
+  <h1 style="font-size:130px;">See the agents at work</h1>
+  <div style="font-size:46px; font-weight:600; margin-top:30px;">soony-manti-live.vercel.app</div>
+  <div class="row" style="margin-top:70px; gap:22px;">
+    <div class="card grow" style="padding:30px 32px;"><div class="lab">1</div><div class="txt" style="margin-top:10px;">A new data drop lands. Agents read it and cite the source.</div></div>
+    <div class="card grow" style="padding:30px 32px;"><div class="lab">2</div><div class="txt" style="margin-top:10px;">The forecast reruns. The action list re-ranks by euros.</div></div>
+    <div class="card grow" style="padding:30px 32px;"><div class="lab">3</div><div class="txt" style="margin-top:10px;">The chaser emails suppliers in their language and reads replies.</div></div>
+    <div class="card grow" style="padding:30px 32px;"><div class="lab">4</div><div class="txt" style="margin-top:10px;">A person approves. Nothing binding goes out without one.</div></div>
+  </div>
+  <img class="logo" src="img/manti-logo-white.png"><div class="pg">5</div>
+</section>
+
+<!-- 6 HOW IT WORKS -->
+<section class="s">
+  <div class="kick">How it works</div>
+  <h2>Agents that decide, write and escalate</h2>
+  <svg viewBox="0 0 1700 430" style="width:1700px; margin-top:40px;" font-family="Inter Tight, Arial" >
+    <g fill="#9a9690" font-size="22" text-anchor="end">
+      <text x="200" y="48">Handwritten notes</text><text x="200" y="128">PDF notices</text><text x="200" y="208">Supplier emails</text><text x="200" y="288">ERP (SAP) data</text><text x="200" y="368">Shipment tracker</text>
+    </g>
+    <g stroke="#f4f1ec" stroke-width="2.5" fill="none">
+      <path d="M215 41 C 300 41, 300 205, 370 205"/><path d="M215 121 C 300 121, 300 205, 370 205"/><path d="M215 201 L 370 205"/><path d="M215 281 C 300 281, 300 205, 370 205"/><path d="M215 361 C 300 361, 300 205, 370 205"/>
+      <path d="M560 205 L 620 205"/><path d="M1210 205 L 1270 205"/>
+      <path d="M1440 205 C 1500 205, 1500 120, 1530 120"/><path d="M1440 205 C 1500 205, 1500 290, 1530 290"/>
+    </g>
+    <g fill="#f4f1ec"><circle cx="215" cy="41" r="7"/><circle cx="215" cy="121" r="7"/><circle cx="215" cy="201" r="7"/><circle cx="215" cy="281" r="7"/><circle cx="215" cy="361" r="7"/></g>
+    <rect x="370" y="130" width="190" height="150" rx="26" fill="#f0ece6"/>
+    <text x="465" y="198" text-anchor="middle" font-size="26" font-weight="800" fill="#0b0b0b">Sync</text>
+    <text x="465" y="232" text-anchor="middle" font-size="19" fill="#333">diff every drop</text>
+    <rect x="620" y="40" width="590" height="330" rx="30" fill="#121110" stroke="#f4f1ec" stroke-width="2"/>
+    <text x="915" y="82" text-anchor="middle" font-size="20" fill="#9a9690" letter-spacing="3">SHARED STATE · CLOSED TOOL SET</text>
+    <g font-size="24" font-weight="700" fill="#f4f1ec">
+      <rect x="650" y="108" width="170" height="104" rx="18" fill="#1d1b19"/><text x="735" y="152" text-anchor="middle">Reader</text><text x="735" y="184" text-anchor="middle" font-size="17" font-weight="400" fill="#9a9690">OCR · 4 languages</text>
+      <rect x="830" y="108" width="170" height="104" rx="18" fill="#1d1b19"/><text x="915" y="152" text-anchor="middle">Analyst</text><text x="915" y="184" text-anchor="middle" font-size="17" font-weight="400" fill="#9a9690">SAP vs paper</text>
+      <rect x="1010" y="108" width="170" height="104" rx="18" fill="#1d1b19"/><text x="1095" y="152" text-anchor="middle">Verifier</text><text x="1095" y="184" text-anchor="middle" font-size="17" font-weight="400" fill="#9a9690">no source, no fact</text>
+      <rect x="650" y="232" width="170" height="104" rx="18" fill="#1d1b19"/><text x="735" y="276" text-anchor="middle">Planner</text><text x="735" y="308" text-anchor="middle" font-size="17" font-weight="400" fill="#9a9690">500-run forecast</text>
+      <rect x="830" y="232" width="170" height="104" rx="18" fill="#1d1b19"/><text x="915" y="276" text-anchor="middle">Chaser</text><text x="915" y="308" text-anchor="middle" font-size="17" font-weight="400" fill="#9a9690">emails · replies</text>
+      <rect x="1010" y="232" width="170" height="104" rx="18" fill="#1d1b19"/><text x="1095" y="276" text-anchor="middle">Router</text><text x="1095" y="308" text-anchor="middle" font-size="17" font-weight="400" fill="#9a9690">right signer</text>
+    </g>
+    <rect x="1270" y="140" width="170" height="130" rx="26" fill="#121110" stroke="#f4f1ec" stroke-width="2"/>
+    <text x="1355" y="198" text-anchor="middle" font-size="25" font-weight="800" fill="#f4f1ec">Human</text><text x="1355" y="230" text-anchor="middle" font-size="19" fill="#9a9690">approves</text>
+    <rect x="1530" y="80" width="170" height="80" rx="22" fill="none" stroke="#f4f1ec" stroke-width="2"/><text x="1615" y="128" text-anchor="middle" font-size="22" font-weight="700" fill="#f4f1ec">Supplier email</text>
+    <rect x="1530" y="250" width="170" height="80" rx="22" fill="none" stroke="#f4f1ec" stroke-width="2"/><text x="1615" y="298" text-anchor="middle" font-size="22" font-weight="700" fill="#f4f1ec">Action taken</text>
+  </svg>
+  <div class="row" style="margin-top:44px; gap:26px;">
+    <div class="card grow" style="padding:30px 34px;"><div class="lab">Every fact cited</div><div class="txt" style="margin-top:10px; font-size:25px;">File, page and quote. The verifier rejects numbers without a source.</div></div>
+    <div class="card grow" style="padding:30px 34px;"><div class="lab">Copes with new drops</div><div class="txt" style="margin-top:10px; font-size:25px;">Each file is checksummed. A change reruns reading, forecast and ranking.</div></div>
+    <div class="card grow" style="padding:30px 34px;"><div class="lab">Real emails</div><div class="txt" style="margin-top:10px; font-size:25px;">115 messages with 6 suppliers in 4 languages, sent and answered.</div></div>
+    <div class="card grow" style="padding:30px 34px;"><div class="lab">Escalates</div><div class="txt" style="margin-top:10px; font-size:25px;">Signer vacant, limit passed or deadline missed: it goes one level up.</div></div>
+  </div>
+  <img class="logo" src="img/manti-logo-white.png"><div class="pg">6</div>
+</section>
+
+<!-- 7 CASE STUDY -->
+<section class="s">
+  <div class="kick">Case study · one Soony launch</div>
+  <h2>What it's worth</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:44px; flex:1; margin-bottom:70px;">
+    <div class="card"><div class="lab">Loss avoided</div><div style="display:flex; align-items:baseline; gap:26px; margin-top:26px;"><span class="big g" style="font-size:110px;">€840k</span><span class="txt">protected</span></div><div class="txt" style="margin-top:14px;">of €1.95M at stake, for €31.5k of actions (five-action package, our model)</div></div>
+    <div class="card"><div class="lab">Human work per launch</div><div style="display:flex; align-items:baseline; gap:26px; margin-top:26px;"><span class="big" style="font-size:110px;">228 h → 24 h</span></div><div class="txt" style="margin-top:14px;"><span class="g" style="font-weight:700;">−89%</span>. By hand that is 9–10 people in a 48-hour crunch.</div></div>
+    <div class="card"><div class="lab">Cost to run</div><div style="display:flex; align-items:baseline; gap:26px; margin-top:26px;"><span class="big" style="font-size:110px;">USD 10–40</span></div><div class="txt" style="margin-top:14px;">per launch, measured model cost</div></div>
+    <div class="card"><div class="lab">What the agents read</div><div style="display:flex; align-items:baseline; gap:26px; margin-top:26px;"><span class="big" style="font-size:110px;">308</span><span class="txt">files</span><span class="big" style="font-size:110px; margin-left:20px;">93</span><span class="txt">emails</span></div><div class="txt" style="margin-top:14px;">217 PDFs, 60 scans, 4 data drops</div></div>
+  </div>
+  <img class="logo" src="img/manti-logo-white.png"><div class="src">docs/BUSINESS_CASE.md</div><div class="pg">7</div>
+</section>
+
+<!-- 8 BUSINESS -->
+<section class="s">
+  <div class="kick">The business</div>
+  <h2>Soony pays a small share of what we protect</h2>
+  <div class="row" style="margin-top:50px; gap:30px; flex:1; margin-bottom:70px;">
+    <div class="card light grow" style="display:flex; flex-direction:column; justify-content:center;">
+      <div class="lab" style="color:#555;">Price</div>
+      <div class="big" style="font-size:120px; margin-top:20px;">≈ €42k</div>
+      <div style="font-size:30px; margin-top:16px; line-height:1.3;">per launch: 5% of the verified loss avoided. Soony keeps ≈ €798k, about <b>20× return</b>. First step: one paid pilot launch.</div>
+    </div>
+    <div style="flex:1.1; display:flex; flex-direction:column; gap:30px;">
+      <div class="card grow"><div class="lab">Why Soony pays</div><div class="txt" style="margin-top:12px;">A missing Collector's copy costs €120. Finding it at the dock is too late. Finding it 48 hours earlier is worth the fee many times over.</div></div>
+      <div class="card grow"><div class="lab">Why now</div><div class="txt" style="margin-top:12px;">Models now read scans, handwriting and supplier mail in any language for cents. Until now this needed a 10-person war room.</div></div>
+    </div>
+  </div>
+  <img class="logo" src="img/manti-logo-white.png"><div class="pg">8</div>
+</section>
+
+<!-- 9 SCALE + CUSTOMERS -->
+<section class="s">
+  <div class="kick">Beyond Soony</div>
+  <h2>Same agents at any company with a fixed launch date</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:26px; margin-top:44px;">
+    <div class="card light" style="padding:34px 40px;"><div style="font-size:34px; font-weight:800; letter-spacing:-0.02em;">Same agents at any company.</div><div style="font-size:27px; margin-top:6px;">They don't depend on what you sell.</div></div>
+    <div class="card light" style="padding:34px 40px;"><div style="font-size:34px; font-weight:800; letter-spacing:-0.02em;">New customer, new setup.</div><div style="font-size:27px; margin-top:6px;">ERP, suppliers and approvers plug in.</div></div>
+    <div class="card light" style="padding:34px 40px;"><div style="font-size:34px; font-weight:800; letter-spacing:-0.02em;">Cheap to run.</div><div style="font-size:27px; margin-top:6px;">About USD 10–40 per launch.</div></div>
+    <div class="card light" style="padding:34px 40px;"><div style="font-size:34px; font-weight:800; letter-spacing:-0.02em;">Still controlled.</div><div style="font-size:27px; margin-top:6px;">Every fact cited, every action logged.</div></div>
+  </div>
+  <div class="lab" style="margin-top:46px;">Potential customers · brands with €200M–5B revenue, many parts, many suppliers</div>
+  <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:20px;">
+    <span class="card" style="padding:16px 26px; border-radius:999px; font-size:25px;">Game & console publishers</span>
+    <span class="card" style="padding:16px 26px; border-radius:999px; font-size:25px;">Consumer electronics launches</span>
+    <span class="card" style="padding:16px 26px; border-radius:999px; font-size:25px;">Toys & seasonal retail</span>
+    <span class="card" style="padding:16px 26px; border-radius:999px; font-size:25px;">Cosmetics & gift sets</span>
+    <span class="card" style="padding:16px 26px; border-radius:999px; font-size:25px;">Limited-edition drops</span>
+  </div>
+  <img class="logo" src="img/manti-logo-white.png"><div class="pg">9</div>
+</section>
+
+<!-- 10 TEAM -->
+<section class="s" style="align-items:center;">
+  <div class="kick" style="margin-top:10px;">Team Manti</div>
+  <div style="display:flex; justify-content:center; gap:70px; margin-top:70px; width:100%;">
+    <div style="text-align:center; width:280px;"><img src="img/murat.png" style="width:210px; height:210px; border-radius:50%; object-fit:cover;"><div style="font-size:52px; font-weight:800; letter-spacing:-0.03em; margin-top:22px;">Murat</div><img src="img/murat_l.png" style="height:56px; margin-top:12px;"></div>
+    <div style="text-align:center; width:280px;"><img src="img/nick.png" style="width:210px; height:210px; border-radius:50%; object-fit:cover;"><div style="font-size:52px; font-weight:800; letter-spacing:-0.03em; margin-top:22px;">Nick</div><img src="img/nick_l.png" style="height:60px; margin-top:10px;"></div>
+    <div style="text-align:center; width:280px;"><img src="img/isil.png" style="width:210px; height:210px; border-radius:50%; object-fit:cover;"><div style="font-size:52px; font-weight:800; letter-spacing:-0.03em; margin-top:22px;">Isil</div><img src="img/isil_l.png" style="height:60px; margin-top:10px;"></div>
+    <div style="text-align:center; width:280px;"><div style="width:210px; height:210px; border-radius:50%; background:#f0ece6; color:#0b0b0b; display:grid; place-items:center; font-size:90px; font-weight:800; margin:0 auto;">G</div><div style="font-size:52px; font-weight:800; letter-spacing:-0.03em; margin-top:22px;">Gülşah</div></div>
+    <div style="text-align:center; width:280px;"><div style="width:210px; height:210px; border-radius:50%; background:#f0ece6; color:#0b0b0b; display:grid; place-items:center; font-size:90px; font-weight:800; margin:0 auto;">L</div><div style="font-size:52px; font-weight:800; letter-spacing:-0.03em; margin-top:22px;">Leo</div></div>
+  </div>
+  <img src="img/manti-logo-white.png" style="width:420px; margin-top:auto; margin-bottom:30px;">
+  <div style="font-size:26px; color:var(--mut);">soony-manti-live.vercel.app</div>
+</section>
+
+</body>
+</html>
