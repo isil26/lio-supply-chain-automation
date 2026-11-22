@@ -25,8 +25,9 @@ import { setAutoApprove } from "./api";
 import "./styles.css";
 import "./workspace.css";
 
-const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "import" | "moon" | "sun" | "check" | "arrow" }) => {
+const Icon = ({ name }: { name: "network" | "grid" | "risk" | "thread" | "approval" | "import" | "moon" | "sun" | "check" | "arrow" }) => {
   const paths: Record<typeof name, React.ReactNode> = {
+    network: <><circle cx="5" cy="15" r="3"/><circle cx="12" cy="5" r="2.5"/><circle cx="19" cy="15" r="3"/><path d="m7 12.5 3.5-5.3m3 0 3.5 5.3M8 15h8"/></>,
     grid: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,
     risk: <><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5"/><path d="M12 17.5v.5"/></>,
     thread: <><path d="M4 5h16v12H8l-4 3V5Z"/><path d="M8 9h8M8 13h5"/></>,
@@ -109,6 +110,7 @@ function EvidenceModal({ source, onClose, scenario }: { source: Source; onClose:
 }
 
 function workspacePage() {
+  if (location.hash === "#agents") return "agents";
   if (location.hash === "#activity") return "activity";
   if (location.hash === "#import") return "import";
   return "dashboard";
@@ -364,6 +366,7 @@ function App() {
   return <main className={`manti-workspace ${dark ? "theme-dark" : "theme-light"}`}>
     <aside className="workspace-rail"><MantiLogo/><nav aria-label="Workspace">
       <a href="#dashboard" aria-current={page === "dashboard" ? "page" : undefined}><Icon name="grid"/>Dashboard</a>
+      <a href="#agents" aria-current={page === "agents" ? "page" : undefined}><Icon name="network"/>Agents</a>
       <a href="#activity" aria-current={archive ? "page" : undefined}><Icon name="approval"/>Activity Log</a>
       <a href="#import" aria-current={page === "import" ? "page" : undefined}><Icon name="import"/>Data import</a>
     </nav><div className="rail-foot"><b>{data.launch.name}</b><span>{data.launch.location}</span></div></aside>
@@ -378,11 +381,12 @@ function App() {
         </div>
       </header>
 
-      <div className="workspace-heading"><h1>{page === "import" ? "Data import" : archive ? "Activity Log" : "Dashboard"}</h1><p>{data.launch.name} · {data.launch.location} · {page === "import" ? "Case files" : archive ? "Decision history" : uploadResult ? "Import scenario" : "Launch operations"}</p></div>
+      <div className="workspace-heading"><h1>{page === "agents" ? "Agents" : page === "import" ? "Data import" : archive ? "Activity Log" : "Dashboard"}</h1><p>{data.launch.name} · {data.launch.location} · {page === "agents" ? "Agent activity" : page === "import" ? "Case files" : archive ? "Decision history" : uploadResult ? "Import scenario" : "Launch operations"}</p></div>
       <div hidden={page !== "import"}>
         {isStaticMode() ? <p className="notice">Open the connected Manti workspace to import data.</p> : <UploadData onResult={showUpload}/>}
       </div>
-      {page !== "import" && <>
+      {page === "agents" && <AgentGraph key={uploadResult ? "scenario" : "workspace"} data={data} scenario={!!uploadResult} stale={!!error} onEvidence={setSource}/>}
+      {page !== "import" && page !== "agents" && <>
       {uploadResult && <p className="notice">Viewing your import scenario. <a href="#import">Manage import</a></p>}
       {data.sync?.error && <div className="notice alert" role="alert">{data.sync.error}</div>}
       {data.sync?.portal?.error && <div className="notice alert" role="alert">
@@ -479,7 +483,6 @@ function App() {
 
       {!uploadResult && <BestSupplier/>}
 
-      {!uploadResult && <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>}
 
       {/* Recovery approvals are part of the Actions list above (ActionList). */}
 

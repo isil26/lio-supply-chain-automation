@@ -1,283 +1,245 @@
-import { useEffect, useMemo, useState } from "react";
-import { dashboardApi, hostedReplayBuild, isStaticMode, type AgentRun, type AgentTraceData, type AgentTraceStep, type Source } from "../api";
-import type { RecordedAgentRun } from "./RecordedAgentTrace";
-import mockTrace from "./mock.json";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type Source } from "../api";
+import { MantiLogo } from "../SupplyMap";
+import { activitySignals, findAgent, teams, type Agent, type Signal, type Team } from "./network";
 import "./agentGraph.css";
 
-// Live agent map: agents light up and hand-offs animate as trace steps arrive.
-// Hosted/static builds replay the recorded art-book run step by step.
-
-type NodeId = "file" | "triage" | "analyst" | "verifier" | "planner" | "chaser" | "you";
-type Node = { id: NodeId; label: string; role: string; x: number; y: number; lx: number; ly: number; anchor: "start" | "middle" | "end" };
-
-const R = 30;
-const NODES: Node[] = [
-  { id: "file", label: "New file", role: "from the portal", x: 56, y: 190, lx: 56, ly: 240, anchor: "middle" },
-  { id: "triage", label: "Triage", role: "spots & hands out", x: 190, y: 190, lx: 190, ly: 242, anchor: "middle" },
-  { id: "analyst", label: "Analyst", role: "finds the gap", x: 350, y: 76, lx: 390, ly: 72, anchor: "start" },
-  { id: "verifier", label: "Verifier", role: "double-checks", x: 350, y: 190, lx: 390, ly: 222, anchor: "start" },
-  { id: "planner", label: "Planner", role: "finds Plan B", x: 350, y: 304, lx: 350, ly: 356, anchor: "middle" },
-  { id: "chaser", label: "Chaser", role: "writes suppliers", x: 520, y: 304, lx: 520, ly: 356, anchor: "middle" },
-  { id: "you", label: "You", role: "final say", x: 640, y: 190, lx: 640, ly: 242, anchor: "middle" },
-];
-const BY_ID = Object.fromEntries(NODES.map((node) => [node.id, node])) as Record<NodeId, Node>;
-const POSSIBLE: [NodeId, NodeId][] = [["file", "triage"], ["triage", "analyst"], ["triage", "planner"], ["analyst", "verifier"], ["planner", "verifier"], ["verifier", "you"], ["planner", "chaser"], ["chaser", "you"]];
-const AGENTS: NodeId[] = ["triage", "analyst", "verifier", "planner", "chaser"];
-
-const TOOL_TEXT: Record<string, string> = {
-  get_readiness: "Checked how many copies can be packed by Sunday.",
-  list_shortfalls: "Listed the parts that are running short.",
-  compare_sources: "Compared SAP with the warehouse scans.",
-  search_documents: "Searched the supplier documents for proof.",
-  get_document: "Opened a document to read the exact line.",
-  supplier_history: "Looked up how reliable this supplier has been.",
-  whatif: "Tested what happens with a Plan B.",
-  breakeven: "Worked out whether Plan B is worth its cost.",
-  propose_option: "Proposed a Plan B. A person must approve it.",
-  escalate_to_human: "Flagged this for a person to decide.",
-  request_review: "Asked a person to review it.",
-  draft_email: "Wrote a supplier email. It is not sent.",
-  send_email: "Prepared the email. It goes out only after approval.",
-  parse_reply: "Read the supplier's reply.",
+const icons: Record<string, string> = {
+  bridge: "M4 17h16M5 17V7m14 10V7M5 8q7 11 14 0M9 13v4m6-4v4",
+  document: "M6 3h8l4 4v14H6z M14 3v5h4M9 12h6m-6 4h6",
+  pulse: "M2 13h5l3-8 4 14 3-8 2 2h3",
+  branch: "M6 5v12q0 2 2 2h9M6 12h4q5 0 5-5V5 M12 7l3-3 3 3m-3 9 3 3-3 3",
+  shield: "M12 3l7 3v6q0 5-7 9-7-4-7-9V6z M8.5 11.5l2.5 2.5 4.5-5",
+  recover: "M3 12a9 9 0 1 1 3 7M3 6v6h6 M12 7v5l3 2",
+  loop: "M3 10l3-4h12l3 4m0-4v4h-5 M21 14l-3 4H6l-3-4m0 4v-4h5",
+  signal: "M4 4l17 7-7 3-3 7z M11 13l5-4",
+  mail: "M3 6h18v13H3z M3 7l9 7 9-7",
+  plan: "M4 5h5v5H4z M15 14h5v5h-5z M7 10v7h8m0-12h5m-2.5-2.5v5",
+  interpret: "M3 4h13v9H8l-4 3v-3H3z M10 16v2h6l4 3v-3h1V9h-2",
+  brief: "M6 3h12v18H6z M9 8h6m-6 4h6m-6 4h4",
 };
 
-// Plain story of the recorded live art-book run (facts from docs/agent_runs/art_book_live.json).
-const RECORDED_TEXT: Record<string, string> = {
-  triage: "A new file came in. The art book stock looks wrong, so I handed it to the team.",
-  analyst: "The delivery note says 8,000 by hand, but SAP booked 80,000. Only 19,300 art books are usable for 25,200 Collector's editions.",
-  verifier: "I checked the scan myself: 80,000 is crossed out. The 5,900 gap is real.",
-  planner: "Plan B: ask the art book printer for an express quote. A person must approve it.",
-  chaser: "I wrote the email to the printer in Polish. It is not sent.",
-};
-
-// What each role does, used when a recording only reports which roles ran.
-const ROLE_TEXT: Partial<Record<NodeId, string>> = {
-  triage: "Looked at the new file and handed the art book problem to the team.",
-  analyst: "Looked for the gap in the art book stock.",
-  verifier: "Double-checked the findings against the documents.",
-  planner: "Worked out a Plan B for a person to approve.",
-  chaser: "Prepared the supplier email.",
-};
-
-const nodeOf = (agent: string): NodeId | null => {
-  const name = agent.toLowerCase();
-  return AGENTS.find((id) => name.includes(id)) ?? null;
-};
-
-type GraphStep = Pick<AgentTraceStep, "agent" | "tool" | "args_summary" | "result_summary" | "status" | "citations"> & { recordedTarget?: string };
-
-function sentence(step: GraphStep): string {
-  const node = nodeOf(step.agent);
-  if (!hostedReplayBuild && step.tool === "recorded_run" && node) return RECORDED_TEXT[node];
-  if (step.tool === "delegate") {
-    const target = /"(?:agent|role|to|specialist)"\s*:\s*"([^"]+)"/.exec(step.args_summary ?? "")?.[1];
-    return target ? `Handed the work to ${target[0].toUpperCase()}${target.slice(1)}.` : "Handed the work to a specialist.";
-  }
-  const summary = (step.result_summary ?? "").trim();
-  if (summary && !/^[[{]/.test(summary) && summary.length < 160 && !/^(completed|ok)$/i.test(summary)) return summary;
-  return TOOL_TEXT[step.tool] ?? (step.tool ? `Used ${step.tool.replace(/_/g, " ")}.` : "Thinking…");
+function Glyph({ icon }: { icon: string }) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons[icon]}/></svg>;
 }
 
-function curve(from: Node, to: Node) {
-  const dx = to.x - from.x, dy = to.y - from.y, len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len, uy = dy / len;
-  const pad = (node: Node) => node.id === "file" ? 40 : R + 6;
-  const sx = from.x + ux * pad(from), sy = from.y + uy * pad(from);
-  const ex = to.x - ux * pad(to), ey = to.y - uy * pad(to);
-  const bend = 14; // gentle bend keeps the two directions of a pair apart
-  const cx = (sx + ex) / 2 - uy * bend, cy = (sy + ey) / 2 + ux * bend;
-  return `M${sx.toFixed(1)},${sy.toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
-}
+const allAgents = [...teams.Operations, ...teams.Specialists];
+const groups = { "All agents": allAgents, ...teams };
+type Group = Team | "All agents";
+const eventCount = (n: number) => n + (n === 1 ? " event" : " events");
+const MAX_REPLAY = 12;
+const PULSE_MS = 3400;
 
-const reducedMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-const STEP_MS = 1100;
-
-export function AgentGraph({ recording, onEvidence, autoSend }: { recording?: RecordedAgentRun | null; onEvidence: (source: Source) => void; autoSend?: boolean }) {
-  const recorded = hostedReplayBuild || isStaticMode();
-  const [run, setRun] = useState<AgentRun | null>(null);
-  const [liveTrace, setTrace] = useState<AgentTraceData>({ steps: [], approvals_pending: [] });
-  const [shown, setShown] = useState(0);
-  const [picked, setPicked] = useState<number | null>(null);
-  const trace = useMemo((): { steps: GraphStep[]; approvals_pending: AgentTraceData["approvals_pending"] } => {
-    if (!hostedReplayBuild) return liveTrace;
-    if (recording && !recording.events?.length) {
-      // Summary-only recording: no step events, so play the reported roles in hand-off order.
-      const summary = recording.reported_summary;
-      const order = ["triage", ...(summary?.delegation_targets ?? []).map((name) => name.toLowerCase())]
-        .filter((name, index, all) => AGENTS.includes(name as NodeId) && all.indexOf(name) === index);
-      const status = (name: string) => summary?.roles.find((item) => item.role.toLowerCase().includes(name))?.reported_status ?? "reported";
-      return {
-        steps: order.map((name, index) => ({
-          agent: name[0].toUpperCase() + name.slice(1),
-          tool: "reported_role",
-          result_summary: `${ROLE_TEXT[name as NodeId] ?? "Did its part."} ${/^(completed|done|ok)$/i.test(status(name)) ? "Done in the recorded run." : `Recorded status: ${status(name)}.`}`,
-          status: status(name),
-          citations: [],
-          recordedTarget: order[index + 1],
-        })),
-        approvals_pending: summary?.pending_approvals_reported ? [{ id: "reported-approval", title: "An approval" }] : [],
-      };
-    }
-    return {
-      steps: recording?.events.map((event) => ({
-        agent: event.agent,
-        tool: event.tool ?? "handoff",
-        result_summary: event.summary ?? (event.target ? `Hand-off to ${event.target}` : undefined),
-        status: event.status,
-        citations: event.citations,
-        recordedTarget: event.target ?? undefined,
-      })) ?? [],
-      approvals_pending: recording?.approvals_pending?.map((item) => ({ ...item, detail: item.detail ?? undefined })) ?? [],
-    };
-  }, [liveTrace, recording]);
-
+function useRecentSignals(signals: Signal[], connected: boolean) {
+  const previous = useRef<Set<string> | null>(null);
+  const [pulses, setPulses] = useState<Map<string, number>>(new Map());
   useEffect(() => {
-    if (hostedReplayBuild) return;
-    let alive = true;
-    const load = async () => {
-      try {
-        const runs = await dashboardApi.getAgentRuns();
-        const latest = runs[0] ?? null;
-        const next = latest ? await dashboardApi.getAgentTrace(latest.id) : { steps: [], approvals_pending: [] };
-        if (!alive) return;
-        setRun((current) => {
-          if (current && latest && current.id !== latest.id) { setShown(0); setPicked(null); } // a new run plays from its first step
-          return latest;
-        });
-        setTrace(next.steps?.length ? next : mockTrace as AgentTraceData);
-      } catch {
-        if (alive) setTrace((current) => current.steps.length ? current : mockTrace as AgentTraceData);
-      }
-    };
-    void load();
-    if (recorded) return () => { alive = false; };
-    const timer = window.setInterval(() => void load(), 2000);
-    return () => { alive = false; window.clearInterval(timer); };
-  }, [recorded]);
-
-  // Reveal one step at a time, so both replays and newly arriving live steps play in order.
+    const known = previous.current;
+    const ids = signals.map(signal => signal.id);
+    // A projected event can briefly drop out of the feed between refreshes.
+    const retained = [...new Set([...ids, ...(known ?? [])])];
+    previous.current = new Set(retained.slice(0, Math.max(512, ids.length * 2)));
+    if (!known || !connected) return;
+    const fresh = signals.filter(signal => !known.has(signal.id));
+    if (fresh.length) setPulses(current => {
+      const next = new Map(current);
+      fresh.forEach(signal => next.set(signal.agent.name, Date.now() + PULSE_MS));
+      return next;
+    });
+  }, [signals, connected]);
   useEffect(() => {
-    if (shown >= trace.steps.length) return;
-    const timer = window.setTimeout(() => setShown((count) => count + 1), reducedMotion ? 0 : STEP_MS);
+    if (!pulses.size) return;
+    const timer = window.setTimeout(() => {
+      setPulses(current => new Map([...current].filter(([, until]) => until > Date.now())));
+    }, Math.max(0, Math.min(...pulses.values()) - Date.now()) + 10);
     return () => window.clearTimeout(timer);
-  }, [shown, trace.steps.length]);
+  }, [pulses]);
+  return pulses;
+}
 
-  const steps = trace.steps.slice(0, shown);
-  const playing = shown < trace.steps.length;
-  const running = !recorded && run?.status === "running";
-  const finished = !playing && !running && steps.length > 0;
+function useRunHistory(data: DashboardData, scenario: boolean, enabled: boolean) {
+  const [history, setHistory] = useState<{ id: string; signals: Signal[]; roles?: string[]; error?: boolean } | null>(null);
+  const [last] = data.agents?.runs ?? [];
+  const id = isStaticMode() ? "recorded-art-book" : last?.id;
+  const steps = last?.step_count;
+  useEffect(() => {
+    if (!enabled || !id || scenario || hostedReplayBuild) return;
+    let valid = true;
+    dashboardApi.getAgentTrace(id).then(trace => {
+      if (!valid) return;
+      const signals = trace.steps.flatMap((step, i) => {
+        const agent = findAgent(step.agent);
+        if (!agent || step.tool === "recorded_run") return [];
+        const label = (step.tool || "Model response").replace(/_/g, " ");
+        return [{ id: id + ":" + i, agent, message: label + " · " + (step.reason || step.status),
+          time: "Run · step " + (i + 1), at: 0, sources: step.citations }];
+      }).reverse();
+      const roles = trace.steps.filter(step => step.tool === "recorded_run").map(step => step.agent);
+      setHistory({ id, signals, roles });
+    }).catch(() => { if (valid) setHistory({ id, signals: [], error: true }); });
+    return () => { valid = false; };
+  }, [enabled, id, steps, last?.status, scenario]);
+  return history?.id === id ? history : null;
+}
 
-  const { done, path, active } = useMemo(() => {
-    const visited = new Set<NodeId>();
-    const hops: [NodeId, NodeId][] = [];
-    let previous: NodeId = "file";
-    for (const step of steps) {
-      const node = nodeOf(step.agent);
-      if (!node) continue;
-      visited.add(node);
-      const target = step.recordedTarget && nodeOf(step.recordedTarget);
-      if (hostedReplayBuild) {
-        if (previous === "file") hops.push(["file", node]);
-        if (target && target !== node) hops.push([node, target]);
-      } else if (node !== previous) hops.push([previous, node]);
-      previous = node;
+function NetworkPlot({ agents, counts, selected, lit, onSelect }: {
+  agents: Agent[]; counts: Map<string, number>; selected: string | null; lit: Set<string>; onSelect: (name: string) => void;
+}) {
+  const all = agents === allAgents;
+  const wrap = useRef<HTMLDivElement>(null);
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < (all ? 760 : 525)));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [all]);
+  const hub = { x: 50, y: compact ? (all ? 5 : 10) : 50 };
+  const junction = (agent: Agent) => teams.Operations.includes(agent) ? 25 : 75;
+  const points = agents.map((agent, i) => {
+    if (all) {
+      const team = teams.Operations.includes(agent) ? teams.Operations : teams.Specialists;
+      const index = team.indexOf(agent);
+      const center = junction(agent);
+      if (compact) return { x: center, y: 18 + index * 9 };
+      const angle = -Math.PI / 2 + 2 * Math.PI * index / team.length;
+      return { x: center + 17.5 * Math.cos(angle), y: 47 + 33 * Math.sin(angle) };
     }
-    return { done: visited, path: hops, active: steps.length ? previous : null };
-  }, [steps]);
+    if (compact) return { x: i % 2 === 0 ? 25 : 75, y: 25 + Math.floor(i / 2) * 15 };
+    const angle = -Math.PI / 2 + 2 * Math.PI * i / agents.length;
+    return { x: 50 + 39 * Math.cos(angle), y: 49 + 36 * Math.sin(angle) };
+  });
+  return <div className={'net-plot' + (compact ? ' compact' : '') + (all ? ' net-all' : '')} ref={wrap}>
+    <svg className="net-wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      {all && !compact && <g className="net-orbits">
+        {[25, 75].map(x => <g key={x}>
+          <ellipse cx={x} cy="47" rx="17.5" ry="33"/><ellipse cx={x} cy="47" rx="12.3" ry="23.3"/>
+          <path className="net-backbone" d={`M50 50 L${x} 47`}/>
+        </g>)}
+      </g>}
+      {!all && !compact && <g className="net-orbits">
+        <ellipse cx="50" cy="49" rx="39" ry="36"/><ellipse cx="50" cy="49" rx="30" ry="27"/><ellipse cx="50" cy="49" rx="18" ry="16.5"/>
+      </g>}
+      {agents.map((agent, i) => {
+        const { x, y } = points[i];
+        const litUp = lit.has(agent.name);
+        const origin = all ? junction(agent) : 50;
+        const d = all && !compact ? `M${origin} 47 C${origin} ${47 + (y-47)*.55} ${x} ${47 + (y-47)*.55} ${x} ${y}`
+          : compact ? `M50 ${hub.y} V${y - 5} Q50 ${y} ${x > 50 ? 54 : 46} ${y} H${x}`
+          : `M50 50 C${50 + (x - 50) * .45} 50 ${50 + (x - 50) * .5} ${y} ${x} ${y}`;
+        return <g key={agent.name} data-tone={agent.tone} className={litUp ? "lit" : ""}>
+          <path d={d} className="net-wire"/>
+          {litUp && <path d={d} pathLength="1" className="net-traveler"/>}
+        </g>;
+      })}
+    </svg>
+    {all && (["Operations", "Specialists"] as const).map(name => <span key={name} className="net-junction"
+      style={{left: name === "Operations" ? "25%" : "75%", top: compact ? "9%" : "47%"}}>{name}</span>)}
+    <div className="net-core" style={{left: hub.x + "%", top: hub.y + "%"}}><MantiLogo/></div>
+    {agents.map((agent, i) => <button key={agent.name} type="button" data-tone={agent.tone}
+      className={"net-node" + (lit.has(agent.name) ? " lit" : "") + (counts.has(agent.name) ? " has-data" : "")}
+      style={{ left: points[i].x + "%", top: points[i].y + "%" }}
+      onClick={() => onSelect(agent.name)} aria-pressed={selected === agent.name}
+      aria-label={agent.name + ", " + eventCount(counts.get(agent.name) ?? 0)}>
+      <span className="net-disc"><Glyph icon={agent.icon}/></span>
+      <span className="net-node-label">{agent.name}</span>
+    </button>)}
+  </div>;
+}
 
-  const waitingForYou = finished && (trace.approvals_pending.length > 0 || (!hostedReplayBuild && done.has("chaser")));
-  const lastHop = path[path.length - 1];
-  const hopKey = (a: NodeId, b: NodeId) => `${a}>${b}`;
-  const litKeys = new Set(path.map(([a, b]) => hopKey(a, b)));
-  const pairLit = (a: NodeId, b: NodeId) => litKeys.has(hopKey(a, b)) || litKeys.has(hopKey(b, a));
-  const uniqueHops = [...new Map(path.map((hop) => [hopKey(...hop), hop])).values()];
-  const finalHop: [NodeId, NodeId] | null = waitingForYou && active ? [active === "verifier" || active === "chaser" ? active : "chaser", "you"] : null;
-
-  const focusIndex = picked ?? steps.length - 1;
-  const focus = focusIndex >= 0 ? steps[focusIndex] : undefined;
-  const illustrated = hostedReplayBuild && !!recording && !recording.events?.length;
-  const status = running ? "Live" : playing ? (illustrated ? "Illustration of the recorded roles" : recorded ? "Replaying a recorded run" : "Playing the last run")
-    : steps.length ? (illustrated ? "Illustration of the recorded roles" : hostedReplayBuild ? "Recording replayed" : "Run finished")
-    : hostedReplayBuild ? (recording ? "Reported run summary" : "Recording unavailable") : "Waiting for a new file";
-  const replay = () => { setPicked(null); setShown(0); };
-  const pickNode = (id: NodeId) => {
-    for (let i = steps.length - 1; i >= 0; i -= 1) if (nodeOf(steps[i].agent) === id) { setPicked(i); return; }
+export function AgentGraph({ data, scenario, stale, onEvidence }: {
+  data: DashboardData; scenario: boolean; stale: boolean; onEvidence: (source: Source) => void;
+}) {
+  const [team, setTeam] = useState<Group>("All agents");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [replay, setReplay] = useState<{ events: Signal[]; index: number } | null>(null);
+  const recorded = isStaticMode() || hostedReplayBuild;
+  const connected = !recorded && !scenario;
+  const signals = useMemo(() => activitySignals(data.activity), [data.activity]);
+  const agents = groups[team];
+  const teamSignals = useMemo(() => signals.filter(signal => agents.includes(signal.agent)), [signals, agents]);
+  const needsRun = team !== "Operations" && !signals.some(signal => teams.Specialists.includes(signal.agent));
+  const run = useRunHistory(data, scenario, needsRun);
+  const recording = data.recordedAgentRun;
+  const recordedSignals = useMemo(() => (recording?.events ?? []).flatMap(event => {
+    const agent = findAgent(event.agent);
+    return agent ? [{ id: "recorded:" + event.sequence, agent, time: "Recording · step " + event.sequence,
+      at: 0, sources: event.citations, message: event.summary || event.tool || event.status }] : [];
+  }).reverse(), [recording]);
+  const history = needsRun ? (hostedReplayBuild ? recordedSignals : run?.signals ?? []) : [];
+  const events = [...teamSignals, ...history];
+  const pulses = useRecentSignals(signals, connected && !stale);
+  const frame = replay?.events[replay.index];
+  useEffect(() => {
+    if (!replay) return;
+    const timer = window.setTimeout(() => setReplay(replay.index + 1 < replay.events.length
+      ? { ...replay, index: replay.index + 1 } : null), 1250);
+    return () => window.clearTimeout(timer);
+  }, [replay]);
+  const lit = frame ? new Set([frame.agent.name]) : new Set(pulses.keys());
+  const counts = new Map<string, number>();
+  for (const { agent } of events) counts.set(agent.name, (counts.get(agent.name) ?? 0) + 1);
+  const max = Math.max(1, ...counts.values());
+  const picked = agents.find(agent => agent.name === selected);
+  const visible = replay ? replay.events.slice(0, replay.index + 1).reverse()
+    : events.filter(event => !selected || event.agent.name === selected);
+  const reportedRoles = recording?.coverage === "summary_only"
+    ? recording.reported_summary.roles.map(role => role.role) : run?.roles ?? [];
+  const scope = scenario ? "Import scenario" : recorded ? "Recorded workspace" : data.sync?.mode === "replay" || data.agents?.mode === "simulated" ? "Simulation" : "Live workspace";
+  const source = stale ? "Connection interrupted" : frame ? "Replaying activity" : team === "Specialists" && history.length ? "Last recorded run" : scope;
+  const pick = (name: string) => { setReplay(null); setSelected(current => current === name ? null : name); };
+  const reading = frame ?? visible[0];
+  const readoutAgent = picked ?? reading?.agent;
+  const toggleReplay = () => {
+    if (replay) { setReplay(null); return; }
+    setReplay({ events: visible.slice(0, MAX_REPLAY).reverse(), index: 0 });
   };
 
-  const nodeState = (id: NodeId) => {
-    if (id === "file") return steps.length ? "done" : "idle";
-    if (id === "you") return waitingForYou ? "active" : "idle";
-    if (id === active && !finished) return "active";
-    return done.has(id) ? "done" : "idle";
-  };
-
-  return <section className="card agent-graph" aria-labelledby="agent-graph-title">
-    <div className="ag-head">
-      <h3 id="agent-graph-title">Agents at work</h3>
-      <span className={`ag-status ${running || playing ? "on" : ""}`}><i aria-hidden="true"/>{status}</span>
+  return <div className={"net-view" + (team === "All agents" ? " overview" : "")}>
+    <div className="net-toolbar">
+      <div className="net-switch" role="group" aria-label="Agent group">
+        {(Object.keys(groups) as Group[]).map(name => <button key={name} aria-pressed={team === name}
+          onClick={() => { setTeam(name); setSelected(null); setReplay(null); }}>{name}<span>{groups[name].length}</span></button>)}
+      </div>
+      <span className="net-source" data-online={connected && !stale && !frame && !(team === "Specialists" && history.length)}><i/>{source}</span>
     </div>
-    <div className="ag-body">
-      <svg className="ag-svg" viewBox="0 0 700 380" role="img" aria-label="Map of the agents and how work passes between them">
-        <defs>
-          {["done", "now", "idle"].map((kind) => <marker key={kind} id={`ag-arrow-${kind}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M0,0L10,5L0,10z" className={`ag-arrowhead ${kind}`}/>
-          </marker>)}
-        </defs>
-        {POSSIBLE.filter(([a, b]) => !pairLit(a, b) && !(finalHop && finalHop[0] === a && finalHop[1] === b)).map(([a, b]) =>
-          <path key={hopKey(a, b)} d={curve(BY_ID[a], BY_ID[b])} className="ag-edge idle" markerEnd="url(#ag-arrow-idle)"/>)}
-        {uniqueHops.map(([a, b]) => {
-          const now = !finished && lastHop && lastHop[0] === a && lastHop[1] === b;
-          const d = curve(BY_ID[a], BY_ID[b]);
-          return <g key={hopKey(a, b)}>
-            <path d={d} className={`ag-edge ${now ? "now" : "done"}`} markerEnd={`url(#ag-arrow-${now ? "now" : "done"})`}/>
-            {now && !reducedMotion && <circle r="5" className="ag-packet"><animateMotion dur="1.1s" repeatCount="indefinite" path={d}/></circle>}
-          </g>;
-        })}
-        {finalHop && <g>
-          <path d={curve(BY_ID[finalHop[0]], BY_ID[finalHop[1]])} className="ag-edge now" markerEnd="url(#ag-arrow-now)"/>
-          {!reducedMotion && <circle r="5" className="ag-packet"><animateMotion dur="1.4s" repeatCount="indefinite" path={curve(BY_ID[finalHop[0]], BY_ID[finalHop[1]])}/></circle>}
-        </g>}
-        {NODES.map((node) => {
-          const state = nodeState(node.id);
-          const clickable = AGENTS.includes(node.id) && done.has(node.id);
-          return <g key={node.id} className={`ag-node ${state} ${node.id} ${clickable ? "clickable" : ""}`}
-            onClick={clickable ? () => pickNode(node.id) : undefined}
-            role={clickable ? "button" : undefined} tabIndex={clickable ? 0 : undefined}
-            onKeyDown={clickable ? (event) => { if (event.key === "Enter" || event.key === " ") pickNode(node.id); } : undefined}
-            aria-label={clickable ? `Show what ${node.label} did` : undefined}>
-            {node.id === "file"
-              ? <rect x={node.x - 38} y={node.y - 24} width="76" height="48" rx="10" className="ag-shape"/>
-              : <>{state === "active" && <circle cx={node.x} cy={node.y} r={R + 8} className="ag-halo"/>}<circle cx={node.x} cy={node.y} r={R} className="ag-shape"/></>}
-            <text x={node.x} y={node.y + 5} textAnchor="middle" className="ag-letter">{node.id === "file" ? "📄" : node.id === "you" ? "You" : node.label[0]}</text>
-            <text x={node.lx} y={node.ly} textAnchor={node.anchor} className="ag-label">{node.label}</text>
-            <text x={node.lx} y={node.ly + 16} textAnchor={node.anchor} className="ag-role">{node.role}</text>
-          </g>;
-        })}
-      </svg>
-
-      <aside className="ag-side" aria-live="polite">
-        {focus ? <>
-          <span className="ag-kicker">{focus.agent} · {illustrated ? "role" : "step"} {focusIndex + 1} of {trace.steps.length}</span>
-          <p className="ag-text">{sentence(focus)}</p>
-          {(focus.citations ?? []).length > 0 && <div className="ag-chips">
-            {(focus.citations ?? []).slice(0, 2).map((citation, index) => <button key={`${citation.file}-${index}`} className="ag-chip" onClick={() => onEvidence(citation)} title={citation.quote}>📄 {citation.file?.split("/").pop() ?? "Evidence"}</button>)}
-          </div>}
-        </> : <p className="ag-text muted">{hostedReplayBuild
-          ? recording ? "See AI reasoning for reported roles and evidence coverage." : "No agent recording is available."
-          : "When a new supplier file arrives, the agents start here."}</p>}
-        {waitingForYou && picked === null && <div className="ag-you">
-          <strong>Your turn</strong>
-          {hostedReplayBuild ? <span>{illustrated ? "The recorded run reported an approval waiting for a person." : `${trace.approvals_pending[0]?.title} was pending in the recording.`}</span>
-            : <span>{done.has("chaser") ? "The supplier email is waiting for your OK." : `${trace.approvals_pending[0]?.title ?? "A Plan B is waiting for your OK"}.`} {autoSend ? "Routine supplier emails go out on their own. Anything that costs money waits for you." : "Nothing is sent without you."}</span>}
-        </div>}
-        <div className="ag-actions">
-          {picked !== null && <button className="ag-btn" onClick={() => setPicked(null)}>Back to latest</button>}
-          {finished && <button className="ag-btn" onClick={replay}>▶ Replay</button>}
+    <div className="net-grid">
+      <section className="card net-map" aria-label="Agent network">
+        <header className="net-heading"><h2>Agent network</h2>
+          <button className="net-replay" onClick={toggleReplay} disabled={!replay && !visible.length}>
+            <span aria-hidden="true">{replay ? "Ⅱ" : "▷"}</span>{replay ? "Stop replay" : "Replay activity"}</button></header>
+        <NetworkPlot agents={agents} counts={counts} selected={selected} lit={lit} onSelect={pick}/>
+        <div className="net-readout" data-tone={readoutAgent?.tone}>
+          <small>{replay ? "Replay" : picked ? "Selected" : "Latest"}</small>
+          <strong>{readoutAgent?.name ?? "Standing by"}</strong><span>{reading?.message ?? picked?.role ?? "Waiting for an agent event."}</span>
         </div>
-      </aside>
+        <footer className="net-key"><span><i className="signal"/>New event</span><span><i className="reported"/>Has history</span><span><i/>No events</span></footer>
+      </section>
+      <section className="card net-stream">
+        <header className="net-heading"><h2>{picked ? picked.name : "Event stream"}</h2>
+          {picked ? <button className="net-reset" onClick={() => {setSelected(null); setReplay(null);}} aria-label="Show all agents">×</button>
+            : <span className="net-total">{eventCount(events.length)}</span>}</header>
+        {picked && <p className="net-role">{picked.role}</p>}
+        {replay && <div className="net-playhead" role="status">Replaying event {replay.index + 1} of {replay.events.length}</div>}
+        {visible.length ? <ol className="net-event-list" aria-label={team + " activity"} key={team + (selected || "")}>
+          {visible.map(event => <li key={event.id} data-tone={event.agent.tone} className={event.id === frame?.id ? "current" : ""}>
+            <div className="net-event-line"><strong>{event.agent.name}</strong>{event.time && <small>{event.time}</small>}</div>
+            <p>{event.message}</p>
+            {event.sources?.map((source, i) => <button className="net-evidence" key={i} onClick={() => onEvidence(source)}>{(source.file ?? source.source_file)?.split("/").pop() ?? "Source evidence"}</button>)}
+          </li>)}
+        </ol> : <div className="net-empty"><Glyph icon={picked?.icon || "pulse"}/><strong>{run?.error && needsRun ? "Run history unavailable" : "No events in this feed"}</strong>
+          {needsRun && reportedRoles.length > 0 && <p>Reported roles · {reportedRoles.join(", ")}.</p>}
+        </div>}
+      </section>
+    <section className="card net-volume"><header className="net-heading"><h2>Activity by agent</h2><span className="net-total">Events in this feed</span></header>
+      <div className="net-bars">{agents.map(agent => {
+        const count = counts.get(agent.name) ?? 0;
+        return <button key={agent.name} data-tone={agent.tone} aria-pressed={selected === agent.name}
+          onClick={() => pick(agent.name)}><span>{agent.name}</span>
+          <span className="net-bar"><i style={{width: (100 * count / max) + "%"}}/></span><b>{count}</b></button>;
+      })}</div>
+    </section>
     </div>
-    <p className="ag-legend"><span><i className="done"/>done</span><span><i className="now"/>happening now</span><span><i className="idle"/>possible path</span>
-      {!hostedReplayBuild && finished && run?.harness?.ok !== false && <span className="ag-check">✓ Every number checked against a document</span>}</p>
-    {illustrated && <p className="ag-note">The recording lists which agents ran, not each step, so this order is an illustration.</p>}
-  </section>;
+  </div>;
 }

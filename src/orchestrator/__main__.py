@@ -134,7 +134,13 @@ def dashboard_activity(con, blocked, clock, *, docs=None, reviews=()):
     ]
     recent = [*escalation, *proof, *review_activity, *general, *sorted((event for event in traced if event["id"] not in shown),
                                                   key=lambda event: event["time"], reverse=True)]
-    return [dict(event, time=clock(event["time"])) for event in recent]
+    for event in recent:
+        # Specialist activity uses epoch seconds. Operational events carry ISO dates.
+        stamp = event.get("time")
+        if not stamp and event.get("created_at"):
+            stamp = datetime.fromtimestamp(event["created_at"], timezone.utc).isoformat()
+        event.update(timestamp=stamp or None, time=clock(stamp))
+    return recent
 
 
 def network(con, site_id, short_materials):

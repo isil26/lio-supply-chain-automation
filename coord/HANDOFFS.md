@@ -579,3 +579,7 @@ Release `40dd2f6` serves the updated dashboard and retains the Data import works
 The Activity Log records the alternatives available when a new decision is taken, the outcome and the account responsible. Historical decisions without a saved comparison retain their available evidence. The standalone design demo reproduces the layout in `design-demo/`.
 
 The VM passed 35 supplier and upload tests and five gateway tests. A disposable HTTP fixture verified enable, persistence, actor attribution and disable. A browser rehearsal verified automatic approval, human email review and the historical comparison. Read-only checks on the public URL verified the deployed bundle, account, portal, Data import, eight offers, five independently scaled limits and all five off. [Manti Live](https://soony-manti-live.vercel.app/)
+
+## T-Agents-Tab — Manti agent network
+
+Open the Agents item in the workspace rail or go to `/react#agents`. The overview displays nine operational roles and eight specialists. The map pulses for newly observed activity. Selecting a node filters the feed, and replay steps through recent events. The timestamp projection accepts operational ISO dates and specialist epoch seconds. The production build, 22 focused checks and a local dry-run browser rehearsal passed. The change is available in the development worktree.
