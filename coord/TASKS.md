@@ -152,4 +152,4 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T102-Live | Verify uploads through the production Manti Live relay | codex-upload | production smoke test and release handoff | done | T102, T-Data-Import |
 
-| T-Data-Import-Live-QA | Verify both import sources and repeat imports through the public Manti Live gateway in a private scenario | manti-import | import verification and coordination | in_progress | T-Data-Import |
+| T-Data-Import-Live-QA | Verify both import sources and repeat imports through the public Manti Live gateway in a private scenario | manti-import | import verification and coordination | done | T-Data-Import |
