@@ -629,3 +629,9 @@ Judges sign in as `test` on [Manti Live](https://soony-manti-live.vercel.app/). 
 Manti Live serves application revision `bd27d31`. The public browser bundle matched the tested build. At verification the median shortfall was 5,900 Collector’s boxes and 900 Standard boxes. The estimated losses were €708,000 and €28,800 using the confirmed €120 Collector’s rate and assumed €32 Standard rate. All five component coverage rows matched the planning API. All eight offer previews returned English. The dashboard showed thirteen open actions and linked the Karton purchase review to the supplier’s verified phone number, correspondence and recovery-agent activity.
 
 In an isolated database, edited approval and decline messages reached the dry-run transport exactly as reviewed. A warehouse pickup confirmation persisted across a page reload. The focused Python suite passed 63 tests and the gateway suite passed five. [Live dashboard](https://soony-manti-live.vercel.app/react#dashboard)
+
+## T-Button-Review · 22 Nov · manti-interactions
+
+Reviewed the connected workspace, sign-in forms, standalone control room and game-card replay. Confirmed writes close their review dialog and report the outcome. Failed or stale offers retain the draft, and opening evidence preserves the underlying deadline review. Practice decisions survive workspace navigation.
+
+The connected and hosted-replay builds passed. A background browser exercised the React flows with fixture responses, and the standalone controls ran against a disposable replay. All 27 selected backend tests and five gateway integration tests passed. Production promotion is separate.

@@ -62,6 +62,7 @@
     <p id="result" role="status"></p>
   </section>
   <p id="status" role="status"></p>
+  <button id="retry" hidden>Reload forecast</button>
 </main>
 <script>
   const byId = (id) => document.getElementById(id);
@@ -87,7 +88,7 @@
     if (!risk) throw new Error('Game card planning data is unavailable.');
     if (data.sync.pendingDrop) baseline = data.readiness;
     byId('update').textContent = receipt
-      ? risk.detail.find((line) => line.includes('received on goods receipt'))
+      ? risk.detail.find((line) => line.includes('received on goods receipt')) || 'The Hamburg goods receipt has been processed.'
       : 'A new Hamburg goods receipt is ready to process. The shipping advice still shows the lot in transit.';
     byId('apply').hidden = Boolean(receipt);
     if (receipt) {
@@ -110,7 +111,11 @@
       row.insertCell().textContent = number.format(edition.target);
       return row;
     }));
-    if (!receipt) return;
+    if (!receipt) {
+      byId('decision').hidden = true;
+      byId('evidence').replaceChildren();
+      return;
+    }
     action = data.actions.find((item) => item.material === material && item.recoveryKind === 'short_ship_balance');
     byId('decision').hidden = false;
     byId('action-title').textContent = action?.title ?? 'No approval is needed.';
@@ -141,10 +146,12 @@
   async function run(button, pending, operation) {
     if (button) button.disabled = true;
     byId('status').textContent = pending;
+    byId('retry').hidden = true;
     try {
       await operation();
     } catch (error) {
       byId('status').textContent = error.message;
+      byId('retry').hidden = false;
     } finally {
       if (button) button.disabled = false;
     }
@@ -155,9 +162,14 @@
     await waitForReady(true);
   });
   byId('approve').onclick = () => run(byId('approve'), 'Recording the simulated approval…', async () => {
-    await request(`/api/actions/${action.id}/approve`, {});
+    const result = await request(`/api/actions/${action.id}/approve`, {});
     await waitForReady(true);
+    if (result?.waitingFor?.length) {
+      byId('approve').hidden = true;
+      byId('result').textContent = 'Approval recorded. Waiting for ' + result.waitingFor.join(', ') + '.';
+    }
   });
+  byId('retry').onclick = () => location.reload();
   void run(null, '', () => waitForReady(false));
 </script>
 </body>

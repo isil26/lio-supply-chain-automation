@@ -96,14 +96,18 @@ function safeReturn(path) {
   return path;
 }
 
-function loginPage(response, failed = false, next = "/", allowShared = false) {
+function loginPage(response, { next = '/', sharedLogin, allowShared, sharedAttempt, status = 200 }) {
   const template = readFileSync(join(__dirname, 'login.html'), 'utf8');
-  const page = process.env.SOONY_LIVE_UPSTREAM
-    ? template.replace('private supplier-drop replay', 'private live control room') : template;
-  respond(response, failed ? 401 : 200, page
-    .replace(/<!-- SHARED_LOGIN_START -->[\s\S]*?<!-- SHARED_LOGIN_END -->/, block => allowShared ? block : '')
+  const message = status === 429 ? 'Sign-in is busy. Try again shortly.'
+    : status === 401 ? (sharedLogin || sharedAttempt ? 'The team password is incorrect.' : 'The username or password is incorrect.') : '';
+  respond(response, status, template
+    .replace(/<!-- NAMED_ACCOUNT_START -->[\s\S]*?<!-- NAMED_ACCOUNT_END -->/, block => sharedLogin ? '' : block)
+    .replace(/<!-- SHARED_LOGIN_START -->[\s\S]*?<!-- SHARED_LOGIN_END -->/, block => {
+      if (!allowShared) return '';
+      return sharedAttempt ? block.replace('<details>', '<details open>') : block;
+    })
     .replaceAll('<!-- LOGIN_RETURN -->', '<input type="hidden" name="next" value="' + next.replace(/&/g, "&amp;") + '">')
-    .replace('<!-- LOGIN_ERROR -->', failed ? '<p role="alert">The username or password is incorrect.</p>' : ''), 'text/html; charset=utf-8');
+    .replace('<!-- LOGIN_ERROR -->', message ? '<p role="alert">' + message + '</p>' : ''), 'text/html; charset=utf-8');
 }
 
 async function getLogin(request) {
@@ -194,8 +198,9 @@ module.exports = async function control(request, response, mode) {
     const verified = passwordOnly
       ? Boolean(password) && equal(createHash('sha256').update(password).digest('hex'), teamHash)
       : await verifyPassword(users.get(name), password);
-    if (verified === null) return respond(response, 429, { error: 'Login is busy. Try again shortly.' });
-    if (!verified) return loginPage(response, true, next, allowShared);
+    if (!verified) return loginPage(response, {
+      next, sharedLogin, allowShared, sharedAttempt: passwordOnly, status: verified === null ? 429 : 401,
+    });
     user = name;
     setSession(response, key, {
       expiration: Math.floor(Date.now() / 1000) + SESSION_SECONDS,
@@ -208,7 +213,8 @@ module.exports = async function control(request, response, mode) {
   }
 
   if ((op === 'home' || op === 'login' || target === '/live' || target === '/react' || target === '/game-cards') && method === 'GET' && !user && !trustedGateway) {
-    return loginPage(response, false, upstream ? (["/live", "/react", "/game-cards"].includes(target) ? target : loginReturn(url.searchParams)) : "/", allowShared);
+    const next = upstream ? (["/live", "/react", "/game-cards"].includes(target) ? target : loginReturn(url.searchParams)) : "/";
+    return loginPage(response, { next, sharedLogin, allowShared });
   }
   const serviceRead = trustedGateway && method === 'GET' && process.env.SOONY_DEMO_ACCOUNTS !== '0';
   if (!user && !serviceRead) return respond(response, 401, { error: 'Team login required' });

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
 
 const glyphs = {
   grid: <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>,
@@ -32,16 +32,31 @@ export function Heading({icon, children, count}: {icon: keyof typeof glyphs; chi
     {count != null && <span className="small-count">{count}</span>}</div>;
 }
 
-export function Dialog({title, label, close, children}: {title: string; label: string; close: () => void; children: ReactNode}) {
+export function Dialog({title, label, close, dismissible = true, children}: {
+  title: string; label: string; close: () => void; dismissible?: boolean; children: ReactNode;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
+  const backdropPress = useRef(false);
   const heading = useId();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = ref.current!;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const fallback = opener?.closest<HTMLElement>('[role="region"][tabindex]') ?? document.getElementById("main");
     dialog.showModal();
-    return () => dialog.close();
+    return () => {
+      dialog.close();
+      if (opener?.isConnected && opener !== document.body && !opener.matches(":disabled")) {
+        opener.focus({preventScroll: true});
+      } else if (fallback?.isConnected) {
+        fallback.focus({preventScroll: true});
+      }
+    };
   }, []);
-  return <dialog ref={ref} aria-labelledby={heading} onCancel={close} onClick={e => { if (e.target === ref.current) close(); }}>
-    <div className="dialog-inner"><button className="close" aria-label="Close dialog" onClick={close}><Icon name="x"/></button>
+  return <dialog ref={ref} aria-labelledby={heading}
+    onCancel={event => { event.preventDefault(); if (dismissible) close(); }}
+    onPointerDown={event => { backdropPress.current = event.target === event.currentTarget; }}
+    onClick={event => { if (dismissible && backdropPress.current && event.target === event.currentTarget) close(); }}>
+    <div className="dialog-inner"><button type="button" className="close" disabled={!dismissible} aria-label="Close dialog" onClick={close}><Icon name="x"/></button>
       <div className="overline">{label}</div><h2 id={heading}>{title}</h2>{children}</div>
   </dialog>;
 }

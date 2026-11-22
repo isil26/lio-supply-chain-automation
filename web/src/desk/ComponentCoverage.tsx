@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { Risk } from "../api";
 import { Heading } from "./UI";
 
@@ -7,6 +7,7 @@ const measured = (r: Risk): r is Risk & Required<Pick<Risk, "required" | "onHand
   [r.required,r.onHand,r.inbound,r.gap].every(n => typeof n === "number" && Number.isFinite(n) && n >= 0) && (r.required ?? 0) > 0;
 
 export function ComponentCoverage({ risks }: { risks: Risk[] }) {
+  const chartId = useId();
   const [expanded, setExpanded] = useState<string | null>(null);
   const rows = risks.filter(measured).sort((a,b) => b.gap / b.required - a.gap / a.required || b.gap - a.gap);
   return <section className="card coverage"><Heading icon="layers">Component coverage</Heading>
@@ -17,7 +18,8 @@ export function ComponentCoverage({ risks }: { risks: Risk[] }) {
         const stock = Math.min(r.onHand, r.required);
         const inbound = Math.min(r.inbound, r.required - stock);
         return <div className="coverage-row" key={id}>
-          <button onClick={()=>setExpanded(expanded === id ? null : id)} aria-expanded={expanded === id}>
+          <button type="button" onClick={()=>setExpanded(current=>current === id ? null : id)}
+            aria-expanded={expanded === id} aria-controls={chartId+"-"+encodeURIComponent(id)}>
             <span className="coverage-label">{r.component}</span>
             <strong className={r.gap ? "gap-count" : "covered-count"}>{r.gap ? count.format(r.gap)+" short" : "Covered"}</strong>
             <span className="coverage-track" aria-hidden="true">
@@ -25,7 +27,7 @@ export function ComponentCoverage({ risks }: { risks: Risk[] }) {
               <i style={{width:100*r.gap/r.required+"%"}}/>
             </span>
           </button>
-          {expanded === id && <p className="coverage-detail">{count.format(r.onHand)} usable · {count.format(r.inbound)} expected inbound · {count.format(r.required)} required</p>}
+          <p id={chartId+"-"+encodeURIComponent(id)} className="coverage-detail" hidden={expanded !== id}>{count.format(r.onHand)} usable · {count.format(r.inbound)} expected inbound · {count.format(r.required)} required</p>
         </div>;
       })}</> : <p className="empty">{risks.length ? "Component quantities are unavailable in this snapshot." : "No component risks reported."}</p>}
   </section>;

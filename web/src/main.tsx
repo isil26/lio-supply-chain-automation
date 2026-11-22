@@ -25,6 +25,40 @@ const threadFromUrl = () => {
   return query.get("thread") || (query.get("mail")==="1" ? "mailbox" : null);
 };
 
+function AccountMenu({user}: {user: string}) {
+  const menu = useRef<HTMLDetailsElement>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  useEffect(() => {
+    const dismissOutside = (event: Event) => {
+      if (menu.current?.open && event.target instanceof Node && !menu.current.contains(event.target)) menu.current.open = false;
+    };
+    const dismissOnNavigation = () => { if (menu.current) menu.current.open = false; };
+    const restore = () => { setSigningOut(false); dismissOnNavigation(); };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("focusin", dismissOutside);
+    window.addEventListener("hashchange", dismissOnNavigation);
+    window.addEventListener("pageshow", restore);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("focusin", dismissOutside);
+      window.removeEventListener("hashchange", dismissOnNavigation);
+      window.removeEventListener("pageshow", restore);
+    };
+  }, []);
+  return <details className="account" ref={menu} onKeyDown={event => {
+    if (event.key === "Escape" && menu.current?.open) {
+      menu.current.open = false;
+      menu.current.querySelector("summary")?.focus();
+    }
+  }}>
+    <summary aria-label={"Account · "+user} title={user}>{user.slice(0,1).toUpperCase()}</summary>
+    <form method="post" action="/logout" onSubmit={event => {
+      if (signingOut) event.preventDefault();
+      else setSigningOut(true);
+    }}><span>{user}</span><button className="quiet" disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</button></form>
+  </details>;
+}
+
 function ThreadBody({message}: {message: SupplierMessage}) {
   const [original,setOriginal] = useState(false);
   const translated = message.english && message.english !== message.text;
@@ -36,7 +70,9 @@ function App() {
   const [base,setBase] = useState<DashboardData | null>(null);
   const [imported,setImported] = useState<UploadResult | null>(null);
   const [page,setPage] = useState(currentPage);
+  const previousPage = useRef(page.id);
   const [error,setError] = useState("");
+  const [retrying,setRetrying] = useState(false);
   const [source,setSource] = useState<Source|null>(null);
   const [threadId,setThreadId] = useState<string|null>(threadFromUrl);
   const [reviewer,setReviewer] = useState(()=>{try{return localStorage.getItem("soony-reviewer")??"";}catch{return "";}});
@@ -49,11 +85,19 @@ function App() {
     } catch(e){if (request === dashboardRequest.current) setError(e instanceof Error?e.message:"Launch forecast unavailable.");}
   },[]);
   const showUpload = useCallback((result:UploadResult|null)=>setImported(result),[]);
+  async function retry() {
+    setRetrying(true);
+    try { await refresh(); } finally { setRetrying(false); }
+  }
   useEffect(()=>{
-    void refresh();
-    if(hostedReplayBuild)return;
-    const timer=window.setInterval(refresh,5000);
-    return ()=>window.clearInterval(timer);
+    let active = true;
+    let timer: number;
+    const poll = async () => {
+      await refresh();
+      if (active && !hostedReplayBuild) timer = window.setTimeout(poll, 5000);
+    };
+    void poll();
+    return ()=>{ active = false; window.clearTimeout(timer); };
   },[refresh]);
   useEffect(()=>{
     const navigate=()=>{setPage(currentPage());setThreadId(threadFromUrl());setSource(null);window.scrollTo(0,0);};
@@ -61,8 +105,13 @@ function App() {
     window.addEventListener("popstate",navigate);
     return ()=>{window.removeEventListener("hashchange",navigate);window.removeEventListener("popstate",navigate);};
   },[]);
-  useEffect(()=>{document.title=page.label+" · Manti";},[page]);
-  if(!base)return <main className="loading-screen" role="status"><p>{error||"Loading the launch forecast…"}</p>{error&&<button className="btn" onClick={refresh}>Retry</button>}</main>;
+  useEffect(()=>{
+    document.title=page.label+" · Manti";
+    if (previousPage.current !== page.id) document.getElementById("main")?.focus({preventScroll:true});
+    previousPage.current = page.id;
+  },[page]);
+  const retryButton = <button className="quiet" disabled={retrying} onClick={retry}>{retrying ? "Retrying…" : "Retry"}</button>;
+  if(!base)return <main className="loading-screen" role="status"><p>{error||"Loading the launch forecast…"}</p>{error && retryButton}</main>;
   const data=imported?{...imported.dashboard,currentUser:base.currentUser}:base;
   const replay=hostedReplayBuild||isStaticMode()||data.sync?.mailMode==="dry-run";
   const archive=page.id==="activity";
@@ -79,7 +128,7 @@ function App() {
     if(url.hash.startsWith("#message-"))url.hash="#dashboard";
     history.replaceState(null,"",url);
   };
-  const dashboardSidebar=<><ComponentCoverage risks={data.risks}/><Deadlines key={imported?.id??"live"} data={data} practice={!!imported||hostedReplayBuild||isStaticMode()} refresh={refresh} onThread={setThreadId} onEvidence={setSource}/></>;
+  const dashboardSidebar=<><ComponentCoverage risks={data.risks}/><Deadlines key={imported?.id??"live"} practiceKey={imported?.id??"workspace"} data={data} practice={!!imported||hostedReplayBuild||isStaticMode()} refresh={refresh} onThread={setThreadId} onEvidence={setSource}/></>;
   const file=source?.source_file??source?.file;
   return <><a className="skip" href="#main" onClick={event=>{
     event.preventDefault();
@@ -93,16 +142,13 @@ function App() {
             <Icon name={p.icon}/><span>{p.label}</span>
           </a>)}
         </nav>
-        {data.currentUser&&<details className="account">
-          <summary aria-label={"Account · "+data.currentUser} title={data.currentUser}>{data.currentUser.slice(0,1).toUpperCase()}</summary>
-          <form method="post" action="/logout"><span>{data.currentUser}</span><button className="quiet">Sign out</button></form>
-        </details>}
+        {data.currentUser&&<AccountMenu user={data.currentUser}/>}
       </div>
     </header>
       <main id="main" tabIndex={-1}><header className="page-title"><div><h1>{page.label}</h1><p>{data.launch.name} · {subtitle}{imported?" · Private scenario":replay?" · Demo replay":""}</p></div>
         {data.sync?.time && <span className="date-chip"><Icon name="clock"/>Updated {displayDate(data.sync.time)}</span>}</header>
         {data.sync?.error && <p className="mail-summary" role="status">The last sync failed. Showing the last available forecast.</p>}
-        {error&&<p className="mail-summary" role="alert">{error} <button className="quiet" onClick={refresh}>Retry</button></p>}
+        {error&&<p className="mail-summary" role="alert">{error} {retryButton}</p>}
         <div className="desk-tools theme-dark manti-workspace" hidden={page.id!=="import"}>{isStaticMode()?<p>Open the connected workspace to import data.</p>:<UploadData onResult={showUpload}/>}</div>
         {page.id==="agents"&&<div className="desk-tools theme-dark manti-workspace"><AgentGraph key={imported?.id??"workspace"} data={data} scenario={!!imported} stale={!!error} onEvidence={setSource}/></div>}
         {home&&<div id="content" className={archive?"archived":undefined}>

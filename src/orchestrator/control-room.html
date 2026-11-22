@@ -11,11 +11,14 @@
 .rail{position:sticky;top:0;height:100vh;background:#1a1a1d;border-right:1px solid var(--line);padding:24px 14px}.rail .brand{display:flex;align-items:center;gap:6px;font-size:21px}.rail svg{width:34px;height:34px}.dough,.knot{fill:#737cda}.pleat{fill:none;stroke:#ffffff88;stroke-width:1.3}.knot{stroke:#1a1a1d}.rail nav{display:grid;gap:6px;margin-top:40px}.rail a{padding:9px 11px;color:var(--muted);text-decoration:none;border-radius:7px}.rail a[aria-current]{background:#303a36;color:var(--text)}main{width:100%;padding:25px clamp(16px,3vw,45px) 48px}header{align-items:center}header h1{font-size:clamp(28px,3vw,42px)}.sheet,.metric,.strip{border-radius:13px}.metric:first-child{background:linear-gradient(115deg,#293139,#454858)}.metric.short{background:linear-gradient(115deg,#33292b,var(--surface));--green:#eda39e}.metric.complete{background:linear-gradient(115deg,#303033,var(--surface));--green:#a0d3b0}.metric .number{color:var(--green)}.grid[hidden],[hidden]{display:none!important}.option-wrap{max-height:620px;overflow-y:auto}
 @media(max-width:800px){body{display:block}.rail{height:auto;position:static;display:flex;justify-content:space-between;align-items:center;padding:6px 12px}.rail nav{display:flex;margin:0}.summary{grid-template-columns:1fr 1fr}.metric:first-child{grid-column:1/-1}main{width:100%;padding:16px}.number{font-size:27px}.grid{grid-template-columns:1fr}}
 .rail .brand img{display:block;width:min(128px,100%);height:auto}
+#approval-preview { white-space: pre-wrap; overflow-wrap: anywhere; }
+#approval-status, #approval-preview { margin: 12px 0; }
+#approval-dialog .actions button { float: none; }
 </style>
 </head>
 <body><aside class="rail"><div class="brand"><img src="/brand/manti-logo.png" width="128" height="22" alt="Manti"></div><nav aria-label="Workspace"><a href="#dashboard">Dashboard</a><a href="#activity">Activity Log</a></nav></aside><main>
 <header><div><p>Soony · Procurement</p><h1 id="page-name">Dashboard</h1></div><div class="right"><strong id="launch">Grand Heist 6</strong><div class="muted mono" id="site">DC-HAM</div></div><form id="account" hidden method="post" action="/logout"><span id="username"></span> <button type="submit">Sign out</button></form></header>
-<div class="strip"><span id="sync-status" role="status">Building launch snapshot…</span><button id="sync">Refresh inputs</button></div>
+<div class="strip"><span id="sync-status" role="status">Building launch snapshot…</span><button id="sync" data-write="ready">Refresh inputs</button></div>
 <p id="data-health" class="muted mono" style="width:fit-content;margin:0 0 12px;padding:4px 8px;border:1px solid var(--line);border-radius:4px" hidden></p>
 <details id="source-reviews" class="sheet" hidden><summary id="review-summary"></summary><ul id="review-list"></ul></details>
 <p id="feedback" class="toast" role="status"></p>
@@ -27,7 +30,13 @@
 <section class="sheet"><div class="sheethead"><h2>Agent activity</h2></div><div id="activity"></div></section></div>
 </div>
 <section id="history-panels" class="sheet" hidden><div class="sheethead"><h2>Decision history</h2></div><div id="past-decisions"></div></section>
-<dialog id="sources"><button id="close-sources" type="button">Close</button><h2 id="source-title">Evidence</h2><ul id="source-list"></ul></dialog>
+<dialog id="sources" aria-labelledby="source-title"><button id="close-sources" type="button">Close</button><h2 id="source-title">Evidence</h2><ul id="source-list"></ul></dialog>
+<dialog id="approval-dialog" aria-labelledby="approval-title">
+<h2 id="approval-title">Review next step</h2>
+<p id="approval-preview"></p>
+<p id="approval-status" role="status"></p>
+<div class="actions"><button id="cancel-approval" type="button" autofocus>Cancel</button><button id="submit-approval" class="action" type="button" disabled>Approve</button></div>
+</dialog>
 </main>
 <script>
 const number = new Intl.NumberFormat("en-GB");
@@ -40,7 +49,9 @@ const node = (tag,value,className) => {
   if (className) element.className = className;
   return element;
 };
-let state, optionId, threadId, lastState, lastDrop;
+let state, optionId, threadId, lastState, lastDrop, approving;
+let busy = false, refreshNumber = 0;
+const replies = new Map();
 const format = value => number.format(value);
 function label(value, className="note"){return node("div",value,className);}
 function button(name,onClick,primary=false){
@@ -60,34 +71,80 @@ function listSelect(name, items, selected, onChange){
   select.onchange=event=>onChange(event.target.value);
   return select;
 }
-async function action(path, body={}, success="Action recorded."){
-  $("feedback").textContent="Updating…";
+function writeButton(name, onClick, primary=false, unavailable=false) {
+  const element=button(name,onClick,primary);
+  element.dataset.write=unavailable ? "unavailable" : "ready";
+  element.disabled=busy || unavailable;
+  return element;
+}
+function setBusy(value) {
+  busy=value;
+  document.querySelectorAll("[data-write]").forEach(element=>{
+    element.disabled=value || element.dataset.write==="unavailable";
+  });
+}
+async function request(path, body) {
+  const response=await fetch(path,body===undefined ? {} : {
+    method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)
+  });
+  if(response.status===401) { location.reload(); throw Error("Sign in again to continue."); }
+  const result=await response.json();
+  if(!response.ok || (body!==undefined && !result?.ok)) throw Error(result?.error ?? "Action unavailable.");
+  return result;
+}
+async function action(path, body, success, status=$("feedback")){
+  if(busy) return;
+  setBusy(true);
+  status.textContent="Updating…";
   try {
-    const response=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-    const result=await response.json();
-    if(!response.ok || !result.ok) throw Error(result.error ?? "Action unavailable");
-    $("feedback").textContent=success;
+    const result=await request(path,body);
     await refresh();
-  } catch(error){$("feedback").textContent=error.message;}
+    $("feedback").textContent=success(result);
+    return true;
+  } catch(error){status.textContent=error.message;return false;}
+  finally {setBusy(false);}
+}
+async function previewApproval(item) {
+  const dialog=$("approval-dialog");
+  approving=item;
+  $("approval-title").textContent=item.title;
+  $("approval-preview").textContent="";
+  $("approval-status").textContent="Loading approval details…";
+  $("submit-approval").disabled=true;
+  dialog.showModal();
+  try {
+    const mail=await request("/api/decisions/"+item.id+"/preview");
+    if(!dialog.open || approving!==item) return;
+    const demo=state.sync.mode==="replay" || state.sync.mailMode==="dry-run";
+    const note=demo && (mail.mode==="send" || mail.mode==="internal") ? "Approval records a simulated email in this workspace." : mail.note;
+    $("approval-preview").textContent=[note,mail.to && "To: "+mail.to,mail.subject,mail.body].filter(Boolean).join("\n\n");
+    $("approval-status").textContent="";
+    $("submit-approval").disabled=false;
+  } catch(error){if(dialog.open && approving===item) $("approval-status").textContent=error.message;}
 }
 function evidence(title,sources){
   $("source-title").textContent=title;
   const seen=new Set();
   $("source-list").replaceChildren();
-  for(const source of sources){
-    if(!source.file) continue;
+  for(const citation of sources ?? []){
+    const source=typeof citation==="string" ? {quote:citation} : citation;
+    const file=source?.file || source?.source_file;
+    if(!file && !source?.quote) continue;
     const key=JSON.stringify(source);
     if(seen.has(key)) continue;
     seen.add(key);
     const item=node("li");
-    const link=node("a",source.file.split("/").pop());
-    link.href="/api/source/"+source.file.split("/").map(encodeURIComponent).join("/")+(source.page?"#page="+source.page:"");
-    link.target="_blank";
-    link.rel="noopener";
-    item.append(link, label([source.sheet,source.page ? "p. "+source.page : "",source.row ? "row "+source.row:""].filter(Boolean).join(" · ")));
+    if(file){
+      const link=node("a",file.split("/").pop());
+      link.href="/api/source/"+file.split("/").map(encodeURIComponent).join("/")+(source.page?"#page="+source.page:"");
+      link.target="_blank";
+      link.rel="noopener";
+      item.append(link, label([source.sheet,source.page ? "p. "+source.page : "",source.row ? "row "+source.row:""].filter(Boolean).join(" · ")));
+    }
     if(source.quote) item.append(node("p",source.quote));
     $("source-list").append(item);
   }
+  if(!seen.size) $("source-list").append(node("li","No source document is available for this item."));
   $("sources").showModal();
 }
 function summaries(){
@@ -138,11 +195,12 @@ function drawOptions(){
   const item=state.options.find(o=>o.id===optionId) ?? state.options[0];
   $("options").replaceChildren();
   if(!item){$("options").append(label("No decisions pending."));return;}
-  const blocked=item.status==="blocked";
+  const blocked=item.status==="blocked" || item.approvalMode?.mode==="NEVER";
+  const expired=item.status==="expired";
   const reviewed=item.status==="review" || item.review_requested;
   $("options").append(listSelect("Decision",state.options.map(o=>({id:o.id,name:o.title})),item.id,id=>{optionId=id;drawOptions();}));
   $("options").append(node("h3",item.title),node("p",item.recommendation),
-    label(blocked?"Blocked":item.price===null?"Quote pending":euro.format(item.price),"price"),
+    label(expired?"Expired":blocked?"Blocked":item.price===null?"Quote pending":euro.format(item.price),"price"),
     label(item.priceLabel ?? item.price_label ?? "Cost estimate"),label(item.impact),label(item.risk),label(item.threshold));
   const timing=item.supplier_timing;
   if(timing){
@@ -166,15 +224,18 @@ function drawOptions(){
     $("options").append(breakdown);
   }
   const actions=node("div",undefined,"actions");
-  const approve=button(item.status==="approved"?"Approved":"Approve next step",()=>action("/api/decisions/"+item.id+"/approve",{},"Approval recorded."),true);
-  const review=button(reviewed?"Review requested":"Request review",()=>action("/api/decisions/"+item.id+"/review",{},blocked?"Review requested. Release remains blocked.":"Review requested."));
-  approve.disabled=item.status==="approved";
-  review.disabled=item.status==="approved" || reviewed;
-  if(!blocked) actions.append(approve);
+  const approved=item.status==="approved";
+  const approve=writeButton(approved?"Approved":"Review and approve…",()=>previewApproval(item),true,approved);
+  const review=writeButton(reviewed?"Review requested":"Request review",()=>action("/api/decisions/"+item.id+"/review",{},result=>
+    result.status==="blocked" ? "Review requested. Release remains blocked." : result.effect?.lines?.join(" ") || "Review requested."),false,approved || reviewed || expired);
+  if(!blocked && !expired) actions.append(approve);
   actions.append(review,button("Evidence",()=>evidence(item.title,item.evidence)));
   $("options").append(actions);
 }
 function drawThreads(){
+  const previous=$("threads").querySelector("textarea");
+  const editing=previous && document.activeElement===previous;
+  const selection=editing && [previous.selectionStart, previous.selectionEnd];
   $("threads").replaceChildren();
   const thread=state.threads.find(t=>t.id===threadId) ?? state.threads[0];
   if(!thread){$("threads").append(label("No supplier follow-ups needed."));return;}
@@ -202,16 +263,21 @@ function drawThreads(){
   $("threads").append(messages);
   if(thread.status==="draft"){
     const mode=state.sync.mode==="replay"?"dry-run":(state.sync.mailMode ?? "dry-run");
-    $("threads").append(button(mode==="dry-run"?"Approve dry-run send":"Approve supplier send",()=>{
+    $("threads").append(writeButton(mode==="dry-run"?"Approve dry-run send":"Approve supplier send",()=>{
       const prompt=mode==="dry-run" ? "Record a dry-run send of this draft?" : "Send this draft to "+thread.supplier+"?";
-      if(window.confirm(prompt)) action("/api/threads/"+thread.id+"/send",{confirm:true});
+      if(window.confirm(prompt)) action("/api/threads/"+thread.id+"/send",{confirm:true},()=>mode==="dry-run" ? "Dry-run send recorded for "+thread.supplier+"." : "Message sent to "+thread.supplier+".");
     },true));
   }
   if(thread.status==="awaiting reply" && state.sync.mode==="replay"){
     const reply=node("textarea");
     reply.placeholder="Enter a simulated supplier reply";
     reply.setAttribute("aria-label","Simulated supplier reply");
-    $("threads").append(reply,button("Import demo reply",()=>action("/api/threads/"+thread.id+"/demo-reply",reply.value.trim()?{text:reply.value}:{})));
+    reply.value=replies.get(thread.id) || "";
+    reply.oninput=()=>replies.set(thread.id,reply.value);
+    $("threads").append(reply,writeButton("Import demo reply",async()=>{
+      if(await action("/api/threads/"+thread.id+"/demo-reply",reply.value.trim()?{text:reply.value}:{},()=>"Simulated reply imported for "+thread.supplier+".")) replies.delete(thread.id);
+    }));
+    if(editing) { reply.focus({preventScroll:true}); reply.setSelectionRange(...selection); }
   }
 }
 function navigate(){
@@ -244,13 +310,15 @@ function drawActivity(){
   }));
 }
 async function refresh(){
+  const call=++refreshNumber;
   try{
     const response=await fetch("/api/dashboard");
-    if(response.status===401) { window.location.replace("/"); return; }
+    if(response.status===401) { location.reload(); return; }
     const live=await response.json();
+    if(call!==refreshNumber) return;
     $("account").hidden=!live.currentUser;
     $("username").textContent=live.currentUser ?? "";
-    if(!response.ok) { $("sync-status").textContent=live.sync?.error ?? live.error; return; }
+    if(!response.ok) { lastState=undefined; $("sync-status").textContent=live.sync?.error ?? live.error; return; }
     const health=live.dataHealth;
     $("data-health").hidden=!health;
     if(health){
@@ -278,11 +346,26 @@ async function refresh(){
     if(lastDrop && lastDrop!==drop?.id) $("feedback").textContent="Supplier inputs, gaps and decision options updated.";
     lastDrop=drop?.id;
     summaries();drawRisk();drawOptions();drawThreads();drawActivity();
-  }catch(error){$("sync-status").textContent="Dashboard connection interrupted. Retrying…";}
+  }catch(error){if(call!==refreshNumber) return; lastState=undefined; $("sync-status").textContent="Dashboard connection interrupted. Retrying…";}
 }
-$("sync").onclick=()=>action("/api/sync",{},"Refresh queued.");
+$("sync").onclick=()=>action("/api/sync",{},()=>"Refresh queued.");
+const approvalDialog=$("approval-dialog");
+approvalDialog.addEventListener("close",()=>{approving=null;});
+approvalDialog.addEventListener("cancel",event=>{if(busy) event.preventDefault();});
+$("cancel-approval").onclick=()=>approvalDialog.close();
+$("submit-approval").onclick=async()=>{
+  if(!approving || busy) return;
+  $("submit-approval").disabled=$("cancel-approval").disabled=true;
+  const recorded=await action("/api/decisions/"+approving.id+"/approve",{},result=>
+    result.effect?.lines?.join(" ") || "Approval recorded.",$("approval-status"));
+  $("submit-approval").disabled=$("cancel-approval").disabled=false;
+  if(recorded) approvalDialog.close();
+};
 $("close-sources").onclick=()=>$("sources").close();
-refresh();
-setInterval(refresh,3000);
+async function pollDashboard(){
+  await refresh();
+  setTimeout(pollDashboard,3000);
+}
+pollDashboard();
 setInterval(updateClock,1000);
 </script></body></html>

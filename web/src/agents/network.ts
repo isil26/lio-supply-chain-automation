@@ -55,9 +55,10 @@ export function activitySignals(activity: Activity[]): Signal[] {
     if (!agent) continue;
     const at = Date.parse(item.timestamp ?? "");
     const message = item.action === "model: final" ? "Completed the task." : item.action;
+    const citation = typeof item.citation === "string" ? {quote: item.citation} : item.citation;
     unique.set(item.id, { id: item.id, agent, message, time: item.time,
       at: Number.isFinite(at) ? at : 0,
-      sources: item.citation && typeof item.citation === "object" ? [item.citation] : undefined });
+      sources: citation?.file || citation?.source_file || citation?.quote ? [citation] : undefined });
   }
   return [...unique.values()].sort((a, b) => b.at - a.at);
 }

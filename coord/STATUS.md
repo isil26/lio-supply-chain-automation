@@ -198,3 +198,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-forecast-desk | T-Manager-Dashboard | Verified the component coverage chart, supplier email previews and human decision controls on Manti Live | done | Public forecast and component figures matched the planning API | 22 Nov |
 
 | manti-forecast-desk | T-Live-Offer-Interpreter | Reconcile live offers and implement a translator for new supplier messages | in_progress | Verify English previews and actionable responses | 22 Nov |
+
+| manti-interactions | T-Button-Review | Audited button outcomes across the workspace, gateway, standalone control room and card replay | done | Verified both frontend builds, local browser workflows, 27 backend tests and 5 gateway tests | 22 Nov |

@@ -184,6 +184,9 @@ test('production team sign-in keeps uploads private to the signed-in session', a
   });
   const site = await listener((req, res) => control(req, res, 'production-team-password'), t);
   assert.equal((await fetch(site + '/api/uploads')).status, 401);
+  const passwordPage = await (await fetch(site + '/')).text();
+  assert.doesNotMatch(passwordPage, /name="username"/);
+  assert.match(passwordPage, /name="password"/);
   async function signIn() {
     const login = await fetch(site + '/login', {
       method: 'POST', headers: { origin: site }, redirect: 'manual',
@@ -202,6 +205,13 @@ test('production team sign-in keeps uploads private to the signed-in session', a
   process.env.SOONY_USERS_JSON = JSON.stringify(demoUsers);
   const combined = await listener((req, res) => control(req, res, 'production-team-accounts'), t);
   assert.equal((await (await fetch(combined + '/api/session', {headers:{cookie:first}})).json()).user, 'Shared team login');
+  const retry = await fetch(combined + '/login', { method: 'POST', headers: { origin: combined },
+    body: new URLSearchParams({ password: 'incorrect', next: '/live' }) });
+  assert.equal(retry.status, 401);
+  const retryPage = await retry.text();
+  assert.match(retryPage, /<details open>/);
+  assert.match(retryPage, /role="alert">The team password is incorrect/);
+  assert.match(retryPage, /name="next" value="\/live"/);
   for (const [credentials, user] of [
     [{password:'test-team-password'}, 'Shared team login'],
     [{username:'leo', password:'12345'}, 'leo'],

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { dashboardApi, recordDeskAction, type Approval, type DashboardData, type DeskAction, type MailPreview, type Source } from "../api";
 import { Dialog, Heading, Icon } from "./UI";
 import { displayDate } from "./Forecast";
@@ -37,18 +37,34 @@ function legacyActions(options: Approval[]): DeskAction[] {
   }));
 }
 
-export function Deadlines({data, practice, refresh, onThread, onEvidence}: {
-  data: DashboardData; practice: boolean; refresh: () => Promise<void>; onThread: (id: string) => void; onEvidence: (source: Source) => void;
+type Outcome = "approve" | "done" | "dismiss";
+
+function readReviewed(key: string): string[] {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(key) ?? "[]");
+    return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
+  } catch {return [];}
+}
+
+export function Deadlines({data, practice, practiceKey, refresh, onThread, onEvidence}: {
+  data: DashboardData; practice: boolean; practiceKey: string; refresh: () => Promise<void>; onThread: (id: string) => void; onEvidence: (source: Source) => void;
 }) {
   const [id, select] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<Outcome | "preview" | null>(null);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
-  const [reviewed, setReviewed] = useState<string[]>([]);
+  const storageKey = "manti-reviewed-"+JSON.stringify([practiceKey, data.currentUser, data.launch.deadline]);
+  const [reviewed, setReviewed] = useState<string[]>(()=>practice ? readReviewed(storageKey) : []);
+  const [approved, setApproved] = useState<string[]>([]);
   const [note,setNote] = useState("");
   const [name,setName] = useState("");
   const [preview,setPreview] = useState<MailPreview | null>(null);
-  const options = data.options ?? (data.approval ? [data.approval] : []);
+  const previewHeading = useRef<HTMLHeadingElement>(null);
+  const approveButton = useRef<HTMLButtonElement>(null);
+  const status = useRef<HTMLParagraphElement>(null);
+  const rawOptions = data.options ?? (data.approval ? [data.approval] : []);
+  const options = rawOptions.map(option => practice && !option.id
+    ? {...option, id: JSON.stringify([option.title, option.owner, option.deadline])} : option);
   const rows = data.actions ?? legacyActions(options);
   const pending = rows.filter(a => a.status==="pending" && !reviewed.includes(a.id))
     .sort((a,b)=>(Date.parse(a.dueAt ?? "") || Infinity)-(Date.parse(b.dueAt ?? "") || Infinity));
@@ -57,69 +73,95 @@ export function Deadlines({data, practice, refresh, onThread, onEvidence}: {
   const task = action?.task ?? option?.kind ?? action?.source ?? "";
   const workflow = workflows[task==="priority" ? "packplan" : task] ?? defaultWorkflow;
   const reviewMail = action && followUp[task] && data.teamReviewEmail && !practice ?
-    "mailto:"+encodeURIComponent(data.teamReviewEmail)+"?subject="+encodeURIComponent(`For ${action.owner} · ${action.title}`)+
+    "mailto:"+encodeURIComponent(data.teamReviewEmail).replace("%40","@")+"?subject="+encodeURIComponent(`For ${action.owner} · ${action.title}`)+
     "&body="+encodeURIComponent(`For ${action.approver || action.owner},\n\n${action.why}\n\nPlease confirm the next step and the supporting evidence.\n\n${data.currentUser || ""}`) : null;
-  const canApprove = option && (!option.status || option.status==="pending") && option.approvalMode?.mode!=="NEVER" && workflow.approve;
+  const canApprove = option && !approved.includes(option.id) && (!option.status || option.status==="pending") && option.approvalMode?.mode!=="NEVER" && workflow.approve;
+  const simulated = practice || data.sync?.mailMode !== "live";
   const agent = agentBySource[action?.source ?? ""] ?? "Decision Copilot";
   const actor = data.currentUser || (practice ? "Practice reviewer" : name.trim());
-  const evidence = action?.evidence?.find((item): item is Source=>typeof item==="object" && !!(item.file || item.source_file || item.quote));
+  const evidence = action?.evidence?.find((item): item is Source=>!!item && typeof item==="object" && !!(item.file || item.source_file || item.quote));
+  useEffect(()=>{if (preview) previewHeading.current?.focus();},[preview]);
+  useEffect(()=>{if (feedback) status.current?.focus();},[feedback]);
+  useEffect(()=>{
+    if (id && !action && !busy) {
+      select(null);
+      setFeedback("This decision is no longer pending. The deadline list has been updated.");
+    }
+  },[id,action,busy]);
   function open(row: DeskAction) {
     select(row.id);setNote("");setPreview(null);setError("");setFeedback("");
   }
-  async function submit(outcome: "approve" | "done" | "dismiss") {
-    if (!action || busy) return;
-    setBusy(true);setError("");
+  async function submit(outcome: Outcome) {
+    if (!action || busy || !actor || (outcome==="approve" && !canApprove)) return;
+    const loadingPreview = outcome==="approve" && !practice && !preview;
+    setBusy(loadingPreview ? "preview" : outcome);setError("");
     try {
-      if (outcome==="approve" && !practice && !preview) {
+      if (loadingPreview) {
         const mail = await dashboardApi.previewDecision?.(action.optionId!);
         if (!mail) throw new Error("The approval preview is unavailable. Please try again.");
         setPreview(mail);
         return;
       }
       let result = outcome==="approve" ? "Approval recorded" : outcome==="dismiss" ? "Proposal declined" : "Follow-up recorded";
-      if (practice) setReviewed(previous=>[...previous,action.id]);
-      else if (outcome==="approve") {
+      if (!practice && outcome==="approve") {
         const res = await dashboardApi.approveDecision(action.optionId!, actor);
-        if (res.status !== "approved") throw new Error("Approval is still pending. Refresh to review the latest evidence.");
+        if (!res.ok || res.status !== "approved") throw new Error("Approval is still pending. Review the latest evidence.");
         result = res.effect?.lines?.join(" ") || result;
+        setApproved(previous=>[...previous,action.optionId!]);
       } else {
-        await recordDeskAction(action.id,outcome,actor,note.trim() || (outcome==="done" ? workflow.finish : workflow.decline));
+        if (outcome!=="approve" && !practice) {
+          const res = await recordDeskAction(action.id,outcome,actor,note.trim() || (outcome==="done" ? workflow.finish : workflow.decline));
+          if (!res.ok) throw new Error("The decision could not be recorded. Try again.");
+        }
+        const next = [...reviewed,action.id];
+        setReviewed(next);
+        if (practice) {
+          try {sessionStorage.setItem(storageKey,JSON.stringify(next));} catch {}
+        }
       }
       select(null);
-      setFeedback((practice ? "Simulated · " : "")+result);
-      if (!practice) await refresh();
+      setFeedback((simulated ? "Simulated · " : "")+action.title+" — "+result);
+      if (!practice) void refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "The decision could not be recorded."); }
-    finally {setBusy(false);}
+    finally {setBusy(null);}
   }
   return <section className="card"><Heading icon="clock" count={pending.length}>Decision deadlines</Heading>
-    {feedback && <p className="decision-feedback" role="status">{feedback}</p>}
+    {feedback && <p className="decision-feedback" role="status" tabIndex={-1} ref={status}>{feedback}</p>}
     <div className="deadline-list" role="region" aria-label="Upcoming decisions" tabIndex={0}>{pending.map(r=>
-      <button className="deadline-item" key={r.id} onClick={()=>open(r)}>
+      <button className="deadline-item" key={r.id} aria-haspopup="dialog" disabled={!!busy} onClick={()=>open(r)}>
         <span className="deadline-icon"><Icon name="clock"/></span><span className="deadline-copy"><b>{r.title}</b><small>{r.owner}</small></span>
         <span className="due">{due(r.dueAt)}</span>
       </button>)}{!pending.length && <p className="empty">No decisions due.</p>}</div>
-    {action && <Dialog title={action.title} label={practice || data.sync?.mailMode==="dry-run" ? "Simulated decision · test case" : "Decision deadline"} close={()=>{if(!busy)select(null);}}>
-      <p className="mini">{action.approver || action.owner}{action.dueAt && " · "+displayDate(action.dueAt)}</p>
+    {action && <Dialog title={action.title} label={simulated ? "Simulated decision · test case" : "Decision deadline"} dismissible={!busy} close={()=>select(null)}>
+      <p className="mini">{action.approver || action.owner}{action.dueAt && " · "+displayDate(action.dueAt)}
+        {action.dueAt?.includes("T") && Date.parse(action.dueAt)<Date.now() && " · Deadline passed"}</p>
       <p className="decision-context">{action.why}</p>
-      <div className="handoff-links">
-        {reviewMail && <a className="outline-btn" href={reviewMail} title={"Via the launch team · "+data.teamReviewEmail}><Icon name="mail"/>{followUp[task]}</a>}
+      {option && (option.approvalMode?.mode==="NEVER" || option.status==="blocked") && <p className="mail-summary">Approval blocked. {option.approvalMode?.reason}</p>}
+      {option?.status==="expired" && <p className="mail-summary">This approval has expired.</p>}
+      {(option?.status==="approved" || (option && approved.includes(option.id))) && <p className="mini">Approval recorded. Follow-up is still open.</p>}
+      {!busy && <div className="handoff-links">
+        {reviewMail && <a className="outline-btn" href={reviewMail} title={"Via the launch team · "+data.teamReviewEmail}><Icon name="mail"/>{followUp[task]} (email draft)</a>}
         {action.contact && <a className="outline-btn" href={"tel:"+action.contact.phone.replace(/[^+0-9]/g,"")}>Call {action.contact.name} · {action.contact.phone}</a>}
         {action.threadId && <button className="outline-btn" onClick={()=>onThread(action.threadId!)}><Icon name="mail"/>Read supplier reply</button>}
         {evidence && <button className="outline-btn" onClick={()=>onEvidence(evidence)}>{workflow.evidence || "Inspect source"}</button>}
         <a className="quiet" href={"#agents?"+new URLSearchParams({agent})} onClick={()=>select(null)}><Icon name="network"/>View {agent} activity</a>
-      </div>
-      {preview ? <section className="editor"><p>{preview.note}</p>{preview.body && <><strong>{preview.subject}</strong><p className="draft-body">{preview.body}</p></>}
-        <button className="btn" disabled={busy} onClick={()=>void submit("approve")}>{preview.mode==="send" || preview.mode==="internal" ? "Confirm approval and send" : "Confirm approval"}</button>
-        <button className="quiet" disabled={busy} onClick={()=>setPreview(null)}>Back</button></section> :
+      </div>}
+      {preview ? <section className="editor">
+        <h3 ref={previewHeading} tabIndex={-1}>Review approval</h3>
+        {canApprove ? <><p>{simulated && (preview.mode==="send" || preview.mode==="internal") ? "The test case simulates delivery of this message." : preview.note}</p>{preview.to && <p>To {preview.to}</p>}{preview.body && <><strong>{preview.subject}</strong><p className="draft-body">{preview.body}</p></>}
+          <button className="btn" disabled={!!busy} onClick={()=>void submit("approve")}>{simulated ? "Confirm simulated approval" : preview.mode==="send" || preview.mode==="internal" ? "Confirm approval and send" : "Confirm approval"}</button></>
+          : <p role="status">This option changed. Review the current decision before continuing.</p>}
+        <button className="quiet" disabled={!!busy} onClick={()=>{setPreview(null);setError("");requestAnimationFrame(()=>approveButton.current?.focus());}}>Back</button></section> :
         <div className="editor">
-          {!practice && !data.currentUser && <label>Reviewed by<input value={name} maxLength={80} onChange={e=>setName(e.target.value)}/></label>}
-          <label>Follow-up or decline note (optional)<textarea rows={2} maxLength={500} value={note} onChange={e=>setNote(e.target.value)}/></label>
+          {!practice && !data.currentUser && <label>Reviewed by (required)<input value={name} required disabled={!!busy} maxLength={80} onChange={e=>setName(e.target.value)}/></label>}
+          {(practice || data.actions) && <label>Follow-up or decline note (optional)<textarea rows={2} disabled={!!busy} maxLength={500} value={note} onChange={e=>setNote(e.target.value)}/></label>}
           <div className="decision-buttons">
-            {canApprove && <button className="btn" disabled={busy || !actor} onClick={()=>void submit("approve")}>{workflow.approve}</button>}
-            {(practice || data.actions) && <><button className={canApprove ? "outline-btn" : "btn"} disabled={busy || !actor} onClick={()=>void submit("done")}>{workflow.finish}</button>
-            <button className="outline-btn" disabled={busy || !actor} onClick={()=>void submit("dismiss")}>{workflow.decline}</button></>}
+            {canApprove && <button className="btn" ref={approveButton} disabled={!!busy || !actor} onClick={()=>void submit("approve")}>{workflow.approve}</button>}
+            {(practice || data.actions) && <><button className={canApprove ? "outline-btn" : "btn"} disabled={!!busy || !actor} onClick={()=>void submit("done")}>{workflow.finish}</button>
+            <button className="outline-btn" disabled={!!busy || !actor} onClick={()=>void submit("dismiss")}>{workflow.decline}</button></>}
           </div>
         </div>}
+      {busy && <p role="status">{busy==="preview" ? "Loading approval preview…" : "Recording decision…"}</p>}
       {error && <p role="alert">{error}</p>}</Dialog>}
   </section>;
 }
