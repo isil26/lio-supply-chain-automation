@@ -105,8 +105,21 @@ def plans(con, clock=None, *, claim=None):
             note("covered","Current supply covers demand. Quote collection is paused.")
             continue
         state = states.get(d["thread_id"],{})
-        if state.get("buyerDecided") or d["thread_id"] in owned:
+        reviewed_request = None
+        if state.get("buyerDecided") and state.get("replyId") == d["reply_id"]:
+            reviewed_request = con.execute("""SELECT c.id,c.status FROM deal_requests r JOIN chases c ON c.id=r.email_id
+                    WHERE r.deal_id=? AND r.revision=? AND c.based_on_reply_id=?""",
+                    (d["id"],d["revision"],d["reply_id"])).fetchone()
+        if d["thread_id"] in owned or (state.get("buyerDecided") and reviewed_request is None):
             note("managed","The existing buyer or recovery workflow owns this reply.")
+            continue
+        if reviewed_request and reviewed_request[1] in ("draft","sending"):
+            note("queued","A previously reviewed supplier enquiry is queued.")
+            follow["thread"] = reviewed_request[0]
+            continue
+        if reviewed_request and reviewed_request[1] not in ("duplicate","superseded draft","awaiting reply","reply to verify"):
+            note("managed","The reviewed supplier enquiry needs attention in its original thread.")
+            follow["thread"] = reviewed_request[0]
             continue
         if not any(s.get("supplier_id")==d["supplier_id"] and (s.get("supplier") or {}).get("status") not in ("inactive","blocked")
                    for s in part.get("suppliers",[])):
@@ -151,7 +164,7 @@ def plans(con, clock=None, *, claim=None):
             if out[2] not in ("smtp_accepted","gmail_sent"):
                 note("checking","Mail agent is checking delivery.")
                 continue
-            if out[0]!=first:
+            if out[0]!=first and not (reviewed_request and out[0]==reviewed_request[0]):
                 note("sent","Awaiting the supplier’s reply to the latest email.")
                 continue
             when=sent+timedelta(hours=wait_hours(sent,deadline))

@@ -41,6 +41,9 @@ UNIT_LABEL = re.compile(r"(?:unit price|price per (?:unit|piece)|cena jednostkow
 ISO_DATE = r"(\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})?)?)"
 EXPIRY = re.compile(r"(?:valid until|expires(?: at| on)?|ważna do|有效期至|유효기간)\s*[:=]?\s*"+ISO_DATE,re.I)
 VALIDITY_MENTIONED = re.compile(r"\b(?:valid until|valid for|expires|expiry|ważna do)|有效期|유효기간", re.I)
+NO_ARRIVAL = re.compile(r"\bno (?:quantity|units?|stock)(?: [^.!?\n]{0,65}?)? can (?:reach|arrive|be delivered)\b"
+                        r"[^.!?\n]{0,48}?\b(?:before|by) (\d{1,2}) ([a-z]{3,9})(?: (\d{4}))?(?: at|,)? "
+                        r"(\d{1,2}:\d{2}) (CET|CEST|UTC)\b",re.I)
 FREIGHT = re.compile(r"(?:(?:incremental|additional) (?:all-in )?(?:freight|transport|truck|haulage)|(?:all-in |total |expedited )(?:freight|trucking) (?:charge|fee|cost)|"
                      r"dopłata (?:transportowa|za transport)|dodatkowy koszt transportu|额外运费|运输附加费|추가 운임)"
                      r"(?:\s+(?:charge|fee|cost|surcharge))?\s*[:=]?\s*" + CURRENCY + r"\s*" + NUMBER, re.I)
@@ -191,6 +194,13 @@ def _review(q, text, total, cutoff, now, expired, superseded, moq, kind, carrier
         return "superseded","The supplier replaced or withdrew this offer."
     if q.quantity == 0 or q.constraint == "no_launch_cover" or NO_COVER.search(text):
         return "unavailable","The supplier cannot supply these units for launch."
+    if not q.eta and (refusal := NO_ARRIVAL.search(text)):
+        day, month, year, hour, zone = refusal.groups()
+        local = cutoff.astimezone(timezone.utc if zone.upper()=="UTC" else ZoneInfo("Europe/Berlin"))
+        if (local.day == int(day) and month.casefold() in (local.strftime("%b").casefold(),local.strftime("%B").casefold())
+                and (not year or int(year) == local.year) and hour.zfill(5) == local.strftime("%H:%M")
+                and local.tzname() == zone.upper()):
+            return "unavailable","The supplier ruled out delivery of this lot by the launch cutoff."
     if q.eta and q.eta > cutoff:
         return "late","The quoted arrival is after the launch cutoff."
     if cutoff <= now or (expired and expired <= now):

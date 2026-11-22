@@ -110,6 +110,31 @@ class QuoteFlowTest(unittest.TestCase):
         self.db.execute("UPDATE messages SET sender='someone@example.test' WHERE external_id='<promise>'")
         self.assertEqual(next(iter(quote_followup.plans(self.db,self.clock).values()))['state'],'blocked')
 
+    def test_legacy_enquiry_yields_to_actual_delivery_state(self):
+        self.promise_forecast()
+        self.receive('A1','USD 3.50 per unit.','partial')
+        self.sync()
+        d,=deals.list_deals(self.db)['deals']
+        ref=deals.approve_request(self.db,d['id'],d['revision'],'Buyer','Can you confirm the remaining terms?')
+        def plan(at):
+            return next(iter(quote_followup.plans(self.db,at).values()))
+        self.assertEqual(plan(self.clock)['state'],'queued')
+        self.db.execute("UPDATE chases SET status='duplicate' WHERE id=?",(ref,))
+        self.assertEqual(plan(self.clock)['state'],'due')
+        self.receipt(ref,self.clock)
+        self.assertEqual(plan(self.clock)['state'],'sent')
+        reminder=plan(self.clock+timedelta(hours=14))['candidate']
+        self.assertIn('Following up',reminder[3])
+
+    def test_explicit_refusal_for_this_deadline_stops_followups(self):
+        self.promise_forecast()
+        self.receive('A1','No quantity from this lot can reach Europe before 12 August at 14:00 CEST.','refusal')
+        self.sync()
+        self.assertEqual(next(iter(quote_followup.plans(self.db,self.clock).values()))['state'],'closed')
+        self.receive('A1','No quantity from this lot can reach Europe before 11 August at 14:00 CEST.','other-day',10)
+        self.sync()
+        self.assertNotEqual(next(iter(quote_followup.plans(self.db,self.clock).values()))['state'],'closed')
+
     def test_actual_offer_with_a_separate_flat_freight_quote(self):
         self.promise_forecast()
         self.receive('A1','Quantity: 24 units. USD 3.50 per unit. Delivery: 2031-08-10 18:00 CET. '
