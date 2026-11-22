@@ -195,4 +195,4 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-deal-watch | T-Supplier-Promises | src/chaser | done | Manti Live sent the first due follow-up autonomously at 04:26 CET. The registered mail server accepted the request. 130 mail tests and 31 orchestrator tests passed. | 22 Nov |
 
-| manti-forecast-desk | T-Manager-Dashboard | Update the connected dashboard and verify the forecast and decision email paths | in_progress | Dashboard, offers and decision actions | 22 Nov |
+| manti-forecast-desk | T-Manager-Dashboard | Verified the component coverage chart, supplier email previews and human decision controls on Manti Live | done | Public forecast and component figures matched the planning API | 22 Nov |
