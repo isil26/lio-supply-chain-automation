@@ -142,7 +142,7 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T93-Mail-VM | Verify and document GitHub archive publishing on GCP | codex-mail-archive | supplier archive index, sync script and own coordination notes | done | T93-Mail-Events |
 
-| T-Manti-UI | Integrate the approved dashboard design with existing live/replay workflows | manti-dashboard | web UI and no-build control room | in_progress | T103-Login |
+| T-Manti-UI | Integrate the approved dashboard design with existing live/replay workflows | manti-dashboard | web UI and no-build control room | done | T103-Login |
 
 | T101-Chaser-Deadline | Revalidate queued supplier mail at dispatch and route expired requests to Procurement | codex-chaser-deadline | src/chaser, Action Queue projection | done | T78-Mail-Queue, T81 |
 
