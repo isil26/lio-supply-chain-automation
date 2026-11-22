@@ -660,4 +660,4 @@ The authenticated public application matched all 29 foreign reference rates in t
 
 ## T-Public-Access · manti-guest
 
-The sign-in page opens the public sample dashboard with **skip login**. The guest build includes fictional offers, sample forecasts and agent activity. Supplier decisions run in the browser. Build locally with `npm --prefix web run build`. The Vercel VM package includes the guest assets and keeps its authenticated relay on the pinned revision. The local browser check and all five gateway tests passed. Production publication is pending.
+The sign-in page opens the public sample dashboard with **skip login**. The guest build includes fictional offers, sample forecasts and agent activity. Supplier decisions run in the browser. Build locally with `npm --prefix web run build`. The Vercel VM package includes the guest assets and keeps its authenticated relay on the pinned revision. The local browser check and all five gateway tests passed. Manti Live serves the two-button login from 906de12. Verified the logo, public demo assets, signed-out API protection and individual sign-in on the production domain.
