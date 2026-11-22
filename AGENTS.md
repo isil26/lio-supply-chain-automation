@@ -69,15 +69,30 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 
 ## GCP VM access
 
-Sign in to the Google Cloud CLI with your own team-authorized account (`gcloud auth login`). This command opens a shell on the team's VM.
+**Agents on the team Mac.** Sessions running as the macOS user `bakolas` can use the existing local SSH identity without signing into Google Cloud. This command was verified on 22 November 2026. Omit `'hostname && id -un'` for an interactive shell.
+
+```sh
+ssh -i ~/.ssh/google_compute_engine -o IdentitiesOnly=yes -o BatchMode=yes \
+  -o HostKeyAlias=compute.4224439512231543992 -o StrictHostKeyChecking=yes \
+  -o UserKnownHostsFile=~/.ssh/google_compute_known_hosts \
+  bakolas@34.154.38.26 'hostname && id -un'
+```
+
+**Agents on other machines.** A VM administrator can install each teammate's SSH **public** key in a dedicated Linux account's `~/.ssh/authorized_keys`. This works without Google Cloud IAM membership. Send the administrator your `.pub` file and requested Linux username. If you need a key, run `ssh-keygen -t ed25519` and choose an unused local filename. Keep the private key on the machine that generated it. Use the confirmed username and your matching private key path in the command below.
+
+```sh
+ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o HostKeyAlgorithms=ssh-ed25519 USERNAME@34.154.38.26
+```
+
+On first connection, verify the ED25519 host fingerprint is `SHA256:9/vq838sJjES+nsF3711W70PuqS6ffPi7t6Sm9p7YR0`. The expected hostname is `instance-20261122-003928`. The address above was verified on 22 November 2026.
+
+**Google Cloud CLI.** Team members with an authorized Google Cloud account can also connect by instance name. This works if the external IP changes.
 
 ```sh
 gcloud compute ssh instance-20261122-003928 --zone=europe-west8-a --project=project-291aca52-5088-472a-997
 ```
 
-To check access from a script, append `--command='hostname && id -un'`. On 22 November 2026 this returned `instance-20261122-003928` and the connecting user's Linux username. On first use, `gcloud` may register your public SSH key and wait for it to propagate. Keep the private key on your workstation.
-
-If access is denied, send the project owner the permission error and the account shown by `gcloud auth list --filter=status:ACTIVE --format='value(account)'` so they can check access for that identity.
+To check access from a script, append `--command='hostname && id -un'`.
 
 ## Repo map
 - `bridge/` data sync from portal API (token in `.soony_token`) | `data/` synced files (gitignored)
