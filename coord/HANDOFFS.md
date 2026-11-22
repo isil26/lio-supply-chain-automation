@@ -635,3 +635,11 @@ In an isolated database, edited approval and decline messages reached the dry-ru
 Reviewed the connected workspace, sign-in forms, standalone control room and game-card replay. Confirmed writes close their review dialog and report the outcome. Failed or stale offers retain the draft, and opening evidence preserves the underlying deadline review. Practice decisions survive workspace navigation.
 
 The connected and hosted-replay builds passed. A background browser exercised the React flows with fixture responses, and the standalone controls ran against a disposable replay. All 27 selected backend tests and five gateway integration tests passed. Production promotion is separate.
+
+## T-Live-Offer-Interpreter · 22 Nov · manti-forecast-desk
+
+Verified all eight live offer previews and approval drafts on the public integrated release `3e5cbd5`. The 115 distinct mail bodies included 46 English originals and 69 English translations. The installed CPU worker generated 62 of the translations and matched seven reviewed versions. New Polish, Korean and Chinese test messages retained the original order, line, component, quantity and price references.
+
+Five offers show the dated earlier supplier price and three show a labelled catalogue reference. A named reviewer can queue an edited, revision-bound request. Karton can be asked to reserve up to 5,900 art books without charge if it reconfirms €2.10 per unit. Enquiries and conditional holds do not update inventory or confirm a shipment. Exercised the edited request through the HTTP handler, retry, history and dry-run sender. Verification used read-only live offer access, with outgoing email tested on an isolated database.
+
+Reprovisioning commands for the three pinned models are in `deploy/backend/README.md`. The 136 mail workflow tests and five production gateway checks passed.

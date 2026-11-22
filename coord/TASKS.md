@@ -176,6 +176,6 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Manager-Dashboard | Manager forecast, component controls, decision actions and reviewed supplier emails | manti-forecast-desk | dashboard UI, decision and offer endpoints and focused verification | done | T-Manti-Header |
 
-| T-Live-Offer-Interpreter | Offline translation and evidence-backed offer pricing and approvals | manti-forecast-desk | mail translation, supplier offer workflow, production verification | in_progress | T-Manager-Dashboard |
+| T-Live-Offer-Interpreter | Offline translation and evidence-backed offer pricing and approvals | manti-forecast-desk | mail translation, supplier offer workflow, production verification | done | T-Manager-Dashboard |
 
 | T-Button-Review | Audit and repair button outcomes, feedback and dialog completion across the connected app | manti-interactions | web interactions and gateway controls | done | T-Manager-Dashboard |
