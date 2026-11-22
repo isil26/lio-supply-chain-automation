@@ -183,6 +183,6 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-dashboard | Manti-Named-Live | Verified all five private named logins on production and tested offer attribution on the VM | done | Shared access preserved. Offer decisions require an individual account. | 22 Nov |
 
-| manti-agent-map | T-Manti-Demo-Restore | Dashboard presentation and release | in_progress | Verified the single map above the stream on production. Selected demo B is connected to forecast, supplier, pricing and audited decision APIs; layout and negotiation history checked in isolated replay. Publishing the dashboard. | 22 Nov |
+| manti-agent-map | T-Manti-Demo-Restore | Matched dashboard B and verified production | done | Manti Live serves a8958a4. Public desktop and phone showed one 17-agent map with the populated event stream 16 px below it. | 22 Nov |
 
 | manti-dashboard | Manti-Hackathon-Login | All five rehearsal logins verified individually on the public Google Cloud dashboard | done | Activity Log attribution uses the selected username | 22 Nov |
