@@ -924,6 +924,9 @@ def handler(loop, gateway_token=None):
                     raise ValueError("Request body must be an object")
                 if gateway_token:
                     body["by"] = body["setBy"] = self.account()
+                    shared_account = os.getenv("SOONY_SHARED_EDGE_ACCOUNT")
+                    if shared_account and body["by"] == shared_account and (path == "/api/deals" or path.startswith("/api/deals/")):
+                        return self.out({"error": "Sign in with your individual account to record an offer decision."}, 403)
                 if path == "/api/sync":
                     if loop.args.demo:
                         loop.promote_drop()

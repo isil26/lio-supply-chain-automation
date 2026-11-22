@@ -199,4 +199,17 @@ test('production team sign-in keeps uploads private to the signed-in session', a
   assert.match(a.uploadSession, /^[\w-]{22}$/);
   assert.deepEqual(await upload(first), a);
   assert.notEqual((await upload(await signIn())).uploadSession, a.uploadSession);
+  process.env.SOONY_USERS_JSON = JSON.stringify(demoUsers);
+  const combined = await listener((req, res) => control(req, res, 'production-team-accounts'), t);
+  assert.equal((await (await fetch(combined + '/api/session', {headers:{cookie:first}})).json()).user, 'Shared team login');
+  for (const [credentials, user] of [
+    [{password:'test-team-password'}, 'Shared team login'],
+    [{username:'leo', password:'12345'}, 'leo'],
+  ]) {
+    const result = await fetch(combined + '/login', {method:'POST', headers:{origin:combined}, redirect:'manual',
+      body:new URLSearchParams(credentials)});
+    assert.equal(result.status, 303);
+    const cookie = result.headers.get('set-cookie').split(';')[0];
+    assert.deepEqual(await (await fetch(combined + '/api/session', {headers:{cookie}})).json(), {user});
+  }
 });

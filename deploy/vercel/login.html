@@ -34,6 +34,17 @@
     <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
     <button type="submit">Sign in</button>
   </form>
+  <!-- SHARED_LOGIN_START -->
+  <details><summary>Use the shared team login</summary>
+    <p>Use your individual account to record supplier decisions.</p>
+    <form method="post" action="/login">
+      <!-- LOGIN_RETURN -->
+      <label for="team-password">Team password</label>
+      <input id="team-password" name="password" type="password" autocomplete="current-password" required maxlength="128">
+      <button type="submit">Continue with team login</button>
+    </form>
+  </details>
+  <!-- SHARED_LOGIN_END -->
 </main>
 </body>
 </html>

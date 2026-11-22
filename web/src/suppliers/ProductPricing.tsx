@@ -7,8 +7,8 @@ export type SupplierPrice = { id: string; supplier: string; price_eur: number | 
 const euros = new Intl.NumberFormat("en-IE", {style: "currency", currency: "EUR", maximumFractionDigits: 4});
 export const unitEuros = (value: number) => euros.format(value);
 
-export function PriceCeiling({ policy, product, save }: {
-  policy: PricePolicy; product: string; save: (value: number) => Promise<void>;
+export function PriceCeiling({ policy, product, save, readOnly = false }: {
+  policy: PricePolicy; product: string; save: (value: number) => Promise<void>; readOnly?: boolean;
 }) {
   const [value, setValue] = useState(policy.limit);
   const [busy, setBusy] = useState(false);
@@ -25,7 +25,7 @@ export function PriceCeiling({ policy, product, save }: {
   return <section className="price-ceiling" aria-label={product + " automatic approval"}>
     <label><span>Automatic approval ceiling</span><b>{value ? unitEuros(value) + " / unit" : "Off"}</b>
       <input type="range" min={0} max={policy.maximum || 1} step={policy.step} value={value}
-        disabled={busy || (!policy.reference && !policy.limit)} aria-label={product + " automatic approval ceiling"}
+        disabled={readOnly || busy || (!policy.reference && !policy.limit)} aria-label={product + " automatic approval ceiling"}
         aria-valuetext={value ? unitEuros(value) + " per unit" : "Off"}
         onChange={e => { setValue(Number(e.target.value)); setError(""); }}/>
     </label>
