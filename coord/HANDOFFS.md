@@ -583,3 +583,9 @@ The VM passed 35 supplier and upload tests and five gateway tests. A disposable 
 ## T-Agents-Tab — Manti agent network
 
 Open Agents in the workspace rail or go to `/react#agents`. The nine Operations agents appear first, followed by the eight Specialists. Each map has a dedicated event stream on the right and independent selection and replay controls. On phones the stream follows its map. Newly observed events light the corresponding nodes. Verified both builds, 22 focused tests, and stream placement at desktop, compact and phone widths.
+
+## T-Manti-18984 — Google Cloud dashboard release (manti-dashboard)
+
+Production serves revision `bd37f16` with the Dashboard, Agents, Activity Log and Data import tabs from the local dashboard on port 18984. The production root and `/react` both load the same JavaScript and CSS. Both files matched the local reference byte for byte when fetched through the signed-in public gateway. The existing production team password still works. The local rehearsal uses named accounts.
+
+Read-only production checks verified a live mail connection, a verified portal snapshot, 41 supplier threads, eight offers, five product approval limits, activity history, four agent runs, a run trace and the private import endpoint. The candidate passed 59 Python tests and five gateway tests on the VM. [Open the live dashboard](https://soony-manti-live.vercel.app/react#dashboard)

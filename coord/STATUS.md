@@ -179,4 +179,4 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-agent-map | T-Agents-Tab | Agent graphs and layout | done | Verified both stacked maps, independent filtering and replay, and responsive stream placement. | 22 Nov |
 
-| manti-dashboard | T-Manti-18984 | Matched the local agent-map UI to bd37f16 and the associated live backend changes | in_progress | Verifying VM tests and public build fingerprints | 22 Nov |
+| manti-dashboard | T-Manti-18984 | Promoted bd37f16 on GCP and matched both public entry points to the local build byte for byte | done | Existing production login, supplier data, agent runs and import status verified | 22 Nov |
