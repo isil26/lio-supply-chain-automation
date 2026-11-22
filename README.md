@@ -2,6 +2,8 @@
 
 Team Manti’s private START Hack prototype for the Soony Grand Heist 6 launch at DC-HAM. The control room reconciles supplier, ERP and receiving evidence, forecasts the two packing lines, and queues supplier follow-ups and decisions.
 
+Judges can sign in to [Manti Live](https://soony-manti-live.vercel.app/) as `test` with the password supplied by the team.
+
 ## Shared server
 
 Development continues on the GCP VM. Run `./scripts/vm-ssh`, then `cd ~/work/lio-supply-chain-automation`. The production Vercel site uses this VM. [Live site](https://soony-manti-live.vercel.app) · [Server operations](deploy/backend/README.md)

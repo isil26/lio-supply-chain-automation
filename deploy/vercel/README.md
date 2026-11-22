@@ -1,10 +1,12 @@
 # Private Soony Vercel replay
 
-The hosted dashboard uses the same React frontend as the local Control Room. The Python pipeline evaluates a downloaded team snapshot before and after ingesting the staged supplier files. The deployment packages those two forecast states in an encrypted server-function asset. The hosted **Process drop** button switches the signed-in session to the recalculated state. **Reset replay** restores the baseline for that session.
+Judges use the `test` account on [Manti Live](https://soony-manti-live.vercel.app/). The `soony-vercel.yml` publishing workflow for the separate hosted replay is disabled.
+
+The replay uses the same React frontend as the local Control Room. The Python pipeline evaluates a downloaded team snapshot before and after ingesting the staged supplier files. The deployment packages those two forecast states in an encrypted server-function asset. The hosted **Process drop** button switches the signed-in session to the recalculated state. **Reset replay** restores the baseline for that session.
 
 ## Sign in and audit activity
 
-The demo accounts are `isil`, `murat`, `nick`, `leo`, and `gulsah`. Each uses `12345`. Each person or agent should select their own account. The same credentials work in the local `--demo`, the hosted replay and the Google Cloud hackathon dashboard. Anyone with the demo password can choose any of the five names.
+The demo accounts are `isil`, `murat`, `nick`, `leo`, and `gulsah`. Each uses `12345`. Each person or agent should select their own account. The team credentials work in the local `--demo` and on the Google Cloud hackathon dashboard. Anyone with the demo password can choose any of the five names.
 
 The gateway sets an eight-hour signed, HTTP-only session cookie. Sign out from the dashboard to clear it. Server-side actions emit JSON records tagged `control_room.activity` in the gateway stdout or Vercel function logs. Filter by `user` for an account's actions. Each record has a UTC timestamp, route and HTTP status. Practice-mode clicks that stay in the browser do not create server events.
 
@@ -12,7 +14,7 @@ For a private live deployment, run `python3 deploy/vercel/account.py "Account Na
 
 For a production front gateway that already authenticates with a shared team password, keep its existing password and session key. On the receiving VM only, set `SOONY_SHARED_EDGE_ACCOUNT` to a dedicated, non-signer account in `SOONY_USERS_JSON`. Only requests authenticated by the front gateway’s server credential and carrying no individual identity receive this account. The activity log identifies them as a shared team login. Rehearsal and individual account sign-ins keep their existing attribution.
 
-## Refresh from a new team snapshot
+## Package a separate replay from a new snapshot
 
 Use the repository Python environment and Node 22. Keep the replay key in the team's approved private storage.
 
@@ -21,7 +23,7 @@ Use the repository Python environment and Node 22. Keep the replay key in the te
 ./deploy/vercel/prepare.sh "$SNAPSHOT_DIR" "$REPLAY_KEY_FILE" "$SEALED_REPLAY"
 ./deploy/vercel/package.sh "$SEALED_REPLAY" "$DEPLOY_DIR"
 cd "$DEPLOY_DIR"
-vercel link --project soony-launch-control
+vercel link --project "$REPLAY_PROJECT"
 vercel deploy --prebuilt --prod --skip-domain
 ```
 
@@ -30,7 +32,7 @@ Set `SOONY_REPLAY_KEY` to the separately generated 32-byte key in hexadecimal. U
 Promote the candidate with `vercel promote <deployment>` and check the production alias from the repo root. This integration check tests anonymous denial, sign-in, the deployed React bundle, the before/after forecasts and recovery option, session isolation, reset, and sign-out.
 
 ```sh
-python3 deploy/vercel/verify.py https://soony-launch-control.vercel.app isil "$DEMO_PASSWORD_FILE"
+python3 deploy/vercel/verify.py "$TEAM_REPLAY_URL" isil "$DEMO_PASSWORD_FILE"
 ```
 
 Development against the full API continues with the [local runbook](../../docs/RUNBOOK.md).
