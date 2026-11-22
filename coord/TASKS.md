@@ -158,4 +158,4 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Agents-Tab | Stack Operations and Specialists with separate event streams on one Agents tab | manti-agent-map | Agent graphs and layout | done | T100 |
 
-| T-Manti-18984 | Promote the dashboard served on port 18984 to the operational GCP website | manti-dashboard | production release and acceptance | in_progress | T-Agents-Tab, T-Manti-Offers |
+| T-Manti-18984 | Promote the dashboard served on port 18984 to the operational GCP website | manti-dashboard | production release and acceptance | done | T-Agents-Tab, T-Manti-Offers |
