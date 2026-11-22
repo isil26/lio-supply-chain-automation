@@ -60,7 +60,7 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
   - On a conflict, keep both sides and ask the owner in `coord/INBOX.md`. Never force-push, never rewrite history, never revert others' commits.
 
 ## Hard rules
-- The shared Vercel dashboard password is approved for tracking in this private repository. Collaborators and their agents can use [`deploy/vercel/team-password.txt`](deploy/vercel/team-password.txt) to sign in. The team Gmail app password for mail-agent is also approved for tracking (Gülşah, 21 Nov) in [`deploy/mail/team-gmail.env`](deploy/mail/team-gmail.env); it is loaded automatically and never turns real sending on by itself. Keep all other secrets, `.soony_token`, `data/`, and `store/` out of Git and logs. Data is for this hackathon only.
+- The shared Vercel dashboard password is approved for tracking in this private repository. Collaborators and their agents can use [`deploy/vercel/team-password.txt`](deploy/vercel/team-password.txt) to sign in. Keep all other secrets, `.soony_token`, `data/`, and `store/` out of Git and logs. Data is for this hackathon only.
 - Use [`case-data/`](case-data/) for the supplied portal snapshot. Pass `--data case-data` to the offline dashboard or ingest commands. For portal updates, sync into `data/` with `python3 bridge/sync.py`. Derive answers from the case files and cite the file and page or row.
 - Numbers come from deterministic tools (MRP, Monte Carlo, cost calc); LLMs read, route, explain, draft.
 - Outbound supplier emails: since 21 Nov 18:45 (Gülşah's decision) mail-agent sends drafts automatically in live mode (`CHASER_REAL_SMTP=1`, not `--demo`), with no per-email approval. Kept: supplier-domain allowlist, draft guardrails, anti-spam (one email per 30 min only while the supplier hasn't answered, no repeated text); no per-cycle cap; kill switch `CHASER_AUTO_SEND=0`. Demo/replay stays dry-run with the approval gate. Purchase commitments still need PP-07 signers.
@@ -71,3 +71,7 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 - `bridge/` data sync from portal API (token in `.soony_token`) | `data/` synced files (gitignored)
 - `src/ingest` T1 | `src/docs` T2 | `src/truth` T3 | `src/chaser` T4 | `src/decide` T5 | `web/` T6 | `src/orchestrator` T7
 - `coord/` agent coordination files | `FINDINGS.md` data discoveries | `archive/CODEX_TASKS.md` (historical) task specs
+
+## Mailbox credentials
+
+Keep Gmail app passwords in the runner environment or the ignored local file `deploy/mail/team-gmail.env`. Enable the staged and outgoing history checks in each new clone with `git config core.hooksPath .githooks`. After a history cleanup, start from a fresh clone and reapply unpublished changes. Merging an old branch can restore the password.
