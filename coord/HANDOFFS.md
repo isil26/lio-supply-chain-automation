@@ -513,3 +513,7 @@ The replay cap correctly approves the information-only Boise Semi game-card stoc
 ## Manti Live supplier proxy deployment (codex-deploy)
 
 - Production serves the authored proxy from `6961fa1`, deployment `dpl_7dTKgQR7wdPGnWTH5txkBeLQLa2h`. Signed-in GET requests to `/api/deals` and `/api/suppliers/best` returned HTTP 200 on the candidate and production. The active backend reported `2fb3d65`. Team sign-in, forged-session denial and sign-out passed. The previous proxy deployment was `dpl_41XszEYQ7suvxv7MZD6zkDpKXyw6`. [Manti Live](https://soony-manti-live.vercel.app)
+
+## Team VM SSH for repository writers (codex-gcp-access)
+
+Run `./scripts/vm-ssh` from a local checkout with GitHub CLI signed into a writer account. The shell opens as `lio-team` with passwordless sudo. The shared checkout is `~/work/lio-supply-chain-automation`. Fresh certificate issuance, renewal, hostname, root UID and checkout writability were verified on 22 November 2026. See [agent instructions](../AGENTS.md#gcp-vm-access) and the [verified signing run](https://github.com/isil26/lio-supply-chain-automation/actions/runs/44969807733).
