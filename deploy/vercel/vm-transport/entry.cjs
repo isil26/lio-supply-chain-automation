@@ -47,5 +47,5 @@ module.exports = async function vmControl(request, response) {
     response.statusCode = 503;
     return response.end('VM transport unavailable');
   }
-  return control(request, response);
+  return control(request, response, "production-team-password");
 };
