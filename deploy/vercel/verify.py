@@ -19,7 +19,7 @@ def check(condition, message):
         raise SystemExit(f"Verification failed: {message}")
 
 
-def verify(base, password, recording_coverage=None):
+def verify(base, username, password, recording_coverage=None):
     def client():
         return build_opener(HTTPCookieProcessor(CookieJar()), NoRedirect())
 
@@ -40,7 +40,7 @@ def verify(base, password, recording_coverage=None):
 
     anonymous, signed_in, second_user = (client() for _ in range(3))
     headers, body = request(anonymous, "/")
-    check(b"Team password" in body and b'/assets/' not in body, "anonymous visitors did not see the team sign-in")
+    check(b'autocomplete="username"' in body and b'/assets/' not in body, "anonymous visitors did not see the team sign-in")
     check("no-store" in headers.get("Cache-Control", ""), "login response is cacheable")
     check(headers.get("Referrer-Policy") == "same-origin", "login page must preserve the origin on dashboard form submissions")
     request(anonymous, "/api/dashboard", expected=401)
@@ -53,7 +53,7 @@ def verify(base, password, recording_coverage=None):
     request(anonymous, "/snapshot/agent_run.json", expected=404)
 
     def login(opener, value, expected):
-        return request(opener, "/login", expected=expected, body=urlencode({"password": value}).encode(),
+        return request(opener, "/login", expected=expected, body=urlencode({"username": username, "password": value}).encode(),
                        content_type="application/x-www-form-urlencoded")[0]
 
     check(not login(anonymous, "incorrect", 401).get("Set-Cookie"), "an invalid password issued a session")
@@ -127,13 +127,14 @@ def verify(base, password, recording_coverage=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("url")
+    parser.add_argument("username")
     parser.add_argument("password_file", type=Path)
     parser.add_argument("--recording", choices=("summary_only", "verified_events"))
     args = parser.parse_args()
     url = urlsplit(args.url)
     if url.scheme != "https" or not url.hostname or url.path not in ("", "/") or any((url.query, url.fragment, url.username, url.password)):
         parser.error("URL must be an HTTPS origin")
-    verify(args.url.rstrip("/"), args.password_file.read_text().strip(), args.recording)
+    verify(args.url.rstrip("/"), args.username, args.password_file.read_text().strip(), args.recording)
 
 
 if __name__ == "__main__":

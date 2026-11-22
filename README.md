@@ -6,13 +6,13 @@ Team Manti’s private START Hack prototype for the Soony Grand Heist 6 launch a
 
 The [supplied case snapshot](case-data/) contains all 308 files verified against the team portal on 21 November 2026, including the staged supplier drop. The offline commands below use this snapshot directly from the checkout.
 
-Requires Python 3.10+, SQLite 3.37+ and Tesseract. Install the Polish, Korean and Simplified Chinese language packs for full scan coverage. On macOS, `brew install tesseract tesseract-lang` supplies the OCR tools. Linux installations need the corresponding Tesseract language packages.
+Requires Node.js 22+, Python 3.10+, SQLite 3.37+ and Tesseract. Install the Polish, Korean and Simplified Chinese language packs for full scan coverage. On macOS, `brew install tesseract tesseract-lang` supplies the OCR tools. Linux installations need the corresponding Tesseract language packages.
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
-python3 -m src.orchestrator --data case-data
+python3 -m src.orchestrator --demo --data case-data
 ```
 
 On Windows (PowerShell), install Tesseract with `winget install UB-Mannheim.TesseractOCR` and add `C:\Program Files\Tesseract-OCR` to `PATH`. Without Tesseract the app still runs but misses handwritten receipt corrections such as the art-book booking error. Then:
@@ -21,10 +21,10 @@ On Windows (PowerShell), install Tesseract with `winget install UB-Mannheim.Tess
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python -m src.orchestrator --data case-data
+python -m src.orchestrator --demo --data case-data
 ```
 
-Open **http://127.0.0.1:8787/live**. Initial OCR may take a couple of minutes. The separate React prototype can be built with `npm --prefix web ci` and `npm --prefix web run build`. The shared store is `store/soony.db` and the service resumes from it. For a one-time JSON snapshot, run `python3 -m src.orchestrator --once --data case-data`.
+Open **http://127.0.0.1:8787/**. Sign in to the demo as `isil`, `murat`, `nick`, `leo`, or `gulsah`. All five demo accounts use the password `12345`. Choose your own account so the activity log records your username. The gateway writes one JSON record per sign-in, sign-out and submitted server action, including the UTC time, username, route and HTTP status. See the [account setup guide](deploy/vercel/README.md) for private live accounts. Initial OCR may take a couple of minutes. The separate React prototype can be built with `npm --prefix web ci` and `npm --prefix web run build`. The shared store is `store/soony.db` and the service resumes from it. For a one-time JSON snapshot, run `python3 -m src.orchestrator --once --data case-data`.
 
 - **Portal polling** requires the private team token in `.soony_token` or `SOONY_TOKEN`. Run `python3 -m src.orchestrator --online` to sync every 45 seconds and ingest by SHA-256. Use `python3 bridge/sync.py` for a manual download.
 - **Replay** uses `python3 -m src.orchestrator --demo --data case-data`. It creates a disposable database and a private copy of the local inputs, stages downloaded shipping advices and rush offers, and applies them on the next manual sync. The supplier send and demo reply actions stay in the replay database.

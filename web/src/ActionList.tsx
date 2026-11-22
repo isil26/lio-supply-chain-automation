@@ -44,7 +44,6 @@ function badge(mode: Mode) {
 // The person approving is the decision-maker (Gülşah, 22 Nov): the confirm box shows the message their click sends.
 const costLine = (option: Approval | undefined) => option?.price ? `Cost: ${euro(option.price)}.` : "";
 // Who is approving: the signed-in user once the login exists ("soony-user"), until then the name given in Offers.
-const currentUser = () => { try { return localStorage.getItem("soony-user") || localStorage.getItem("soony-reviewer") || undefined; } catch { return undefined; } };
 
 function Email({ mail, label, from }: { mail: MailView; label: string; from?: boolean }) {
   const [full, setFull] = useState(false);
@@ -202,7 +201,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
           <div className="ac-buttons">
             {decided ? <span className={`ac-status ${automatic ? "auto" : ""}`}>{decisionLabel}</span>
               : !readOnly && card.option && card.mode?.mode !== "NEVER" && <button className="primary-button small" disabled={busy}
-                  onClick={() => onPreview ? ask(card.id) : onDecide(card.id, false, currentUser())}>Approve</button>}
+                  onClick={() => onPreview ? ask(card.id) : onDecide(card.id, false)}>Approve</button>}
             {!decided && !readOnly && card.option && <button className="ghost-button small" disabled={busy} onClick={() => onDecide(card.id, true)}>Review</button>}
             <button className="link-button" onClick={() => setOpen(open === card.id ? "" : card.id)} aria-expanded={open === card.id}>{open === card.id ? "Less" : "Why"}</button>
           </div>
@@ -217,7 +216,7 @@ export function ActionList({ options, reviews, costOf, busy, readOnly, onDecide,
               </> : <p>{costLine(card.option)}</p>}
             <div className="ac-confirm-buttons">
               <button className="primary-button small" disabled={busy || preview === "loading" || preview === "failed"} autoFocus
-                onClick={() => { setConfirming(""); onDecide(card.id, false, currentUser()); }}>
+                onClick={() => { setConfirming(""); onDecide(card.id, false); }}>
                 {preview && typeof preview === "object" && (preview.mode === "send" || preview.mode === "internal") ? "Yes, approve and send" : "Yes, approve"}</button>
               <button className="ghost-button small" onClick={() => setConfirming("")}>Cancel</button>
             </div>

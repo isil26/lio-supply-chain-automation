@@ -1,13 +1,14 @@
 const API_PATH = /^\/api\/(?:dashboard|actions(?:\/[a-f0-9]{24}\/(?:approve|dismiss|done))?|health|truth|documents|sync|auto-approve|deals(?:\/[a-f0-9]{12}\/(?:approve|decline)|\/[a-f0-9]{12,16}\/english)?|suppliers\/(?:best|drafts)|agents\/(?:runs|trace|run|stop)|threads\/[A-F0-9]+\/(?:send|demo-reply)|reply-decisions\/[0-9]{1,12}\/approve|decisions\/[a-f0-9]+\/(?:approve|review|preview)|source\/.+)$/;
-const VIEWS = /^\/(?:live|react|assets\/[\w.-]+)?$/;
+const VIEWS = /^\/(?:live|react|game-cards|assets\/[\w.-]+)?$/;
 
-function liveTarget(url) {
+function liveTarget(url, localDashboard = false) {
   const rewritten = url.pathname === '/control' ? url.searchParams.get('live') : null;
   const path = rewritten ?? url.pathname;
   let decoded;
   try { decoded = decodeURIComponent(path); } catch { return null; }
   if (decoded.includes('\\') || decoded.split('/').some((segment) => segment === '.' || segment === '..')) return null;
-  if (!API_PATH.test(path) && !VIEWS.test(path)) return null;
+  const localRoute = localDashboard && /^\/api\/(?:release-gate|mail\/(?:held|[A-Za-z0-9_-]{1,64}\/approve))$/.test(path);
+  if (!API_PATH.test(path) && !VIEWS.test(path) && !localRoute) return null;
   if (path === '/api/agents/trace' && url.searchParams.has('run')) {
     return path + '?' + new URLSearchParams({ run: url.searchParams.get('run') });
   }
@@ -32,13 +33,14 @@ async function jsonBody(request) {
   return Buffer.concat(parts);
 }
 
-async function forwardLive(request, response, base, target, token) {
+async function forwardLive(request, response, base, target, token, user) {
   const method = request.method;
   if (method !== 'GET' && (method !== 'POST' || !target.startsWith('/api/'))) {
     response.statusCode = 405;
     return response.end();
   }
   const headers = {};
+  if (user) headers['X-Soony-User'] = Buffer.from(user).toString('base64url');
   if (token) headers.Authorization = 'Bearer ' + token;
   const body = method === 'POST' ? await jsonBody(request) : undefined;
   if (body === null) {
