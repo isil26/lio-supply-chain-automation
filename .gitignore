@@ -14,3 +14,4 @@ runtime/
 *.sqlite3
 *.db
 private/
+/deploy/mail/team-gmail.env

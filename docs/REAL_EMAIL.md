@@ -9,7 +9,7 @@ Since 21 Nov 18:45 (Gülşah's decision) mail-agent sends supplier emails automa
 4. Hand the address and app password to whoever runs the app, through the team's private channel. Never commit them or paste them into a chat with agents.
 
 ## Settings
-The team Gmail settings, including the app password, are tracked in the private repo at `deploy/mail/team-gmail.env` (approved by Gülşah, 21 Nov) and load automatically. To send for real, a person still sets `CHASER_REAL_SMTP=1` and approves each email. Set `CHASER_NO_TEAM_MAIL=1` to ignore the file.
+The runner reads mailbox settings from its environment or the ignored local file `deploy/mail/team-gmail.env`. Provision the app password privately. To send for real, a person still sets `CHASER_REAL_SMTP=1` and approves each email. Set `CHASER_NO_TEAM_MAIL=1` to ignore the file.
 
 ## Equivalent .env (only if you want to override the tracked file)
 ```
