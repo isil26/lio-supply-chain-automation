@@ -16,7 +16,7 @@ PROD = "https://soony-launch-control.vercel.app"
 CANDIDATE = re.compile(r"https://soony-launch-control-[a-z0-9]+-muratcagangogebakans-projects\.vercel\.app")
 
 
-def smoke(url, password, bypass):
+def smoke(url, username, password, bypass):
     spec = importlib.util.spec_from_file_location("replay_smoke", DEPLOY / "verify.py")
     suite = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(suite)
@@ -32,7 +32,7 @@ def smoke(url, password, bypass):
         suite.build_opener = lambda *handlers: build_opener(*handlers, CandidateAccess())
     for attempt in range(5):
         try:
-            suite.verify(url, password, "summary_only")
+            suite.verify(url, username, password, "summary_only")
             return
         except SystemExit as failure:
             if not bypass or attempt == 4 or "returned HTTP 302" not in str(failure):
@@ -40,7 +40,7 @@ def smoke(url, password, bypass):
             time.sleep(3)
 
 
-def browser_test(url, password, bypass):
+def browser_test(url, username, password, bypass):
     from playwright.sync_api import expect, sync_playwright
 
     netloc = urlsplit(url).netloc
@@ -61,7 +61,8 @@ def browser_test(url, password, bypass):
         page = context.new_page()
         page.route("**/*", handle)
         page.goto(url)
-        page.get_by_label("Team password").fill(password)
+        page.get_by_label("Username", exact=True).fill(username)
+        page.get_by_label("Password", exact=True).fill(password)
         page.get_by_role("button", name="Sign in", exact=True).click()
         actions = page.get_by_role("region", name="Actions", exact=True)
         expect(actions.get_by_role("listitem").first).to_be_visible()
@@ -106,10 +107,11 @@ def main():
         parser.error("Browser verification requires the protected candidate and its temporary credential")
     if not args.browser and (bypass or args.url != PROD):
         parser.error("Production verification uses the canonical URL without a candidate credential")
-    password = (DEPLOY / "team-password.txt").read_text().strip()
-    smoke(args.url, password, bypass)
+    username = os.environ.get("SOONY_TEST_USERNAME", "isil")
+    password = os.environ.get("SOONY_TEST_PASSWORD", "12345")
+    smoke(args.url, username, password, bypass)
     if args.browser:
-        browser_test(args.url, password, bypass)
+        browser_test(args.url, username, password, bypass)
 
 
 if __name__ == "__main__":

@@ -74,6 +74,7 @@
     const response = await fetch(url, body === undefined ? undefined : {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
+    if (response.status === 401) { window.location.replace('/game-cards'); return null; }
     if (response.status === 503 && body === undefined) return null;
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
@@ -154,7 +155,7 @@
     await waitForReady(true);
   });
   byId('approve').onclick = () => run(byId('approve'), 'Recording the simulated approval…', async () => {
-    await request(`/api/actions/${action.id}/approve`, { by: action.approverName, note: 'Simulated approval in the game-card replay.' });
+    await request(`/api/actions/${action.id}/approve`, {});
     await waitForReady(true);
   });
   void run(null, '', () => waitForReady(false));

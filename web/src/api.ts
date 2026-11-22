@@ -177,6 +177,7 @@ export type Network = {
 };
 
 export type DashboardData = {
+  currentUser?: string | null;
   launch: { name: string; deadline: string; location: string };
   readiness: Readiness[];
   risks: Risk[];
@@ -277,7 +278,7 @@ async function json<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
   if (!response.ok) {
-    if (hostedReplayBuild && response.status === 401) window.location.replace("/");
+    if (response.status === 401) window.location.replace("/");
     let message = `${response.status} ${response.statusText}`;
     try {
       const body = await response.json();

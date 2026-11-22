@@ -47,13 +47,7 @@ Once preflight passes, launch a separate replay for the stage and leave it runni
 python3 -m src.orchestrator --demo --port 8787
 ```
 
-In another terminal or browser, wait for the dashboard before the session begins. On macOS, use the following commands.
-
-```sh
-curl -fsS --retry 120 --retry-connrefused --retry-delay 2 --retry-max-time 240 \
-  -o /dev/null http://127.0.0.1:8787/api/dashboard
-open http://127.0.0.1:8787/
-```
+Open the local dashboard and sign in with your demo account. The available usernames are `isil`, `murat`, `nick`, `leo`, and `gulsah`. The demo password is `12345`. Wait for the readiness view before starting the walkthrough.
 
 1. Open the readiness view and point out the STD and CE targets. Open the evidence for the art book receipt correction and the statue hold.
 2. Click **Process drop** once on stage. In the standalone view, use **Replay supplier drop**. Wait for **Replayed portal drop processed**, then point out the changed game-card risk and the art-book recovery option. The post-drop gaps are listed in [NUMBERS.md](NUMBERS.md).

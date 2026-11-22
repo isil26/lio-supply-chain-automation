@@ -79,7 +79,7 @@ def audit(repo, output):
     for marker in ("Fictional offers for this example", "Standard estimate unconfirmed"):
         if marker not in bundle:
             raise SystemExit("The hosted fixture labels or cost note are missing.")
-    allowed = {"app.html", "login.html", "index.cjs", "live.cjs", ".vc-config.json", "replay.enc"}
+    allowed = {"app.html", "login.html", "index.cjs", "accounts.cjs", "demo-users.json", "live.cjs", ".vc-config.json", "replay.enc"}
     function = output / "functions/control.func"
     if {item.name for item in function.iterdir() if item.is_file()} != allowed or any(
         not item.is_file() for item in function.iterdir()

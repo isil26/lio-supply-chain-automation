@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { hostedReplayBuild, isStaticMode } from "../api";
 import sample from "./offers-sample.json";
 import "./offers.css";
@@ -97,9 +97,6 @@ export function Offers() {
   // and keep Approve / Decline in this browser only (nothing is sent).
   const example = hostedReplayBuild || isStaticMode();
   const [data, setData] = useState<Data | null>(example ? exampleData() : null);
-  const [reviewer, setReviewerState] = useState(() => { try { return localStorage.getItem("soony-reviewer") ?? ""; } catch { return ""; } });
-  const setReviewer = (name: string) => { setReviewerState(name); try { localStorage.setItem("soony-reviewer", name); } catch { /* private mode */ } };
-  const nameRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [tab, setTab] = useState<string | null>(null);
@@ -129,14 +126,9 @@ export function Offers() {
       setNote(`Example only: in the live app this ${action === "approve" ? "asks the supplier in " + country(deal) + " to reserve the units (the purchase order needs the " + deal.signer + ")" : "sends the supplier in " + country(deal) + " a polite no-thanks"}. Nothing was sent here.`);
       return;
     }
-    if (!reviewer.trim()) {
-      setNote("Type your name in “Reviewed by” first, so the supplier email shows who approved it.");
-      nameRef.current?.focus();
-      return;
-    }
     setBusy(deal.id + action);
     try {
-      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ by: reviewer.trim(), revision: deal.revision }) });
+      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision: deal.revision }) });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         setNote(error.error ?? "The offer could not be updated. Review the latest terms.");
@@ -184,9 +176,6 @@ export function Offers() {
       {current && covered.includes(current) && <p className="offers-covered muted">
         {product(current)}: not short right now. Stock plus deliveries already on the way cover it, so nothing needs buying. The offers stay here in case a delivery slips.
       </p>}
-
-      {!example && data.deals.some(d => d.material === current && d.eligible && (d.status === "pending" || d.status === "changed")) &&
-        <label className="offers-reviewer">Reviewed by <input ref={nameRef} placeholder="Your name" value={reviewer} maxLength={80} autoComplete="name" onChange={event => setReviewer(event.target.value)} /></label>}
 
       {tabNote && <p className="offers-tabnote">{tabNote}</p>}
 
