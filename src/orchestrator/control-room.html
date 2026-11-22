@@ -9,7 +9,7 @@
 </style>
 </head>
 <body><main>
-<header><div><p>Soony · Procurement</p><h1>Launch Control Room</h1></div><div class="right"><strong id="launch">Grand Heist 6</strong><div class="muted mono" id="site">DC-HAM</div></div></header>
+<header><div><p>Soony · Procurement</p><h1>Launch Control Room</h1></div><div class="right"><strong id="launch">Grand Heist 6</strong><div class="muted mono" id="site">DC-HAM</div></div><form id="account" hidden method="post" action="/logout"><span id="username"></span> <button type="submit">Sign out</button></form></header>
 <div class="strip"><span id="sync-status" role="status">Building launch snapshot…</span><button id="sync">Refresh inputs</button></div>
 <p id="data-health" class="muted mono" style="width:fit-content;margin:0 0 12px;padding:4px 8px;border:1px solid var(--line);border-radius:4px" hidden></p>
 <details id="source-reviews" class="sheet" hidden><summary id="review-summary"></summary><ul id="review-list"></ul></details>
@@ -215,7 +215,10 @@ function drawActivity(){
 async function refresh(){
   try{
     const response=await fetch("/api/dashboard");
+    if(response.status===401) { window.location.replace("/"); return; }
     const live=await response.json();
+    $("account").hidden=!live.currentUser;
+    $("username").textContent=live.currentUser ?? "";
     if(!response.ok) { $("sync-status").textContent=live.sync?.error ?? live.error; return; }
     const health=live.dataHealth;
     $("data-health").hidden=!health;

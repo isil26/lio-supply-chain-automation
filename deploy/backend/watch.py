@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import secrets
 import signal
 import subprocess
 import sys
@@ -15,7 +16,7 @@ from tempfile import TemporaryDirectory
 import threading
 import time
 from urllib.error import URLError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 ROOTS = ("src", "web", "bridge", "case-data", "config", "docs/delegations.json", "deploy/backend", "deploy/vercel")
 CHECK_INTERVAL = 30
@@ -42,6 +43,11 @@ class Host:
         })
         self.port = int(self.env.get("SOONY_BACKEND_PORT", "8787"))
         self.env["SOONY_LIVE_UPSTREAM"] = f"http://127.0.0.1:{self.port}"
+        if self.live_mail and not self.env.get("SOONY_USERS_JSON"):
+            raise RuntimeError("Configure private named accounts before starting the live-mail watcher.")
+        self.env["SOONY_BACKEND_TOKEN"] = secrets.token_hex(32)
+        self.env["SOONY_LIVE_UPSTREAM_TOKEN"] = self.env["SOONY_BACKEND_TOKEN"]
+        self.env["SOONY_DEMO_ACCOUNTS"] = "0" if self.live_mail else "1"
         self.process = self.gateway = self.current = None
 
     def git(self, *args):
@@ -111,7 +117,9 @@ class Host:
             if self.process.poll() is not None or halted.is_set():
                 break
             try:
-                with urlopen(f"http://127.0.0.1:{self.port}/api/dashboard", timeout=2) as rows:
+                probe = Request(f"http://127.0.0.1:{self.port}/api/dashboard",
+                                headers={"Authorization": "Bearer " + env["SOONY_BACKEND_TOKEN"]})
+                with urlopen(probe, timeout=2) as rows:
                     dashboard = json.load(rows)
                     if dashboard.get("readiness") and (dashboard.get("sync") or {}).get("mailMode") == expected_mode:
                         return

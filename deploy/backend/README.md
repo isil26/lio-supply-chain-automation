@@ -4,7 +4,7 @@ The live backend runs on Murat’s Mac. It stays up while the Mac is signed in, 
 
 ## Interact and request changes
 
-Use the protected live link in [the repo inbox](../../coord/INBOX.md) and sign in with the existing team password. Agents can use the same sign-in to obtain a session cookie, then read `/api/dashboard` and `/api/health`. Browser actions and API calls share the same state. Get credentials through the existing private team workflow.
+Use the protected live link in [the repo inbox](../../coord/INBOX.md) and sign in with your provisioned username and password. Agents can use the same sign-in to obtain a session cookie, then read `/api/dashboard` and `/api/health`. Browser actions and API calls share the same state. Get credentials through the existing private team workflow.
 
 By default the Mac service runs the case in dry-run mode. **Process drop** applies the staged files. Under **Agents**, select a game-card supplier thread to simulate a reply and see its effect on the next action.
 
@@ -24,7 +24,7 @@ For a request, post `murat-agent: live backend request` in [INBOX](../../coord/I
 
 The team login gateway stays on loopback. The tunnel exposes only that gateway. A Quick Tunnel address remains stable across app releases and can change when the tunnel process restarts. The launch operator publishes the new address in the inbox if that occurs. Configure a named tunnel for stable DNS when the team has one available.
 
-The gateway uses `SOONY_TEAM_PASSWORD_HASH` and `SOONY_REPLAY_KEY` from an ignored local configuration file. A dedicated Vercel preview can package `deploy/vercel/package-live.sh` and set `SOONY_LIVE_UPSTREAM` to the live tunnel URL. Set `SOONY_LIVE_UPSTREAM_TOKEN` to the server-only credential that matches `SOONY_LIVE_GATEWAY_TOKEN` on the Mac. Deploy the preview separately from the replay alias.
+Before rolling out the named-login release to a live-mail host, set `SOONY_USERS_JSON` and `SOONY_REPLAY_KEY` in its private configuration and restart the watcher with the updated `watch.py`. The managed candidate build checks the gateway credentials before the watcher replaces the running service. An older watcher keeps serving the previous release until the live configuration is ready. The updated watcher generates a private service credential at startup and uses it for the readiness probe and gateway-to-Python traffic. Only the gateway port is for browsers. The dry-run watcher uses the five [demo accounts](../vercel/README.md#sign-in-and-audit-activity). A dedicated Vercel preview can package `deploy/vercel/package-live.sh` and set `SOONY_LIVE_UPSTREAM` to the live tunnel URL. Set `SOONY_LIVE_UPSTREAM_TOKEN` to the server-only credential that matches `SOONY_LIVE_GATEWAY_TOKEN` on the Mac. Deploy the preview separately from the replay alias.
 
 Verify releases using `node --test deploy/backend/test-gateway.cjs`, the reply-history unit tests and the private dashboard HTTP rehearsal. Store deployment keys and logs in the private workspace.
 

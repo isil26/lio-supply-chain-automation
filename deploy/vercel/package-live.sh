@@ -13,7 +13,7 @@ fi
 function_dir="$output/functions/control.func"
 mkdir -p "$function_dir"
 cp "$here/control.cjs" "$function_dir/index.cjs"
-cp "$here/"{login.html,live.cjs} "$function_dir/"
+cp "$here/"{accounts.cjs,demo-users.json,login.html,live.cjs} "$function_dir/"
 cp "$here/function-config.json" "$function_dir/.vc-config.json"
 cat > "$output/config.json" <<'JSON'
 {
