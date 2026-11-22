@@ -4,7 +4,7 @@ The hosted dashboard uses the same React frontend as the local Control Room. The
 
 ## Sign in and audit activity
 
-The demo accounts are `isil`, `murat`, `nick`, `leo`, and `gulsah`. Each uses `12345`. Each person or agent should select their own account. The accounts are available in the local `--demo` and packaged hosted replay. Anyone with the demo password can choose any of the five names.
+The demo accounts are `isil`, `murat`, `nick`, `leo`, and `gulsah`. Each uses `12345`. Each person or agent should select their own account. The same credentials work in the local `--demo`, the hosted replay and the Google Cloud hackathon dashboard. Anyone with the demo password can choose any of the five names.
 
 The gateway sets an eight-hour signed, HTTP-only session cookie. Sign out from the dashboard to clear it. Server-side actions emit JSON records tagged `control_room.activity` in the gateway stdout or Vercel function logs. Filter by `user` for an account's actions. Each record has a UTC timestamp, route and HTTP status. Practice-mode clicks that stay in the browser do not create server events.
 
