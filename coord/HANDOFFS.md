@@ -558,3 +558,16 @@ The Data import tab accepts the challenge ZIP, individual case files and the pre
 On 22 November, the public Manti Live relay and VM release `dcf9e9b` accepted two independent uploads using the existing team sign-in. A single stock CSV moved the median from 639,100 to 640,000 Standard and kept Collector’s at 66,100. A ZIP with two files moved the same starting forecast to 640,000 Standard and 72,000 Collector’s. Both used synthetic test changes in private dry-run sessions. The operational stock file hash and forecast matched before and after testing. Signed-out upload access returned HTTP 401.
 
 The VM restarted during earlier attempts as new dashboard releases rolled out. Verification on `dcf9e9b` reused a read-only SQLite backup of the existing OCR cache in the release’s private store. The upload workflow ran its usual file validation, typed ingestion and forecasting. [Manti Live](https://soony-manti-live.vercel.app/)
+
+## T-Data-Import-Live-QA — Private scenario on Manti Live
+
+On 22 November 2026 the public gateway served revision `dcf9e9bed22e`. One fresh signed-in session ran the original challenge ZIP and the configured challenge API twice each.
+
+| Import | Files | Imported | Skipped |
+| --- | ---: | ---: | ---: |
+| ZIP first | 303 | 1 | 302 |
+| ZIP repeat | 303 | 0 | 303 |
+| API first | 332 | 1 | 331 |
+| API repeat | 332 | 0 | 332 |
+
+Each repeat retained the same scenario result and forecast. The API and ZIP shared 303 paths, of which 302 were unchanged when switching sources. A separate sign-in saw an idle import session. The shared dashboard medians were 639,100 Standard and 66,100 Collector’s before and after the test. The private test scenario was closed and verified idle.
