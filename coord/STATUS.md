@@ -182,3 +182,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-dashboard | T-Manti-18984 | Promoted bd37f16 on GCP and matched both public entry points to the local build byte for byte | done | Existing production login, supplier data, agent runs and import status verified | 22 Nov |
 
 | manti-dashboard | Manti-Named-Live | Connecting the five team usernames to production offer decisions and recording negotiations | in_progress | Production sign-in and activity verification | 22 Nov |
+
+| manti-agent-map | T-Manti-Demo-Restore | Dashboard presentation and release | in_progress | Promoting the tested unified Agents view and matching the connected Dashboard and Activity Log to the supplied Launch Desk demo. | 22 Nov |
