@@ -201,4 +201,4 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-interactions | T-Button-Review | Audited button outcomes across the workspace, gateway, standalone control room and card replay | done | Verified both frontend builds, local browser workflows, 27 backend tests and 5 gateway tests | 22 Nov |
 
-| manti-interactions | T-Button-Review | Deploying the tested button fixes and verifying compatibility with the supplier interpreter | in_progress | Manti Live production rollout | 22 Nov |
+| manti-interactions | T-Button-Review | Deployed 3e5cbd5 to Manti Live and verified the button fixes alongside supplier pricing and translation | done | Public build matched the tested assets. Conditional-hold review, email language switching, nested evidence, agent replay and browser-only approval history passed. | 22 Nov |
