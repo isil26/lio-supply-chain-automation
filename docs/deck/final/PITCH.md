@@ -4,7 +4,7 @@ Deck: [Manti-pitch-deck-final.pdf](../Manti-pitch-deck-final.pdf) · Timing: [TI
 
 ## 0:00–0:30 · Problem (slides 1–4)
 
-**[Slide 1]** Hi, we're Manti. Today we're solving a problem every product launch has: the warning signs are buried in paperwork nobody has time to read. Manti is a team of AI agents that reads every supplier document and email, finds what's really missing, chases the suppliers, and hands procurement a short list of decisions to approve.
+**[Slide 1]** Hi, we're Manti. Our AI agents read all the paperwork a supply chain produces, find what's really missing before launch, and tell procurement exactly what to do.
 
 **[Slide 2]** Nobody has time to read everything a supply chain produces. For one launch, Soony had 308 files and 93 supplier emails in four languages, and one weekend left.
 
