@@ -591,3 +591,9 @@ The simplified Agents tab now opens directly to the full 17-agent network. One s
 Production serves revision `bd37f16` with the Dashboard, Agents, Activity Log and Data import tabs from the local dashboard on port 18984. The production root and `/react` both load the same JavaScript and CSS. Both files matched the local reference byte for byte when fetched through the signed-in public gateway. The existing production team password still works. The local rehearsal uses named accounts.
 
 Read-only production checks verified a live mail connection, a verified portal snapshot, 41 supplier threads, eight offers, five product approval limits, activity history, four agent runs, a run trace and the private import endpoint. The candidate passed 59 Python tests and five gateway tests on the VM. [Open the live dashboard](https://soony-manti-live.vercel.app/react#dashboard)
+
+## Manti-Named-Live — Individual offer decisions on Google Cloud
+
+The production dashboard now accepts the five team usernames with individual private passwords. The existing shared password and shared sessions still open the dashboard. A shared user can review offers and switch accounts before making a decision. Historical shared entries keep their original attribution. A confirmed negotiation records the operator, time, reviewed message and available options. Sending the negotiation email remains a separate human action.
+
+Verified all five identities on the public dashboard, the shared login and its offer-decision restriction, live mail mode, the portal snapshot, private upload sessions, and logout. An isolated HTTP workflow on the VM confirmed all three offer decisions appeared under the correct usernames. The candidate passed 61 Python and five gateway tests. Backend revision `3d25917`. [Manti Live](https://soony-manti-live.vercel.app/react#dashboard)
