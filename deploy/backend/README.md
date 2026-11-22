@@ -20,6 +20,15 @@ The service-private directory is `/var/lib/lio-live`. `live-mail/soony.db` store
 
 The registered team mailbox configuration is in `mail-history.json`. The live worker reads replies via IMAP and sends eligible messages under the existing supplier-domain and approval rules. Set `CHASER_AUTO_SEND` to `0` in the service’s `config.json` and restart `lio-live` to pause automatic sending. **Verified team mailbox** shows matched read-only history. Run only one live sender against the production state.
 
+## Supplier email translation
+
+The supplier translator reads new Polish, Korean and Chinese correspondence from the operational and verified mailboxes. It uses local CPU models and caches English by the original message hash. Install the runtime and pinned model packages on a new host before starting the service.
+
+```sh
+sudo /opt/lio/venv/bin/pip install --only-binary=:all: ctranslate2==4.6.0 sentencepiece==0.2.1
+sudo /opt/lio/venv/bin/python deploy/backend/install_translation_models.py
+```
+
 ## Releases and archiving
 
 GitHub Actions updates `/srv/lio/main.git` from development `main`. The application revision in [live-revision](live-revision) feeds `/srv/lio/production.git`. The VM watcher fetches that production mirror every 30 seconds, stages the build, checks dashboard readiness and falls back to its previous release on a startup failure. State lives outside the release directories. The working checkout can advance independently.

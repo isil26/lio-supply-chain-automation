@@ -109,6 +109,7 @@ def approver(con, chase_id):
     _approvals_schema(con)
     queries = ("SELECT approved_by FROM send_approvals WHERE chase_id=?",
                "SELECT decided_by FROM deals WHERE email_id=? AND decided_by IS NOT NULL",
+               "SELECT actor FROM deal_requests WHERE email_id=?",
                "SELECT approved_by FROM action_sends WHERE chase_id=? AND status <> 'dismissed'")
     for sql in queries:
         try:

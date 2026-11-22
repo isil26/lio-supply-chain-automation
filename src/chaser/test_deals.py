@@ -8,7 +8,7 @@ from threading import Barrier
 from unittest.mock import patch
 
 from . import schema
-from .deals import check_draft, decide, is_decision_draft, list_deals, record_negotiation, signer, sync
+from .deals import _unit_quote, approve_request, check_draft, decide, is_decision_draft, list_deals, record_negotiation, signer, sync
 
 DEADLINE = "2026-11-22T20:00:00+01:00"
 NOW = datetime(2026, 11, 21, 12, tzinfo=timezone.utc)
@@ -62,6 +62,66 @@ class DealsTest(unittest.TestCase):
         for item in both:
             self.assertIsNotNone(decide(con, item["id"], "approve", "Buyer", revision=item["revision"])["email_id"])
         self.assertEqual(next(d for d in both if d["thread_id"] == "B1")["revision"], original["revision"])
+
+    def test_historical_price_and_reviewed_request_preserve_current_terms(self):
+        from . import send
+        con = db()
+        self.revise(con, "The carrier is checking the pickup time. No firm ETA.")
+        sync(con, DEADLINE, now=NOW, model=False)
+        d = self.boise(con)
+        self.assertEqual((d["unit_price"], d["eligible"]), (None, 0))
+        self.assertEqual((d["previous_price"]["amount"], d["previous_price"]["message_id"]), (10.4, "B1i"))
+        self.assertIn("10.4 USD", d["request_draft"]["body"])
+        edited = "Please confirm the available units, price and earliest pickup for this lot."
+        eid = approve_request(con, d["id"], d["revision"], "Buyer", edited)
+        self.assertEqual(eid, approve_request(con, d["id"], d["revision"], "Buyer", edited))
+        self.assertTrue(is_decision_draft(con, eid))
+        self.assertTrue(check_draft(con, eid))
+        self.assertEqual(self.boise(con)["request"]["status"], "draft")
+        with patch.dict("os.environ", {"CHASER_SENDER":"buyer@example.org"}):
+            send(con, eid, demo=True)
+        body, transport = con.execute("SELECT body,transport FROM messages WHERE chase_id=?", (eid,)).fetchone()
+        self.assertEqual(body,edited)
+        self.assertIn("dry_run",transport)
+        self.assertEqual(self.boise(con)["status"], "pending")
+        self.assertEqual(len(self.boise(con)["history"]),1)
+        self.revise(con,"We can provide a different lot. Please request a new quote.","2026-11-21T11:45:00Z","later")
+        with self.assertRaisesRegex(ValueError,"changed"):
+            check_draft(con, eid)
+
+    def test_conditional_hold_is_separately_authorized_and_does_not_count_as_supply(self):
+        con = db()
+        con.execute("UPDATE messages SET body='We can hold stock free of charge at USD 10.40 per unit.' WHERE external_id='B1i'")
+        self.revise(con,"Our carrier has not yet confirmed the freight rate or handover time.")
+        sync(con, DEADLINE, now=NOW, model=False)
+        d = self.boise(con)
+        draft = d["request_draft"]
+        self.assertEqual(draft["label"],"conditional hold")
+        self.assertIn("please reserve up to 6,800 units without charge", draft["body"])
+        approve_request(con,d["id"],d["revision"],"Buyer",draft["body"])
+        self.assertFalse(self.boise(con)["eligible"])
+        self.assertIsNone(self.boise(con)["total_eur"])
+
+    def test_prices_preserve_subcent_quotes_and_exclude_other_windows_and_forwarded_text(self):
+        self.assertEqual(_unit_quote("0,081 EUR za sztukę"), (0.081, "EUR"))
+        self.assertEqual(_unit_quote("INR 1,037 per unit"), (1037, "INR"))
+        self.assertEqual(_unit_quote("EUR 0.0518 per unit"), (0.0518, "EUR"))
+        self.assertEqual(_unit_quote("Freight USD 900 total."), (None, None))
+        con = db()
+        con.execute("UPDATE messages SET body='Awaiting quote.\n> USD 99 per unit' WHERE external_id='B1i'")
+        con.execute("""INSERT INTO chases(id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline)
+                    SELECT 'B2',supplier_id,supplier,address,language,'[SOONY-B2] prior season',status,material,qty,body,
+                           '2026-11-15T20:00:00+01:00' FROM chases WHERE id='B1'""")
+        con.execute("""INSERT INTO messages(chase_id,external_id,side,sender,body,time)
+                    VALUES('B2','old','in','Boise','USD 8.99 per unit','2026-11-12T09:00:00Z')""")
+        self.revise(con,"Please confirm the pickup point.")
+        sync(con, DEADLINE, now=NOW, model=False)
+        d = next(r for r in list_deals(con)["deals"] if r["thread_id"] == "B1")
+        self.assertIsNone(d["previous_price"])
+        eid = approve_request(con,d["id"],d["revision"],"Buyer",d["request_draft"]["body"])
+        decide(con,d["id"],"decline","Buyer",revision=d["revision"])
+        with self.assertRaisesRegex(ValueError,"superseded"):
+            check_draft(con,eid)
 
     def test_signer_follows_pp07(self):
         self.assertEqual(signer(49_999), "Buyer")

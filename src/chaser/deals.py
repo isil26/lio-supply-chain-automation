@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from .guardrails import Guardrails
-from .negotiate import CURRENCY, NUMBER, PRICE_RES, SYMBOLS, parse_offer
+from .negotiate import CURRENCY, NUMBER, SYMBOLS, parse_offer
 from .recovery import NO_COVER, WITHDRAWN, superseded_threads, unquoted
 from .reply_plan import supply_constraint
 
@@ -83,6 +83,10 @@ def schema(con):
         deal_id TEXT NOT NULL, revision TEXT NOT NULL, action TEXT NOT NULL, actor TEXT,
         decided_at TEXT, note TEXT, email_id TEXT UNIQUE, terms TEXT NOT NULL,
         PRIMARY KEY (deal_id, revision))""")
+    con.execute("""CREATE TABLE IF NOT EXISTS deal_requests (
+        deal_id TEXT NOT NULL, revision TEXT NOT NULL, actor TEXT NOT NULL, decided_at TEXT NOT NULL,
+        purpose TEXT NOT NULL, body TEXT NOT NULL, email_id TEXT NOT NULL UNIQUE, terms TEXT NOT NULL,
+        PRIMARY KEY (deal_id,revision))""")
     con.execute("""CREATE TABLE IF NOT EXISTS deal_negotiations (
         deal_id TEXT NOT NULL, revision TEXT NOT NULL, actor TEXT NOT NULL,
         decided_at TEXT NOT NULL, message TEXT NOT NULL, terms TEXT NOT NULL,
@@ -117,21 +121,41 @@ def _date(match, end_of_day=False):
     return dt if dt.tzinfo else dt.replace(tzinfo=ZoneInfo("Europe/Berlin"))
 
 
+# Unit prices routinely use fractions of a cent. A zero before a single
+# separator distinguishes 0,081 EUR from a grouped value such as INR 1,037.
+UNIT_AMOUNT = r"(?<![\d.,])(\d+(?:[ \u00a0]\d{3})*(?:[.,]\d+)*)(?!\d|[.,]\d)"
+UNIT_PRICES = (re.compile(CURRENCY + r"[^\S\r\n]*" + UNIT_AMOUNT, re.I),
+               re.compile(UNIT_AMOUNT + r"[^\S\r\n]*" + CURRENCY, re.I))
+
+
+def _unit_amount(value):
+    value = value.replace(" ", "").replace("\u00a0", "")
+    parts = re.split("[.,]", value)
+    if len(parts) == 1:
+        return float(value)
+    if parts[0] != "0" and all(len(p) == 3 for p in parts[1:]) and len(set(re.findall("[.,]", value))) == 1:
+        return float("".join(parts))
+    return float("".join(parts[:-1]) + "." + parts[-1])
+
+
+def _unit_quote(text):
+    prices = set()
+    for i, pattern in enumerate(UNIT_PRICES):
+        for hit in pattern.finditer(text):
+            if not (PER_UNIT.search(text[hit.end():]) or UNIT_LABEL.search(text[max(0,hit.start()-38):hit.start()])):
+                continue
+            cur, raw = hit.groups() if i == 0 else (hit[2], hit[1])
+            prices.add((_unit_amount(raw), SYMBOLS.get(cur.upper(),cur.upper())))
+    return prices.pop() if len(prices) == 1 else (None, None)
+
+
 def _terms(q, source):
     text = "\n".join([source["body"], *(a.get("text","") for a in source["attachments"])])
     parsed = parse_offer(source["body"],source["attachments"])
     q.quantity = parsed["quantity"]
     q.commitment = parsed["commitment"]
     q.eta = q.stated_arrival
-    prices=set()
-    for i, pattern in enumerate(PRICE_RES):
-        for hit in pattern.finditer(text):
-            if not (PER_UNIT.search(text[hit.end():]) or UNIT_LABEL.search(text[max(0,hit.start()-38):hit.start()])):
-                continue
-            cur,whole,cents = hit.groups() if i==0 else (hit[3],hit[1],hit[2])
-            amount=int(re.sub(r"[ ,.]","",whole)) + (float("0."+cents) if cents else 0)
-            prices.add((amount,SYMBOLS.get(cur.upper(),cur.upper())))
-    q.unit_price,q.currency = prices.pop() if len(prices)==1 else (None,None)
+    q.unit_price, q.currency = _unit_quote(text)
     q.constraint = q.constraint or supply_constraint(text).get("disposition")
     return text
 
@@ -171,6 +195,9 @@ def _review(q, text, total, cutoff, now, expired, superseded, moq, kind, carrier
 
 def _decision_terms(con, old, capture_options):
     terms = {k:old.get(k) for k in (*TERMS,"source_message","excerpt")}
+    for key in ("previous_price", "prior_free_hold"):
+        if old.get(key):
+            terms[key] = old[key]
     if capture_options:
         cursor = con.execute("""SELECT id,supplier,thread_id,quantity,order_quantity,price_eur,total_eur,
                                        eta,offer_state,best FROM deals
@@ -259,7 +286,7 @@ def _offer_row(quote, text, source, cutoff, now, fx, superseded):
         "payment_terms": payment[0] if payment else facts.get("payment_terms"),
         "moq": moq, "list_price": facts.get("list_price"),
         "conditions": "; ".join(r for r in quote.reasons if "minimum" in r or "only conditionally" in r) or None,
-        "excerpt": source["body"][:1600], "source_message": source["source_message"], "source_hash": source["source_hash"],
+        "excerpt": source["body"], "source_message": source["source_message"], "source_hash": source["source_hash"],
         "expires_at": expiry.isoformat() if expiry else None, "signer": approver,
         "offer_state": state, "review_reason": reason,
     }
@@ -267,6 +294,7 @@ def _offer_row(quote, text, source, cutoff, now, fx, superseded):
 
 def _replace_decision(con, old):
     _archive(con, old)
+    _retire_request(con, old)
     con.execute("UPDATE chases SET status='superseded' WHERE id=? AND status='draft'", (old["email_id"],))
     return {"awaiting_send": 0, "decided_by": None, "decided_at": None, "note": None, "email_id": None}
 
@@ -335,15 +363,84 @@ def sync(con, deadline, *, now=None, model=None):
     return len(quotes)
 
 
+FREE_HOLD = re.compile(r"(?:we can|we will|we are able to|we are holding)[^.\n]{0,90}(?:hold|reserv)[^.\n]{0,60}(?:free of charge|at no (?:charge|cost))"
+                       r"|(?:możemy bezpłatnie[^.\n]{0,45}(?:odłożyć|zarezerwować)|utrzymujemy bezpłatną rezerwację)",re.I)
+
+
+def _past_prices(con, rows):
+    from .mail_plan import contexts, VERIFIED_SIMULATION
+    threads = contexts(con)
+    by_root = {}
+    for thread, external, when, body, parsed in con.execute(f"""
+        SELECT m.chase_id,m.external_id,coalesce(json_extract(m.transport,'$.authoredAt'),m.time),m.body,m.parsed
+        FROM messages m WHERE m.side='in' AND NOT {VERIFIED_SIMULATION}
+        ORDER BY julianday(coalesce(json_extract(m.transport,'$.authoredAt'),m.time)),m.id"""):
+        if thread not in threads:
+            continue
+        root = threads[thread]["root"]
+        clean = "\n".join(line for line in unquoted(body).splitlines() if not line.lstrip().startswith(">"))
+        attachments = json.loads(parsed or "{}").get("attachments", [])
+        price, currency = _unit_quote("\n".join([clean, *(a.get("text","") for a in attachments)]))
+        items = by_root.setdefault(root, [])
+        items.append((external, dict(amount=price,currency=currency,at=when,thread_id=thread,message_id=external), bool(FREE_HOLD.search(clean))))
+    for row in rows:
+        evidence = by_root.get(threads.get(row["thread_id"], {}).get("root"), [])
+        previous = None
+        prior_hold = False
+        for external, price, hold in evidence:
+            if external == row["source_message"]:
+                row["previous_price"] = previous
+                row["prior_free_hold"] = prior_hold
+                break
+            prior_hold = prior_hold or hold
+            if price["amount"] and price["currency"]:
+                previous = price
+
+
+def _request_draft(d):
+    text = d["excerpt"] or ""
+    if re.search(r"PPAP|inspection|sorting|inspector", text, re.I) and d["offer_state"] != "unavailable":
+        label, ask = "inspection proposal", "Please confirm the first inspection slot, throughput, lot acceptance criteria, responsible quality contact and any additional cost for our review."
+    elif d["offer_state"] == "approval_required" and d["offer_kind"] == "goods":
+        label, ask = "free hold enquiry", "Can you reconfirm the quantity you can hold without charge, the unit price and hold expiry? Please quote the earliest partial delivery, carrier handover and any freight surcharge separately."
+    elif re.search(r"deconsolidation|partial.release and collection", text, re.I) and d["offer_state"] != "unavailable":
+        label, ask = "carrier handoff request", "Could you provide the carrier contact and handover reference for this shipment so our logistics team can verify partial release and collection directly with the carrier?"
+    elif re.search(r"nominat.{0,12}forwarder|EXW.{0,35}in writing", text, re.I) and d["offer_state"] != "unavailable":
+        label, ask = "pickup terms request", "Please send the collection address, pickup window, packed dimensions and earliest onward delivery for the available lot. We will review the terms before nominating a forwarder."
+    elif re.search(r"change notice|change notification", text, re.I):
+        label, ask = "revision review request", "Please identify the outstanding revision documents, the contact who should receive them and the earliest production and delivery dates once they are accepted."
+    elif d["offer_state"] in ("unavailable", "late"):
+        label, ask = "recovery enquiry", "We have recorded the launch limitation. Please confirm the earliest feasible delivery after the cutoff, available quantity, unit price and any local alternative you can substantiate."
+    elif d["offer_kind"] == "freight":
+        label, ask = "freight quote request", "Please confirm the carrier, available quantity, pickup and delivery slots, separate all-in freight charge and quotation expiry."
+    else:
+        label, ask = "firm quote request", "Please confirm the available quantity, unit price and currency, earliest delivery and quote expiry. Please quote any additional transport separately."
+    email_id = hashlib.sha256(f"deal:{d['id']}:{d['revision']}:request".encode()).hexdigest()[:10].upper()
+    if previous := d.get("previous_price"):
+        amount = f"{previous['amount']:g} {previous['currency']} per unit"
+        if d["offer_state"] in ("incomplete","approval_required") and d.get("prior_free_hold") and d["needed"] and d["offer_kind"] == "goods":
+            label = "conditional hold"
+            ask = (f"If your earlier price of {amount} and free hold are still available, please reserve up to "
+                   f"{d['needed']:,} units without charge. Please confirm the quantity held, hold expiry and unit price in writing. "
+                   "Please quote partial delivery, freight surcharge and handover time separately for review.")
+        else:
+            ask = f"Your earlier correspondence mentioned {amount}. " + ask
+    body = f"Hello {d['supplier']} team,\n\nRegarding {d['material']}:\n{ask}\n\nAny dispatch, booking or cost requires separate written authorization.\n\nSoony launch team"
+    return {"id":email_id, "label":label, "subject":f"[SOONY-{email_id}] {label.capitalize()} for {d['material']}", "body":body}
+
+
 def list_deals(con):
     schema(con)
     cols = [d[0] for d in con.execute("SELECT * FROM deals LIMIT 0").description]
     rows = [dict(zip(cols,r)) for r in con.execute("SELECT * FROM deals ORDER BY material,best DESC,eligible DESC,score DESC")]
+    _past_prices(con, rows)
     history = {}
     for deal,rev,action,actor,when,note,mail,terms in con.execute(
             """SELECT deal_id,revision,action,actor,decided_at,note,email_id,terms FROM deal_decision_history
                UNION ALL
                SELECT deal_id,revision,'negotiation started',actor,decided_at,message,NULL,terms FROM deal_negotiations
+               UNION ALL
+               SELECT deal_id,revision,purpose || ' approved',actor,decided_at,body,email_id,terms FROM deal_requests
                ORDER BY decided_at DESC"""):
         history.setdefault(deal,[]).append(dict(revision=rev,action=action,by=actor,at=when,note=note,email_id=mail,terms=json.loads(terms)))
     superseded = superseded_threads(con)
@@ -353,6 +450,12 @@ def list_deals(con):
             row.update(status="superseded", eligible=0, best=0)
         open_offer = row["status"] in ("pending", "changed") and row["offer_state"] not in ("superseded", "expired")
         row["drafts"] = {}
+        request = con.execute("""SELECT c.status,r.purpose FROM deal_requests r JOIN chases c ON c.id=r.email_id
+                                 WHERE r.deal_id=? AND r.revision=?""",(row["id"],row["revision"])).fetchone()
+        if request:
+            row["request"] = {"status":request[0],"purpose":request[1]}
+        elif open_offer and not row["eligible"]:
+            row["request_draft"] = _request_draft(row)
         if open_offer:
             row["drafts"]["decline"] = _decision_email(row, "decline")
         if row["eligible"] and (open_offer or (row["status"] == "approved" and row["awaiting_send"])):
@@ -415,7 +518,21 @@ def _current(con, deal, action):
         raise ValueError("The offer or launch window has expired.")
 
 
+def _retire_request(con, deal):
+    con.execute("""UPDATE chases SET status='superseded' WHERE status='draft' AND id IN
+                   (SELECT email_id FROM deal_requests WHERE deal_id=? AND revision=?)""",
+                (deal["id"], deal["revision"]))
+
+
+def _approved_request(con, chase_id):
+    if con.execute("SELECT 1 FROM sqlite_master WHERE name='deal_requests'").fetchone():
+        return con.execute("SELECT deal_id,revision FROM deal_requests WHERE email_id=?", (chase_id,)).fetchone()
+    return None
+
+
 def is_decision_draft(con, chase_id):
+    if _approved_request(con, chase_id):
+        return True
     if not con.execute("SELECT 1 FROM sqlite_master WHERE name='deals'").fetchone():
         return False
     return bool(con.execute("""SELECT 1 FROM deals WHERE email_id=?
@@ -426,6 +543,12 @@ def check_draft(con, chase_id):
     """Revalidate decision correspondence in the sender's claim transaction."""
     if not con.execute("SELECT 1 FROM sqlite_master WHERE name='deals'").fetchone():
         return None
+    if request := _approved_request(con, chase_id):
+        deal = _stored(con, request[0])
+        if deal["revision"] != request[1] or deal["status"] not in ("pending","changed"):
+            raise ValueError("The supplier request has been superseded.")
+        _current(con, deal, "request")
+        return True
     current = con.execute("SELECT id FROM deals WHERE email_id=?", (chase_id,)).fetchone()
     if not con.execute("SELECT 1 FROM sqlite_master WHERE name='deal_decision_history'").fetchone():
         if current:
@@ -469,6 +592,37 @@ def _queue_email(con, deal, draft, lang):
     return email_id
 
 
+def approve_request(con, deal_id, revision, by, message):
+    if not isinstance(by, str) or not by.strip():
+        raise ValueError("A named reviewer is required.")
+    if not isinstance(message, str) or not message.strip() or len(message) > 1000:
+        raise ValueError("Enter an email message of 1 to 1,000 characters.")
+    with con:
+        if not con.in_transaction:
+            con.execute("BEGIN IMMEDIATE")
+        schema(con)
+        deal = _stored(con,deal_id)
+        if not revision or deal["revision"] != revision or deal["status"] not in ("pending","changed") or deal["eligible"]:
+            raise ValueError("Refresh and review the current supplier offer.")
+        _current(con, deal, "request")
+        existing = con.execute("SELECT email_id FROM deal_requests WHERE deal_id=? AND revision=?", (deal_id,revision)).fetchone()
+        if existing:
+            return existing[0]
+        check = Guardrails().validate_draft(message)
+        if not check.ok:
+            raise ValueError("Email failed guardrails: " + "; ".join(check.errors))
+        _past_prices(con, [deal])
+        draft = _request_draft(deal)
+        draft["body"] = message
+        email_id = _queue_email(con, deal, draft, "en")
+        when = _now()
+        con.execute("INSERT INTO deal_requests VALUES(?,?,?,?,?,?,?,?)",
+                    (deal_id,revision,by.strip(),when,draft["label"],message,email_id,_decision_terms(con,deal,True)))
+        con.execute("INSERT INTO activity(time,agent,action,type) VALUES(?,?,?,?)",
+                    (when,by.strip(),f"Approved {draft['label']} for {deal['material']} from {deal['supplier']}.","info"))
+        return email_id
+
+
 def decide(con, deal_id, action, by=None, note=None, *, revision=None, defer_send=False, confirm_held=False, message=None):
     """Record one immutable buyer decision and enqueue one nonbinding response per revision."""
     if action not in EMAIL:
@@ -503,6 +657,7 @@ def decide(con, deal_id, action, by=None, note=None, *, revision=None, defer_sen
         check = Guardrails().validate_draft(text)
         if not check.ok:
             raise ValueError("Email failed guardrails: "+"; ".join(check.errors))
+        _retire_request(con, deal)
         email_id = None if defer_send else _queue_email(con, deal, draft, lang)
         if release_held:
             con.execute("UPDATE deals SET email_id=?,awaiting_send=0 WHERE id=?", (email_id,deal_id))

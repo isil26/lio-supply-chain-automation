@@ -13,7 +13,11 @@ type DecisionEvent = { revision?: string; action: string; by: string; at: string
 // Approve / Decline per offer. Approve names the PP-07 signer and asks the supplier to
 // reserve; Decline sends a polite no-thanks. Both emails go out through the mail agent.
 
+type Decision = "approve" | "decline" | "request";
 type Deal = {
+  previous_price?: { amount: number; currency: string; at: string; thread_id: string };
+  request_draft?: { label: string; subject: string; body: string };
+  request?: {status:string; purpose:string};
   address?: string; revision?: string; required_by?: string; thread_id?: string; order_quantity?: number | null; expires_at?: string | null;
   offer_state?: "quoted" | "incomplete" | "late" | "unavailable" | "expired" | "superseded" | "approval_required";
   offer_kind?: "goods" | "freight"; carrier?: string | null; freight_charge?: number | null;
@@ -103,7 +107,15 @@ function when(iso: string | null) {
   return new Date(iso).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });
 }
 function arrives(d: Deal) { return d.eta_text ?? when(d.eta); }
-function unit(d: Deal) { return d.unit_price == null ? "Unit price unconfirmed" : `${d.unit_price} ${d.currency ?? ""}`; }
+const unitNumber = new Intl.NumberFormat("en-GB", {minimumFractionDigits:2, maximumFractionDigits:6});
+function priceDisplay(d: Deal) {
+  if (d.offer_kind === "freight") return {value: d.freight_charge == null ? "Awaiting quote" : `${d.freight_charge} ${d.currency}`, source:"Freight charge"};
+  if (d.unit_price != null) return {value:`${unitNumber.format(d.unit_price)} ${d.currency ?? ""} / unit`, source:"Current supplier quote"};
+  if (d.previous_price) return {value:`${unitNumber.format(d.previous_price.amount)} ${d.previous_price.currency} / unit`,
+    source:`Earlier supplier quote · ${when(d.previous_price.at)}`};
+  if (d.catalog_eur != null) return {value:`${unitEuros(d.catalog_eur)} / unit`, source:"Supplier catalogue"};
+  return {value:"Awaiting quote", source:"Supplier pricing"};
+}
 
 function exampleData(): Data {
   const data = sample as unknown as Data;
@@ -139,7 +151,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [choice, setChoice] = useState<string | null>(null);
-  const [reply, setReply] = useState<{id:string; revision?:string; action:"approve"|"decline"|"negotiate"; body:string; recorded?:boolean} | null>(null);
+  const [reply, setReply] = useState<{id:string; revision?:string; action:Decision|"negotiate"; body:string; recorded?:boolean} | null>(null);
   const [draftError, setDraftError] = useState("");
   const [loadError,setLoadError] = useState(false);
   const [emailId, setEmailId] = useState<string | null>(null);
@@ -168,7 +180,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     return () => window.clearInterval(timer);
   }, [example]);
 
-  async function decide(deal: Deal, action: "approve" | "decline", message: string) {
+  async function decide(deal: Deal, action: Decision, message: string) {
     setDraftError("");
     if (example) {
       const status = action === "approve" ? "approved" : "declined";
@@ -189,7 +201,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     }
     setBusy(deal.id + action);
     try {
-      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision: deal.revision, message, confirmHeld: Boolean(deal.awaiting_send), by:currentUser || reviewer.trim() }) });
+      const response = await fetch(`/api/deals/${deal.id}/${action === "request" ? "negotiate" : action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision: deal.revision, intent: action === "request" ? "approve_request" : undefined, message, confirmHeld: Boolean(deal.awaiting_send), by:currentUser || reviewer.trim() }) });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         const reason = error.error ?? "The offer could not be updated. Review the latest terms.";
@@ -200,7 +212,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
       setReply(null);
       setNote(action === "approve"
         ? `Reservation request recorded for ${deal.supplier}. ${deal.offer_kind === "freight" ? "Booking authorization" : "PO signer"} · ${deal.signer}.`
-        : `Decline email queued for ${deal.supplier}.`);
+        : action === "request" ? `Approved and queued the ${deal.request_draft?.label} for ${deal.supplier}.` : `Decline email queued for ${deal.supplier}.`);
       await load();
     } catch {
       setDraftError("The email could not be queued. Your draft is still here.");
@@ -227,8 +239,9 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
   const openOffer = selected && ["changed","pending"].includes(selected.status);
   const available = openOffer && !!selected.eligible;
   const canDecline = openOffer && (example || !!selected.drafts?.decline);
+  const canRequest = openOffer && !!selected.request_draft;
   const held = selected?.eligible && selected.status === "approved" && selected.awaiting_send;
-  function prepare(action:"approve"|"decline"|"negotiate") {
+  function prepare(action:Decision|"negotiate") {
     if (sharedAccount) { setSwitchAccount(true);return; }
     const d = selected;
     const ask = d.offer_kind==="freight" ? "Please compare standard and priority freight, including the first pickup, guaranteed handover and all-in charge."
@@ -241,7 +254,9 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     const body = `Hello ${d.supplier} team,\n\nThank you for the ${product(d.material).toLowerCase()} update. ${need}\n\n${ask}\n\nKind regards,\nSoony launch team`;
     setDraftError("");
     let message = body;
-    if (action !== "negotiate") {
+    if (action === "request") {
+      message = d.request_draft?.body ?? "";
+    } else if (action !== "negotiate") {
       const sampleBody = action === "approve"
         ? `Could you hold ${d.order_quantity ?? d.quantity} units of ${product(d.material)} without charge and confirm the hold expiry? A separate purchase order is required before dispatch.`
         : `Hello ${d.supplier} team,\n\nThank you for your offer for ${product(d.material).toLowerCase()}. We have decided to decline it for now. Thank you for your help.\n\nSoony launch team`;
@@ -328,17 +343,22 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
           selected && <div className="recommend"><div className="rec-top"><div className="rec-label"><Icon name="spark"/>{best.some(d=>d.id===selected.id)?"Recommended choice":"Selected offer"}</div>
             {selected.expires_at && <span className="rec-due">{when(selected.expires_at)}</span>}</div>
             <h3>{selected.supplier}</h3><p>{selected.review_reason || selected.conditions || tabNote || gist(selected)}</p>
-            <div className="rec-cost"><b>{selected.total_eur!=null?eur(selected.total_eur):unit(selected)}</b>
+            <div className="rec-cost"><b>{selected.total_eur!=null?eur(selected.total_eur):priceDisplay(selected).value}</b>
               {selected.total_eur!=null && <small>{selected.offer_kind==="freight" ? "Total freight charge" :
-                [(selected.order_quantity??selected.quantity)?.toLocaleString("en-US"), unit(selected)+" per unit"].filter(Boolean).join(" × ")}</small>}</div>
+                [(selected.order_quantity??selected.quantity)?.toLocaleString("en-US"), priceDisplay(selected).value].filter(Boolean).join(" × ")}</small>}
+              {selected.total_eur==null && <small>{priceDisplay(selected).source}</small>}
+              {selected.unit_price==null && selected.previous_price && selected.offer_kind!=="freight" &&
+                <button className="quiet" onClick={()=>openThread(selected.previous_price!.thread_id)}>Read quote thread</button>}</div>
             {!available && (held || selected.decided_by) && <p>{held?"Automatically approved · email awaiting review":STATUS[selected.status]}{selected.decided_by && " · "+selected.decided_by}</p>}
-            <div className="decision-buttons"><button className="btn" disabled={(!available&&!held)||!!busy} onClick={()=>prepare("approve")}>{held?"Review supplier email":"Approve"}</button>
+            {selected.request && <p role="status">{selected.request.purpose.charAt(0).toUpperCase()+selected.request.purpose.slice(1)} approved · {selected.request.status === "draft" ? "Queued for sending" : selected.request.status}</p>}
+            <div className="decision-buttons">{canRequest ? <button className="btn" disabled={!!busy} onClick={()=>prepare("request")}>Approve {selected.request_draft!.label}</button> :
+              (available || held) ? <button className="btn" disabled={!!busy} onClick={()=>prepare("approve")}>{held?"Review supplier email":"Approve reservation"}</button> : null}
               <button className="outline-btn" disabled={!canDecline||!!busy} onClick={()=>prepare("decline")}>Decline</button>
               <button className="outline-btn" disabled={!!busy||selected.status==="superseded"} onClick={()=>prepare("negotiate")}>Negotiate</button></div></div>}
         <div className="offers-heading"><b>Supplier emails</b><small>{threadCount} {threadCount===1?"thread":"threads"}</small></div>
         {rows.map(d=>{
           const body=<><span className="vendor-avatar">{d.supplier.split(/\s+/).slice(0,2).map(w=>w[0]).join("")}</span>
-            <span className="offer-info"><strong>{d.supplier}</strong><span>{d.quantity==null?"Quantity unconfirmed":d.quantity.toLocaleString("en-US")+(d.eligible ? " offered" : " mentioned")} · {unit(d)}</span></span></>;
+            <span className="offer-info"><strong>{d.supplier}</strong><span>{d.quantity!=null && d.quantity.toLocaleString("en-US")+(d.eligible ? " offered · " : " mentioned · ")}{priceDisplay(d).value} · {priceDisplay(d).source}</span></span></>;
           return <div className={"offer-row "+(selected?.id===d.id?"picked":"")} key={d.id}>
             {rows.length>1 && !archive ? <button className="offer-pick" aria-pressed={selected?.id===d.id} onClick={()=>{setChoice(d.id);setReply(null);setNote(null);}}><span className="radio-dot"/>{body}</button> : body}
             <button className="email-button" aria-label={"Read email from "+d.supplier} onClick={()=>setEmailId(d.id)}><Icon name="mail"/></button></div>;
@@ -368,13 +388,13 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
           example || !selected.address ? <small className="muted">Copy this draft into your supplier correspondence.</small> :
           <a className="outline-btn" href={`mailto:${encodeURIComponent(selected.address)}?subject=${encodeURIComponent("Re: "+product(selected.material))}&body=${encodeURIComponent(draft.body)}`}>Open in email app</a>}</> : <>
           <p><strong>To</strong> · {selected.address || selected.supplier}</p>
-          <strong>{selected.drafts?.[draft.action]?.subject ?? product(selected.material)}</strong>
+          <strong>{(draft.action==="request" ? selected.request_draft?.subject : selected.drafts?.[draft.action]?.subject) ?? product(selected.material)}</strong>
           <label>Message to {selected.supplier}<textarea rows={8} maxLength={1000} value={draft.body} readOnly={!!busy}
             onChange={e=>setReply({...draft,body:e.target.value})}/></label>
           {draftError && <p role="alert">{draftError}</p>}
           {!example && !currentUser && <label>Reviewed by<input autoComplete="name" maxLength={80} value={reviewer} onChange={e=>onReviewer(e.target.value)}/></label>}
-          <button className="btn" disabled={!!busy || !draft.body.trim() || (draft.action === "approve" ? !available && !held : !canDecline) || (!example && !currentUser && !reviewer.trim())}
-            onClick={()=>void decide(selected, draft.action as "approve" | "decline", draft.body)}>{busy ? "Queuing…" : example ? "Record practice decision" : "Confirm and queue email"}</button></>}
+          <button className="btn" disabled={!!busy || !draft.body.trim() || (draft.action === "approve" ? !available && !held : draft.action === "request" ? !canRequest : !canDecline) || (!example && !currentUser && !reviewer.trim())}
+            onClick={()=>void decide(selected, draft.action as Decision, draft.body)}>{busy ? "Queuing…" : example ? "Record practice decision" : draft.action === "request" ? "Approve and queue request" : "Confirm and queue email"}</button></>}
           <button className="quiet" disabled={!!busy} onClick={()=>setReply(null)}>{draft.recorded ? "Close" : "Cancel"}</button>
   </div></Dialog>}</>;
 }

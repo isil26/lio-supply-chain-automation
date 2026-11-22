@@ -1,6 +1,7 @@
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from . import translate
 from src.llm.client import LLMClient
@@ -26,6 +27,18 @@ class TranslateTest(unittest.TestCase):
         self.assertEqual(first["english"], "We can reserve 5,900 books.")
         self.assertEqual(second["source"], "translated")
         self.assertEqual(len(calls), 1)
+
+    def test_unseen_email_uses_local_translator_and_populates_thread(self):
+        con = sqlite3.connect(":memory:")
+        body = "Dostawa będzie możliwa rano."
+        thread = {"language":"pl", "messages":[{"text":body}]}
+        result = {"english":"Delivery will be possible in the morning.","summary":None,"language":"Polish","source":"translated"}
+        with patch.object(translate.local_translation,"to_english",return_value=result) as worker:
+            self.assertEqual(translate.translate(con,body,hint="pl"),result)
+            self.assertEqual(translate.translate(con,body,hint="pl"),result)
+            translate.annotate(con,[thread])
+            worker.assert_called_once()
+        self.assertEqual(thread["messages"][0],{"text":body,"english":result["english"]})
 
     def test_no_model_says_so(self):
         out = translate.translate(sqlite3.connect(":memory:"), "Dzień dobry, możemy zarezerwować książki.",

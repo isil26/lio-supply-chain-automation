@@ -26,6 +26,7 @@ from types import SimpleNamespace
 from urllib.parse import unquote, urlsplit
 
 from bridge.live import PortalError, PortalMirror
+from src.chaser import translate as mail_translation
 from src import chaser
 from src.chaser import actions as action_delivery
 from src.chaser.reply_plan import demo_reply
@@ -823,6 +824,8 @@ def handler(loop, gateway_token=None):
                         value = dashboard(con, include_action_history=True)
                         if value is not None:
                             from src.chaser import autosend
+                            mail_translation.annotate(con, value["threads"])
+                            mail_translation.annotate(con, (value.get("mailHistory") or {}).get("threads", []))
                             value["autoSend"] = autosend.enabled(loop.args.demo)
                             value["currentUser"] = self.account()
                             value["teamReviewEmail"] = os.getenv("CHASER_INTERNAL_TO") or os.getenv("CHASER_SENDER")
@@ -970,6 +973,9 @@ def handler(loop, gateway_token=None):
                             return self.out({"error": "Refresh the offer before recording a decision."}, 409)
                         try:
                             if deal[2] == "negotiate":
+                                if body.get("intent") == "approve_request":
+                                    email_id = supplier_deals.approve_request(con, deal[1], body["revision"], body.get("by"), body.get("message"))
+                                    return self.out({"ok": True, "email_id": email_id})
                                 supplier_deals.record_negotiation(con, deal[1], body["revision"], body.get("by"), body.get("message"))
                                 return self.out({"ok": True})
                             row = supplier_deals.decide(con, deal[1], deal[2], body.get("by")[:80] if isinstance(body.get("by"), str) else None,
@@ -1259,6 +1265,9 @@ def main():
     with ThreadingHTTPServer(("127.0.0.1", 0 if standalone else args.port), handler(loop, backend_token)) as server:
         thread = threading.Thread(target=loop.background, daemon=True)
         thread.start()
+        if mail_translation.local_translation.model_root().is_dir():
+            threading.Thread(target=mail_translation.run, name="supplier-translator",
+                             args=(loop.stop, loop.database, history_db), daemon=True).start()
         if settings and history_db:
             threading.Thread(target=mail_history.run,
                              args=(loop.stop, loop.database, history_db, settings), daemon=True).start()

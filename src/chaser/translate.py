@@ -1,11 +1,4 @@
-"""English version of a supplier's email for the offers table (gülşah-agent, Gülşah 22 Nov).
-
-"Their words" showed the reply in Polish / Korean / Chinese. `english(con, deal_id)` returns
-{english, summary, language, source}: the email in English plus a one-line gist. English emails
-are returned as they are; others go through the shared LLM client (src/llm/client.py, cached on
-disk and in the `translations` table, so each email is translated once). Without a configured
-model it says so instead of guessing.
-"""
+"""Translate and cache supplier correspondence for offer previews and the shared mailbox."""
 from __future__ import annotations
 
 from functools import lru_cache
@@ -13,6 +6,11 @@ from pathlib import Path
 import json
 import hashlib
 import re
+import logging
+import sqlite3
+from contextlib import closing
+
+from . import local_translation
 
 SCHEMA = {"type": "object", "properties": {
     "language": {"type": "string"}, "english": {"type": "string"}, "summary": {"type": "string"}},
@@ -42,23 +40,41 @@ def archived_previews():
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
 
-def translate(con, text, client=None):
-    schema(con)
-    if not text:
-        return {"english": None, "summary": None, "language": None, "source": "empty"}
+def _cached(con, text, hint=None):
     key = hashlib.sha256(text.encode("utf-8")).hexdigest()
     if saved := archived_previews().get(key):
         return {"language": saved["language"], "english": saved["english"], "summary": None, "source": "translated"}
-    if looks_english(text):
+    if local_translation.language(text, hint) == "en" or (looks_english(text) and not local_translation.language(text)):
         return {"english": text, "summary": None, "language": "English", "source": "original"}
     row = con.execute("SELECT language, english, summary FROM translations WHERE hash=?", (key,)).fetchone()
     if row:
         return {"language": row[0], "english": row[1], "summary": row[2], "source": "translated"}
+    return None
+
+
+def translate(con, text, client=None, hint=None):
+    schema(con)
+    if not text:
+        return {"english": None, "summary": None, "language": None, "source": "empty"}
+    if previous := _cached(con, text, hint):
+        return previous
+    key = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    if client is None:
+        try:
+            local = local_translation.to_english(text, hint, looks_english)
+        except (ImportError, RuntimeError, OSError, ValueError):
+            logging.getLogger(__name__).exception("Local supplier translation failed")
+            local = None
+        if local and local["english"].strip():
+            with con:
+                con.execute("INSERT OR REPLACE INTO translations VALUES(?,?,?,?)",
+                            (key, local["language"], local["english"], None))
+            return local
     from src.llm.client import LLMCallError, LLMClient
     client = client or LLMClient()
     if not client.configured():
         return {"english": None, "summary": None, "language": None, "source": "unavailable",
-                "error": "Translation needs the AI model, which is not switched on for this server."}
+                "error": "An English translation could not be prepared for this language."}
     try:
         result = client.complete_json("translate_supplier_email", SCHEMA, PROMPT.format(body=text[:6000]),
                                       source_text=text, validate_quotes=False)
@@ -71,8 +87,46 @@ def translate(con, text, client=None):
 
 
 def english(con, deal_id, client=None):
-    row = con.execute("SELECT excerpt FROM deals WHERE id=?", (deal_id,)).fetchone()
+    row = con.execute("SELECT excerpt,language FROM deals WHERE id=?", (deal_id,)).fetchone()
     if row is None:
         raise KeyError(deal_id)
     original = row[0] or ""
-    return {**translate(con, original, client), "original": original}
+    return {**translate(con, original, client, row[1]), "original": original}
+
+
+def annotate(con, threads):
+    """Only attach cached English to a dashboard read. Inference runs independently."""
+    schema(con)
+    for thread in threads:
+        for msg in thread["messages"]:
+            if text := msg.get("text"):
+                cached = _cached(con, text, thread.get("language"))
+                if cached and cached["source"] == "translated":
+                    msg["english"] = cached["english"]
+
+
+def run(stop, database, history_database=None):
+    while not stop.is_set():
+        try:
+            with closing(sqlite3.connect(database, timeout=30)) as con:
+                schema(con)
+                seen = set()
+                for path in dict.fromkeys((database, history_database)):
+                    if not path or not Path(path).is_file():
+                        continue
+                    with closing(sqlite3.connect(Path(path).resolve().as_uri() + "?mode=ro", uri=True)) as source:
+                        if not source.execute("SELECT 1 FROM sqlite_master WHERE name='messages'").fetchone():
+                            continue
+                        rows = source.execute("""SELECT m.body,c.language,m.time AS received FROM messages m JOIN chases c ON c.id=m.chase_id
+                            UNION ALL SELECT body,language,'' FROM chases WHERE status LIKE '%draft' ORDER BY received DESC""").fetchall()
+                    for body, lang, _ in rows:
+                        if stop.is_set():
+                            return
+                        if not body or (body,lang) in seen:
+                            continue
+                        seen.add((body,lang))
+                        if not _cached(con, body, lang):
+                            translate(con, body, hint=lang)
+        except (OSError, ValueError, sqlite3.Error):
+            logging.getLogger(__name__).exception("Supplier translation worker will retry")
+        stop.wait(15)

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type Source } from "./api";
+import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type SupplierMessage, type Source } from "./api";
 import { AgentGraph } from "./agents/AgentGraph";
 import { UploadData, type UploadResult } from "./UploadData";
 import { Offers } from "./suppliers/Offers";
@@ -24,6 +24,13 @@ const threadFromUrl = () => {
   const query = new URLSearchParams(location.search);
   return query.get("thread") || (query.get("mail")==="1" ? "mailbox" : null);
 };
+
+function ThreadBody({message}: {message: SupplierMessage}) {
+  const [original,setOriginal] = useState(false);
+  const translated = message.english && message.english !== message.text;
+  return <>{translated && <button className="quiet" onClick={()=>setOriginal(!original)}>{original ? "Show English" : "Show original"}</button>}
+    <p className="draft-body">{original ? message.text : message.english || message.text}</p></>;
+}
 
 function App() {
   const [base,setBase] = useState<DashboardData | null>(null);
@@ -107,7 +114,7 @@ function App() {
       </main></div>
     {threadId&&<Dialog title={thread?.supplier??"Supplier email"} label="Email thread" close={closeThread}>
       {thread?<><p className="mini">{thread.subject}</p>{thread.messages.map((m,i)=><article className="thread-message" key={m.id??i}>
-        <b>{m.transport?.from??m.sender}</b><small>{m.timestamp?displayDate(m.timestamp):m.time} · {m.transport?.status?.replace(/_/g," ")??thread.status}</small><p className="draft-body">{m.text}</p></article>)}</>:
+        <b>{m.transport?.from??m.sender}</b><small>{m.timestamp?displayDate(m.timestamp):m.time} · {m.transport?.status?.replace(/_/g," ")??thread.status}</small><ThreadBody message={m}/></article>)}</>:
         <p className="modal-p">This email thread is unavailable in the current workspace.</p>}</Dialog>}
     {source&&<Dialog title={file??"Source evidence"} label="Source evidence" close={()=>setSource(null)}>
       <p className="mini">{source.page?"Page "+source.page:source.row?"Row "+source.row:"Source location"}</p>{source.quote&&<p className="mail-summary">{source.quote}</p>}

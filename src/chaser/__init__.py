@@ -459,12 +459,13 @@ def expire(con):
 def list_threads(con, decision_states=None):
     schema(con)
     from .mail_plan import contexts
+    from .deals import is_decision_draft
     decision_states = decision_states or {}
     workflow = contexts(con)
     simulated_workflow = contexts(con, simulated=True)
     for row in con.execute("SELECT * FROM chases ORDER BY CASE status WHEN 'reply to verify' THEN 0 WHEN 'draft' THEN 2 ELSE 1 END, qty DESC, supplier"):
         thread = dict(row)
-        if thread["status"] == "draft" and supplier_loop.managed(row["supplier_id"], row["material"]):
+        if thread["status"] == "draft" and supplier_loop.managed(row["supplier_id"], row["material"]) and not is_decision_draft(con, row["id"]):
             thread["status"] = "superseded draft"
         if thread["status"] == "loop draft" and not con.execute(
             "SELECT 1 FROM supplier_loop_actions WHERE active=1 AND json_extract(payload,'$.dispatchThread')=?", (row["id"],)

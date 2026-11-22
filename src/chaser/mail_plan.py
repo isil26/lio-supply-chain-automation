@@ -100,6 +100,12 @@ def _roots(chases):
     return roots
 
 
+VERIFIED_SIMULATION = """(coalesce(json_extract(m.transport,'$.mode'),'') IN ('simulated','dry_run')
+        OR (m.transport IS NULL AND EXISTS (
+            SELECT 1 FROM messages o WHERE o.chase_id=m.chase_id AND o.side='out'
+              AND (o.sender LIKE '%(demo)' OR json_extract(o.transport,'$.mode')='dry_run'))))"""
+
+
 def contexts(con, thread_id=None, *, simulated=False):
     """Resolve the latest supplier evidence across retries of the same conversation."""
     where = ""
@@ -115,11 +121,7 @@ def contexts(con, thread_id=None, *, simulated=False):
         return {}
     # Old demo rows can predate transport metadata; their outbound mail still
     # carries the demo sender or dry-run envelope written by the original worker.
-    simulated_row = """(coalesce(json_extract(m.transport,'$.mode'),'') IN ('simulated','dry_run')
-        OR (m.transport IS NULL AND EXISTS (
-            SELECT 1 FROM messages o WHERE o.chase_id=m.chase_id AND o.side='out'
-              AND (o.sender LIKE '%(demo)' OR json_extract(o.transport,'$.mode')='dry_run'))))"""
-    scope = simulated_row if simulated else f"NOT {simulated_row}"
+    scope = VERIFIED_SIMULATION if simulated else f"NOT {VERIFIED_SIMULATION}"
     replies = con.execute(f"""
         SELECT m.chase_id,m.id,m.external_id,m.body,coalesce(json_extract(m.transport,'$.authoredAt'),m.time),c.deadline
         FROM messages m JOIN chases c ON c.id=m.chase_id
@@ -133,6 +135,9 @@ def contexts(con, thread_id=None, *, simulated=False):
         decided = {row[0] for row in con.execute("""SELECT m.id FROM deals d JOIN messages m
                     ON m.external_id=d.source_message AND m.chase_id=d.thread_id
                     WHERE d.status IN ('approved','declined')""")}
+    if not simulated and con.execute("SELECT 1 FROM sqlite_master WHERE name='deal_requests'").fetchone():
+        decided.update(r[0] for r in con.execute("""SELECT c.based_on_reply_id FROM deal_requests r JOIN chases c ON c.id=r.email_id
+                    JOIN deals d ON d.id=r.deal_id AND d.revision=r.revision WHERE c.based_on_reply_id IS NOT NULL"""))
     states = {}
     for thread, mid, external, body, at, deadline in replies:
         root = roots[thread]
