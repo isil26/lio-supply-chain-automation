@@ -552,3 +552,9 @@ Verified the existing public URL with a session from before deployment and a fre
 ## T-Data-Import — Manti workspace imports
 
 The Data import tab accepts the challenge ZIP, individual case files and the preconfigured Lio API. Both sources share the session’s private forecast. On the supplied baseline, the current portal imported 14 files and skipped 318. A repeated original challenge ZIP skipped all 303 entries. ERP workbooks without a verified operational mapping are indexed as cited rows for review.
+
+## T102-Live — Production upload verification
+
+On 22 November, the public Manti Live relay and VM release `dcf9e9b` accepted two independent uploads using the existing team sign-in. A single stock CSV moved the median from 639,100 to 640,000 Standard and kept Collector’s at 66,100. A ZIP with two files moved the same starting forecast to 640,000 Standard and 72,000 Collector’s. Both used synthetic test changes in private dry-run sessions. The operational stock file hash and forecast matched before and after testing. Signed-out upload access returned HTTP 401.
+
+The VM restarted during earlier attempts as new dashboard releases rolled out. Verification on `dcf9e9b` reused a read-only SQLite backup of the existing OCR cache in the release’s private store. The upload workflow ran its usual file validation, typed ingestion and forecasting. [Manti Live](https://soony-manti-live.vercel.app/)
