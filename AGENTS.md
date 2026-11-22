@@ -75,7 +75,7 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 ./scripts/vm-ssh
 ```
 
-For an unattended check, run `./scripts/vm-ssh 'hostname && id -un && sudo -n id -u'`. Expect `instance-20261122-003928`, `lio-team` and `0`. The shared account has a writable `~/work` directory. Each workstation generates its own key under `~/.ssh/lio-team-vm/`. GitHub Actions signs its public key for eight hours and records the requesting GitHub identity in the certificate. The helper reuses a valid certificate on subsequent connections.
+For an unattended check, run `./scripts/vm-ssh 'hostname && id -un && sudo -n id -u'`. Expect `instance-20261122-003928`, `lio-team` and `0`. The shared checkout is at `~/work/lio-supply-chain-automation`. Each workstation generates its own key under `~/.ssh/lio-team-vm/`. GitHub Actions signs its public key for eight hours and records the requesting GitHub identity in the certificate. The helper reuses a valid certificate on subsequent connections.
 
 The signer is stored in the encrypted Actions secret `LIO_VM_USER_CA`. To stop new sign-ins immediately, an administrator can remove its `cert-authority` line from `/home/lio-team/.ssh/authorized_keys` using the independent Mac login below. Removing the GitHub secret stops new issuance. Existing sessions retain their privileges.
 

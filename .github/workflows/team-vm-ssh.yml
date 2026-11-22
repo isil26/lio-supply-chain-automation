@@ -38,7 +38,7 @@ jobs:
           ssh-keygen -s vm-ca -I "$GITHUB_ACTOR/run-$GITHUB_RUN_ID" -z "$GITHUB_RUN_ID" \
             -n lio-team -V '-2m:+8h' -O clear -O permit-pty lio-user.pub
       - name: Return the signed public certificate
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ssh-certificate
           path: ${{ runner.temp }}/lio-user-cert.pub
