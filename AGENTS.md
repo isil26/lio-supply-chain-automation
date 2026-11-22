@@ -29,3 +29,7 @@ Humans are on the team too: see `coord/TEAM.md` (roles, branches, checkpoints). 
 - `bridge/` data sync from portal API (token in `.soony_token`) | `data/` synced files (gitignored)
 - `src/ingest` T1 | `src/docs` T2 | `src/truth` T3 | `src/chaser` T4 | `src/decide` T5 | `web/` T6 | `src/orchestrator` T7
 - `coord/` agent coordination files | `FINDINGS.md` data discoveries | `CODEX_TASKS.md` task specs
+
+## Mailbox credentials
+
+Keep Gmail app passwords in the runner environment or the ignored local file `deploy/mail/team-gmail.env`. Enable the staged and outgoing history checks in each new clone with `git config core.hooksPath .githooks`. After a history cleanup, start from a fresh clone and reapply unpublished changes. Merging an old branch can restore the password.
