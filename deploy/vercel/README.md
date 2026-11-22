@@ -10,6 +10,8 @@ The gateway sets an eight-hour signed, HTTP-only session cookie. Sign out from t
 
 For a private live deployment, run `python3 deploy/vercel/account.py "Account Name"` in a terminal for each operator. Combine the resulting entries into one JSON object and set it as the private `SOONY_USERS_JSON` environment variable on each gateway. Where an approval rule names a signer, provision that exact account name. Setting the variable replaces the demo list. Removing an account or replacing its verifier invalidates its sessions once the gateway loads the new configuration.
 
+For a production front gateway that already authenticates with a shared team password, keep its existing password and session key. On the receiving VM only, set `SOONY_SHARED_EDGE_ACCOUNT` to a dedicated, non-signer account in `SOONY_USERS_JSON`. Only requests authenticated by the front gateway’s server credential and carrying no individual identity receive this account. The activity log identifies them as a shared team login. Rehearsal and individual account sign-ins keep their existing attribution.
+
 ## Refresh from a new team snapshot
 
 Use the repository Python environment and Node 22. Keep the replay key in the team's approved private storage.

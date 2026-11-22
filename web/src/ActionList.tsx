@@ -61,7 +61,7 @@ const replied = (line: string, effect?: DecisionEffect | null) => effect?.reply 
 const PAST_STATUS: Record<string, string> = { approved: "Approved", review: "Sent back for review", dismissed: "Declined", done: "Done", reviewed: "Reviewed" };
 
 // Past actions: every decision of the last 7 days with what was decided, by whom, the message and the reply.
-function PastList({ rows, onOpenThread }: { rows: PastDecision[]; onOpenThread?: (threadId: string) => void }) {
+export function PastList({ rows, onOpenThread }: { rows: PastDecision[]; onOpenThread?: (threadId: string) => void }) {
   const [open, setOpen] = useState("");
   if (!rows.length) return <p className="empty">No decisions in the last 7 days yet.</p>;
   return <ol className="ac-list ac-past">

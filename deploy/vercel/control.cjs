@@ -142,7 +142,10 @@ module.exports = async function control(request, response) {
     // Only a credentialed relay can assert an account. Browser headers are ignored.
     const forwarded = request.headers['x-soony-user'] || '';
     const name = Buffer.from(forwarded, 'base64url').toString('utf8');
-    user = users.has(name) ? name : null;
+    // A password-only front gateway authenticates the whole team. Attribute
+    // its requests to one provisioned account, never to a named signer.
+    const shared = process.env.SOONY_SHARED_EDGE_ACCOUNT;
+    user = !forwarded && shared && users.has(shared) ? shared : users.has(name) ? name : null;
   }
   if (method === 'POST') {
     const route = target?.split('?')[0] ||

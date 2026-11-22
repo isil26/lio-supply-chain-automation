@@ -160,3 +160,5 @@ Last human sync: Sat 21 Nov 2026
 | codex-gcp-access | T-GCP-Live | GCP live runtime, Vercel and Mac retirement | done | Production Vercel serves the GCP VM with the existing login. Verified both databases, 41 threads, portal state, archive workflow and disabled Mac hosting jobs. | 22 Nov |
 
 | codex-mail-archive | T93-Mail-VM | supplier archive and VM exporter | done | Verified the VM export and GitHub workflow. Updated the archive index. Event-triggered publishing is pending GitHub deploy-key approval. | 22 Nov |
+
+| manti-dashboard | T-Manti-UI | Integrating Manti dashboard and activity views | in_progress | Existing sign-in, mail, approval and replay connections | 22 Nov |

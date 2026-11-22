@@ -1,0 +1,42 @@
+/* The same component tokens cover the overview, supplier tools and activity views. */
+.manti-workspace {display:grid;grid-template-columns:192px minmax(0,1fr);--accent:#365d4b;--accent-soft:#e4eee8;--on-accent:white;--rail:#f0f3f1;--alert-text:#903f42;--ok-text:#306848;--card-radius:14px}
+.manti-workspace.theme-dark {--bg:#131619;--rail:#191d20;--surface:#202429;--line:#383d42;--track:#33383e;--text:#f4f5f4;--muted:#b3babe;--accent:#b5c9bd;--on-accent:#192b21;--accent-soft:#2c3732;--alert-text:#eda39e;--ok-text:#a0d3b0;--bad:#eda39e;--lime:var(--accent);color-scheme:dark}
+.workspace-rail {position:sticky;top:0;height:100dvh;box-sizing:border-box;background:var(--rail);border-right:1px solid var(--line);padding:23px 15px;display:flex;flex-direction:column;gap:42px}
+.workspace-rail .brand-mark .dough,.workspace-rail .brand-mark .knot{fill:#737cda}.workspace-rail .brand-name{font-size:22px}.workspace-rail .brand-by{display:none}
+.workspace-rail nav{display:grid;gap:5px}.workspace-rail nav a{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid transparent;border-radius:8px;color:var(--muted);text-decoration:none;font-weight:550;font-size:15px}
+.workspace-rail nav a[aria-current=page]{background:var(--accent-soft);color:var(--text);border-color:var(--line);box-shadow:inset 2px 0 var(--accent)}
+.rail-foot{margin-top:auto;border-top:1px solid var(--line);padding:18px 6px 0;display:grid;gap:4px;font-size:.88rem}.rail-foot span,.workspace-crumb,.workspace-heading p,.forecast-context{color:var(--muted)}
+.manti-workspace .page{width:100%;max-width:1600px;min-width:0;padding:0 clamp(18px,2.8vw,48px) 50px}
+.manti-workspace .topbar{min-height:64px;border-bottom:1px solid var(--line);padding:10px 0;align-items:center;margin-bottom:22px}.workspace-crumb{font-size:14px}.workspace-crumb span{margin:0 7px}.workspace-crumb strong{color:var(--text);font-weight:550}
+.workspace-heading{margin-bottom:21px}.workspace-heading h1{font-size:clamp(1.9rem,2.6vw,2.6rem);letter-spacing:-.05em;margin:0}.workspace-heading p{margin:5px 0;font-size:.95rem}
+.forecast-grid {display:grid;grid-template-columns:1.14fr 1fr 1fr;gap:14px}
+.forecast-grid article {min-width:0;border:1px solid var(--line);border-radius:var(--card-radius);padding:clamp(15px,1.6vw,25px);display:flex;flex-direction:column;gap:8px}
+.forecast-grid h2 {font-size:.99rem;line-height:1.3;margin:0}
+.launch-tile {background:url('./launch-cargo.svg') right bottom / auto 85% no-repeat,linear-gradient(120deg,#293139,#444653);color:#f5f5f5}
+.launch-tile .countdown {margin:13px 0 12px;text-align:left}.launch-tile .countdown strong,.gap-value strong{font-size:clamp(1.9rem,2.85vw,3rem);letter-spacing:-.055em;line-height:1.1;font-variant-numeric:tabular-nums}
+.launch-tile .countdown span{color:#d1d2d9;font-size:.63rem;letter-spacing:.13em;font-weight:700}.launch-tile small{margin-top:auto;color:#ebebef}
+.edition-tile{--tone:var(--alert-text);background:linear-gradient(120deg,color-mix(in srgb,var(--alert-text) 9%,var(--surface)),var(--surface))}.edition-tile.complete{--tone:var(--ok-text);background:linear-gradient(120deg,var(--accent-soft),var(--surface))}
+.gap-value{font-size:.87rem;color:var(--tone);margin:8px 0 3px}.gap-value strong{color:var(--text);margin-right:3px}.coverage-bar{border-radius:6px;overflow:hidden;background:var(--track);height:5px}.coverage-bar i{display:block;background:var(--tone);height:100%}
+.coverage-label,.loss-label{display:flex;align-items:baseline;justify-content:space-between;gap:6px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}.loss-label{margin-top:auto;padding-top:9px;border-top:1px solid var(--line)}.loss-label b{font-size:1.1rem;color:var(--tone)}.coverage-label b{color:var(--tone)}
+.forecast-context{font-size:.8rem;line-height:1.4;margin:9px 0 17px}
+.decision-layout{display:grid;grid-template-columns:minmax(0,1.56fr) minmax(260px,1fr);align-items:start;gap:16px;margin-bottom:20px}
+.manti-workspace .card{border-radius:var(--card-radius);padding:clamp(16px,1.55vw,25px);min-width:0}
+.decision-side,.workspace-tools{display:grid;gap:16px;min-width:0}.workspace-tools[hidden]{display:none}
+.decision-side h3,.offers h3{font-size:1.12rem}.decision-side h3 small{float:right;color:var(--muted);font-size:.8rem}.deadline-scroll,.scroll-feed{max-height:240px;overflow-y:auto;scrollbar-width:thin;margin-top:12px}
+.deadline-scroll button,.supplier-list button{background:transparent;color:var(--text);width:100%;display:flex;justify-content:space-between;align-items:baseline;gap:10px;text-align:left;border:0;border-top:1px solid var(--line);padding:12px 4px;font:inherit;cursor:pointer}.deadline-scroll button span,.supplier-list button span:first-child{display:grid;gap:4px}
+.deadline-scroll small,.supplier-list small,.offer-selected p,.supplier-event p,.insight-tile p{color:var(--muted);font-size:.86rem;line-height:1.45}
+.deadline-scroll time{font-size:.81rem;font-weight:550}.deadline-scroll button:hover,.supplier-list button[aria-pressed=true]{background:var(--accent-soft)}
+.insight-tile strong{display:block;margin-top:12px}.insight-tile p{margin:7px 0}.workspace-tools>.card,.workspace-tools>.actions-card{margin:0}.workspace-tools .ac-item{scroll-margin:12px}
+.archived{filter:saturate(.35)}.scroll-feed small{display:block}
+.manti-workspace .offers{gap:12px}.manti-workspace .offers-tabs{border:1px solid var(--line);background:var(--bg);padding:4px;gap:3px;border-radius:9px}
+.manti-workspace .offers-tabs button{flex:1 1 auto;background:transparent;border:1px solid transparent;border-radius:6px}
+.manti-workspace .offers-tabs button.is-on{background:var(--accent-soft);border-color:var(--line)}
+.offer-recommendation,.reply-review{border-radius:10px;border:1px solid var(--line);padding:15px;background:linear-gradient(115deg,var(--accent-soft),var(--surface))}
+.offer-recommendation>small{color:var(--accent);font-size:.71rem;text-transform:uppercase;letter-spacing:.1em;font-weight:bold}.offer-recommendation strong{display:block;margin-top:6px;font-size:1.11rem}.offer-recommendation p,.reply-review p{line-height:1.5;margin:6px 0;font-size:.9rem}
+.supplier-list button{border:1px solid var(--line);border-radius:8px;padding:10px;align-items:center}.supplier-list{display:grid;gap:5px}.supplier-list button>span:last-child{font-size:.77rem;color:var(--muted)}
+.offer-selected{min-width:0}.offer-selected p,.supplier-event p{margin:6px 0}.offers .offers-words{margin:6px 0}.offers details summary{cursor:pointer;color:var(--accent);font-size:.88rem}.offers .offers-actions{margin-top:13px}.offers .offers-actions button{height:35px;border-radius:7px}
+.reply-review{margin-top:12px}.reply-review label{display:grid;gap:6px;font-size:.88rem}.reply-review :is(input,textarea){width:100%;resize:vertical;font:inherit;padding:8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text)}.reply-review h4{margin:0 0 8px}.reply-review button,.reply-review a{margin:6px 6px 0 0}.reply-review a{display:inline-flex;align-items:center;text-decoration:none}
+.supplier-event{border-top:1px solid var(--line);padding:10px 0}.workspace-rail a:focus-visible,.deadline-scroll:focus-visible,.supplier-list button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:1100px){.manti-workspace{grid-template-columns:148px minmax(0,1fr)}.workspace-rail{padding:18px 8px}.decision-layout{grid-template-columns:minmax(0,1.4fr) minmax(228px,1fr)}.launch-tile{background-size:auto 65%,cover}}
+@media(max-width:850px){.manti-workspace{display:block}.workspace-rail{position:static;height:auto;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;border:0;border-bottom:1px solid var(--line)}.workspace-rail nav{display:flex}.rail-foot{display:none}.workspace-rail nav a{font-size:14px;padding:8px}.manti-workspace .topbar{flex-wrap:wrap;gap:8px}.top-actions{flex-wrap:wrap}.decision-layout{grid-template-columns:minmax(0,1.4fr) minmax(210px,1fr)}}
+@media(max-width:680px){.forecast-grid{grid-template-columns:1fr 1fr;gap:8px}.launch-tile{grid-column:1/-1;background-size:auto 100%,cover}.decision-layout{grid-template-columns:1fr}.forecast-grid article{padding:13px}.manti-workspace .page{padding:0 12px 30px}.coverage-label{font-size:.75rem}.workspace-heading{margin-bottom:14px}.gap-value strong{display:block}.workspace-rail nav svg{display:none}.workspace-rail .brand-name{font-size:19px}.workspace-crumb{font-size:12px}.loss-label{gap:3px}.deadline-scroll{max-height:200px}}

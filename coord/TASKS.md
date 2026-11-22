@@ -141,3 +141,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-GCP-Live | Move live hosting and mailbox archive from Mac to GCP and route Vercel | codex-gcp-access | deploy/backend, live Vercel transport, ops | done | T-GCP-SSH |
 
 | T93-Mail-VM | Verify and document GitHub archive publishing on GCP | codex-mail-archive | supplier archive index, sync script and own coordination notes | done | T93-Mail-Events |
+
+| T-Manti-UI | Integrate the approved dashboard design with existing live/replay workflows | manti-dashboard | web UI and no-build control room | in_progress | T103-Login |
