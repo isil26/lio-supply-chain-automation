@@ -169,3 +169,32 @@ test('jury upload relay derives the upload session from the signed login', async
   const second = await fetch(path, { headers: { cookie: other, 'x-soony-upload-session': first.session } });
   assert.notEqual((await second.json()).session, first.session);
 });
+
+test('production team sign-in keeps uploads private to the signed-in session', async t => {
+  const { createHash } = require('node:crypto');
+  const upstream = await listener((req, res) => res.end(JSON.stringify({
+    user: Buffer.from(req.headers['x-soony-user'], 'base64url').toString(),
+    uploadSession: req.headers['x-soony-upload-session'],
+  })), t);
+  Object.assign(process.env, {
+    SOONY_TEAM_PASSWORD_HASH: createHash('sha256').update('test-team-password').digest('hex'),
+    SOONY_REPLAY_KEY: 'e'.repeat(64), SOONY_LIVE_UPSTREAM: upstream,
+  });
+  const site = await listener((req, res) => control(req, res, 'production-team-password'), t);
+  assert.equal((await fetch(site + '/api/uploads')).status, 401);
+  async function signIn() {
+    const login = await fetch(site + '/login', {
+      method: 'POST', headers: { origin: site }, redirect: 'manual',
+      body: new URLSearchParams({ password: 'test-team-password' }),
+    });
+    assert.equal(login.status, 303);
+    return login.headers.get('set-cookie').split(';')[0];
+  }
+  const upload = async cookie => (await fetch(site + '/control?live=%2Fapi%2Fuploads', { headers: { cookie } })).json();
+  const first = await signIn();
+  const a = await upload(first);
+  assert.equal(a.user, 'Shared team login');
+  assert.match(a.uploadSession, /^[\w-]{22}$/);
+  assert.deepEqual(await upload(first), a);
+  assert.notEqual((await upload(await signIn())).uploadSession, a.uploadSession);
+});

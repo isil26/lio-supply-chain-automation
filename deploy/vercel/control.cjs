@@ -1,4 +1,4 @@
-const { createDecipheriv, createHmac, randomBytes, timingSafeEqual } = require('node:crypto');
+const { createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } = require('node:crypto');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { liveTarget, forwardLive } = require('./live.cjs');
@@ -6,6 +6,7 @@ const { liveTarget, forwardLive } = require('./live.cjs');
 const { accounts, verifyPassword } = require('./accounts.cjs');
 
 const COOKIE = '__Host-soony-replay';
+const SHARED_ACCOUNT = 'Shared team login';
 const SESSION_SECONDS = 8 * 60 * 60;
 const operations = new Map([
   ['/', 'home'], ['/login', 'login'], ['/logout', 'logout'],
@@ -25,10 +26,22 @@ function signature(body, key, verifier) {
   return createHmac('sha256', key).update(`soony-session-v2:${verifier}:${body}`).digest('base64url');
 }
 
-function sessionFrom(request, key, users) {
+function sharedSignature(body, key) {
+  return createHmac('sha256', key).update(`soony-replay-session-v1:${body}`).digest('base64url');
+}
+
+function sessionFrom(request, key, users, sharedLogin) {
   const cookie = (request.headers.cookie || '').split(';').map(part => part.trim())
     .find(part => part.startsWith(`${COOKIE}=`));
   const token = cookie?.slice(COOKIE.length + 1) || '';
+  if (sharedLogin) {
+    const parts = /^(\d{10})\.(before|after)\.([\w-]{22})\.([\w-]{43})$/.exec(token);
+    if (!parts) return null;
+    const [, expiration, phase, nonce, provided] = parts;
+    const body = `${expiration}.${phase}.${nonce}`;
+    if (Number(expiration) <= Date.now() / 1000 || !equal(provided, sharedSignature(body, key))) return null;
+    return { expiration: Number(expiration), phase, nonce, user: SHARED_ACCOUNT };
+  }
   const match = /^(\d{10})\.(before|after)\.([\w-]{22})\.([\w-]{1,430})\.([\w-]{43})$/.exec(token);
   if (!match) return null;
   const [, expiration, phase, nonce, encodedUser, provided] = match;
@@ -39,9 +52,12 @@ function sessionFrom(request, key, users) {
   return { expiration: Number(expiration), phase, nonce, user };
 }
 
-function setSession(response, key, session, users) {
+function setSession(response, key, session, users, sharedLogin) {
   let token = '';
-  if (session) {
+  if (session && sharedLogin) {
+    const body = `${session.expiration}.${session.phase}.${session.nonce}`;
+    token = `${body}.${sharedSignature(body, key)}`;
+  } else if (session) {
     const encodedUser = Buffer.from(session.user).toString('base64url');
     const body = `${session.expiration}.${session.phase}.${session.nonce}.${encodedUser}`;
     token = `${body}.${signature(body, key, users.get(session.user))}`;
@@ -112,7 +128,8 @@ async function getLogin(request) {
   return new URLSearchParams(String(body));
 }
 
-module.exports = async function control(request, response) {
+module.exports = async function control(request, response, mode) {
+  const sharedLogin = mode === "production-team-password";
   response.setHeader('Cache-Control', 'private, no-store');
   response.setHeader('Vercel-CDN-Cache-Control', 'no-store');
   response.setHeader('X-Content-Type-Options', 'nosniff');
@@ -121,7 +138,10 @@ module.exports = async function control(request, response) {
   response.setHeader('X-Robots-Tag', 'noindex, nofollow');
   response.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
 
-  const users = accounts();
+  const teamHash = process.env.SOONY_TEAM_PASSWORD_HASH;
+  const users = sharedLogin
+    ? (/^[a-f0-9]{64}$/.test(teamHash || '') ? new Map([[SHARED_ACCOUNT, teamHash]]) : null)
+    : accounts();
   const hexKey = process.env.SOONY_REPLAY_KEY;
   if (!users || !/^[a-f0-9]{64}$/.test(hexKey || '')) {
     return respond(response, 503, { error: 'Team dashboard is unavailable' });
@@ -135,9 +155,9 @@ module.exports = async function control(request, response) {
   const upstream = process.env.SOONY_LIVE_UPSTREAM;
   const target = upstream ? (op === 'home' ? '/' : liveTarget(url, process.env.SOONY_LOCAL_DASHBOARD === '1')) : null;
   const gatewayToken = process.env.SOONY_LIVE_GATEWAY_TOKEN;
-  const trustedGateway = Boolean(target && gatewayToken &&
+  const trustedGateway = Boolean(!sharedLogin && target && gatewayToken &&
     equal(request.headers.authorization || '', 'Bearer ' + gatewayToken));
-  const session = sessionFrom(request, key, users);
+  const session = sessionFrom(request, key, users, sharedLogin);
   let user = session?.user ?? null;
   if (trustedGateway) {
     // Only a credentialed relay can assert an account. Browser headers are ignored.
@@ -165,8 +185,11 @@ module.exports = async function control(request, response) {
     user = null;
     const credentials = await getLogin(request);
     const next = upstream ? safeReturn(credentials.get("next")) : "/";
-    const name = credentials.get('username');
-    const verified = await verifyPassword(users.get(name), credentials.get('password'));
+    const name = sharedLogin ? SHARED_ACCOUNT : credentials.get('username');
+    const password = credentials.get('password') || '';
+    const verified = sharedLogin
+      ? Boolean(password) && equal(createHash('sha256').update(password).digest('hex'), teamHash)
+      : await verifyPassword(users.get(name), password);
     if (verified === null) return respond(response, 429, { error: 'Login is busy. Try again shortly.' });
     if (!verified) return loginPage(response, true, next);
     user = name;
@@ -175,7 +198,7 @@ module.exports = async function control(request, response) {
       phase: 'before',
       nonce: randomBytes(16).toString('base64url'),
       user,
-    }, users);
+    }, users, sharedLogin);
     response.setHeader('Location', next);
     return respond(response, 303, '');
   }
@@ -213,7 +236,7 @@ module.exports = async function control(request, response) {
   }
   if ((op === 'sync' || op === 'reset') && method === 'POST') {
     const phase = op === 'sync' ? 'after' : 'before';
-    setSession(response, key, { ...session, phase }, users);
+    setSession(response, key, { ...session, phase }, users, sharedLogin);
     return respond(response, 200, { ok: true });
   }
   return respond(response, 404, { error: 'Route unavailable' });

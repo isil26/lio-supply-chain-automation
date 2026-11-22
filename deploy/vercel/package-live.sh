@@ -22,7 +22,7 @@ cat > "$output/config.json" <<'JSON'
     { "src": "^/$", "dest": "/control?op=home" },
     { "src": "^/login$", "dest": "/control?op=login" },
     { "src": "^/logout$", "dest": "/control?op=logout" },
-    { "src": "^/(api/.*|assets/[A-Za-z0-9_.-]+|live|react)$", "dest": "/control?live=/$1" },
+    { "src": "^/(api/.*|assets/[A-Za-z0-9_.-]+|live|react|game-cards)$", "dest": "/control?live=/$1" },
     { "handle": "filesystem" }
   ]
 }
