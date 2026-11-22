@@ -96,12 +96,13 @@ function safeReturn(path) {
   return path;
 }
 
-function loginPage(response, failed = false, next = "/") {
+function loginPage(response, failed = false, next = "/", allowShared = false) {
   const template = readFileSync(join(__dirname, 'login.html'), 'utf8');
   const page = process.env.SOONY_LIVE_UPSTREAM
     ? template.replace('private supplier-drop replay', 'private live control room') : template;
   respond(response, failed ? 401 : 200, page
-    .replace('<!-- LOGIN_RETURN -->', '<input type="hidden" name="next" value="' + next.replace(/&/g, "&amp;") + '">')
+    .replace(/<!-- SHARED_LOGIN_START -->[\s\S]*?<!-- SHARED_LOGIN_END -->/, block => allowShared ? block : '')
+    .replaceAll('<!-- LOGIN_RETURN -->', '<input type="hidden" name="next" value="' + next.replace(/&/g, "&amp;") + '">')
     .replace('<!-- LOGIN_ERROR -->', failed ? '<p role="alert">The username or password is incorrect.</p>' : ''), 'text/html; charset=utf-8');
 }
 
@@ -139,6 +140,7 @@ module.exports = async function control(request, response, mode) {
   response.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
 
   const teamHash = process.env.SOONY_TEAM_PASSWORD_HASH;
+  const allowShared = mode === "production-team-accounts" && /^[a-f0-9]{64}$/.test(teamHash || '');
   const users = sharedLogin
     ? (/^[a-f0-9]{64}$/.test(teamHash || '') ? new Map([[SHARED_ACCOUNT, teamHash]]) : null)
     : accounts();
@@ -157,7 +159,8 @@ module.exports = async function control(request, response, mode) {
   const gatewayToken = process.env.SOONY_LIVE_GATEWAY_TOKEN;
   const trustedGateway = Boolean(!sharedLogin && target && gatewayToken &&
     equal(request.headers.authorization || '', 'Bearer ' + gatewayToken));
-  const session = sessionFrom(request, key, users, sharedLogin);
+  const session = sessionFrom(request, key, users, sharedLogin) ||
+    (allowShared ? sessionFrom(request, key, users, true) : null);
   let user = session?.user ?? null;
   if (trustedGateway) {
     // Only a credentialed relay can assert an account. Browser headers are ignored.
@@ -185,26 +188,27 @@ module.exports = async function control(request, response, mode) {
     user = null;
     const credentials = await getLogin(request);
     const next = upstream ? safeReturn(credentials.get("next")) : "/";
-    const name = sharedLogin ? SHARED_ACCOUNT : credentials.get('username');
+    const passwordOnly = sharedLogin || (allowShared && !credentials.get('username'));
+    const name = passwordOnly ? SHARED_ACCOUNT : credentials.get('username');
     const password = credentials.get('password') || '';
-    const verified = sharedLogin
+    const verified = passwordOnly
       ? Boolean(password) && equal(createHash('sha256').update(password).digest('hex'), teamHash)
       : await verifyPassword(users.get(name), password);
     if (verified === null) return respond(response, 429, { error: 'Login is busy. Try again shortly.' });
-    if (!verified) return loginPage(response, true, next);
+    if (!verified) return loginPage(response, true, next, allowShared);
     user = name;
     setSession(response, key, {
       expiration: Math.floor(Date.now() / 1000) + SESSION_SECONDS,
       phase: 'before',
       nonce: randomBytes(16).toString('base64url'),
       user,
-    }, users, sharedLogin);
+    }, users, passwordOnly);
     response.setHeader('Location', next);
     return respond(response, 303, '');
   }
 
   if ((op === 'home' || op === 'login' || target === '/live' || target === '/react' || target === '/game-cards') && method === 'GET' && !user && !trustedGateway) {
-    return loginPage(response, false, upstream ? (["/live", "/react", "/game-cards"].includes(target) ? target : loginReturn(url.searchParams)) : "/");
+    return loginPage(response, false, upstream ? (["/live", "/react", "/game-cards"].includes(target) ? target : loginReturn(url.searchParams)) : "/", allowShared);
   }
   const serviceRead = trustedGateway && method === 'GET' && process.env.SOONY_DEMO_ACCOUNTS !== '0';
   if (!user && !serviceRead) return respond(response, 401, { error: 'Team login required' });

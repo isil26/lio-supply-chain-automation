@@ -125,6 +125,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
   // Hosted recording and static builds have no live backend: show a labelled example,
   // and keep Approve / Decline in this browser only (nothing is sent).
   const example = hostedReplayBuild || isStaticMode();
+  const sharedAccount = currentUser === "Shared team login";
   const [data, setData] = useState<Data | null>(example ? exampleData() : null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -299,7 +300,10 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
         <details><summary>Offer terms and evidence</summary><p>{gist(selected)}</p><p>{[selected.carrier,selected.payment_terms,selected.signer&&"Signer · "+selected.signer,selected.required_by&&"Required by "+when(selected.required_by),selected.expires_at&&"Expires "+when(selected.expires_at),selected.p_on_time!=null&&"On time "+Math.round(selected.p_on_time*100)+"%",selected.list_price!=null&&"Contract price "+selected.list_price].filter(Boolean).join(" · ")}</p>
         {selected.history?.map((h,i)=><p key={i}>{when(h.at)} · {h.by} · {h.action} · {eur(h.terms.total_eur??null)}</p>)}</details>
         {!available && <p className="muted">{held ? "Automatically approved · email awaiting your review" : selected.review_reason || STATUS[selected.status]}{selected.decided_by && " · "+selected.decided_by}</p>}
-        {!archive && <div className="offers-actions">
+        {!archive && sharedAccount && <form method="post" action="/logout" className="offers-actions">
+          <p>Use your individual account to record an offer decision.</p><button className="ghost-button" type="submit">Switch account</button>
+        </form>}
+        {!archive && !sharedAccount && <div className="offers-actions">
           <button className="primary-button" disabled={(!available && !held) || !!busy} onClick={()=>prepare("approve")}>{held ? "Review supplier email" : "Approve"}</button>
           <button className="ghost-button" disabled={!available || !!busy} onClick={()=>prepare("decline")}>Decline</button>
           <button className="ghost-button" disabled={!!busy || selected.status==="superseded"} onClick={()=>prepare("negotiate")}>Negotiate</button>
@@ -324,7 +328,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
         onClick={()=>{setChoice(d.id);setReply(null);setNote(null);}}>
         <span><b>{country(d)}</b><small>{d.quantity?.toLocaleString("en-US") ?? "Unknown"} units · {arrives(d)}</small></span>
         <span>{best.some(offer=>offer.id===d.id) ? "Recommended" : STATUS[d.status]}</span></button>)}</div>
-      {!archive && policy && <PriceCeiling key={current + ":" + policy.limit} policy={policy} product={product(current)} save={saveLimit}/>}
+      {!archive && policy && <PriceCeiling key={current + ":" + policy.limit} policy={policy} product={product(current)} save={saveLimit} readOnly={sharedAccount}/>}
     </>}
   </section><aside className="decision-side">{children}
     {!archive && rows.length > 0 && <section className="card"><PriceChart rows={rows} product={product(current)} limit={policy?.limit ?? 0}/></section>}

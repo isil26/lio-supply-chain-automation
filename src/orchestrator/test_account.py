@@ -8,6 +8,7 @@ from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from src.ingest.store import connect, get_state
 from src.orchestrator.__main__ import handler
@@ -39,3 +40,10 @@ class AccountTest(unittest.TestCase):
             self.assertEqual(result[-1], 200)
             with closing(connect(database)) as con:
                 self.assertEqual(get_state(con, "autoApprove")["setBy"], "murat")
+            with patch.dict("os.environ", {"SOONY_SHARED_EDGE_ACCOUNT": "Shared team login"}):
+                req.headers.replace_header("X-Soony-User", base64.urlsafe_b64encode(b"Shared team login").decode())
+                for suffix in ("approve", "decline", "negotiate"):
+                    req.path = "/api/deals/0123456789abcdef/" + suffix
+                    req.rfile = BytesIO(body)
+                    req.do_POST()
+                    self.assertEqual(result[-1], 403)
