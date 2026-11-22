@@ -153,3 +153,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T102-Live | Verify uploads through the production Manti Live relay | codex-upload | production smoke test and release handoff | done | T102, T-Data-Import |
 
 | T-Data-Import-Live-QA | Verify both import sources and repeat imports through the public Manti Live gateway in a private scenario | manti-import | import verification and coordination | done | T-Data-Import |
+
+| T-Manti-Offers | Per-product reservation thresholds, recommendation controls, product chart and decision archive | manti-dashboard | supplier offer UI, offer policy and targeted dashboard layout | in_progress | T-Manti-UI, T-Data-Import |

@@ -174,3 +174,5 @@ Last human sync: Sat 21 Nov 2026
 | codex-upload | T102-Live | production upload verification | done | Signed-in single file and ZIP each changed the scenario forecast. Separate sessions and the unchanged operational stock and forecast were verified. | 22 Nov |
 
 | manti-import | T-Data-Import-Live-QA | Public gateway, private scenario | done | Identical ZIP and API repeats skipped all 303 and 332 files respectively. The shared forecast matched before and after. The private scenario was closed. | 22 Nov |
+
+| manti-dashboard | T-Manti-Offers | Supplier cards, auto-reservation rules and historical comparisons | in_progress | Integrating on top of the published Data import tab and current GCP backend | 22 Nov |
