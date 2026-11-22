@@ -129,7 +129,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [choice, setChoice] = useState<string | null>(null);
-  const [reply, setReply] = useState<{id:string; revision?:string; action:"approve"|"decline"|"negotiate"; body:string} | null>(null);
+  const [reply, setReply] = useState<{id:string; revision?:string; action:"approve"|"decline"|"negotiate"; body:string; recorded?:boolean} | null>(null);
   const [loadError,setLoadError] = useState(false);
   const [tab, setTab] = useState<string | null>(null);
 
@@ -160,7 +160,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
           id:d.id,supplier:d.supplier,quantity:d.quantity??undefined,price_eur:d.price_eur??undefined
         }));
         const deals = old.deals.map(d => d.id !== deal.id ? d : d.awaiting_send ? {...d, awaiting_send:0} :
-          {...d, status, decided_at:at, decided_by:actor, history:[{action:status,by:actor,at,terms:{alternatives}}]} as Deal);
+          {...d, status, decided_at:at, decided_by:actor, history:[{action:status,by:actor,at,terms:{alternatives}}, ...(d.history ?? [])]} as Deal);
         return { ...old, deals, best: deals.filter((d) => d.best) };
       });
       setNote(`Example only: in the live app this ${action === "approve" ? "asks the supplier in " + country(deal) + " to reserve the units (the purchase order needs the " + deal.signer + ")" : "sends the supplier in " + country(deal) + " a polite no-thanks"}. Nothing was sent here.`);
@@ -210,6 +210,31 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     setReply({id:d.id, revision:d.revision, action, body});
   }
   const policy = data.limits?.[current];
+  async function recordNegotiation() {
+    if (!draft || !selected || busy) return;
+    setBusy(selected.id + "negotiate");
+    try {
+      if (example) {
+        const event = { action:"negotiation started", by:currentUser || "Practice reviewer", at:new Date().toISOString(), note:draft.body,
+          terms:{alternatives:rows.map(d => ({id:d.id,supplier:d.supplier,quantity:d.quantity??undefined,price_eur:d.price_eur??undefined}))} };
+        setData(old => old && ({...old, deals:old.deals.map(d => d.id===selected.id ? {...d,history:[event,...(d.history ?? [])]} : d)}));
+      } else {
+        const response = await fetch(`/api/deals/${selected.id}/negotiate`, {method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({revision:selected.revision, message:draft.body, ...(!currentUser ? {by:reviewer.trim()} : {})})});
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          throw new Error(result.error || "The negotiation could not be recorded.");
+        }
+        await load();
+      }
+      setReply(currentDraft => currentDraft === draft ? {...draft,recorded:true} : currentDraft);
+      setNote(`Negotiation recorded for ${selected.supplier}. Your draft is ready to send.`);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : "The negotiation could not be recorded.");
+    } finally {
+      setBusy(null);
+    }
+  }
   const history = rows.flatMap(d => {
     const events: DecisionEvent[] = d.history?.length ? d.history : d.decided_by
       ? [{action:d.status, by:d.decided_by, at:d.decided_at, terms:{}}] : [];
@@ -225,7 +250,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
         const deals = old.deals.map(d => pick && pick.id === d.id ? {...d, status:"approved" as const,
           decided_by:actor, awaiting_send:1, decided_at:new Date().toISOString(),
           history:[{action:"approved", by:actor, at:new Date().toISOString(), note:"Automatic practice approval",
-            terms:{alternatives:rows.map(r=>({id:r.id,supplier:r.supplier,quantity:r.quantity??undefined,price_eur:r.price_eur??undefined}))}}]} : d);
+            terms:{alternatives:rows.map(r=>({id:r.id,supplier:r.supplier,quantity:r.quantity??undefined,price_eur:r.price_eur??undefined}))}}, ...(d.history ?? [])]} : d);
         return {...old, deals, best:deals.filter(d => d.best), limits:{...old.limits, [current]:{...policy,limit:value,actor}}};
       });
       return;
@@ -277,11 +302,13 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
         {!archive && <div className="offers-actions">
           <button className="primary-button" disabled={(!available && !held) || !!busy} onClick={()=>prepare("approve")}>{held ? "Review supplier email" : "Approve"}</button>
           <button className="ghost-button" disabled={!available || !!busy} onClick={()=>prepare("decline")}>Decline</button>
-          <button className="ghost-button" disabled={!!busy} onClick={()=>prepare("negotiate")}>Negotiate</button>
+          <button className="ghost-button" disabled={!!busy || selected.status==="superseded"} onClick={()=>prepare("negotiate")}>Negotiate</button>
         </div>}
         {!archive && draft && <section className="reply-review"><h4>{draft.action==="negotiate"?"Negotiation draft":draft.action==="approve"?"Review reservation request":"Review decline"}</h4>
-        {draft.action==="negotiate" ? <><label>Message to {selected.supplier}<textarea rows={6} value={draft.body} onChange={e=>setReply({...draft,body:e.target.value})}/></label>
-          {example || !selected.address ? <small className="muted">Copy this draft into your supplier correspondence.</small> :
+        {draft.action==="negotiate" ? <><label>Message to {selected.supplier}<textarea rows={6} maxLength={1000} readOnly={draft.recorded || !!busy} value={draft.body} onChange={e=>setReply({...draft,body:e.target.value})}/></label>
+          {!draft.recorded && !example && !currentUser && <label>Reviewed by<input autoComplete="name" maxLength={80} value={reviewer} onChange={e=>onReviewer(e.target.value)}/></label>}
+          {!draft.recorded ? <button className="primary-button" disabled={!!busy || !draft.body.trim() || (!example && !currentUser && !reviewer.trim())} onClick={()=>void recordNegotiation()}>Record negotiation</button> :
+          example || !selected.address ? <small className="muted">Copy this draft into your supplier correspondence.</small> :
           <a className="ghost-button" href={`mailto:${encodeURIComponent(selected.address)}?subject=${encodeURIComponent("Re: "+product(selected.material))}&body=${encodeURIComponent(draft.body)}`}>Open in email app</a>}</> : <>
           <p><strong>To</strong> · {selected.address || selected.supplier}</p>
           <strong>{selected.drafts?.[draft.action]?.subject ?? product(selected.material)}</strong>
@@ -290,7 +317,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
             : "Reload the offer to preview the current supplier message.")}</p>
           {!example && !currentUser && <label>Reviewed by<input autoComplete="name" maxLength={80} value={reviewer} onChange={e=>onReviewer(e.target.value)}/></label>}
           <button className="primary-button" disabled={(!available && !held) || !!busy || (!example && (!selected.drafts?.[draft.action] || (!currentUser && !reviewer.trim())))} onClick={()=>{void decide(selected,draft.action as "approve"|"decline");setReply(null);}}>{example?"Record practice decision":"Confirm and queue email"}</button></>}
-          <button className="link-button" onClick={()=>setReply(null)}>Cancel</button>
+          <button className="link-button" disabled={!!busy} onClick={()=>setReply(null)}>{draft.recorded ? "Close" : "Cancel"}</button>
         </section>}
       </div>}
       <div className="supplier-list" aria-label="Compare supplier offers">{rows.map(d => <button key={d.id} aria-pressed={selected?.id===d.id}

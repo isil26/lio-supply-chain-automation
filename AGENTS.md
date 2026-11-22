@@ -69,7 +69,7 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 
 ## GCP VM access
 
-**Continue project work on the VM.** The shared checkout is `~/work/lio-supply-chain-automation`. Production at [Manti Live](https://soony-manti-live.vercel.app) uses the VM backend and the existing team login. Development `main` includes a separate named-account rehearsal. The Mac hosting jobs are retired. Consult the [live operations guide](deploy/backend/README.md) before changing a running service or promoting a release.
+**Continue project work on the VM.** The shared checkout is `~/work/lio-supply-chain-automation`. Production at [Manti Live](https://soony-manti-live.vercel.app) uses the VM backend and individual production accounts. Development `main` includes a separate rehearsal with the same usernames and its own passwords. The Mac hosting jobs are retired. Consult the [live operations guide](deploy/backend/README.md) before changing a running service or promoting a release.
 
 **Repo writers can log in with full sudo.** From the repo root, run the helper below on a machine with Python 3, OpenSSH and GitHub CLI signed into a repo writer's account (`gh auth login` if needed). Any writer can request a certificate, including when the VM owner is offline.
 

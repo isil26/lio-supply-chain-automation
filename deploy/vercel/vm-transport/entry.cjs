@@ -40,6 +40,10 @@ async function openTransport() {
 }
 
 module.exports = async function vmControl(request, response) {
+  if (!process.env.SOONY_USERS_JSON) {
+    response.statusCode = 503;
+    return response.end('Team accounts are unavailable');
+  }
   try {
     listening ||= openTransport().catch(error => { listening = undefined; throw error; });
     await listening;
@@ -47,5 +51,5 @@ module.exports = async function vmControl(request, response) {
     response.statusCode = 503;
     return response.end('VM transport unavailable');
   }
-  return control(request, response, "production-team-password");
+  return control(request, response);
 };
