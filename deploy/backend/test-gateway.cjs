@@ -209,12 +209,16 @@ test('production team sign-in keeps uploads private to the signed-in session', a
   assert.notEqual((await upload(await signIn())).uploadSession, a.uploadSession);
   process.env.SOONY_USERS_JSON = JSON.stringify(demoUsers);
   const combined = await listener((req, res) => control(req, res, 'production-team-accounts'), t);
+  const welcome = await (await fetch(combined + '/')).text();
+  assert.match(welcome, /name="username"/);
+  assert.match(welcome, />skip login<\/button>/);
+  assert.doesNotMatch(welcome, /shared team login|id="team-password"/i);
   assert.equal((await (await fetch(combined + '/api/session', {headers:{cookie:first}})).json()).user, 'Shared team login');
   const retry = await fetch(combined + '/login', { method: 'POST', headers: { origin: combined },
     body: new URLSearchParams({ password: 'incorrect', next: '/live' }) });
   assert.equal(retry.status, 401);
   const retryPage = await retry.text();
-  assert.match(retryPage, /<details open>/);
+  assert.doesNotMatch(retryPage, /shared team login|id="team-password"/i);
   assert.match(retryPage, /role="alert">The team password is incorrect/);
   assert.match(retryPage, /name="next" value="\/live"/);
   for (const [credentials, user] of [

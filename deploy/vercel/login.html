@@ -18,7 +18,6 @@
   .guest { margin-top: .65rem; }
   .guest button { border: 1px solid #777780; background: transparent; color: inherit; }
   .guest button:hover { background: #323236; }
-  details { margin-top: 1.25rem; }
   :focus-visible { outline: 2px solid #92ddff; outline-offset: 3px; }
   [role="alert"] { margin: .75rem 0 0; color: #ffb5b5; }
 </style>
@@ -42,17 +41,6 @@
   <form class="guest" method="get" action="/demo/index.html">
     <button type="submit">skip login</button>
   </form>
-  <!-- SHARED_LOGIN_START -->
-  <details><summary>Use the shared team login</summary>
-    <p>Use your individual account to record supplier decisions.</p>
-    <form method="post" action="/login">
-      <!-- LOGIN_RETURN -->
-      <label for="team-password">Team password</label>
-      <input id="team-password" name="password" type="password" autocomplete="current-password" required maxlength="128">
-      <button type="submit">Continue with team login</button>
-    </form>
-  </details>
-  <!-- SHARED_LOGIN_END -->
 </main>
 </body>
 </html>

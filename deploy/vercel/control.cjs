@@ -96,16 +96,12 @@ function safeReturn(path) {
   return path;
 }
 
-function loginPage(response, { next = '/', sharedLogin, allowShared, sharedAttempt, status = 200 }) {
+function loginPage(response, { next = '/', sharedLogin, sharedAttempt, status = 200 }) {
   const template = readFileSync(join(__dirname, 'login.html'), 'utf8');
   const message = status === 429 ? 'Sign-in is busy. Try again shortly.'
     : status === 401 ? (sharedLogin || sharedAttempt ? 'The team password is incorrect.' : 'The username or password is incorrect.') : '';
   respond(response, status, template
     .replace(/<!-- NAMED_ACCOUNT_START -->[\s\S]*?<!-- NAMED_ACCOUNT_END -->/, block => sharedLogin ? '' : block)
-    .replace(/<!-- SHARED_LOGIN_START -->[\s\S]*?<!-- SHARED_LOGIN_END -->/, block => {
-      if (!allowShared) return '';
-      return sharedAttempt ? block.replace('<details>', '<details open>') : block;
-    })
     .replaceAll('<!-- LOGIN_RETURN -->', '<input type="hidden" name="next" value="' + next.replace(/&/g, "&amp;") + '">')
     .replace('<!-- LOGIN_ERROR -->', message ? '<p role="alert">' + message + '</p>' : ''), 'text/html; charset=utf-8');
 }
@@ -199,7 +195,7 @@ module.exports = async function control(request, response, mode) {
       ? Boolean(password) && equal(createHash('sha256').update(password).digest('hex'), teamHash)
       : await verifyPassword(users.get(name), password);
     if (!verified) return loginPage(response, {
-      next, sharedLogin, allowShared, sharedAttempt: passwordOnly, status: verified === null ? 429 : 401,
+      next, sharedLogin, sharedAttempt: passwordOnly, status: verified === null ? 429 : 401,
     });
     user = name;
     setSession(response, key, {
@@ -214,7 +210,7 @@ module.exports = async function control(request, response, mode) {
 
   if ((op === 'home' || op === 'login' || target === '/live' || target === '/react' || target === '/game-cards') && method === 'GET' && !user && !trustedGateway) {
     const next = upstream ? (["/live", "/react", "/game-cards"].includes(target) ? target : loginReturn(url.searchParams)) : "/";
-    return loginPage(response, { next, sharedLogin, allowShared });
+    return loginPage(response, { next, sharedLogin });
   }
   const serviceRead = trustedGateway && method === 'GET' && process.env.SOONY_DEMO_ACCOUNTS !== '0';
   if (!user && !serviceRead) return respond(response, 401, { error: 'Team login required' });
