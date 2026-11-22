@@ -37,7 +37,7 @@ from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
 from src.ingest.store import DB, ROOT, connect, get_state, ingest, now, save_state
 from src.orchestrator.portal_update import portal_baseline, portal_update
-from src.orchestrator import action_approvals, decision_effects
+from src.orchestrator import action_approvals, deal_watch, decision_effects
 from src.orchestrator.numbers import numbers_report
 from src.orchestrator.uploads import MAX_BODY, UploadError, Uploads
 from src.truth import LOCAL, readiness
@@ -578,6 +578,9 @@ class Loop:
             handwriting = reconcile_handwriting(con, root)
             mail_ready = True
             mail_changed = False
+            watch_live = (not self.args.demo and not getattr(self.args, "once", True)
+                          and os.getenv("CHASER_REAL_SMTP") == "1")
+            review_due = False
             if not self.args.demo:
                 try:
                     chaser.poll(con)
@@ -589,9 +592,13 @@ class Loop:
                 mail_watermark = recovery.watermark(con)
                 last_mail = get_state(con, "forecastMailWatermark", 0)
                 mail_changed = recovery.pending_revision(con, last_mail, mail_watermark)
+                if watch_live and mail_ready:
+                    review_due = deal_watch.due(get_state(con, deal_watch.KEY), before, mail_watermark,
+                                                datetime.now(timezone.utc))
             successful = get_state(con, "pendingEvents", [])
-            if (not self.initialized or before is None or new_portal or successful or extracted or handwriting
-                    or mail_changed or get_state(con, "pendingRecompute", False)):
+            recompute = (not self.initialized or before is None or new_portal or successful or extracted
+                         or handwriting or mail_changed or get_state(con, "pendingRecompute", False) or review_due)
+            if recompute:
                 previous_options = get_state(con, "options", [])
                 with con:
                     save_state(con, "pendingRecompute", True)
@@ -607,7 +614,10 @@ class Loop:
                 for option in options:
                     if option.get("approval_block"):
                         option["evaluated_at"] = now()
-                draft_count = chaser.draft(con, truth, options)
+                draft_count = 0
+                end = deal_watch.cutoff(truth)
+                if not watch_live or (end and datetime.now(timezone.utc) < end):
+                    draft_count = chaser.draft(con, truth, options)
                 proposals = source_proposals(con, truth, root)
                 with con:
                     save_state(con, "truth", truth)
@@ -653,9 +663,19 @@ class Loop:
                                   dispatch=mail_ready and not getattr(self.args, "once", True))
             if mail_ready and not self.args.demo and not getattr(self.args, "once", True):
                 from src.chaser import autosend  # T78 mail-agent: automatic sending (live mode only)
+                reviewed_offers = False
+                if watch_live and recompute:
+                    # The same worker that ingests mail and refreshes the forecast owns the
+                    # review clock. Record a completed pass only after its planners succeed.
+                    try:
+                        reviewed_offers = deal_watch.publish(con, truth, mail_watermark, datetime.now(timezone.utc))
+                    except (ValueError, TypeError, sqlite3.Error) as exc:
+                        with con:
+                            save_state(con, "pendingRecompute", True)
+                        sync_error = (sync_error + " " if sync_error else "") + f"Supplier deal review failed ({exc.__class__.__name__})."
                 if autosend.enabled(self.args.demo):
                     try:
-                        autosend.run(con)
+                        autosend.run(con, offers_current=reviewed_offers)
                     except Exception as exc:
                         sync_error = (sync_error + " " if sync_error else "") + f"Automatic email sending failed ({exc.__class__.__name__})."
             chaser.expire(con)
@@ -807,6 +827,7 @@ def handler(loop, gateway_token=None):
                             "lock_wait_seconds": round(health["lockWaitMs"] / 1000, 3),
                             "dataHealth": data_health,
                             "backendCommit": os.getenv("SOONY_RELEASE_SHA"),
+                            "dealWatch": get_state(con, deal_watch.KEY),
                         })
                         return self.out(health)
                     preview = re.fullmatch(r"/api/decisions/([a-f0-9]+)/preview", path)

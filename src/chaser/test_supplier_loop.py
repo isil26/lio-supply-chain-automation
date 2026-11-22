@@ -231,7 +231,12 @@ class SupplierLoopTests(unittest.TestCase):
             patch.object(runner, "ingest", return_value=[]),
             patch.object(runner, "extract", return_value=0),
             patch.object(runner, "reconcile_handwriting", return_value=0),
-            # This worker fixture contains only supplier mail and its stock requirements.
+            # The mail fixture has a published forecast but no raw planning tables.
+            patch.object(runner, "readiness", return_value=self.truth) as readiness,
+            patch.object(runner, "choose", return_value=self.options[1:]),
+            patch.object(runner, "source_proposals", return_value=[]),
+            patch("src.chaser.draft", return_value=0),
+            patch.object(runner, "datetime", Clock),
             patch.object(runner, "dashboard", return_value={"actions": []}),
             patch("src.chaser.poll", return_value=0),
             patch("src.chaser.mailenv.load_team_mail_env"),
@@ -242,6 +247,10 @@ class SupplierLoopTests(unittest.TestCase):
             receiver.send_message.return_value = {}
             cycle()
             cycle()
+            readiness.assert_called_once()
+            watch = runner.get_state(self.db, runner.deal_watch.KEY)
+            self.assertEqual(watch["reviewedThrough"], runner.recovery.watermark(self.db))
+            self.assertEqual(watch["status"], "active")
             receiver.send_message.assert_called_once()
             message = receiver.send_message.call_args.args[0]
             self.assertEqual(message["In-Reply-To"], "<pending@example.invalid>")

@@ -177,7 +177,7 @@ def _hold(con, chase_id, status, supplier, phrase):
         _activity(con, "Mail Agent", f"{supplier}: ONE-CLICK needed before sending (binding wording: \"{phrase}\").", "warning")
 
 
-def run(con, *, send=None, now=None, prepare=True):
+def run(con, *, send=None, now=None, prepare=True, offers_current=False):
     """Prepare and send drafts. Returns a list of {id, supplier, result}."""
     from . import activity as _activity
     from . import send as chaser_send
@@ -207,7 +207,7 @@ def run(con, *, send=None, now=None, prepare=True):
             activity(con, "Mail Agent", f"Reply answering skipped ({exc.__class__.__name__}).", "warning")
         try:
             row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
-            if row:
+            if row and not offers_current:
                 deals.sync(con, row[0], now=now)
         except Exception as exc:
             activity(con, "Mail Agent", f"Offer table update skipped ({exc.__class__.__name__}).", "warning")

@@ -179,3 +179,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-Live-Offer-Interpreter | Offline translation and evidence-backed offer pricing and approvals | manti-forecast-desk | mail translation, supplier offer workflow, production verification | done | T-Manager-Dashboard |
 
 | T-Button-Review | Audit and repair button outcomes, feedback and dialog completion across the connected app | manti-interactions | web interactions and gateway controls | done | T-Manager-Dashboard |
+
+| T-Server-Deal-Watch | Run the recurring procurement opportunity review in the deployed worker | manti-deal-watch | orchestrator scheduler and supplier review state | in_progress | T-Supplier-Promises |

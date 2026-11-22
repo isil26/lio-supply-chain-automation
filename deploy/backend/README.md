@@ -20,6 +20,8 @@ The service-private directory is `/var/lib/lio-live`. `live-mail/soony.db` store
 
 The registered team mailbox configuration is in `mail-history.json`. The live worker reads replies via IMAP and sends eligible messages under the existing supplier-domain and approval rules. Set `CHASER_AUTO_SEND` to `0` in the service’s `config.json` and restart `lio-live` to pause automatic sending. **Verified team mailbox** shows matched read-only history. Run only one live sender against the production state.
 
+The live planner reviews active shortages, registered sources, recovery options and supplier quotes on a 30-minute cadence and on new supplier mail or source data. Its normal mail cycle sends eligible information requests and checks promised updates. The operational database stores the last completed review and next review time under `dealWatch`. The authenticated `/api/health` response exposes that state. New or revised eligible quotes appear in the Activity Log. The service resumes the review after a VM restart.
+
 ## Supplier email translation
 
 The supplier translator reads new Polish, Korean and Chinese correspondence from the operational and verified mailboxes. It uses local CPU models and caches English by the original message hash. Install the runtime and pinned model packages on a new host before starting the service.
