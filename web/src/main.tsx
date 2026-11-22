@@ -175,9 +175,9 @@ function App() {
   // Next step = the open option that saves the most copies in the forecast; falls back to the backend's pick.
   const copiesSaved = (option: { modeled_impact?: Record<string, { medianDelta?: number; expectedDelta?: number }> } | null | undefined) =>
     Math.round(Object.values(option?.modeled_impact ?? {}).reduce((sum, edition) => sum + Math.max(0, edition.expectedDelta ?? edition.medianDelta ?? 0), 0));
-  const bestOption = (data.options ?? []).filter((option) => option.status !== "blocked")
+  const bestOption = (data.options ?? []).filter((option) => !option.status || option.status === "pending")
     .reduce<typeof data.approval>((best, option) => copiesSaved(option) > copiesSaved(best) ? option : best, null);
-  const approval = bestOption && copiesSaved(bestOption) > 0 ? bestOption : data.approval;
+  const approval = bestOption && copiesSaved(bestOption) > 0 ? bestOption : (data.approval?.status ?? "pending") === "pending" ? data.approval : null;
   const saved = copiesSaved(approval);
   // Euro view: what Soony says a missed copy costs (config/customer_inputs.json, Dr. Vogt); else finished-goods standard cost.
   const useMiss = data.readiness.every((row) => row.missCostEur != null);

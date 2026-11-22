@@ -311,6 +311,8 @@ def list_deals(con):
         row["history"] = history.get(row["id"],[])
         if row["offer_state"]=="superseded" or row["thread_id"] in superseded:
             row.update(status="superseded", eligible=0, best=0)
+        if row["eligible"] and row["status"] in ("pending", "changed"):
+            row["drafts"] = {action: _decision_email(row, action) for action in EMAIL}
     return {"deals":rows,"best":[r for r in rows if r["best"]]}
 
 
@@ -396,6 +398,19 @@ def check_draft(con, chase_id):
     return True
 
 
+def _decision_email(deal, action):
+    lang = deal["language"] if deal["language"] in EMAIL[action] else "en"
+    freight = deal["offer_kind"] == "freight"
+    subject, body = FREIGHT_RESERVATION[lang] if freight and action == "approve" else EMAIL[action][lang]
+    eta = datetime.fromisoformat(deal["eta"]).astimezone(ZoneInfo("Europe/Berlin")).strftime("%d %b %H:%M %Z")
+    role = ROLE_LOCAL.get(lang, {}).get(deal["signer"],deal["signer"])
+    price = deal["freight_charge"] if freight else deal["unit_price"]
+    values = {"material":deal["material"],"qty":f"{deal['order_quantity']:,}",
+              "price":f"{price:g} {deal['currency']}","eta":eta,"signer":role,"carrier":deal["carrier"]}
+    email_id = hashlib.sha256(f"deal:{deal['id']}:{deal['revision']}:{action}".encode()).hexdigest()[:10].upper()
+    return {"id": email_id, "subject": f"[SOONY-{email_id}] " + subject.format(**values), "body": body.format(**values)}
+
+
 def decide(con, deal_id, action, by=None, note=None, *, revision=None):
     """Record one immutable buyer decision and enqueue one nonbinding response per revision."""
     if action not in EMAIL:
@@ -417,20 +432,13 @@ def decide(con, deal_id, action, by=None, note=None, *, revision=None):
         if not isinstance(by, str) or not by.strip():
             raise ValueError("Enter the name of the person reviewing this offer.")
         by = by.strip()
+        draft = _decision_email(deal, action)
+        text = draft["body"]
         lang = deal["language"] if deal["language"] in EMAIL[action] else "en"
-        freight = deal["offer_kind"] == "freight"
-        subject, body = FREIGHT_RESERVATION[lang] if freight and action == "approve" else EMAIL[action][lang]
-        eta = datetime.fromisoformat(deal["eta"]).astimezone(ZoneInfo("Europe/Berlin")).strftime("%d %b %H:%M %Z")
-        role = ROLE_LOCAL.get(lang, {}).get(deal["signer"],deal["signer"])
-        price = deal["freight_charge"] if freight else deal["unit_price"]
-        values = {"material":deal["material"],"qty":f"{deal['order_quantity']:,}",
-                  "price":f"{price:g} {deal['currency']}","eta":eta,"signer":role,"carrier":deal["carrier"]}
-        text = body.format(**values)
         check = Guardrails().validate_draft(text)
         if not check.ok:
             raise ValueError("Email failed guardrails: "+"; ".join(check.errors))
-        email_id = hashlib.sha256(f"deal:{deal_id}:{revision}:{action}".encode()).hexdigest()[:10].upper()
-        subj = f"[SOONY-{email_id}] " + subject.format(**values)
+        email_id, subj = draft["id"], draft["subject"]
         con.execute("""INSERT INTO chases
             (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,parent_thread_id,based_on_reply_id)
             VALUES(?,?,?,?,?,?,?,?,?,?,(SELECT deadline FROM chases WHERE id=?),?,(SELECT id FROM messages WHERE external_id=?))""",

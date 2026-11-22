@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Team sign-in | Soony Launch Control Room</title>
+<title>Sign in | Manti</title>
 <style>
   :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #14171a; color: #f2f4f2; }
   body { display: grid; min-height: 100vh; place-items: center; margin: 0; }
@@ -22,12 +22,14 @@
 <main>
   <strong class="brand-label">Manti</strong>
   <h1>Soony Launch Control Room</h1>
-  <p>Sign in to open the private supplier-drop replay.</p>
+  <p>Sign in to open the launch dashboard.</p>
   <!-- LOGIN_ERROR -->
   <form method="post" action="/login">
     <!-- LOGIN_RETURN -->
+    <!-- NAMED_ACCOUNT_START -->
     <label for="username">Username</label>
     <input id="username" name="username" autocomplete="username" required maxlength="80" autocapitalize="none" spellcheck="false">
+    <!-- NAMED_ACCOUNT_END -->
     <label for="password">Password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
     <button type="submit">Sign in</button>
