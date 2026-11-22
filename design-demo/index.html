@@ -4,23 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#15151c">
-  <title>Launch overview · Lio Launch Desk</title>
+  <title>Dashboard · Manti</title>
   <link rel="stylesheet" href="styles.css">
   <script defer src="evidence.js"></script>
   <script defer src="art.js"></script>
+  <script defer src="scenario.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to dashboard</a>
 <div class="shell">
   <aside class="sidebar">
-    <a class="brand" href="#overview" aria-label="Launch Desk overview"><span class="brand-icon" data-icon="brand"></span><span>Launch Desk</span></a>
+    <a class="brand" href="#overview" aria-label="Manti dashboard"><svg viewBox="0 0 32 32" class="brand-mark" aria-hidden="true">
+      <path d="M5 21.5C5 14 9.9 8.5 16 8.5S27 14 27 21.5c0 2.2-1.6 3.5-3.6 3.5H8.6C6.6 25 5 23.7 5 21.5Z" class="dough"/>
+      <path d="M16 8.5 10.5 24.6M16 8.5l5.5 16.1M16 8.5 7 19M16 8.5 25 19" class="pleat"/>
+      <circle cx="16" cy="7.2" r="2.4" class="knot"/>
+    </svg><span>Manti</span></a>
     <div class="nav-group"><span class="overline nav-label">Workspace</span>
       <nav aria-label="Workspace">
-        <a href="#overview" data-nav="overview"><i data-icon="grid"></i>Overview</a>
-        <a href="#offers" data-nav="offers"><i data-icon="inbox"></i>Supplier offers</a>
-        <a href="#decisions" data-nav="decisions"><i data-icon="list"></i>Decision queue<span class="nav-count" id="nav-count"></span></a>
-        <a href="#activity" data-nav="activity"><i data-icon="history"></i>Activity log</a>
+        <a href="#overview" data-nav="overview"><i data-icon="grid"></i>Dashboard</a>
+        <a href="#activity" data-nav="activity"><i data-icon="history"></i>Activity Log</a>
       </nav>
     </div>
     <div class="workspace-foot"><div class="workspace-avatar">GH</div><div><b>Grand Heist 6</b><small>Launch workspace</small></div></div>
@@ -28,7 +31,7 @@
   <div class="workspace">
     <header class="topbar"><div class="crumb"><i data-icon="panels"></i><span>Workspace</span><span class="slash">/</span><b>Grand Heist 6</b></div><span class="replay"><i data-icon="play"></i>Demo replay</span></header>
     <main id="main" tabindex="-1">
-      <header class="page-title"><div><h1 id="view-title">Launch overview</h1><p id="view-subtitle">Grand Heist 6 <span class="middot">·</span> Hamburg distribution center</p></div><span class="date-chip"><i data-icon="calendar"></i>Sat, 21 Nov 2026</span></header>
+      <header class="page-title"><div><h1 id="view-title">Dashboard</h1><p id="view-subtitle">Grand Heist 6 <span class="middot">·</span> Hamburg distribution center</p></div><span class="date-chip"><i data-icon="calendar"></i>Sat, 21 Nov 2026</span></header>
       <div id="content"></div>
     </main>
   </div>
