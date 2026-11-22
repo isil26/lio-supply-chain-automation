@@ -154,3 +154,5 @@ Last human sync: Sat 21 Nov 2026
 | codex-card-replay | T98-Card-Replay | truth receipt/shipment reconciliation, regression and focused demo | done | Corrected live snapshot has 98,100 cards on hand, zero eligible inbound and a 6,800 gap. 500-run p50 639,100 STD / 66,100 CE. Focused browser replay recorded Felix’s simulated approval. 60 focused tests and the existing end-to-end demo passed. | 21 Nov |
 
 | codex-gcp-access | T-GCP-SSH | Team GCP VM and repository SSH onboarding | done | Repo writers can run `./scripts/vm-ssh` for an eight-hour login with passwordless sudo. Verified fresh issuance, renewal, root UID 0, and the clean writable checkout. | 22 Nov |
+
+| codex-portal-copy | T-Live-Update | Portal banner and home page | done | Verified the live-store receipt, current gap, and keyboard navigation to its open recovery action. | 22 Nov |
