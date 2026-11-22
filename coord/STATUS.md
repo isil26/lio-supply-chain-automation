@@ -200,3 +200,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-forecast-desk | T-Live-Offer-Interpreter | Reconcile live offers and implement a translator for new supplier messages | in_progress | Verify English previews and actionable responses | 22 Nov |
 
 | manti-interactions | T-Button-Review | Audited button outcomes across the workspace, gateway, standalone control room and card replay | done | Verified both frontend builds, local browser workflows, 27 backend tests and 5 gateway tests | 22 Nov |
+
+| manti-interactions | T-Button-Review | Deploying the tested button fixes and verifying compatibility with the supplier interpreter | in_progress | Manti Live production rollout | 22 Nov |
