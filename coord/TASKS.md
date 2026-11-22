@@ -150,8 +150,6 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Data-Import | Add the Data import tab with ZIP and preconfigured portal sources and duplicate handling | manti-import | web, orchestrator, ingest, docs and bridge | done | T102-Upload |
 
-<<<<<<< Updated upstream
 | T102-Live | Verify uploads through the production Manti Live relay | codex-upload | production smoke test and release handoff | done | T102, T-Data-Import |
-=======
+
 | T-Data-Import-Live-QA | Verify both import sources and repeat imports through the public Manti Live gateway in a private scenario | manti-import | import verification and coordination | in_progress | T-Data-Import |
->>>>>>> Stashed changes

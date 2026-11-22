@@ -171,8 +171,6 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-import | T-Data-Import | Web, import adapter and ingestion | done | Verified both sources in the browser, including the 332-file portal and repeat of the 303-file challenge ZIP. | 22 Nov |
 
-<<<<<<< Updated upstream
 | codex-upload | T102-Live | production upload verification | done | Signed-in single file and ZIP each changed the scenario forecast. Separate sessions and the unchanged operational stock and forecast were verified. | 22 Nov |
-=======
+
 | manti-import | T-Data-Import-Live-QA | Public gateway, private scenario | in_progress | Checking the original challenge ZIP, portal import and identical repeats. | 22 Nov |
->>>>>>> Stashed changes
