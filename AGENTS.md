@@ -84,7 +84,7 @@ ssh -i ~/.ssh/google_compute_engine -o IdentitiesOnly=yes -o BatchMode=yes \
 ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o HostKeyAlgorithms=ssh-ed25519 USERNAME@34.154.38.26
 ```
 
-On first connection, verify the ED25519 host fingerprint is `SHA256:9/vq838sJjES+nsF3711W70PuqS6ffPi7t6Sm9p7YR0`. The expected hostname is `instance-20261122-003928`. The address above was verified on 22 November 2026.
+The VM's public host key is checked in at [deploy/backend/vm_known_hosts](deploy/backend/vm_known_hosts). From the repository root, pass `-o UserKnownHostsFile=deploy/backend/vm_known_hosts -o StrictHostKeyChecking=yes` to verify its identity on the first connection. The ED25519 fingerprint is `SHA256:9/vq838sJjES+nsF3711W70PuqS6ffPi7t6Sm9p7YR0`. The expected hostname is `instance-20261122-003928`. The address above was verified on 22 November 2026.
 
 **Google Cloud CLI.** Team members with an authorized Google Cloud account can also connect by instance name. This works if the external IP changes.
 
