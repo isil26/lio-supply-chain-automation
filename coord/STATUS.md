@@ -205,4 +205,4 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-deal-watch | T-Server-Deal-Watch | orchestrator and supplier opportunity review | done | Manti Live recorded its first autonomous review at 04:59 CET and scheduled the next at 05:29 CET. Codex schedule deleted. | 22 Nov |
 
-| manti-forecast-desk | T-Quote-Followups-FX | Trace missing-term follow-ups and price displays | in_progress | Verify actual supplier reply handling and published reference rates | 22 Nov |
+| manti-forecast-desk | T-Quote-Followups-FX | Verified automatic quote collection and dated euro equivalents on Manti Live | done | One live send, two scheduled contacts, all eight English previews and 29 ECB rates verified | 22 Nov |
