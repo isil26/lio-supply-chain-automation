@@ -47,7 +47,7 @@ def _cached(con, text, hint=None):
     if local_translation.language(text, hint) == "en" or (looks_english(text) and not local_translation.language(text)):
         return {"english": text, "summary": None, "language": "English", "source": "original"}
     row = con.execute("SELECT language, english, summary FROM translations WHERE hash=?", (key,)).fetchone()
-    if row:
+    if row and (row[2] or local_translation.references_preserved(text,row[1])):
         return {"language": row[0], "english": row[1], "summary": row[2], "source": "translated"}
     return None
 

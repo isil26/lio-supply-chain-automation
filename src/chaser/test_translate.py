@@ -40,6 +40,19 @@ class TranslateTest(unittest.TestCase):
             worker.assert_called_once()
         self.assertEqual(thread["messages"][0],{"text":body,"english":result["english"]})
 
+    def test_machine_translation_preserves_source_references_even_after_model_errors(self):
+        from .local_translation import _preserve, references_preserved
+        source = "订单 4500318738 行 00020，数量 350,000。"
+        repaired = _preserve(source, "PO 450318738 line 00020, quantity 350,000.", None)
+        self.assertEqual(repaired,"PO 4500318738 line 00020, quantity 350,000.")
+        fallback = _preserve(source, "We have the items.", lambda texts:["Order" for _ in texts])
+        self.assertTrue(references_preserved(source,fallback))
+        con = sqlite3.connect(":memory:")
+        translate.schema(con)
+        key = translate.hashlib.sha256(source.encode()).hexdigest()
+        con.execute("INSERT INTO translations VALUES(?,?,?,?)",(key,"Chinese","PO 450318738.",None))
+        self.assertIsNone(translate._cached(con, source, "zh"))
+
     def test_no_model_says_so(self):
         out = translate.translate(sqlite3.connect(":memory:"), "Dzień dobry, możemy zarezerwować książki.",
                                   LLMClient(model=None, provider="none"))
