@@ -171,6 +171,10 @@ def check_draft(con, chase, *, simulated=False):
         raise ValueError("The supplier has already answered this reminder.")
     if chase["based_on_reply_id"] is not None and chase["based_on_reply_id"] != state["replyId"]:
         raise ValueError("A newer supplier reply replaced this draft.")
+    if con.execute("SELECT 1 FROM sqlite_master WHERE name='deals'").fetchone() and con.execute(
+            """SELECT 1 FROM deals WHERE source_message=? AND status IN ('pending','changed') AND
+               offer_state IN ('incomplete','approval_required','quoted')""",(state["messageId"],)).fetchone():
+        raise ValueError("This supplier reply is already in the quote review workflow.")
     if state["buyerDecided"]:
         raise ValueError("The buyer already decided this offer. Use the recorded response.")
     if state["plan"]:

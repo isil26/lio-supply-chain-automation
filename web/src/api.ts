@@ -192,6 +192,7 @@ export function recordDeskAction(id: string, outcome: "done" | "dismiss", by: st
 }
 
 export type DashboardData = {
+  exchangeRates?: import("./currency").ExchangeRates;
   teamReviewEmail?: string | null;
   actions?: DeskAction[];
   currentUser?: string | null;

@@ -149,7 +149,7 @@ def source_proposals(con, truth, root):
     """Project slower sources during forecast publication, with the same inputs."""
     from collections import defaultdict
 
-    from src.chaser.negotiate import fx_rates
+    from src.chaser.exchange_rates import snapshot
     from src.docs import documents
     from src.ingest.store import rows
     from .claims import late_delivery_claims
@@ -209,7 +209,8 @@ def source_proposals(con, truth, root):
     for claim in claims:
         if claim["damages"] > 0 and claim["claim_status"] in {"Open", "Plausible"}:
             groups[claim["supplier_id"], claim["currency"]].append(claim)
-    rates = fx_rates()
+    reference = snapshot(con)
+    rates = reference["eurPerUnit"]
     for (supplier, currency), items in sorted(groups.items()):
         total = round(sum(row["damages"] for row in items), 2)
         dated = min((row["claim_deadline"] for row in items if row["claim_status"] == "Open"), default=None)
@@ -220,7 +221,7 @@ def source_proposals(con, truth, root):
         why = (f"Review {len(items)} delayed PO lines with estimated damages of {currency} {total:,.2f}. "
                "Validate the contractual notice date, any exclusions and approved recovery route.")
         if currency != "EUR" and euros is not None:
-            why += f" EUR exposure uses an assumed EUR {rate:g} per {currency}."
+            why += f" Approximately €{euros:,.2f} ({reference['source']} {reference['asOf'] or 'rate'})."
         if not dated:
             why += " The queue deadline is the internal review target."
         result.append(_proposal("claims", f"Review late-delivery claims for {supplier}", "Dr. Maren Vogt",

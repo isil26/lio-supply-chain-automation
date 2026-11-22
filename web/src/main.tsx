@@ -1,3 +1,5 @@
+import { MailAmounts } from "./MailAmounts";
+import { ExchangeContext } from "./currency";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type SupplierMessage, type Source } from "./api";
@@ -63,7 +65,7 @@ function ThreadBody({message}: {message: SupplierMessage}) {
   const [original,setOriginal] = useState(false);
   const translated = message.english && message.english !== message.text;
   return <>{translated && <button className="quiet" onClick={()=>setOriginal(!original)}>{original ? "Show English" : "Show original"}</button>}
-    <p className="draft-body">{original ? message.text : message.english || message.text}</p></>;
+    <p className="draft-body">{original ? message.text : message.english || message.text}</p><MailAmounts text={original ? message.text : message.english || message.text}/></>;
 }
 
 function App() {
@@ -130,7 +132,7 @@ function App() {
   };
   const dashboardSidebar=<><ComponentCoverage risks={data.risks}/><Deadlines key={imported?.id??"live"} practiceKey={imported?.id??"workspace"} data={data} practice={!!imported||hostedReplayBuild||isStaticMode()} refresh={refresh} onThread={setThreadId} onEvidence={setSource}/></>;
   const file=source?.source_file??source?.file;
-  return <><a className="skip" href="#main" onClick={event=>{
+  return <ExchangeContext.Provider value={data.exchangeRates}><a className="skip" href="#main" onClick={event=>{
     event.preventDefault();
     document.getElementById("main")?.focus();
   }}>Skip to main content</a><div className="shell workspace-shell">
@@ -165,6 +167,6 @@ function App() {
     {source&&<Dialog title={file??"Source evidence"} label="Source evidence" close={()=>setSource(null)}>
       <p className="mini">{source.page?"Page "+source.page:source.row?"Row "+source.row:"Source location"}</p>{source.quote&&<p className="mail-summary">{source.quote}</p>}
       {file&&!imported&&!isStaticMode()&&!hostedReplayBuild&&<a className="quiet" href={"/api/source/"+file.split("/").map(encodeURIComponent).join("/")} target="_blank" rel="noreferrer">Open original source</a>}</Dialog>}
-  </>;
+  </ExchangeContext.Provider>;
 }
 createRoot(document.getElementById("root")!).render(<App/>);

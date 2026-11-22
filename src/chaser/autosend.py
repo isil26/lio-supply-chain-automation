@@ -181,7 +181,7 @@ def run(con, *, send=None, now=None, prepare=True, offers_current=False):
     """Prepare and send drafts. Returns a list of {id, supplier, result}."""
     from . import activity as _activity
     from . import send as chaser_send
-    from . import deadlines, deals, mail_plan, promise_watch
+    from . import deadlines, deals, mail_plan, promise_watch, quote_followup
     from .supplier_loop import managed
 
     def activity(con, agent, text, kind):
@@ -191,6 +191,16 @@ def run(con, *, send=None, now=None, prepare=True, offers_current=False):
     send = send or partial(chaser_send, auto=True)
     now = now or datetime.now(timezone.utc)
     if prepare:
+        try:
+            row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
+            if row and not offers_current:
+                deals.sync(con, row[0], now=now)
+        except Exception as exc:
+            activity(con, "Mail Agent", f"Offer table update skipped ({exc.__class__.__name__}).", "warning")
+        try:
+            quote_followup.prepare(con,now)
+        except Exception as exc:
+            activity(con,"Mail Agent",f"Quote follow-up planning failed ({exc.__class__.__name__}).","warning")
         try:
             promise_watch.prepare(con, now)
         except Exception as exc:
@@ -206,12 +216,6 @@ def run(con, *, send=None, now=None, prepare=True, offers_current=False):
         except Exception as exc:
             activity(con, "Mail Agent", f"Reply answering skipped ({exc.__class__.__name__}).", "warning")
         try:
-            row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
-            if row and not offers_current:
-                deals.sync(con, row[0], now=now)
-        except Exception as exc:
-            activity(con, "Mail Agent", f"Offer table update skipped ({exc.__class__.__name__}).", "warning")
-        try:
             from .negotiate import compare
             row = con.execute("SELECT deadline FROM chases LIMIT 1").fetchone()
             if row:
@@ -224,14 +228,15 @@ def run(con, *, send=None, now=None, prepare=True, offers_current=False):
     results = deadlines.expire_queued(con, now)
     drafts = con.execute("""
         SELECT id,supplier,address,body,supplier_id,material,status FROM chases
-        WHERE status IN ('draft','recovery draft','promise draft') ORDER BY status='recovery draft' DESC,rowid
+        WHERE status IN ('draft','recovery draft','promise draft','quote draft') ORDER BY status='recovery draft' DESC,status='quote draft' DESC,rowid
     """).fetchall()
     for chase_id, supplier, address, body, supplier_id, material, status in drafts:
-        if status == "promise draft":
+        if status in ("promise draft","quote draft"):
             chase = con.execute("SELECT * FROM chases WHERE id=?", (chase_id,)).fetchone()
-            if not promise_watch.current(con, chase, now):
+            owner = quote_followup if status == "quote draft" else promise_watch
+            if not owner.current(con, chase, now):
                 with con:
-                    con.execute("UPDATE chases SET status='superseded draft' WHERE id=? AND status='promise draft'", (chase_id,))
+                    con.execute("UPDATE chases SET status='superseded draft' WHERE id=? AND status=?", (chase_id,status))
                 results.append({"id": chase_id, "supplier": supplier, "result": "superseded"})
                 continue
         if status == "draft":

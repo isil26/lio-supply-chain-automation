@@ -31,6 +31,12 @@ sudo /opt/lio/venv/bin/pip install --only-binary=:all: ctranslate2==4.6.0 senten
 sudo /opt/lio/venv/bin/python deploy/backend/install_translation_models.py
 ```
 
+## Quote collection and euro reference rates
+
+The live Mail Agent asks qualified suppliers for missing price, quantity and receiving-site delivery terms on open shortages. Each request uses a verified email thread. The worker respects promised callbacks, accepted mail receipts, the send cooldown and the decision cutoff. A supplier can send a complete offer or explicitly reconfirm the terms quoted in the agent’s email and supply the missing fields. The desk shows its contact status and opens a buyer approval when firm terms are available.
+
+The live service checks the [European Central Bank reference feed](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml) hourly. Rates are published on ECB working days. It stores the last valid publication and uses its date on the desk, including weekends. An uninitialized offline workspace labels its configured planning estimates.
+
 ## Releases and archiving
 
 GitHub Actions updates `/srv/lio/main.git` from development `main`. The application revision in [live-revision](live-revision) feeds `/srv/lio/production.git`. The VM watcher fetches that production mirror every 30 seconds, stages the build, checks dashboard readiness and falls back to its previous release on a startup failure. State lives outside the release directories. The working checkout can advance independently.

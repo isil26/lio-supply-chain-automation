@@ -100,6 +100,12 @@ def opportunities(con, clock, *, claim=None):
         return {}
     states = mail_plan.contexts(con)
     owned = recovery.claimed_threads(con)
+    # The quote collector owns incomplete published offers, including their promised update.
+    # Existing promise drafts still use this dispatcher if there is no published offer.
+    published = set()
+    if con.execute("SELECT 1 FROM sqlite_master WHERE name='deals'").fetchone():
+        published = {r[0] for r in con.execute("""SELECT source_message FROM deals
+                    WHERE status IN ('pending','changed') AND offer_state IN ('incomplete','approval_required')""")}
     rows = con.execute("""SELECT c.*, m.id AS reply_id,m.external_id,m.sender,m.body AS reply_body,
                coalesce(json_extract(m.transport,'$.authoredAt'),m.time) AS authored
         FROM messages m JOIN chases c ON c.id=m.chase_id
@@ -110,7 +116,7 @@ def opportunities(con, clock, *, claim=None):
     for row in rows:
         pair = row["supplier_id"], row["material"]
         state = states.get(row["id"], {})
-        if state.get("replyId") != row["reply_id"] or pair in seen:
+        if state.get("replyId") != row["reply_id"] or pair in seen or row["external_id"] in published:
             continue
         seen.add(pair)
         plan = state.get("plan") or {}

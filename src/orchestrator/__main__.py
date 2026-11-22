@@ -26,7 +26,7 @@ from types import SimpleNamespace
 from urllib.parse import unquote, urlsplit
 
 from bridge.live import PortalError, PortalMirror
-from src.chaser import translate as mail_translation
+from src.chaser import exchange_rates, translate as mail_translation
 from src import chaser
 from src.chaser import actions as action_delivery
 from src.chaser.reply_plan import demo_reply
@@ -847,6 +847,7 @@ def handler(loop, gateway_token=None):
                             from src.chaser import autosend
                             mail_translation.annotate(con, value["threads"])
                             mail_translation.annotate(con, (value.get("mailHistory") or {}).get("threads", []))
+                            value["exchangeRates"] = exchange_rates.snapshot(con)
                             value["autoSend"] = autosend.enabled(loop.args.demo)
                             value["currentUser"] = self.account()
                             value["teamReviewEmail"] = os.getenv("CHASER_INTERNAL_TO") or os.getenv("CHASER_SENDER")
@@ -878,7 +879,15 @@ def handler(loop, gateway_token=None):
                         if deadline:
                             supplier_deals.sync(con, deadline)
                         listing = supplier_deals.list_deals(con)
-                        from src.chaser import offer_limits
+                        from src.chaser import offer_limits, quote_followup, autosend
+                        tracking = quote_followup.plans(con)
+                        for row in listing["deals"]:
+                            row.pop("request_draft",None)
+                            if follow := tracking.get(row["id"]):
+                                row["followup"] = {k:v for k,v in follow.items() if k!="candidate"}
+                                if follow["state"] in ("due","queued","scheduled") and not autosend.enabled(loop.args.demo):
+                                    row["followup"].update(state="paused",detail="Automatic supplier mail is paused.")
+                        listing["exchangeRates"] = exchange_rates.snapshot(con)
                         listing["limits"] = offer_limits.market(con, listing["deals"])
                         # Per part, what is still short after counted inbound: the offers tabs only show parts we must buy.
                         parts = (get_state(con, "truth", {}) or {}).get("parts", {})
@@ -995,8 +1004,7 @@ def handler(loop, gateway_token=None):
                         try:
                             if deal[2] == "negotiate":
                                 if body.get("intent") == "approve_request":
-                                    email_id = supplier_deals.approve_request(con, deal[1], body["revision"], body.get("by"), body.get("message"))
-                                    return self.out({"ok": True, "email_id": email_id})
+                                    return self.out({"error":"The mail agent now collects quote terms automatically. Refresh to see its status."}, 409)
                                 supplier_deals.record_negotiation(con, deal[1], body["revision"], body.get("by"), body.get("message"))
                                 return self.out({"ok": True})
                             row = supplier_deals.decide(con, deal[1], deal[2], body.get("by")[:80] if isinstance(body.get("by"), str) else None,
@@ -1286,6 +1294,8 @@ def main():
     with ThreadingHTTPServer(("127.0.0.1", 0 if standalone else args.port), handler(loop, backend_token)) as server:
         thread = threading.Thread(target=loop.background, daemon=True)
         thread.start()
+        if not args.demo:
+            threading.Thread(target=exchange_rates.run, name="ecb-reference-rates", args=(loop.stop, loop.database), daemon=True).start()
         if mail_translation.local_translation.model_root().is_dir():
             threading.Thread(target=mail_translation.run, name="supplier-translator",
                              args=(loop.stop, loop.database, history_db), daemon=True).start()

@@ -59,7 +59,7 @@ QTY_RES = (
     re.compile(r"(\d{1,3}(?:[,. ]\d{3})+|\d+)\s*(?:units|pcs|pieces|szt|개|件|个)", re.I),
 )
 DATE_TEXT = (r"(\d{4}-\d{2}-\d{2}|\d{1,2} [A-Za-z]{3,9} \d{4}|[A-Za-z]{3,9} \d{1,2},? \d{4})"
-             r"(?:(?:T| (?:at )?)(\d{2}:\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{2}:?\d{2}|CEST|CET|UTC)?)?")
+             r"(?:(?:T|,? (?:at )?)(\d{2}:\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{2}:?\d{2}|CEST|CET|UTC)?)?")
 DATE_RE = re.compile(r"\b" + DATE_TEXT, re.I)
 # Only a labelled arrival is evidence for pursuing faster freight. A quote's expiry or
 # production date is useful context but does not establish where the goods will be.
@@ -107,7 +107,10 @@ class Quote:
         return self.unit_price * fx[self.currency]
 
 
-def fx_rates():
+def fx_rates(con=None):
+    if con is not None:
+        from .exchange_rates import snapshot
+        return snapshot(con)["eurPerUnit"]
     rates = dict(DEFAULT_FX_EUR)
     for item in (os.getenv("CHASER_FX_EUR") or "").split(","):
         code, _, value = item.partition("=")
@@ -564,6 +567,11 @@ def save_draft(con, quote, draft, deadline, units=None):
     from .mail_plan import blocks_automation
     from .recovery import claimed_threads
 
+    if con.execute("SELECT 1 FROM sqlite_master WHERE name='deals'").fetchone() and con.execute(
+            """SELECT 1 FROM deals d JOIN messages m ON m.chase_id=d.thread_id AND m.external_id=d.source_message
+               WHERE m.id=? AND d.status IN ('pending','changed') AND d.offer_state IN ('quoted','incomplete','approval_required')""",
+            (quote.reply_id,)).fetchone():
+        return False
     if quote.thread_id in claimed_threads(con) or human_owned_thread(con, quote.thread_id):
         return False
     from .supplier_loop import managed
@@ -596,13 +604,15 @@ def save_draft(con, quote, draft, deadline, units=None):
 def compare(con, deadline, material=None, *, save=False, model=None, now=None, use_thread_deadlines=False, simulated=False):
     """Best supplier, split plan and negotiation drafts per material, as JSON-able data."""
     now = _aware(now) or datetime.now(timezone.utc)
-    fx = fx_rates()
+    from .exchange_rates import snapshot
+    reference = snapshot(con)
+    fx = reference["eurPerUnit"]
     model = model if model is not None else _reliability()
     groups = defaultdict(list)
     for quote in quotes_from_db(con, material, use_thread_deadlines=use_thread_deadlines, simulated=simulated):
         cutoff = quote.deadline if use_thread_deadlines else _aware(deadline)
         groups[quote.material, cutoff].append(quote)
-    report = {"fx_eur_assumed": fx, "materials": []}
+    report = {"exchangeRates": reference, "fx_eur_assumed": fx, "materials": []}
     for (mat, cutoff), candidates in sorted(groups.items()):
         ranked, context, weights = score_material(candidates, cutoff, now=now, model=model or None, fx=fx)
         need = max(q.needed for q in ranked)
@@ -658,5 +668,5 @@ def to_text(report):
         for n in e["negotiations"]:
             lines.append(f"  negotiate with {n['supplier']}: " + ", ".join(a["lever"] for a in n["asks"])
                          + f" (draft {n['draft_id']}, needs approval)")
-    lines.append("\nCurrency conversion is an assumption: " + json.dumps(report["fx_eur_assumed"]))
+    lines.append("\nCurrency conversion · " + report["exchangeRates"]["source"] + " · " + str(report["exchangeRates"]["asOf"] or "undated"))
     return "\n".join(lines)

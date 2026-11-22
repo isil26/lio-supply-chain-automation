@@ -67,3 +67,5 @@
 .decision-context {margin:16px 0 12px;line-height:1.55;color:var(--sub);font-size:.92rem}
 .handoff-links {display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .decision-feedback {color:var(--sub);font-size:.85rem;line-height:1.5;margin-bottom:10px}
+
+.quote-followup{display:grid;gap:.3rem;margin:.85rem 0;padding-left:.75rem;border-left:2px solid #777}.quote-followup b,.quote-followup small{color:#bcbcbc}.quote-followup .quiet{justify-self:start}

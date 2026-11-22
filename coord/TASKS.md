@@ -181,3 +181,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-Button-Review | Audit and repair button outcomes, feedback and dialog completion across the connected app | manti-interactions | web interactions and gateway controls | done | T-Manager-Dashboard |
 
 | T-Server-Deal-Watch | Run the recurring procurement opportunity review in the deployed worker | manti-deal-watch | orchestrator scheduler and supplier review state | done | T-Supplier-Promises |
+
+| T-Quote-Followups-FX | Automatic quote completion and dated euro equivalents | manti-forecast-desk | mail agent, exchange rates, supplier offer UI and deployment | in_progress | T-Live-Offer-Interpreter |

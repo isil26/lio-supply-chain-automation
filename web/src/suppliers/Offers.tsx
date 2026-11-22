@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { hostedReplayBuild, isStaticMode } from "../api";
 import sample from "./offers-sample.json";
+import { MailAmounts } from "../MailAmounts";
+import { nativePrice, rateSource, type ExchangeRates } from "../currency";
 import { Dialog, Heading, Icon } from "../desk/UI";
 import { PriceCeiling, unitEuros, type PricePolicy } from "./ProductPricing";
 
@@ -13,14 +15,15 @@ type DecisionEvent = { revision?: string; action: string; by: string; at: string
 // Approve / Decline per offer. Approve names the PP-07 signer and asks the supplier to
 // reserve; Decline sends a polite no-thanks. Both emails go out through the mail agent.
 
-type Decision = "approve" | "decline" | "request";
+type Decision = "approve" | "decline";
 type Deal = {
   previous_price?: { amount: number; currency: string; at: string; thread_id: string };
-  request_draft?: { label: string; subject: string; body: string };
+  catalog_price?: {amount:number;currency:string};
+  followup?: {state:string;detail:string;missing:string[];nextAt?:string;lastAt?:string;thread?:string};
   request?: {status:string; purpose:string};
   address?: string; revision?: string; required_by?: string; thread_id?: string; order_quantity?: number | null; expires_at?: string | null;
   offer_state?: "quoted" | "incomplete" | "late" | "unavailable" | "expired" | "superseded" | "approval_required";
-  offer_kind?: "goods" | "freight"; carrier?: string | null; freight_charge?: number | null;
+  offer_kind?: "goods" | "freight"; carrier?: string | null; freight_charge?: number | null; freight_currency?:string|null;
   review_reason?: string;
   drafts?: Partial<Record<"approve" | "decline", { subject: string; body: string }>>;
   english_excerpt?: string;
@@ -34,7 +37,7 @@ type Deal = {
   list_price: number | null; conditions: string | null; excerpt: string | null; signer: string;
   status: "pending" | "approved" | "declined" | "changed" | "superseded"; decided_by: string | null; decided_at: string | null;
 };
-type Data = { limits?: Record<string, PricePolicy>; deals: Deal[]; best: Deal[]; notes?: Record<string, string>; as_of?: string; gaps?: Record<string, number> };
+type Data = { exchangeRates?: ExchangeRates; limits?: Record<string, PricePolicy>; deals: Deal[]; best: Deal[]; notes?: Record<string, string>; as_of?: string; gaps?: Record<string, number> };
 type Reply = {deal: Deal; action: Decision | "negotiate"; body: string};
 let practiceSession: Data | null = null;
 type English = { original?: string; english: string | null; summary: string | null; language: string | null; source: string; error?: string };
@@ -53,12 +56,12 @@ async function postDecision(path: string, payload: object) {
 // One line a manager reads in seconds, built from the offer's own numbers (Gülşah, 22 Nov).
 const STATE: Record<string, string> = { late: "Too late for the launch", unavailable: "Cannot supply", incomplete: "Offer is missing details",
   expired: "Offer expired", superseded: "Replaced by a newer offer", approval_required: "Needs approval first" };
-function gist(d: Deal) {
+function gist(d: Deal, rates?:ExchangeRates) {
   const parts: string[] = [];
   if (d.offer_state && STATE[d.offer_state]) parts.push(STATE[d.offer_state]);
   if (d.quantity != null) parts.push(`${d.quantity.toLocaleString("en-US")} of ${d.needed.toLocaleString("en-US")} units`);
   if (d.offer_kind === "freight") parts.push(`freight by ${d.carrier ?? "carrier"}`);
-  else if (d.unit_price != null) parts.push(`${d.unit_price} ${d.currency ?? ""} each${d.price_eur != null && d.currency !== "EUR" ? ` (≈ €${d.price_eur.toFixed(2)})` : ""}`);
+  else if (d.unit_price != null) parts.push(nativePrice(d.unit_price,d.currency ?? "",rates)+" each");
   if (d.total_eur != null) parts.push(`total ${eur(d.total_eur)}`);
   if (d.eta || d.eta_text) parts.push(`arrives ${arrives(d)}`);
   if (d.moq) parts.push(`minimum order ${d.moq.toLocaleString("en-US")}`);
@@ -94,6 +97,7 @@ function EmailPreview({ deal, example }: { deal: Deal; example: boolean }) {
     {original || english ? <p className="draft-body">{original ? sourceText : english}</p>
       : result ? <p role="status">English translation is unavailable. <button className="quiet" onClick={()=>setAttempt(n=>n+1)}>Retry</button></p>
       : <p role="status">Loading English translation…</p>}
+    {(original || english) && <MailAmounts text={original ? sourceText : english!}/>}
   </section>;
 }
 
@@ -120,14 +124,14 @@ function when(iso: string | null) {
   return new Date(iso).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });
 }
 function arrives(d: Deal) { return d.eta_text ?? when(d.eta); }
-const unitNumber = new Intl.NumberFormat("en-GB", {minimumFractionDigits:2, maximumFractionDigits:6});
-function priceDisplay(d: Deal) {
-  if (d.offer_kind === "freight") return {value: d.freight_charge == null ? "Awaiting quote" : `${d.freight_charge} ${d.currency}`, source:"Freight charge"};
-  if (d.unit_price != null) return {value:`${unitNumber.format(d.unit_price)} ${d.currency ?? ""} / unit`, source:"Current supplier quote"};
-  if (d.previous_price) return {value:`${unitNumber.format(d.previous_price.amount)} ${d.previous_price.currency} / unit`,
-    source:`Earlier supplier quote · ${when(d.previous_price.at)}`};
-  if (d.catalog_eur != null) return {value:`${unitEuros(d.catalog_eur)} / unit`, source:"Supplier catalogue"};
-  return {value:"Awaiting quote", source:"Supplier pricing"};
+function priceDisplay(d: Deal, rates?:ExchangeRates) {
+  if (d.offer_kind === "freight") return {value:d.freight_charge == null ? "Awaiting quote" : nativePrice(d.freight_charge,d.currency ?? "",rates), source:"Freight charge", currency:d.currency};
+  if (d.unit_price != null) return {value:nativePrice(d.unit_price,d.currency ?? "",rates)+" / unit", source:"Current supplier quote", currency:d.currency};
+  if (d.previous_price) return {value:nativePrice(d.previous_price.amount,d.previous_price.currency,rates)+" / unit",
+    source:`Earlier supplier quote · ${when(d.previous_price.at)}`, currency:d.previous_price.currency};
+  if (d.catalog_price) return {value:nativePrice(d.catalog_price.amount,d.catalog_price.currency,rates)+" / unit", source:"Supplier catalogue", currency:d.catalog_price.currency};
+  if (d.catalog_eur != null) return {value:`${unitEuros(d.catalog_eur)} / unit`, source:"Supplier catalogue",currency:"EUR"};
+  return {value:"Awaiting quote", source:"Supplier pricing",currency:null};
 }
 
 function exampleData(): Data {
@@ -218,9 +222,8 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
         const deals = old.deals.map(d => {
           if (d.id !== deal.id) return d;
           if (d.awaiting_send) return {...d, awaiting_send:0};
-          const event = {action:action==="request" ? "request approved" : status, by:actor, at, note:message, terms:{alternatives}};
+          const event = {action:status, by:actor, at, note:message, terms:{alternatives}};
           const history = [event, ...(d.history ?? [])];
-          if (action==="request") return {...d, history, request_draft:undefined, request:{purpose:d.request_draft?.label ?? "Supplier enquiry",status:"Practice approval"}};
           return {...d, status, decided_at:at, decided_by:actor, history};
         });
         return { ...old, deals, best: deals.filter((d) => d.best) };
@@ -231,15 +234,14 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     }
     setBusy(deal.id + action);
     try {
-      const result = await postDecision(`/api/deals/${deal.id}/${action === "request" ? "negotiate" : action}`, {
-        revision: deal.revision, intent: action === "request" ? "approve_request" : undefined, message,
+      const result = await postDecision(`/api/deals/${deal.id}/${action}`, {
+        revision: deal.revision, message,
         confirmHeld: Boolean(deal.awaiting_send), by:currentUser || reviewer.trim(),
       });
       setData(old => {
         if (!old) return old;
         const deals = old.deals.map(d => {
           if (d.id !== deal.id || d.revision !== deal.revision) return d;
-          if (action==="request") return {...d, request_draft:undefined, request:{purpose:deal.request_draft!.label,status:"draft"}};
           return result.deal ? {...d,...result.deal} : d;
         });
         return {...old, deals, best:deals.filter(d=>d.best)};
@@ -248,7 +250,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
       setNote({material:deal.material, message:result.deal?.awaiting_send
         ? `Approval recorded for ${deal.supplier}. Review the supplier email to queue it.`
         : action === "approve" ? `Reservation request queued for ${deal.supplier}. ${deal.offer_kind === "freight" ? "Booking authorization" : "PO signer"} · ${deal.signer}.`
-        : action === "request" ? `Approved and queued the ${deal.request_draft?.label} for ${deal.supplier}.` : `Decline email queued for ${deal.supplier}.`});
+        : `Decline email queued for ${deal.supplier}.`});
       await load();
     } catch (error) {
       setDraftError(error instanceof Error ? error.message : "The server could not confirm the decision. Your draft is still here.");
@@ -272,16 +274,17 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
   const best = data.best.filter((d) => d.material === current && d.eligible && ["pending", "changed"].includes(d.status));
   const tabNote = current ? data.notes?.[current] : undefined;
 
-  const selected = rows.find(d=>d.id===choice) ?? best[0] ?? rows[0];
+  const selected = rows.find(d=>d.id===choice) ?? best[0]
+    ?? rows.find(d=>d.eligible && ["pending","changed"].includes(d.status))
+    ?? rows.find(d=>d.followup && ["due","queued","sent","scheduled"].includes(d.followup.state)) ?? rows[0];
   const openOffer = selected && ["changed","pending"].includes(selected.status);
   const available = openOffer && !!selected.eligible && (example || !!selected.drafts?.approve);
   const canDecline = openOffer && (example || !!selected.drafts?.decline);
-  const canRequest = openOffer && !!selected.request_draft;
   const held = selected?.eligible && selected.status === "approved" && selected.awaiting_send && (example || !!selected.drafts?.approve);
   const latestDraftOffer = draft && data.deals.find(d=>d.id===draft.deal.id);
   const staleDraft = draft && (!latestDraftOffer || latestDraftOffer.revision !== draft.deal.revision
     || latestDraftOffer.status !== draft.deal.status || latestDraftOffer.awaiting_send !== draft.deal.awaiting_send
-    || latestDraftOffer.status === "superseded" || (draft.action === "request" && !latestDraftOffer.request_draft)
+    || latestDraftOffer.status === "superseded"
     || ((draft.action === "approve" || draft.action === "decline") && !example && !latestDraftOffer.drafts?.[draft.action]));
   function prepare(action:Decision|"negotiate") {
     if (sharedAccount) { setSwitchAccount(true);return; }
@@ -296,9 +299,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     const body = `Hello ${d.supplier} team,\n\nThank you for the ${product(d.material).toLowerCase()} update. ${need}\n\n${ask}\n\nKind regards,\nSoony launch team`;
     setDraftError("");
     let message = body;
-    if (action === "request") {
-      message = d.request_draft?.body ?? "";
-    } else if (action !== "negotiate") {
+    if (action !== "negotiate") {
       const sampleBody = action === "approve"
         ? `Could you hold ${d.order_quantity ?? d.quantity} units of ${product(d.material)} without charge and confirm the hold expiry? A separate purchase order is required before dispatch.`
         : `Hello ${d.supplier} team,\n\nThank you for your offer for ${product(d.material).toLowerCase()}. We have decided to decline it for now. Thank you for your help.\n\nSoony launch team`;
@@ -387,23 +388,32 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
           <><h3>No decisions recorded for this product</h3><p>Reviewed offers and negotiations appear here.</p></>}</div> :
           selected && <div className="recommend"><div className="rec-top"><div className="rec-label"><Icon name="spark"/>{best.some(d=>d.id===selected.id)?"Recommended choice":"Selected offer"}</div>
             {selected.expires_at && <span className="rec-due">{when(selected.expires_at)}</span>}</div>
-            <h3>{selected.supplier}</h3><p>{selected.review_reason || selected.conditions || tabNote || gist(selected)}</p>
-            <div className="rec-cost"><b>{selected.total_eur!=null?eur(selected.total_eur):priceDisplay(selected).value}</b>
-              {selected.total_eur!=null && <small>{selected.offer_kind==="freight" ? "Total freight charge" :
-                [(selected.order_quantity??selected.quantity)?.toLocaleString("en-US"), priceDisplay(selected).value].filter(Boolean).join(" × ")}</small>}
-              {selected.total_eur==null && <small>{priceDisplay(selected).source}</small>}
+            <h3>{selected.supplier}</h3><p>{(!selected.followup || selected.followup.state!=="closed" ? selected.review_reason : STATE[selected.offer_state ?? ""]) || selected.conditions || tabNote || gist(selected,data.exchangeRates)}</p>
+            <div className="rec-cost"><b>{selected.total_eur!=null?eur(selected.total_eur):priceDisplay(selected,data.exchangeRates).value}</b>
+              {selected.total_eur!=null && <small>{selected.offer_kind==="freight" ? "Total freight · "+priceDisplay(selected,data.exchangeRates).value :
+                [(selected.order_quantity??selected.quantity)?.toLocaleString("en-US"), priceDisplay(selected,data.exchangeRates).value].filter(Boolean).join(" × ")}</small>}
+              {selected.offer_kind==="goods" && selected.freight_charge!=null && selected.freight_currency &&
+                <small>Additional freight · {nativePrice(selected.freight_charge,selected.freight_currency,data.exchangeRates)}</small>}
+              {selected.total_eur==null && <small>{priceDisplay(selected,data.exchangeRates).source}</small>}
               {selected.unit_price==null && selected.previous_price && selected.offer_kind!=="freight" &&
                 <button className="quiet" onClick={()=>openThread(selected.previous_price!.thread_id)}>Read quote thread</button>}</div>
             {!available && (held || selected.decided_by) && <p>{held?"Automatically approved · email awaiting review":STATUS[selected.status]}{selected.decided_by && " · "+selected.decided_by}</p>}
+            {data.exchangeRates && priceDisplay(selected,data.exchangeRates).currency && (priceDisplay(selected,data.exchangeRates).currency!=="EUR" || (selected.freight_currency && selected.freight_currency!=="EUR")) &&
+              <small className="mini">{data.exchangeRates.url ? <a href={data.exchangeRates.url} target="_blank" rel="noreferrer">{rateSource(data.exchangeRates)}</a> : rateSource(data.exchangeRates)}</small>}
+            {selected.followup && <div className="quote-followup">
+              <b>Mail agent</b><span>{selected.followup.detail}</span>
+              {["due","queued","sent","scheduled","waiting"].includes(selected.followup.state) && !!selected.followup.missing.length && <small>Outstanding · {selected.followup.missing.join(", ")}</small>}
+              {selected.followup.nextAt && <small>Next check · {when(selected.followup.nextAt)}</small>}
+              {selected.followup.thread && <button className="quiet" onClick={()=>openThread(selected.followup!.thread!)}>View correspondence</button>}
+            </div>}
             {selected.request && <p role="status">{selected.request.purpose.charAt(0).toUpperCase()+selected.request.purpose.slice(1)} approved · {selected.request.status === "draft" ? "Queued for sending" : selected.request.status}</p>}
-            <div className="decision-buttons">{canRequest ? <button className="btn" disabled={!!busy} onClick={()=>prepare("request")}>Approve {selected.request_draft!.label}</button> :
-              (available || held) ? <button className="btn" disabled={!!busy} onClick={()=>prepare("approve")}>{held?"Review supplier email":"Approve reservation"}</button> : null}
+            <div className="decision-buttons">{(available || held) ? <button className="btn" disabled={!!busy} onClick={()=>prepare("approve")}>{held?"Review supplier email":"Approve offer"}</button> : null}
               <button className="outline-btn" disabled={!canDecline||!!busy} onClick={()=>prepare("decline")}>Decline</button>
               <button className="outline-btn" disabled={!!busy||selected.status==="superseded"} onClick={()=>prepare("negotiate")}>Negotiate</button></div></div>}
         <div className="offers-heading"><b>Supplier emails</b><small>{threadCount} {threadCount===1?"thread":"threads"}</small></div>
         {rows.map(d=>{
           const body=<><span className="vendor-avatar">{d.supplier.split(/\s+/).slice(0,2).map(w=>w[0]).join("")}</span>
-            <span className="offer-info"><strong>{d.supplier}</strong><span>{d.quantity!=null && d.quantity.toLocaleString("en-US")+(d.eligible ? " offered · " : " mentioned · ")}{priceDisplay(d).value} · {priceDisplay(d).source}</span></span></>;
+            <span className="offer-info"><strong>{d.supplier}</strong><span>{d.quantity!=null && d.quantity.toLocaleString("en-US")+(d.eligible ? " offered · " : " mentioned · ")}{priceDisplay(d,data.exchangeRates).value} · {priceDisplay(d,data.exchangeRates).source}</span></span></>;
           return <div className={"offer-row "+(selected?.id===d.id?"picked":"")} key={d.id}>
             {rows.length>1 && !archive ? <button className="offer-pick" aria-pressed={selected?.id===d.id} onClick={()=>{setChoice(d.id);setReply(null);setNote(null);}}><span className="radio-dot"/>{body}</button> : body}
             <button className="email-button" aria-label={"Read email from "+d.supplier} onClick={()=>setEmailId(d.id)}><Icon name="mail"/></button></div>;
@@ -426,9 +436,17 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     {details.event.terms.total_eur!=null && <p>{eur(details.event.terms.total_eur)} total</p>}
     {(details.event.terms.alternatives??[]).map(a=><div className="offer-row" key={a.id}><div className="offer-info"><strong>{a.supplier}</strong><span>{a.quantity?.toLocaleString("en-US")??"Unconfirmed"} units · {a.price_eur==null?"Price unconfirmed":unitEuros(a.price_eur)+"/unit"}</span></div>
       {a.thread_id && <button className="email-button" aria-label={"Read email from "+a.supplier} onClick={()=>{setDetails(null);openThread(a.thread_id!);}}><Icon name="mail"/></button>}</div>)}</Dialog>}
-  {!archive && draft && <Dialog label={product(draft.deal.material)+" · "+draft.action} title="Review email draft" dismissible={!busy} close={()=>setReply(null)}><div className="editor">
+  {!archive && draft && <Dialog label={product(draft.deal.material)+" · "+draft.action} title={draft.action==="approve" ? "Review supplier offer" : "Review email draft"} dismissible={!busy} close={()=>setReply(null)}><div className="editor">
+    {draft.action==="approve" && <div className="quote-followup" aria-label="Quoted terms">
+      <b>{draft.deal.supplier}</b>
+      <span>{(draft.deal.order_quantity??draft.deal.quantity)?.toLocaleString("en-GB")} units · {priceDisplay(draft.deal,data.exchangeRates).value}</span>
+      <span>Delivery · {arrives(draft.deal)}</span>
+      {draft.deal.total_eur!=null && <span>Total · {eur(draft.deal.total_eur)}</span>}
+      {draft.deal.expires_at && <small>Quote valid until {when(draft.deal.expires_at)}</small>}
+      <small>Purchase order approval · {draft.deal.signer}</small>
+    </div>}
     {draft.action!=="negotiate" && <><p><strong>To</strong> · {draft.deal.address || draft.deal.supplier}</p>
-      <strong>{(draft.action==="request" ? draft.deal.request_draft?.subject : draft.deal.drafts?.[draft.action]?.subject) ?? product(draft.deal.material)}</strong></>}
+      <strong>{draft.deal.drafts?.[draft.action]?.subject ?? product(draft.deal.material)}</strong></>}
     <label>Message to {draft.deal.supplier}<textarea rows={draft.action==="negotiate" ? 6 : 8} maxLength={1000} readOnly={!!busy || !!staleDraft}
       value={draft.body} onChange={e=>setReply({...draft,body:e.target.value})}/></label>
     {draft.action==="negotiate" && <p>Recording saves this message to the Activity Log. You can send it from your email app afterward.</p>}
@@ -437,7 +455,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     {staleDraft && <p role="alert">This offer changed while you were reviewing it. Close the draft to review the latest terms.</p>}
     <button className="btn" disabled={!!busy || !!staleDraft || !draft.body.trim() || (!example && !currentUser && !reviewer.trim())}
       onClick={()=>draft.action==="negotiate" ? void recordNegotiation() : void decide(draft.deal, draft.action, draft.body)}>
-      {draft.action==="negotiate" ? busy ? "Recording…" : "Record negotiation" : busy ? "Queuing…" : example ? "Record practice decision" : draft.action==="request" ? "Approve and queue request" : "Confirm and queue email"}
+      {draft.action==="negotiate" ? busy ? "Recording…" : "Record negotiation" : busy ? "Queuing…" : example ? "Record practice decision" : draft.action==="approve" && !draft.deal.awaiting_send ? "Approve offer and queue reservation" : "Confirm and queue email"}
     </button>
     <button className="quiet" disabled={!!busy} onClick={()=>setReply(null)}>{staleDraft ? "Close draft" : "Cancel"}</button>
   </div></Dialog>}</>;

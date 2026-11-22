@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 
-QUEUED = ("draft", "loop draft", "recovery draft", "promise draft", "awaiting click")
+QUEUED = ("draft", "loop draft", "recovery draft", "promise draft", "quote draft", "awaiting click")
 HAMBURG = ZoneInfo("Europe/Berlin")
 
 
@@ -109,7 +109,7 @@ def expire_queued(con, clock):
     return results
 
 
-def expire_transport_claim(con, chase_id, message_id, *, promise=False):
+def expire_transport_claim(con, chase_id, message_id, *, promise=False, quote=False):
     stale = False
     with con:
         con.execute("BEGIN IMMEDIATE")
@@ -120,8 +120,9 @@ def expire_transport_claim(con, chase_id, message_id, *, promise=False):
         clock = datetime.now(timezone.utc)
         reason = record_if_expired(con, chase, clock, current_plan(con), message_id=message_id)
         if promise and not reason:
-            from . import promise_watch
-            stale = not promise_watch.current(con, chase, clock, claim=message_id)
+            from . import promise_watch, quote_followup
+            owner = quote_followup if quote else promise_watch
+            stale = not owner.current(con, chase, clock, claim=message_id)
             if stale:
                 con.execute("DELETE FROM messages WHERE chase_id=? AND external_id=?", (chase_id, message_id))
                 con.execute("UPDATE chases SET status='superseded draft',message_id=NULL,due_at=NULL WHERE id=?", (chase_id,))

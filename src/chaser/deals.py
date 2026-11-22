@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from .guardrails import Guardrails
-from .negotiate import CURRENCY, NUMBER, SYMBOLS, parse_offer
+from .negotiate import CURRENCY, NUMBER, QTY_RES, SYMBOLS, parse_offer
 from .recovery import NO_COVER, WITHDRAWN, superseded_threads, unquoted
 from .reply_plan import supply_constraint
 
@@ -32,7 +32,7 @@ PP07 = ((50_000, "Buyer"), (500_000, "Category Lead"), (2_000_000, "Head of Proc
 PROOF = ["no proof", "date only", "date and quantity", "shipping document"]
 # Fields that change the terms shown to the buyer. Scoring and refresh times are independent.
 TERMS = ("source_hash", "required_by", "needed", "quantity", "order_quantity", "unit_price", "currency", "total_eur",
-         "offer_kind", "freight_charge", "carrier",
+         "offer_kind", "freight_charge", "freight_currency", "carrier",
          "eta", "expires_at", "incoterm", "payment_terms", "moq", "offer_state", "signer")
 
 # A price elsewhere in a reply may be a truck charge, a total or a hypothetical premium.
@@ -41,7 +41,7 @@ UNIT_LABEL = re.compile(r"(?:unit price|price per (?:unit|piece)|cena jednostkow
 ISO_DATE = r"(\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})?)?)"
 EXPIRY = re.compile(r"(?:valid until|expires(?: at| on)?|ważna do|有效期至|유효기간)\s*[:=]?\s*"+ISO_DATE,re.I)
 VALIDITY_MENTIONED = re.compile(r"\b(?:valid until|valid for|expires|expiry|ważna do)|有效期|유효기간", re.I)
-FREIGHT = re.compile(r"(?:incremental (?:all-in )?(?:freight|transport|truck|haulage)|(?:all-in |total |expedited )(?:freight|trucking) (?:charge|fee|cost)|"
+FREIGHT = re.compile(r"(?:(?:incremental|additional) (?:all-in )?(?:freight|transport|truck|haulage)|(?:all-in |total |expedited )(?:freight|trucking) (?:charge|fee|cost)|"
                      r"dopłata (?:transportowa|za transport)|dodatkowy koszt transportu|额外运费|运输附加费|추가 운임)"
                      r"(?:\s+(?:charge|fee|cost|surcharge))?\s*[:=]?\s*" + CURRENCY + r"\s*" + NUMBER, re.I)
 CARRIER = re.compile(r"(?:\bcarrier|\bforwarder|\bhaulier|przewoźnik|承运商|운송사)\s*[:：=]\s*([^\n;,]{2,90})", re.I)
@@ -75,10 +75,12 @@ def schema(con):
     columns = {r[1] for r in con.execute("PRAGMA table_info(deals)")}
     extra = {"awaiting_send":"INTEGER DEFAULT 0","required_by":"TEXT", "source_hash":"TEXT", "revision":"TEXT", "offer_state":"TEXT", "review_reason":"TEXT",
              "source_message":"TEXT","expires_at":"TEXT", "order_quantity":"INTEGER",
-             "offer_kind":"TEXT", "freight_charge":"REAL", "carrier":"TEXT"}
+             "offer_kind":"TEXT", "freight_charge":"REAL", "freight_currency":"TEXT", "carrier":"TEXT"}
     for name, typ in extra.items():
         if name not in columns:
             con.execute(f"ALTER TABLE deals ADD COLUMN {name} {typ}")
+    if "freight_currency" not in columns:
+        con.execute("UPDATE deals SET freight_currency=currency WHERE offer_kind='freight' AND freight_charge IS NOT NULL")
     con.execute("""CREATE TABLE IF NOT EXISTS deal_decision_history (
         deal_id TEXT NOT NULL, revision TEXT NOT NULL, action TEXT NOT NULL, actor TEXT,
         decided_at TEXT, note TEXT, email_id TEXT UNIQUE, terms TEXT NOT NULL,
@@ -105,6 +107,20 @@ def _source(con, quote):
     attachments = json.loads(parsed or "{}").get("attachments", [])
     evidence = {"thread": quote.thread_id, "body": text, "attachments": attachments,
                 "constraint": quote.constraint}
+    reaffirmed = re.search(r"\b(?:all (?:other |previous )?terms (?:remain |are )?(?:unchanged|confirmed)|other terms unchanged|we confirm (?:the |these |your )?(?:previously stated |quoted )?terms|pozostałe warunki bez zmian)\b|其他条件不变|기타 조건은 변경 없",text,re.I)
+    negated = re.search(r"\b(?:not|cannot|can.t|no longer|do not|nie)\b[^.\n]{0,60}\b(?:confirm|unchanged|terms|warunk)|条件.{0,5}变更|조건.{0,8}변경됩니다",text,re.I)
+    if reaffirmed and not negated and con.execute("SELECT 1 FROM sqlite_master WHERE name='quote_followup_basis'").fetchone():
+        previous = con.execute("""SELECT b.source_message,b.terms FROM messages m JOIN messages o
+              ON o.external_id=json_extract(m.transport,'$.inReplyTo') AND o.side='out'
+              JOIN quote_followup_basis b ON b.chase_id=o.chase_id JOIN chases c ON c.id=o.chase_id
+              JOIN chases inbound ON inbound.id=m.chase_id
+              WHERE m.id=? AND m.side='in' AND json_extract(m.transport,'$.mode')='inbox'
+              AND json_extract(o.transport,'$.status') IN ('smtp_accepted','gmail_sent')
+              AND c.supplier_id=inbound.supplier_id AND c.material=inbound.material AND c.address=inbound.address
+              AND julianday(c.deadline)=julianday(inbound.deadline)""",(quote.reply_id,)).fetchone()
+        if previous and json.loads(previous[1]):
+            evidence["confirmed_terms"] = json.loads(previous[1])
+            evidence["confirmed_source"] = previous[0]
     return {**evidence, "source_hash": _digest(evidence), "source_message": message_id}
 
 
@@ -156,6 +172,15 @@ def _terms(q, source):
     q.commitment = parsed["commitment"]
     q.eta = q.stated_arrival
     q.unit_price, q.currency = _unit_quote(text)
+    if basis := source.get("confirmed_terms"):
+        if q.quantity is None and not any(p.search(text) for p in QTY_RES) and not re.search(r"\bquantity\b|数量|수량|ilość",text,re.I):
+            q.quantity = basis.get("quantity")
+        if q.unit_price is None and not re.search(CURRENCY,text,re.I) and not re.search("price|cena|单价|단가",text,re.I):
+            q.unit_price, q.currency = basis.get("unit_price"), basis.get("currency")
+        if not q.eta and basis.get("eta") and not re.search("delivery|arrival|ETA|dostaw|到货|도착",text,re.I):
+            q.eta = q.stated_arrival = datetime.fromisoformat(basis["eta"])
+        if q.quantity and q.eta:
+            q.commitment = max(2,q.commitment)
     q.constraint = q.constraint or supply_constraint(text).get("disposition")
     return text
 
@@ -173,6 +198,13 @@ def _review(q, text, total, cutoff, now, expired, superseded, moq, kind, carrier
     if expired is None and VALIDITY_MENTIONED.search(text):
         return "incomplete", "Confirm when the quoted terms expire."
     routed = classify(text)
+    # A supplier can quote firm terms while requiring a PO before dispatch.
+    # A requirement before quoting, or an outstanding freight or quality decision, still blocks approval.
+    if (routed and routed["owner"] == "Procurement" and routed["state"] == "approval"
+            and q.quantity and q.eta and total and re.search(
+                r"(?:before (?:dispatch|shipment)|(?:dispatch|shipping|wysyłka) (?:requires|wymaga)|prior to dispatch)",text,re.I)
+            and not re.search(r"(?:before|prior to) (?:quoting|confirming)|(?:quote|price|quantity|ETA) (?:requires|depends on)",text,re.I)):
+        routed = None
     if routed:
         state = {"approval": "approval_required", "waiting": "incomplete", "unavailable": "unavailable"}
         return state.get(routed["state"], "incomplete"), f'{routed["owner"]} · {routed["nextAction"]}'
@@ -252,34 +284,42 @@ def _offer_row(quote, text, source, cutoff, now, fx, superseded):
     minimum = MOQ.search(text)
     moq = int(re.sub(r"\D", "", minimum[1])) if minimum else facts.get("moq")
 
-    freight = FREIGHT.search(text)
+    charges = list(FREIGHT.finditer(text))
+    freight = charges[0] if charges else None
     carrier_match = CARRIER.search(text)
     carrier = carrier_match[1].strip().rstrip(".") if carrier_match else None
-    kind = "freight" if freight else "goods"
-    fee = None
+    fee = fee_currency = None
+    kind = "goods"
+    ambiguous_fee = False
     if freight:
-        units = quote.quantity  # Freight covers the quoted lot, even if the buyer needs fewer units.
         fee = float(re.sub(r"\D", "", freight[2]) + "." + (freight[3] or "0"))
-        currency = SYMBOLS.get(freight[1].upper(), freight[1].upper())
-        total = round(fee * fx[currency], 2) if currency in fx else None
+        fee_currency = SYMBOLS.get(freight[1].upper(),freight[1].upper())
+        ambiguous_fee = (len(charges)!=1 or bool(PER_UNIT.search(text[freight.end():])))
+        if quote.unit_price is None:
+            kind, units, currency = "freight", quote.quantity, fee_currency
+            total = round(fee * fx[fee_currency],2) if fee_currency in fx else None
+        elif (not ambiguous_fee and units==quote.quantity and total is not None and fee_currency in fx
+              and re.match(r"(?:incremental|additional|dodatkowy|dopłata|额外|追加|추가)", freight[0], re.I)):
+            total = round(total + fee * fx[fee_currency],2)
+        else:
+            ambiguous_fee = True
     approver = signer(total)
     if freight and re.search(r"\bair\b", text, re.I):
         approver = "Category Lead (check monthly air-freight spend); CPO above €200,000"
 
     state, reason = _review(quote, text, total, cutoff, now, expiry, superseded, moq, kind, carrier)
-    if freight and (PER_UNIT.search(text[freight.end():]) or quote.unit_price is not None):
+    if ambiguous_fee:
         if state == "quoted":
-            state, reason = "incomplete", "Confirm the freight total separately from the unit price before requesting a reservation."
-        # The amount cannot serve as the all-in charge or the basis for signing authority.
-        total, fee, approver = None, None, signer(None)
+            state, reason = "incomplete", "Confirm the additional freight total for this quantity separately from the unit price."
+        total, fee, fee_currency, approver = None, None, None, signer(None)
     return {
         "required_by": cutoff.astimezone(timezone.utc).isoformat(),
         "supplier_id": quote.supplier_id, "supplier": quote.supplier, "material": quote.material,
         "thread_id": quote.thread_id, "address": quote.address, "language": quote.language,
         "needed": quote.needed, "quantity": quote.quantity, "order_quantity": units,
-        "offer_kind": kind, "freight_charge": fee, "carrier": carrier,
-        "unit_price": None if freight else quote.unit_price, "currency": currency,
-        "price_eur": round(price_eur, 4) if price_eur and not freight else None, "total_eur": total,
+        "offer_kind": kind, "freight_charge": fee, "freight_currency": fee_currency, "carrier": carrier,
+        "unit_price": None if kind=="freight" else quote.unit_price, "currency": currency,
+        "price_eur": round(price_eur, 4) if price_eur and kind!="freight" else None, "total_eur": total,
         "eta": quote.eta.isoformat() if quote.eta else None, "p_on_time": quote.p_on_time,
         "score": quote.score, "eligible": int(state == "quoted"), "proof": PROOF[quote.commitment],
         "incoterm": incoterms[-1].upper() if incoterms else facts.get("incoterm_full"),
@@ -307,6 +347,10 @@ def _store(con, row):
         con.execute(f"INSERT INTO deals({','.join(row)}) VALUES({','.join('?' * len(row))})", tuple(row.values()))
         return
     old = dict(old)
+    if old["status"] in ("approved","declined") and all(old[k] == row[k] for k in TERMS if k not in ("total_eur","signer")):
+        # Freeze the recorded decision valuation on an unchanged commercial offer.
+        for key in ("total_eur","price_eur","signer"):
+            row[key] = old[key]
     if not old["revision"] or any(old[k] != row[k] for k in TERMS):
         row.update(_replace_decision(con, old))
         status = "changed" if old["status"] in ("approved", "declined", "changed") else "pending"
@@ -320,7 +364,7 @@ def sync(con, deadline, *, now=None, model=None):
 
     cutoff = datetime.fromisoformat(deadline) if isinstance(deadline, str) else deadline
     now = now or datetime.now(timezone.utc)
-    fx = fx_rates()
+    fx = fx_rates(con)
     model = model if model is not None else _reliability()
     with con:
         # Reserve the writer before reading evidence so a simultaneous buyer cannot approve an obsolete revision.

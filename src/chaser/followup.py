@@ -358,9 +358,13 @@ def answer_replies(con, *, save=False, now=None):
                     SELECT ?, 'Mail Agent', ?, 'warning' WHERE NOT EXISTS(
                         SELECT 1 FROM activity WHERE agent='Mail Agent' AND action=?)""",
                             (datetime.now(timezone.utc).isoformat(timespec="seconds"), details, details))
+    quote_replies = set()
+    if con.execute("SELECT 1 FROM sqlite_master WHERE name='deals'").fetchone():
+        quote_replies = {r[0] for r in con.execute("""SELECT source_message FROM deals
+                    WHERE status IN ('pending','changed') AND offer_state IN ('incomplete','approval_required','quoted')""")}
     for row in rows:
         row = dict(row)
-        if row["id"] in owned or managed(row["supplier_id"], row["material"]):
+        if row["reply_id"] in quote_replies or row["id"] in owned or managed(row["supplier_id"], row["material"]):
             continue  # the launch-critical loop (supplier_loop.py) answers these itself
         root = _root(row)
         content = unquoted(row["reply"])

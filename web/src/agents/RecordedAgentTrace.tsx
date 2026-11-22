@@ -1,3 +1,5 @@
+import { useContext } from "react";
+import { ExchangeContext, equivalent } from "../currency";
 import type { Source } from "../api";
 import "./agents.css";
 
@@ -36,12 +38,14 @@ export type RecordedAgentRun = {
   sources: { path: string; revision: string; sha256: string }[];
 };
 
-const usd = (amount: number | null | undefined) => amount == null ? "Unknown" : `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
+
 const count = (amount: number | null | undefined) => amount == null ? "Unknown" : amount.toLocaleString("en-US");
 const duration = (ms: number | null) => ms == null ? "Unknown" : `${ms.toLocaleString("en-US")} ms`;
 const flag = (value: boolean | null) => value == null ? "Unknown" : value ? "Yes" : "No";
 
 export function RecordedAgentTrace({ recording, onEvidence }: { recording?: RecordedAgentRun | null; onEvidence: (source: Source) => void }) {
+  const rates=useContext(ExchangeContext);
+  const usd = (amount: number | null | undefined) => amount == null ? "Unknown" : `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`+equivalent(amount,"USD",rates);
   const verified = recording?.coverage === "verified_events";
   const summary = recording?.reported_summary;
   const usage = verified ? recording?.verified_usage : summary?.aggregate_usage;

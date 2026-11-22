@@ -15,18 +15,21 @@ def schema(con):
 def market(con, rows):
     """Prefer quoted goods prices. Use supplier catalogue prices where a quote is missing."""
     schema(con)
-    rates = fx_rates()
+    rates = fx_rates(con)
     catalog = {}
+    native = {}
     if con.execute("SELECT 1 FROM sqlite_master WHERE name='supplier_components'").fetchone():
         for material, supplier, amount, currency in con.execute(
             "SELECT component_id,supplier_id,unit_price,currency FROM supplier_components WHERE unit_price>0"
         ):
+            native[material,supplier] = {"amount":amount,"currency":currency}
             if currency in rates:
                 catalog[material, supplier] = round(amount * rates[currency], 4)
     saved = {m: (price, actor) for m, price, actor in con.execute("SELECT * FROM offer_limits")}
     policies = {}
     for row in rows:
         material = row["material"]
+        row["catalog_price"] = native.get((material, row["supplier_id"]))
         row["catalog_eur"] = catalog.get((material, row["supplier_id"]))
         policies.setdefault(material, {})
     for material in policies:
@@ -76,7 +79,7 @@ def apply(con, truth, watermark, *, demo):
     deals.sync(con, truth["deadline"])
     launch = datetime.fromisoformat(truth["deadline"])
     candidates = con.execute("""SELECT id,material FROM deals WHERE best=1 AND eligible=1
-                               AND status='pending' AND offer_kind='goods'""").fetchall()
+                               AND status='pending' AND offer_kind='goods' AND coalesce(freight_charge,0)=0""").fetchall()
     for deal_id, material in candidates:
         with con:
             if not con.in_transaction:
@@ -85,7 +88,7 @@ def apply(con, truth, watermark, *, demo):
             policy = con.execute("SELECT limit_eur,actor FROM offer_limits WHERE material=?", (material,)).fetchone()
             gap = (truth.get("parts", {}).get(material, {}).get("shortfall") or 0)
             if not (policy and row["best"] and row["eligible"] and row["status"] == "pending"
-                    and row["offer_kind"] == "goods" and 0 < (row["price_eur"] or 0) <= policy[0]
+                    and row["offer_kind"] == "goods" and not row["freight_charge"] and 0 < (row["price_eur"] or 0) <= policy[0]
                     and 0 < (row["order_quantity"] or 0) <= gap):
                 continue
             if not row["required_by"] or datetime.fromisoformat(row["required_by"]) > launch:

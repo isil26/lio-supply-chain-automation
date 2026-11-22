@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ExchangeContext, equivalent, rateSource } from "../currency";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { dashboardApi, isStaticMode, hostedReplayBuild, type AgentRun, type AgentTraceData, type Source } from "../api";
 import { roles } from "./types";
 import "./agents.css";
@@ -6,11 +7,9 @@ import mockTrace from "./mock.json";
 
 type Props = { onEvidence: (source: Source) => void; simulated?: boolean };
 
-function money(value: number) {
-  return value === 0 ? "—" : `$${value.toFixed(4)}`;
-}
-
 export function AgentTrace({ onEvidence, simulated }: Props) {
+  const rates = useContext(ExchangeContext);
+  const money = (value: number) => value === 0 ? "—" : `$${value.toFixed(4)}` + equivalent(value,"USD",rates);
   const [runs, setRuns] = useState<AgentRun[]>([]);
   const [trace, setTrace] = useState<AgentTraceData>({ steps: [], approvals_pending: [] });
   const [selected, setSelected] = useState("");
@@ -178,7 +177,7 @@ export function AgentTrace({ onEvidence, simulated }: Props) {
             <span className="agent-step-tool">{step.tool}</span>
             <span className="agent-step-reason"><b>{step.args_summary || "—"}</b><br/>{step.result_summary || step.reason}</span>
             <div className="agent-citations">{(step.citations ?? []).map((citation, citationIndex) => <button className="agent-citation" key={`${citation.file}-${citationIndex}`} onClick={() => onEvidence(citation)} title={citation.quote}>{citation.file?.split("/").pop() ?? "Evidence"}</button>)}</div>
-            <span className="agent-step-meta">{money(step.cost)} · {step.latency} ms</span>
+            <span className="agent-step-meta" title={rates && rateSource(rates)}>{money(step.cost)} · {step.latency} ms</span>
           </article>)}
         </div> : <div className="agent-empty">No trace steps yet. Start an agent run or replay the recorded run.</div>}
       </div>

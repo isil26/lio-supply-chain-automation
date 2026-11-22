@@ -204,3 +204,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-interactions | T-Button-Review | Deployed 3e5cbd5 to Manti Live and verified the button fixes alongside supplier pricing and translation | done | Public build matched the tested assets. Conditional-hold review, email language switching, nested evidence, agent replay and browser-only approval history passed. | 22 Nov |
 
 | manti-deal-watch | T-Server-Deal-Watch | orchestrator and supplier opportunity review | done | Manti Live recorded its first autonomous review at 04:59 CET and scheduled the next at 05:29 CET. Codex schedule deleted. | 22 Nov |
+
+| manti-forecast-desk | T-Quote-Followups-FX | Trace missing-term follow-ups and price displays | in_progress | Verify actual supplier reply handling and published reference rates | 22 Nov |
