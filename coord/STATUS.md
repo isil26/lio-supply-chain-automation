@@ -187,10 +187,6 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-dashboard | Manti-Hackathon-Login | All five rehearsal logins verified individually on the public Google Cloud dashboard | done | Activity Log attribution uses the selected username | 22 Nov |
 
-<<<<<<< Updated upstream
 | manti-agent-map | T-Manti-Brand | Verified charcoal dashboard, agent map and white Manti logo on production | done | Running 944a365. Verified signed-out branding, desktop and phone views, named login, and both public app entry points. | 22 Nov |
-=======
-| manti-agent-map | T-Manti-Brand | Dashboard and map branding | in_progress | Applying the new repository logo and neutral surfaces to the version B workspace. | 22 Nov |
 
 | manti-judge | T-Judge-Access | Add the judge identity to the live gateways and check the public dashboard | in_progress | Retire the replay after verifying Manti Live. | 22 Nov |
->>>>>>> Stashed changes
