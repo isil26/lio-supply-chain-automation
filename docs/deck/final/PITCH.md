@@ -34,6 +34,14 @@ Deck: [Manti-pitch-deck-final.pdf](../Manti-pitch-deck-final.pdf) · Timing: [TI
 
 **[Jump to slide 9, the team, and leave it up for Q&A]**
 
+## Backup slides (only if asked, or if time is left)
+
+**[Slide 7 · How it works]** On the left are the sources: handwritten notes, PDFs, supplier emails, SAP data and the shipment tracker. Every new file is synced and compared with the last version. Then six agents share one state: a reader, an analyst that compares SAP with the paper, a verifier that rejects any fact without a source, a planner that runs the forecast, a chaser that emails suppliers, and a router that finds the right signer. A person approves, and then the email goes out or the action is taken.
+
+**[Slide 8 · What it's worth]** For this one Soony launch: our agents protect about €840,000 of the €1.95 million at stake, with actions that cost €31,500. Human work drops from 228 hours to 24, which is 89% less. Running the agents costs 10 to 40 dollars per launch. And they read 308 files and 93 emails in four languages.
+
+**[Slide 9 · Team]** We're Murat, Nick, Isil, Gülsah and Leo, from TUM and KIT, with experience at Affirm, Infineon, Zeiss and Atruvia. Thank you, we're happy to take your questions.
+
 ## Likely jury questions
 
 **What happens when a new data drop arrives?** Every file is checksummed. When one changes, the agents reread it, rerun the forecast and re-rank the decisions automatically. The site shows it live.
