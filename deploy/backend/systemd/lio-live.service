@@ -1,0 +1,19 @@
+[Unit]
+Description=Lio live backend and authenticated loopback gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=lio-live
+Group=lio-live
+WorkingDirectory=/var/lib/lio-live
+ExecStart=/opt/lio/venv/bin/python -u /opt/lio/watch.py /var/lib/lio-live
+Restart=always
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+TimeoutStopSec=40
+
+[Install]
+WantedBy=multi-user.target
