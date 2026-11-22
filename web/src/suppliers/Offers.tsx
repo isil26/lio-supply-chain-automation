@@ -118,6 +118,20 @@ function product(material: string) { return PRODUCT[material] ?? material; }
 
 const STATUS: Record<Deal["status"], string> = { pending: "Open", approved: "Approved", declined: "Declined", changed: "Changed, decide again", superseded: "Superseded by supplier update" };
 
+const decisionLabels = {approved: "Approved", declined: "Declined", negotiating: "Negotiating"} as const;
+function eventTone(action: string) {
+  if (action === "negotiation started") return "negotiating";
+  if (action === "approved" || action === "declined") return action;
+}
+
+function quoteTone(deal: Deal) {
+  if (deal.status === "superseded") return;
+  const latest = deal.history?.find(event => event.revision === deal.revision && eventTone(event.action));
+  if (latest?.action === "negotiation started" &&
+      (!deal.decided_at || (latest.at && Date.parse(latest.at) >= Date.parse(deal.decided_at)))) return "negotiating";
+  return eventTone(deal.status);
+}
+
 function eur(value: number | null) { return value == null ? "–" : `€${Math.round(value).toLocaleString("en-US")}`; }
 function when(iso: string | null) {
   if (!iso) return "no date";
@@ -222,7 +236,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
         const deals = old.deals.map(d => {
           if (d.id !== deal.id) return d;
           if (d.awaiting_send) return {...d, awaiting_send:0};
-          const event = {action:status, by:actor, at, note:message, terms:{alternatives}};
+          const event = {revision:deal.revision, action:status, by:actor, at, note:message, terms:{alternatives}};
           const history = [event, ...(d.history ?? [])];
           return {...d, status, decided_at:at, decided_by:actor, history};
         });
@@ -271,12 +285,17 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
   const materials = [...allMaterials.filter(short), ...covered];
   const current = tab && materials.includes(tab) ? tab : materials[0];
   const rows = data.deals.filter((d) => d.material === current);
-  const best = data.best.filter((d) => d.material === current && d.eligible && ["pending", "changed"].includes(d.status));
+  const rankedIds = new Set(data.best.map(d => d.id));
+  const recommended = rows.filter(d => rankedIds.has(d.id) && d.eligible && ["pending", "changed", "approved"].includes(d.status));
+  const best = recommended.filter(d => d.status !== "approved");
+  const recommendation = (d: Deal) => recommended.some(r => r.id === d.id)
+    ? "Recommended" + (recommended.length > 1 && d.required_by ? " · due " + when(d.required_by) : "") : null;
   const tabNote = current ? data.notes?.[current] : undefined;
 
   const selected = rows.find(d=>d.id===choice) ?? best[0]
     ?? rows.find(d=>d.eligible && ["pending","changed"].includes(d.status))
     ?? rows.find(d=>d.followup && ["due","queued","sent","scheduled"].includes(d.followup.state)) ?? rows[0];
+  const selectedTone = selected && quoteTone(selected);
   const openOffer = selected && ["changed","pending"].includes(selected.status);
   const available = openOffer && !!selected.eligible && (example || !!selected.drafts?.approve);
   const canDecline = openOffer && (example || !!selected.drafts?.decline);
@@ -317,7 +336,7 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
     setBusy(deal.id + "negotiate");
     try {
       if (example) {
-        const event = { action:"negotiation started", by:currentUser || "Practice reviewer", at:new Date().toISOString(), note:draft.body,
+        const event = { revision:deal.revision, action:"negotiation started", by:currentUser || "Practice reviewer", at:new Date().toISOString(), note:draft.body,
           terms:{alternatives:rows.map(d => ({id:d.id,supplier:d.supplier,quantity:d.quantity??undefined,price_eur:d.price_eur??undefined}))} };
         setData(old => old && ({...old, deals:old.deals.map(d => d.id===deal.id ? {...d,history:[event,...(d.history ?? [])]} : d)}));
       } else {
@@ -382,11 +401,13 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
           <PriceCeiling key={current} policy={policy} product={product(current)} save={saveLimit} readOnly={sharedAccount || (!example && !currentUser && !reviewer.trim())}/>
           {sharedAccount && <button className="quiet" onClick={()=>setSwitchAccount(true)}>Sign in to edit the ceiling</button>}
         </>}
-        {archive ? <div className="recommend">{record ? <><div className="rec-label"><Icon name="history"/>Recorded decision</div>
+        {archive ? <div className="recommend" data-decision={record && eventTone(record.event.action)}>{record ? <><div className="rec-label"><Icon name="history"/>Recorded decision</div>
           <h3>{record.d.supplier} · {record.event.action}</h3><p>{record.event.by} · {when(record.event.at)}</p>
           <button className="quiet" onClick={()=>setDetails(record)}><Icon name="mail"/>Read decision</button></> :
           <><h3>No decisions recorded for this product</h3><p>Reviewed offers and negotiations appear here.</p></>}</div> :
-          selected && <div className="recommend"><div className="rec-top"><div className="rec-label"><Icon name="spark"/>{best.some(d=>d.id===selected.id)?"Recommended choice":"Selected offer"}</div>
+          selected && <div className="recommend" data-decision={selectedTone}><div className="rec-top"><div className="quote-labels">
+            <span className="rec-label">{recommendation(selected) ?? (selected.eligible ? "Supplier quote" : "Supplier response")}</span>
+            {selectedTone && <span className="quote-state">{decisionLabels[selectedTone]}</span>}</div>
             {selected.expires_at && <span className="rec-due">{when(selected.expires_at)}</span>}</div>
             <h3>{selected.supplier}</h3><p>{(!selected.followup || selected.followup.state!=="closed" ? selected.review_reason : STATE[selected.offer_state ?? ""]) || selected.conditions || tabNote || gist(selected,data.exchangeRates)}</p>
             <div className="rec-cost"><b>{selected.total_eur!=null?eur(selected.total_eur):priceDisplay(selected,data.exchangeRates).value}</b>
@@ -410,18 +431,23 @@ export function Offers({ archive, currentUser, reviewer, onReviewer, openThread,
             <div className="decision-buttons">{(available || held) ? <button className="btn" disabled={!!busy} onClick={()=>prepare("approve")}>{held?"Review supplier email":"Approve offer"}</button> : null}
               <button className="outline-btn" disabled={!canDecline||!!busy} onClick={()=>prepare("decline")}>Decline</button>
               <button className="outline-btn" disabled={!!busy||selected.status==="superseded"} onClick={()=>prepare("negotiate")}>Negotiate</button></div></div>}
+        {!archive && !recommended.length && <p className="ranking-note">No current recommendation for {product(current).toLowerCase()}.</p>}
         <div className="offers-heading"><b>Supplier emails</b><small>{threadCount} {threadCount===1?"thread":"threads"}</small></div>
         {rows.map(d=>{
+          const tone = quoteTone(d);
+          const label = recommendation(d);
           const body=<><span className="vendor-avatar">{d.supplier.split(/\s+/).slice(0,2).map(w=>w[0]).join("")}</span>
-            <span className="offer-info"><strong>{d.supplier}</strong><span>{d.quantity!=null && d.quantity.toLocaleString("en-US")+(d.eligible ? " offered · " : " mentioned · ")}{priceDisplay(d,data.exchangeRates).value} · {priceDisplay(d,data.exchangeRates).source}</span></span></>;
-          return <div className={"offer-row "+(selected?.id===d.id?"picked":"")} key={d.id}>
+            <span className="offer-info"><strong>{d.supplier}</strong>{(tone || label) && <span className="row-labels">
+              {tone && <b className="quote-state">{decisionLabels[tone]}</b>}{label && <b className="rank-label">{label}</b>}
+            </span>}<span>{d.quantity!=null && d.quantity.toLocaleString("en-US")+(d.eligible ? " offered · " : " mentioned · ")}{priceDisplay(d,data.exchangeRates).value} · {priceDisplay(d,data.exchangeRates).source}</span></span></>;
+          return <div className={"offer-row "+(selected?.id===d.id?"picked":"")} key={d.id} data-decision={tone}>
             {rows.length>1 && !archive ? <button className="offer-pick" aria-pressed={selected?.id===d.id} onClick={()=>{setChoice(d.id);setReply(null);setNote(null);}}><span className="radio-dot"/>{body}</button> : body}
             <button className="email-button" aria-label={"Read email from "+d.supplier} onClick={()=>setEmailId(d.id)}><Icon name="mail"/></button></div>;
         })}
       </div></>}
   </section><aside className="side-stack">{archive ? <section className="card"><Heading icon="history" count={history.length}>Decision history</Heading>
     <div className="deadline-list" tabIndex={0} aria-label="Decision history">{history.map(r=>
-      <button className="deadline-item" key={r.key} aria-haspopup="dialog" onClick={()=>{chooseTab(r.d.material);setEventKey(r.key);setDetails(r);}}>
+      <button className="deadline-item" data-decision={eventTone(r.event.action)} key={r.key} aria-haspopup="dialog" onClick={()=>{chooseTab(r.d.material);setEventKey(r.key);setDetails(r);}}>
         <span className="deadline-icon"><Icon name="history"/></span><span className="deadline-copy"><b>{product(r.d.material)} · {r.event.action}</b><small>{r.event.by} · {r.d.supplier}</small></span>
         {r.event.at && <span className="due">{when(r.event.at)}</span>}</button>)}{!history.length && <p className="empty">No saved decisions yet.</p>}</div></section> :
     children}</aside>

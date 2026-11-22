@@ -10,7 +10,7 @@ const glyphs = {
   timer: <><circle cx="12" cy="14" r="7.5"/><path d="M9 2h6m-3 0v4m4.7.9 1.8-2M12 14l3-3"/></>,
   box: <><path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5m-9 5v10m-5-17 9 5"/></>,
   layers: <><path d="m12 3 9 5-9 5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/></>,
-  spark: <><path d="m12 3 1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8zM19 2v4m-2-2h4"/></>,
+  chart: <path d="M3 3v17h18M7 7h12M7 12h7M7 16h9"/>,
   clock: <><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></>,
   book: <><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1zM12 6v14"/></>,
   truck: <><path d="M2 5h12v12H2zM14 9h4l4 5v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></>,

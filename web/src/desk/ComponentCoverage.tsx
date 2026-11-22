@@ -11,24 +11,21 @@ export function ComponentCoverage({ risks }: { risks: Risk[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const rows = risks.filter(measured).sort((a,b) => b.gap / b.required - a.gap / a.required || b.gap - a.gap);
   return <section className="card coverage"><Heading icon="layers">Component coverage</Heading>
-    <p className="chart-caption">Supply for remaining launch demand, ranked by the share still missing.</p>
-    {rows.length ? <><div className="coverage-legend"><span>Usable stock</span><span>Due by launch</span><span>Short</span></div>
-      {rows.map(r => {
-        const id = r.id ?? r.component;
-        const stock = Math.min(r.onHand, r.required);
-        const inbound = Math.min(r.inbound, r.required - stock);
-        return <div className="coverage-row" key={id}>
-          <button type="button" onClick={()=>setExpanded(current=>current === id ? null : id)}
-            aria-expanded={expanded === id} aria-controls={chartId+"-"+encodeURIComponent(id)}>
-            <span className="coverage-label">{r.component}</span>
-            <strong className={r.gap ? "gap-count" : "covered-count"}>{r.gap ? count.format(r.gap)+" short" : "Covered"}</strong>
-            <span className="coverage-track" aria-hidden="true">
-              <i style={{width:100*stock/r.required+"%"}}/><i style={{width:100*inbound/r.required+"%"}}/>
-              <i style={{width:100*r.gap/r.required+"%"}}/>
-            </span>
-          </button>
-          <p id={chartId+"-"+encodeURIComponent(id)} className="coverage-detail" hidden={expanded !== id}>{count.format(r.onHand)} usable · {count.format(r.inbound)} expected inbound · {count.format(r.required)} required</p>
-        </div>;
-      })}</> : <p className="empty">{risks.length ? "Component quantities are unavailable in this snapshot." : "No component risks reported."}</p>}
+    <p className="chart-caption">Available includes usable stock and arrivals expected by launch.</p>
+    {rows.length ? <div className="coverage-rows">{rows.map(r => {
+      const id = r.id ?? r.component;
+      const available = r.onHand + r.inbound;
+      const open = expanded === id;
+      return <div className="coverage-row" key={id}>
+        <button type="button" onClick={() => setExpanded(open ? null : id)} aria-expanded={open} aria-controls={chartId + "-" + encodeURIComponent(id)}>
+          <span className="coverage-label">{r.component}</span>
+          <span className={'coverage-numbers' + (r.gap ? ' has-gap' : '')}>
+            <span>{count.format(available)} available</span><strong>{count.format(r.gap)} short</strong>
+          </span>
+          <span className="coverage-track" aria-hidden="true"><i style={{width: 100 * Math.min(available / r.required, 1) + "%"}}/></span>
+        </button>
+        <p id={chartId + "-" + encodeURIComponent(id)} className="coverage-detail" hidden={!open}>{count.format(r.required)} units required for remaining launch demand.</p>
+      </div>;
+    })}</div> : <p className="empty">{risks.length ? "Component quantities are unavailable in this snapshot." : "No component risks reported."}</p>}
   </section>;
 }

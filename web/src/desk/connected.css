@@ -45,22 +45,46 @@
   .import-sources { grid-template-columns: 1fr; }
 }
 
-.coverage .card-heading {margin-bottom:5px}
-.chart-caption,.coverage-detail {font-size:.83rem;line-height:1.5;color:var(--sub)}
-.coverage-legend,.preview-heading {display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.coverage-legend {margin:18px 0 9px;color:var(--sub);font-size:.73rem}
-.coverage-legend span {display:inline-flex;align-items:center;gap:5px}
-.coverage-legend span::before {content:"";width:8px;height:8px;border-radius:2px}
-.coverage-legend span:nth-child(1)::before,.coverage-track i:nth-child(1) {background:#929298}
-.coverage-legend span:nth-child(2)::before,.coverage-track i:nth-child(2) {background:#8fb6d9}
-.coverage-legend span:nth-child(3)::before,.coverage-track i:nth-child(3) {background:repeating-linear-gradient(120deg,#df9992 0 3px,#a36d67 3px 5px)}
-.coverage-row button {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:8px 12px;width:100%;text-align:left;background:none;padding:9px 0;color:var(--text);font-size:.82rem}
+.forecast-charts {margin-bottom:18px;align-items:stretch}
+.forecast-charts .card {min-width:0;background:linear-gradient(115deg,#29292c,#212123);border-color:#434348}
+.forecast-charts .card-heading {margin-bottom:8px}
+.forecast-charts .card-title svg {color:#bfc2c7}
+.chart-caption,.coverage-detail {font-size:.8rem;line-height:1.5;color:var(--sub)}
+.coverage-rows {margin-top:12px}
+.coverage-row + .coverage-row {border-top:1px solid #ffffff0c}
+.coverage-row button {display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:5px 12px;width:100%;text-align:left;background:none;padding:9px 0;color:var(--text);font-size:.82rem}
 .coverage-row button:hover .coverage-label {text-decoration:underline}
-.coverage-track {grid-column:1/-1;display:flex;height:8px;border-radius:3px;overflow:hidden;background:var(--line)}
-.coverage-track i {height:100%;display:block}
-.gap-count {color:#eda39e;font-variant-numeric:tabular-nums}
-.covered-count {color:var(--sub);font-weight:500}
-.coverage-detail {padding:2px 0 8px}
+.coverage-label {font-weight:580}
+.coverage-numbers {display:flex;flex-wrap:wrap;gap:9px;color:var(--available);font-size:.77rem;font-variant-numeric:tabular-nums}
+.coverage-numbers strong {font-weight:550;color:var(--sub)}
+.coverage-numbers.has-gap strong {color:var(--shortage)}
+.coverage-track {flex-basis:100%;display:flex;height:5px;border-radius:4px;overflow:hidden;background:var(--shortage)}
+.coverage-track i {display:block;height:100%;background:var(--available)}
+.coverage-detail {padding:0 0 8px}
+.exposure {display:flex;flex-direction:column;--value-width:6.8rem}
+.chart-legend,.preview-heading {display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.exposure-legend {font-size:.76rem;color:var(--sub);margin:2px 0 14px;gap:8px 18px}
+.exposure .series-0 {--series:#a9b7c6}
+.exposure .series-1 {--series:var(--shortage)}
+.exposure[aria-label="Packing progress"] .series-1 {--series:var(--available)}
+.exposure-legend span {display:inline-flex;align-items:center;gap:6px}
+.exposure-legend span::before {content:"";width:14px;height:5px;border-radius:2px;background:var(--series)}
+.exposure-chart {display:grid;gap:13px;margin-block:auto}
+.exposure-label {display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:3px 12px;margin-bottom:5px}
+.exposure-label strong {font-size:.87rem;font-weight:600}
+.exposure-label small,.exposure-axis {font-size:.73rem;color:var(--muted)}
+.exposure-row {display:grid;grid-template-columns:minmax(0,1fr) var(--value-width);align-items:center;font-variant-numeric:tabular-nums}
+.exposure-row > span {font-size:.79rem;text-align:right;color:var(--series);font-weight:570}
+.exposure-track {display:flex;align-items:center;height:21px;border-inline:1px solid #ffffff22;background:linear-gradient(90deg,transparent calc(50% - .5px),#ffffff22 50%,transparent calc(50% + .5px))}
+.exposure-track i {display:block;background:var(--series);height:8px;border-radius:0 3px 3px 0}
+.exposure-axis {display:flex;justify-content:space-between;margin-right:var(--value-width);border-top:1px solid var(--line);padding-top:5px;font-variant-numeric:tabular-nums}
+.exposure-impact {display:flex;justify-content:space-between;align-items:baseline;gap:8px 16px;flex-wrap:wrap;border-top:1px solid #ffffff14;padding-top:12px;margin-top:16px}
+.exposure-impact span {font-size:.83rem;color:var(--sub)}
+.exposure-impact strong {color:var(--available);font-size:1.2rem;font-variant-numeric:tabular-nums}
+@media (max-width:600px) {
+  .exposure {--value-width:5.8rem}
+  .coverage-numbers {margin-inline-start:auto}
+}
 .email-preview {margin-top:14px}
 .preview-heading {justify-content:space-between;margin-bottom:10px;font-size:.85rem}
 .email-preview .draft-body {line-height:1.55;font-size:.91rem}
@@ -69,3 +93,15 @@
 .decision-feedback {color:var(--sub);font-size:.85rem;line-height:1.5;margin-bottom:10px}
 
 .quote-followup{display:grid;gap:.3rem;margin:.85rem 0;padding-left:.75rem;border-left:2px solid #777}.quote-followup b,.quote-followup small{color:#bcbcbc}.quote-followup .quiet{justify-self:start}
+
+[data-decision=approved] {--decision-tone:var(--available)}
+[data-decision=declined] {--decision-tone:var(--shortage)}
+[data-decision=negotiating] {--decision-tone:var(--negotiation)}
+.recommend[data-decision] {border-color:color-mix(in srgb,var(--decision-tone) 38%,var(--line));background:linear-gradient(110deg,color-mix(in srgb,var(--decision-tone) 13%,var(--card)),#252527)}
+.quote-labels,.offer-info .row-labels {display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px}
+.quote-state,.rank-label {display:inline-flex;align-items:center;gap:5px;font-size:.73rem;font-weight:620;line-height:1.4}
+.quote-state {color:var(--decision-tone);background:color-mix(in srgb,var(--decision-tone) 10%,var(--card));border:1px solid color-mix(in srgb,var(--decision-tone) 34%,var(--card));border-radius:5px;padding:2px 7px}
+.quote-state::before {content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.rank-label {color:#ced8e2}
+.offer-row[data-decision] .vendor-avatar,.deadline-item[data-decision] .deadline-icon {color:var(--decision-tone);border-color:color-mix(in srgb,var(--decision-tone) 33%,var(--line));background:color-mix(in srgb,var(--decision-tone) 10%,var(--card))}
+.ranking-note {margin-top:9px;font-size:.79rem;color:var(--muted)}

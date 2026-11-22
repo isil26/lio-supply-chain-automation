@@ -2,7 +2,7 @@ import type { Activity, Source } from "../api";
 import { roles } from "./types";
 
 export type Team = "Operations" | "Specialists";
-export type Agent = { name: string; role: string; icon: string; tone: string };
+export type Agent = { name: string; role: string; icon: string; tone: string; kind?: "Exception team" | "Standalone specialist" };
 
 const operations: Agent[] = [
   { name: "Data Bridge", role: "Picks up new and changed files from the supplier portal.", icon: "bridge", tone: "sky" },
@@ -16,22 +16,22 @@ const operations: Agent[] = [
   { name: "Mail Agent", role: "Prepares supplier replies and dispatches eligible messages.", icon: "mail", tone: "sage" },
 ];
 
-const specialistDetails: Record<typeof roles[number], [string, string, string]> = {
-  Triage: ["Routes each launch exception to the right specialists.", "branch", "lilac"],
-  Analyst: ["Finds stock gaps and contradictions in the evidence.", "pulse", "sky"],
-  Verifier: ["Checks claims against independent source documents.", "shield", "sage"],
-  Planner: ["Models recovery options and their break-even points.", "plan", "lilac"],
-  Chaser: ["Drafts the next supplier request for a launch exception.", "signal", "sage"],
-  Reader: ["Extracts cited facts from supplier documents.", "document", "sky"],
-  Interpreter: ["Turns supplier replies into structured commitments.", "interpret", "amber"],
-  Briefer: ["Summarises the evidence and open decisions for review.", "brief", "amber"],
+const specialistDetails: Record<typeof roles[number], [string, string, string, NonNullable<Agent["kind"]>]> = {
+  Triage: ["Reads the incoming exception and delegates the next checks to the specialist team.", "branch", "lilac", "Exception team"],
+  Analyst: ["Compares readiness, shortfalls and supplier records to identify the component blocking launch.", "pulse", "sky", "Exception team"],
+  Verifier: ["Checks each claim against its cited source and flags unsupported claims for review.", "shield", "sage", "Exception team"],
+  Planner: ["Compares recovery scenarios, checks break-even costs and proposes an option for approval.", "plan", "lilac", "Exception team"],
+  Chaser: ["Drafts a supplier request for the missing quantity, delivery date or shipping evidence.", "signal", "sage", "Exception team"],
+  Reader: ["Extracts facts from a document and attaches the page and quoted passage for review.", "document", "sky", "Standalone specialist"],
+  Interpreter: ["Reads a supplier reply, extracts dated commitments and flags contradictions for follow-up.", "interpret", "amber", "Standalone specialist"],
+  Briefer: ["Turns verified claims, priced options and approval requirements into a short decision brief.", "brief", "amber", "Standalone specialist"],
 };
 
 export const teams: Record<Team, Agent[]> = {
   Operations: operations,
   Specialists: roles.map(name => {
-    const [role, icon, tone] = specialistDetails[name];
-    return { name, role, icon, tone };
+    const [role, icon, tone, kind] = specialistDetails[name];
+    return { name, role, icon, tone, kind };
   }),
 };
 

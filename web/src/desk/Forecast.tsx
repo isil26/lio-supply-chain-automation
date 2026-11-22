@@ -12,7 +12,7 @@ export const displayDate = (value: string, withTime = true) => {
 };
 const count = (n: number) => n.toLocaleString("en-US");
 const money = new Intl.NumberFormat("en-IE", {style:"currency", currency:"EUR", notation:"compact", maximumFractionDigits:2});
-const edition = (id: string) => id === "CE" ? "Collector’s Edition" : id === "STD" ? "Standard Edition" : id;
+export const editionName = (id: string) => id === "CE" ? "Collector’s Edition" : id === "STD" ? "Standard Edition" : id;
 
 function Clock({deadline}: {deadline: string}) {
   const [now, setNow] = useState(Date.now);
@@ -44,7 +44,7 @@ export function Forecast({data}: {data: DashboardData}) {
       const unit = r.missCostEur;
       const basis = unit == null ? "No loss per missed copy supplied" : `€${count(unit)} per missing box · ${r.missCostConfirmed ? "confirmed rate" : "assumed rate"}`;
       return <article key={r.edition} className={'stat edition '+(!forecast ? "unforecast" : gap ? "short" : "complete")}>
-        <h2 className="stat-label"><span className="chip-icon"><Icon name={r.edition==="CE"?"box":"layers"}/></span>{edition(r.edition)}</h2>
+        <h2 className="stat-label"><span className="chip-icon"><Icon name={r.edition==="CE"?"box":"layers"}/></span>{editionName(r.edition)}</h2>
         <div className="metric"><strong>{count(forecast ? gap : expected)}</strong><span>{!forecast ? "boxes packed" : gap ? "boxes short at launch" : "short · target met"}</span></div>
         <div className="progress-wrap"><div className="track"><span style={{width:percent+"%"}}/></div>
           <div className="progress-caption"><span>{forecast ? "Median forecast" : "Packed"} · {count(expected)} / {count(r.target)}</span><b>{Number(percent.toFixed(1))}%</b></div></div>

@@ -24,12 +24,19 @@ function Glyph({ icon }: { icon: string }) {
 }
 
 const eventCount = (n: number) => n + (n === 1 ? " event" : " events");
-const MAX_REPLAY = 12;
 const PULSE_MS = 3400;
 const agentFromHash = () => {
   const requested = new URLSearchParams(location.hash.split("?")[1]).get("agent");
   return requested ? findAgent(requested)?.name ?? null : null;
 };
+
+function writeSelection(name: string | null) {
+  const params = new URLSearchParams(location.hash.split("?")[1]);
+  if (name) params.set("agent", name);
+  else params.delete("agent");
+  const query = params.toString();
+  window.history.replaceState(window.history.state, "", "#agents" + (query ? "?" + query : ""));
+}
 
 function useRecentSignals(signals: Signal[], connected: boolean) {
   const previous = useRef<Set<string> | null>(null);
@@ -181,6 +188,23 @@ export function AgentGraph({ data, scenario, stale, onEvidence }: {
   const streamTitle = useRef<HTMLHeadingElement>(null);
   const [replay, setReplay] = useState<{ events: Signal[]; index: number } | null>(null);
   const [replayNotice, setReplayNotice] = useState("");
+  const [speed, setSpeed] = useState(1);
+  useEffect(() => {
+    if (!selected) return;
+    const clear = () => { setSelected(null); writeSelection(null); };
+    const clickAway = (event: MouseEvent) => {
+      if (event.target instanceof Element && !event.target.closest(".net-node") && location.hash.split("?")[0] === "#agents") clear();
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) clear();
+    };
+    document.addEventListener("click", clickAway);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("click", clickAway);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [selected]);
   useEffect(() => {
     const navigate = () => {
       setSelected(agentFromHash());
@@ -199,9 +223,9 @@ export function AgentGraph({ data, scenario, stale, onEvidence }: {
         setReplay(null);
         setReplayNotice("Replay complete · " + eventCount(replay.events.length));
       }
-    }, 1250);
+    }, 1250 / speed);
     return () => window.clearTimeout(timer);
-  }, [replay]);
+  }, [replay, speed]);
   const lit = frame ? new Set([frame.agent.name]) : new Set(pulses.keys());
   const counts = new Map<string, number>();
   for (const { agent } of events) counts.set(agent.name, (counts.get(agent.name) ?? 0) + 1);
@@ -213,18 +237,16 @@ export function AgentGraph({ data, scenario, stale, onEvidence }: {
     setReplay(null);
     setReplayNotice("");
     setSelected(next);
-    const params = new URLSearchParams(location.hash.split("?")[1]);
-    if (next) params.set("agent", next);
-    else params.delete("agent");
-    const query = params.toString();
-    window.history.replaceState(window.history.state, "", "#agents" + (query ? "?" + query : ""));
+    writeSelection(next);
   };
   const reading = frame ?? visible[0];
   const readoutAgent = picked ?? reading?.agent;
   const toggleReplay = () => {
     if (replay) { setReplay(null); setReplayNotice("Replay stopped."); return; }
+    setSelected(null);
+    writeSelection(null);
     setReplayNotice("");
-    setReplay({ events: visible.slice(0, MAX_REPLAY).reverse(), index: 0 });
+    setReplay({ events: [...events].reverse(), index: 0 });
   };
 
   const historical = history.length > 0 && (signals.length === 0 || (picked && teams.Specialists.includes(picked)));
@@ -236,20 +258,22 @@ export function AgentGraph({ data, scenario, stale, onEvidence }: {
         <div className="net-title"><h2 id="agent-network-title">Agent network</h2>
           <span className="net-source" data-online={online && !frame && !historical}><i/>{frame ? "Replaying activity" : source}</span>
         </div>
-        <button className="net-replay" onClick={toggleReplay} disabled={!replay && !visible.length}>
-          <span aria-hidden="true">{replay ? "■" : "▷"}</span>{replay ? "Stop replay" : "Replay activity"}</button></header>
+        <div className="net-play-controls">{replay && <label>Speed <select value={speed} onChange={e => setSpeed(Number(e.target.value))}>
+          {[1, 2, 4].map(value => <option key={value} value={value}>{value}×</option>)}
+        </select></label>}
+        <button className="net-replay" onClick={toggleReplay} disabled={!replay && (!events.length || loading)}>
+          <span aria-hidden="true">{replay ? "■" : "▷"}</span>{replay ? "Stop replay" : "Replay all activity"}</button></div></header>
       <NetworkPlot counts={counts} selected={selected} lit={lit} onSelect={pick}/>
-      <div className="net-readout" data-tone={readoutAgent?.tone}>
-        <small>{replay ? "Replay" : picked ? "Selected" : "Latest"}</small>
-        <strong>{readoutAgent?.name ?? "Standing by"}</strong><span>{reading?.message ?? picked?.role ?? "Waiting for an agent event."}</span>
+      <div className={"net-readout" + (picked ? " net-profile" : "")} data-tone={readoutAgent?.tone}>
+        <small>{picked ? picked.kind ?? "Operations" : replay ? "Replay" : "Latest"}</small>
+        <strong>{readoutAgent?.name ?? "Standing by"}</strong><span>{picked?.role ?? reading?.message ?? "Waiting for an agent event."}</span>
       </div>
       <footer className="net-key"><span><i className="signal"/>New event</span><span><i className="reported"/>Has history</span><span><i/>No events</span></footer>
     </section>
     <section className="card net-stream" id="agent-stream" aria-labelledby="agent-stream-title">
-      <header className="net-heading"><h2 id="agent-stream-title" ref={streamTitle} tabIndex={-1}>Event stream</h2>
+      <header className="net-heading"><h2 id="agent-stream-title" ref={streamTitle} tabIndex={-1}>{picked ? picked.name + " activity" : "Event stream"}</h2>
         {picked ? <button className="net-reset" onClick={() => {pick(null); streamTitle.current?.focus();}} aria-label="Show all agents">×</button>
           : <span className="net-total">{eventCount(events.length)}</span>}</header>
-      {picked && <p className="net-role"><strong>{picked.name}</strong> · {picked.role}</p>}
       {(replay || replayNotice) && <div className="net-playhead" role="status">{replay ? `Replaying event ${replay.index + 1} of ${replay.events.length}` : replayNotice}</div>}
       {showRunHistory && run?.error && <p className="net-role" role="status">Run history unavailable.{" "}<button className="net-evidence" onClick={() => {retry(); streamTitle.current?.focus();}}>Retry run history</button></p>}
       {showRunHistory && loading && <p className="net-role" role="status">Loading run history…</p>}
@@ -259,7 +283,7 @@ export function AgentGraph({ data, scenario, stale, onEvidence }: {
           <p>{event.message}</p>
           {event.sources?.map((source, i) => <button className="net-evidence" key={i} onClick={() => onEvidence(source)}>{(source.file ?? source.source_file)?.split("/").pop() ?? "Source evidence"}</button>)}
         </li>)}
-      </ol> : !(showRunHistory && (loading || run?.error)) && <div className="net-empty"><Glyph icon={picked?.icon || "pulse"}/><strong>No events in this feed</strong>
+      </ol> : !(showRunHistory && (loading || run?.error)) && <div className="net-empty"><Glyph icon={picked?.icon || "pulse"}/><strong>{picked ? "No recorded events for " + picked.name + " in this feed" : "No events in this feed"}</strong>
         {showRunHistory && !!reportedRoles?.length && <p>Reported roles · {reportedRoles.join(", ")}.</p>}
       </div>}
     </section>

@@ -183,3 +183,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | T-Server-Deal-Watch | Run the recurring procurement opportunity review in the deployed worker | manti-deal-watch | orchestrator scheduler and supplier review state | done | T-Supplier-Promises |
 
 | T-Quote-Followups-FX | Automatic quote completion and dated euro equivalents | manti-forecast-desk | mail agent, exchange rates, supplier offer UI and deployment | done | T-Live-Offer-Interpreter |
+
+| T-Dashboard-Signals | Clarify component and financial forecasts, quote decisions and full-network replay | manti-desk-signals | web dashboard and agent map | done | T-Manager-Dashboard |
