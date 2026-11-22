@@ -19,9 +19,10 @@ import { Offers } from "./suppliers/Offers";
 import { MantiLogo, SupplyMap } from "./SupplyMap";
 import { BehindScenes } from "./BehindScenes";
 import { ArrivalTimeline } from "./ArrivalTimeline";
-import { ActionList } from "./ActionList";
+import { ActionList, PastList } from "./ActionList";
 import { setAutoApprove } from "./api";
 import "./styles.css";
+import "./workspace.css";
 
 const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon" | "sun" | "check" | "arrow" }) => {
   const paths: Record<typeof name, React.ReactNode> = {
@@ -40,13 +41,13 @@ const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon"
 function Countdown({ deadline }: { deadline: string }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 30000);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
   const diff = Math.max(0, new Date(deadline).getTime() - now);
   const hours = Math.floor(diff / 3600000);
   const minutes = Math.floor(diff / 60000) % 60;
-  return <div className="countdown" aria-label="Time to launch"><strong>{hours}h {String(minutes).padStart(2, "0")}m</strong><span>left</span></div>;
+  return <div className="countdown" aria-label="Time to launch"><strong>{String(hours).padStart(2, "0")}:{String(minutes).padStart(2, "0")}:{String(Math.floor(diff / 1000) % 60).padStart(2, "0")}</strong><span>HOURS · MIN · SEC</span></div>;
 }
 
 function formatNumber(value: number | undefined) {
@@ -109,6 +110,15 @@ function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
   const [dark, setDark] = useState(true);
+  const [archive, setArchive] = useState(location.hash === "#activity");
+  const [reviewer, setReviewer] = useState(() => {
+    try { return localStorage.getItem("soony-reviewer") ?? ""; } catch { return ""; }
+  });
+  useEffect(() => {
+    const navigate = () => setArchive(location.hash === "#activity");
+    window.addEventListener("hashchange", navigate);
+    return () => window.removeEventListener("hashchange", navigate);
+  }, []);
   const [behind, setBehind] = useState(false);
   const [threadId, setThreadId] = useState(() => new URLSearchParams(window.location.search).get("thread") || "");
   const [mailView, setMailView] = useState(() => new URLSearchParams(window.location.search).get("mail") === "1");
@@ -227,10 +237,13 @@ function App() {
     window.history.replaceState(null, "", url);
   };
 
-  const selectThread = (id: string) => {
+  const selectThread = (id: string, verified = mailView) => {
+    setArchive(false);
+    setMailView(verified);
     setThreadId(id);
     const url = new URL(window.location.href);
     url.searchParams.set("thread", id);
+    if (verified) url.searchParams.set("mail", "1"); else url.searchParams.delete("mail");
     url.hash = "";
     window.history.replaceState(null, "", url);
     // Open the supplier emails right here and scroll to them, instead of only changing the link.
@@ -301,19 +314,32 @@ function App() {
   const reviews = health?.needsReview ?? sourceReviews.length;
   const deadline = new Date(data.launch.deadline);
 
-  return <main className={dark ? "theme-dark" : "theme-light"}>
+  const past = data.pastDecisions ?? (data.options ?? []).filter(o => o.decidedAt || o.effect || practice.decisions[o.id]).map(o => ({
+    ...o, status: practice.decisions[o.id] ?? o.status ?? "review", decidedAt: o.decidedAt ?? o.effect?.at ?? "", evidence: undefined
+  }));
+  const deadlines = (data.options ?? []).filter(o => !["approved","done","dismissed"].includes(practice.decisions[o.id] ?? o.status ?? "") && (o.status !== "blocked" || o.approvalMode)).map(o => {
+    const review = data.recoveryApprovals?.find(r => r.id === o.id);
+    const due = review?.dueAt ?? o.latest_action ?? o.deadline;
+    return {id:o.id, title:o.title, owner:review?.approver ?? o.owner, due, at:Date.parse(due)};
+  }).sort((a,b) => (Number.isFinite(a.at)?a.at:Infinity) - (Number.isFinite(b.at)?b.at:Infinity));
+  const openDealThread = (id:string) => selectThread(id, !!data.mailHistory?.threads.some(t=>t.id===id));
+  return <main className={`manti-workspace ${dark ? "theme-dark" : "theme-light"}`}>
+    <aside className="workspace-rail"><MantiLogo/><nav aria-label="Workspace">
+      <a href="#dashboard" aria-current={!archive ? "page" : undefined}><Icon name="grid"/>Dashboard</a>
+      <a href="#activity" aria-current={archive ? "page" : undefined}><Icon name="approval"/>Activity Log</a>
+    </nav><div className="rail-foot"><b>{data.launch.name}</b><span>{data.launch.location}</span></div></aside>
     <section className="page">
       <header className="topbar">
-        <div className="topbar-left"><MantiLogo/><span className="divider"/><h1>{data.launch.name}</h1></div>
+        <div className="workspace-crumb">Workspace <span>/</span> <strong>{data.launch.name}</strong></div>
         <div className="top-actions">
           <button className="behind-button" onClick={() => setBehind(true)}><i className="live"/>See what the agents do</button>
-          <Countdown deadline={data.launch.deadline}/>
           {isStaticMode() && <button className="ghost-button" onClick={() => void resetDemo()}>Reset</button>}
           {data.currentUser && <form method="post" action="/logout"><span>{data.currentUser} </span><button className="ghost-button" type="submit">Sign out</button></form>}
           <button className="icon-button" onClick={() => setDark((value) => !value)} title="Toggle theme" aria-label="Toggle theme"><Icon name={dark ? "sun" : "moon"}/></button>
         </div>
       </header>
 
+      <div className="workspace-heading"><h1>{archive ? "Activity Log" : "Dashboard"}</h1><p>{data.launch.name} · {data.launch.location} · {archive ? "Decision history" : "Launch operations"}</p></div>
       {data.sync?.error && <div className="notice alert" role="alert">{data.sync.error}</div>}
       {data.sync?.portal?.error && <div className="notice alert" role="alert">
         {data.sync.portal.error} {data.sync.portal.snapshot ? "Showing the last verified Lio files." : "Showing the original case files."}
@@ -322,6 +348,29 @@ function App() {
         <p className="muted">Last Lio check · {etaDate.format(new Date(data.sync.portal.checkedAt))} · {formatNumber(health?.filesSeen)} files verified</p>
       )}
       {error && <div className="notice alert">{error}<button className="link-button" onClick={() => setError("")}>Dismiss</button></div>}
+      <section className={`forecast-grid ${archive ? "archived" : ""}`} aria-label="Current launch forecast">
+        <article className="launch-tile"><h2>Time to launch</h2><Countdown deadline={data.launch.deadline}/><small>{etaDate.format(deadline)} CET</small></article>
+        {[...editions].sort((a,b)=>Number(b.edition==="CE")-Number(a.edition==="CE")).map(item=>{
+          const pct=item.target>0 ? Math.min(100,100*item.expected/item.target) : 100;
+          const unit=item.missCostEur ?? item.stdCostEur;
+          return <article key={item.edition} className={`edition-tile ${item.short ? "short" : "complete"}`}>
+            <h2>{editionName(item.edition)}</h2><div className="gap-value"><strong>{formatNumber(item.short)}</strong> {item.short ? "boxes short" : "short · target met"}</div>
+            <div className="coverage-bar"><i style={{width:pct+"%"}}/></div>
+            <div className="coverage-label"><span>{formatNumber(item.expected)} / {formatNumber(item.target)} expected</span><b>{Number(pct.toFixed(1))}%</b></div>
+            <div className="loss-label"><span>{item.missCostEur==null?"At standard cost":item.missCostConfirmed===false?"Potential loss · estimate":item.edition==="CE"?"Refund exposure":"Potential loss"}</span><b title={unit==null?undefined:euros.format(unit*item.short)}>{unit==null?"Unpriced":new Intl.NumberFormat("en-IE",{style:"currency",currency:"EUR",notation:"compact",maximumFractionDigits:2}).format(unit*item.short)}</b></div>
+          </article>;
+        })}
+      </section>
+      <div className="forecast-context">{archive ? "Current forecast" : onTrack ? "On track" : formatNumber(totalShort)+" boxes below target"}{!archive && shortEur!=null && !onTrack ? ` · ${euro(shortEur)} ${useMiss?"at stake":"at standard cost"}`:""}{data.readiness.some(r=>r.missCostConfirmed===false) && " · Standard loss estimate is unconfirmed."}</div>
+      <div className={`decision-layout ${archive?"archived":""}`}>
+        <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={openDealThread}/>
+        <aside className="decision-side">{archive ? <section className="card"><h3>Activity feed</h3><ul className="activity scroll-feed">{data.activity.map(a=><li key={a.id}><strong>{a.agent}</strong> {a.action}<small>{a.time}</small></li>)}</ul></section> : <>
+          <section className="card"><h3>Decision deadlines <small>{deadlines.length}</small></h3><div className="deadline-scroll" tabIndex={0} aria-label="Upcoming decisions">{deadlines.length?deadlines.map(d=><button key={d.id} onClick={()=>setRequestedAction({id:d.id})}><span><strong>{d.title}</strong><small>{d.owner}</small></span><time>{Number.isFinite(d.at)?etaDate.format(new Date(d.at))+" CET":d.due || "Time unconfirmed"}</time></button>):<p className="empty">No decisions due.</p>}</div></section>
+          {approval && <section className="card insight-tile"><h3>Recommended action</h3><strong>{approval.title}</strong><p>{approval.recommendation}</p><button className="link-button" onClick={()=>setRequestedAction({id:approval.id})}>Review action</button></section>}
+        </>}</aside>
+      </div>
+      {archive && <section className="card archived"><h3>Past actions</h3><PastList rows={past} onOpenThread={id=>selectThread(id,false)}/></section>}
+      <div className="workspace-tools" hidden={archive}>
       {dropVisible && data.drop && (pendingDrop || isStaticMode() || hostedReplayBuild) && <div className="notice">
         <span>{pendingDrop ? "Supplier files are ready to apply." : "Supplier update replay"}</span>
         <button className="primary-button small" onClick={() => void runSync(hostedReplayBuild && !pendingDrop)} disabled={syncBusy}>{syncBusy ? "Updating…" : hostedReplayBuild && !pendingDrop ? "Reset" : "Update"}</button>
@@ -344,28 +393,12 @@ function App() {
             <button className="link-button" onClick={() => setSource({ file: change.file })}>{change.file}</button>}</li>)}</ul></details>}
       </section>}
 
-      <section className="strip" aria-label="Launch status">
-        <div className="strip-main">
-          <strong className="strip-number">{onTrack ? "On track" : formatNumber(totalShort)}</strong>
-          <span>{onTrack ? "to meet the launch target" : "copies below target in the median forecast"}</span>
-        </div>
-        {!onTrack && shortEur != null && <div className="strip-item"><strong>≈ {euro(shortEur)}</strong>
-          <span>at stake{!useMiss ? " (standard cost)" : data.readiness.some((row) => row.missCostConfirmed === false)
-            ? " (Standard estimate unconfirmed)" : ""}</span>
-        </div>}
-        {editions.map((item) => <div className="strip-item" key={item.edition}>
-          <strong>{item.short ? `−${formatNumber(item.short)}` : "✓"}</strong>
-          <span>{item.edition === "CE" ? "Collector's" : "Standard"}</span>
-          <i className="strip-bar"><i style={{ width: `${(Math.min(item.expected, item.target) / item.target) * 100}%` }}/></i>
-        </div>)}
-      </section>
-
       {(() => {
         const listed = (data.options ?? []).filter((option) => option.status !== "blocked" || option.approvalMode);
         if (!hostedReplayBuild) return <ActionList requestedAction={requestedAction} options={listed}
           reviews={data.recoveryApprovals} busy={decisionBusy} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
-          onDecide={(id, review, by) => void decide(id, review, by)} onEvidence={setSource} onOpenThread={selectThread}
+          onDecide={(id, review, by) => void decide(id, review, data.currentUser ?? (by || reviewer || undefined))} onEvidence={setSource} onOpenThread={selectThread}
           onPreview={dashboardApi.previewDecision ? (id) => dashboardApi.previewDecision!(id) : undefined}
           past={data.pastDecisions}
           autoLimit={data.autoApprove?.limitEur ?? 0} autoIds={data.autoApproved ?? []} autoBy={data.autoApprove?.setBy}
@@ -380,7 +413,7 @@ function App() {
         const practiceEffect = { at: "", sent: false, lines: ["Practice mode: only your screen changed. Nothing was sent or bought."] };
         const options = listed.map((option) => practice.decisions[option.id] ? { ...option, status: practice.decisions[option.id], effect: practiceEffect }
           : autoIds.includes(option.id) ? { ...option, status: "approved" } : option);
-        return <ActionList options={options} reviews={data.recoveryApprovals} busy={false} readOnly={false}
+        return <ActionList requestedAction={requestedAction} options={options} reviews={data.recoveryApprovals} busy={false} readOnly={false}
           costOf={(pid) => data.readiness.find((row) => row.productId === pid)?.[useMiss ? "missCostEur" : "stdCostEur"] ?? null}
           onDecide={(id, review) => setPractice((value) => ({ ...value, decisions: { ...value.decisions, [id]: review ? "review" : "approved" } }))}
           onEvidence={setSource} onOpenThread={selectThread} autoLimit={practice.limit} autoIds={autoIds} autoBy={data.autoApprove?.setBy}
@@ -403,7 +436,7 @@ function App() {
         </ol> : <p className="empty">The current plan covers every required component.</p>}
       </section>
 
-      <Offers/>
+
       <BestSupplier/>
 
       <AgentGraph recording={data.recordedAgentRun} onEvidence={setSource} autoSend={data.autoSend}/>
@@ -515,6 +548,7 @@ function App() {
         </ul>
         <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>
       </details>
+      </div>
     </section>
     {behind && <BehindScenes activity={data.activity} recording={data.recordedAgentRun} autoSend={data.autoSend} onClose={() => setBehind(false)} onEvidence={setSource}/>}
     {source && <EvidenceModal source={source} onClose={() => setSource(null)}/>}

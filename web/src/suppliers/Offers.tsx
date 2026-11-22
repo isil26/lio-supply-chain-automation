@@ -8,7 +8,7 @@ import "./offers.css";
 // reserve; Decline sends a polite no-thanks. Both emails go out through the mail agent.
 
 type Deal = {
-  revision?: string; required_by?: string; thread_id?: string; order_quantity?: number | null; expires_at?: string | null;
+  address?: string; revision?: string; required_by?: string; thread_id?: string; order_quantity?: number | null; expires_at?: string | null;
   offer_state?: "quoted" | "incomplete" | "late" | "unavailable" | "expired" | "superseded" | "approval_required";
   offer_kind?: "goods" | "freight"; carrier?: string | null; freight_charge?: number | null;
   review_reason?: string;
@@ -92,20 +92,32 @@ function exampleData(): Data {
   return { ...data, best: data.deals.filter((d) => d.best) };
 }
 
-export function Offers() {
+type Props = {
+  archive: boolean;
+  currentUser?: string | null;
+  reviewer: string;
+  onReviewer: (name: string) => void;
+  openThread: (id: string) => void;
+};
+export function Offers({ archive, currentUser, reviewer, onReviewer, openThread }: Props) {
   // Hosted recording and static builds have no live backend: show a labelled example,
   // and keep Approve / Decline in this browser only (nothing is sent).
   const example = hostedReplayBuild || isStaticMode();
   const [data, setData] = useState<Data | null>(example ? exampleData() : null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [choice, setChoice] = useState<string | null>(null);
+  const [reply, setReply] = useState<{id:string; revision?:string; action:"approve"|"decline"|"negotiate"; body:string} | null>(null);
+  const [loadError,setLoadError] = useState(false);
   const [tab, setTab] = useState<string | null>(null);
 
   async function load() {
     try {
       const response = await fetch("/api/deals", { cache: "no-store" });
-      if (response.ok) setData(await response.json());
-    } catch { /* keep the last table */ }
+      if (!response.ok) throw new Error("Offers unavailable");
+      setData(await response.json());
+      setLoadError(false);
+    } catch { setLoadError(true); }
   }
 
   useEffect(() => {
@@ -128,7 +140,7 @@ export function Offers() {
     }
     setBusy(deal.id + action);
     try {
-      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision: deal.revision }) });
+      const response = await fetch(`/api/deals/${deal.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision: deal.revision, ...(!currentUser && reviewer.trim() ? {by:reviewer.trim()} : {}) }) });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         setNote(error.error ?? "The offer could not be updated. Review the latest terms.");
@@ -146,7 +158,7 @@ export function Offers() {
     }
   }
 
-  if (!data) return null;
+  if (!data) return <section className="card offers"><h3>Supplier offers</h3><p role="status">{loadError ? "Supplier offers could not be loaded." : "Loading supplier offers…"}</p>{loadError && <button className="ghost-button" onClick={()=>void load()}>Retry</button>}</section>;
   // Every part from the case keeps its tab; short parts come first, covered ones are marked "covered" (Gülşah, 22 Nov).
   const allMaterials = [...new Set(data.deals.map((d) => d.material))];
   const short = (m: string) => !data.gaps || !(m in data.gaps) || (data.gaps[m] ?? 0) > 0;
@@ -157,75 +169,61 @@ export function Offers() {
   const best = data.best.filter((d) => d.material === current);
   const tabNote = current ? data.notes?.[current] : undefined;
 
-  return (
-    <section className="card offers" aria-labelledby="offers-title">
-      <h3 id="offers-title">Supplier offers</h3>
-      <p className="card-sub">{example ? `Simulated supplier offers${data.as_of ? ` (${data.as_of})` : ""}. Decisions stay in this browser.` : "Review supplier quotes and request a nonbinding reservation. The authorized signer issues the purchase order."}</p>
-      {note && <p className="offers-note" role="status">{note}</p>}
-      {data.deals.length === 0 && <p className="empty">No offers yet. They appear here as suppliers reply.</p>}
-
-      {materials.length > 0 && <div className="offers-tabs" role="tablist" aria-label="Products">
-        {materials.map((m) => {
-          const all = data.deals.filter((d) => d.material === m);
-          const gap = data.gaps?.[m] ?? all[0].needed;
-          return <button key={m} role="tab" aria-selected={m === current} className={m === current ? "is-on" : ""} onClick={() => setTab(m)}>
-            {product(m)} <span className="muted">{gap ? `${gap.toLocaleString("en-US")} short` : "covered"} · {all.length} supplier{all.length === 1 ? "" : "s"}</span>
-          </button>;
-        })}
+  const selected = rows.find(d=>d.id===choice) ?? best[0] ?? rows[0];
+  const draft = reply && selected && reply.id===selected.id && reply.revision===selected.revision ? reply : null;
+  const available = selected?.eligible && ["changed","pending"].includes(selected.status);
+  function prepare(action:"approve"|"decline"|"negotiate") {
+    const d = selected;
+    const ask = d.offer_kind==="freight" ? "Please compare standard and priority freight, including the first pickup, guaranteed handover and all-in charge."
+      : d.offer_state==="late" || d.offer_state==="unavailable" ? "Could you offer an earlier partial lot, local stock or an alternative shipping point? Please confirm quantities, delivery windows and any premium."
+      : "Could you offer a split shipment or a better unit price for the required quantity? Please confirm the earliest delivery, minimum order and offer expiry.";
+    const body = `Hello ${d.supplier} team,\n\nThank you for the ${product(d.material).toLowerCase()} update. We need ${d.needed.toLocaleString("en-US")} units${d.required_by ? " by "+when(d.required_by):""}. Your reply indicates ${d.quantity?.toLocaleString("en-US") ?? "an unconfirmed quantity"} units, with arrival ${arrives(d)}.\n\n${ask}\n\nKind regards,\nSoony launch team`;
+    setReply({id:d.id, revision:d.revision, action, body});
+  }
+  if (archive) {
+    const history = data.deals.flatMap(d=>(d.history?.length ? d.history : d.decided_by ? [{action:d.status, by:d.decided_by, at:d.decided_at, revision:d.revision}] : [])
+      .map((h,i)=>({d,h,key:d.id+"-"+i}))).sort((a,b)=>(b.h.at??"").localeCompare(a.h.at??""));
+    return <section className="card offers"><h3>Supplier decision history</h3>{history.length ? history.map(({d,h,key})=><article className="supplier-event" key={key}><strong>{d.supplier} · {h.action}</strong>
+      <p>{product(d.material)} · {h.by || "Reviewer not recorded"}{h.at && " · "+when(h.at)}</p>
+      {d.thread_id && <button className="link-button" onClick={()=>openThread(d.thread_id!)}>Open supplier email</button>}</article>):<p className="empty">No supplier decisions recorded.</p>}</section>;
+  }
+  return <section className="card offers" aria-labelledby="offers-title"><h3 id="offers-title">Supplier offers</h3>
+    {example && <small className="muted">Practice offers · decisions stay in this browser</small>}
+    {loadError && <p role="status">Showing the last loaded offers. <button className="link-button" onClick={()=>void load()}>Retry</button></p>}
+    {note && <p className="offers-note" role="status">{note}</p>}
+    {!materials.length ? <p className="empty">Offers appear as suppliers reply.</p> : <>
+      <div className="offers-tabs" aria-label="Products">{materials.map(m=><button key={m} className={current===m?"is-on":""} aria-pressed={current===m}
+        onClick={()=>{setTab(m);setChoice(null);setReply(null);setNote(null);}}>{product(m)}</button>)}</div>
+      <div className="offer-recommendation"><small>{best.length ? "Recommended choice" : covered.includes(current) ? "Covered by existing supply" : "Supplier outlook"}</small>
+        <strong>{best.length ? best.map(d=>d.supplier).join(" + ") : product(current)}</strong>
+        <p>{best.length ? best.map(d=>gist(d)).join(" / ") : tabNote || rows[0]?.review_reason || "Compare the supplier replies and outstanding conditions below."}</p>
+        {best.length>0 && tabNote && <p>{tabNote}</p>}
+      </div>
+      <div className="supplier-list" aria-label="Select a supplier offer">{rows.map(d=><button key={d.id} aria-pressed={selected?.id===d.id} onClick={()=>{setChoice(d.id);setReply(null);setNote(null);}}>
+        <span><b>{country(d)}</b><small>{d.quantity?.toLocaleString("en-US") ?? "Unknown"} units · {arrives(d)}</small></span><span>{d.best?"Recommended":STATUS[d.status]}</span></button>)}</div>
+      {selected && <div className="offer-selected" key={selected.id}>
+        <p><b>{selected.supplier}</b> · {unit(selected)} · {eur(selected.total_eur)} total</p>
+        {selected.conditions && <p>{selected.conditions}</p>}
+        {(selected.excerpt || selected.quantity!=null) && <Words key={selected.id+selected.revision} d={selected} example={example}/>}
+        {selected.thread_id && <button className="link-button" onClick={()=>openThread(selected.thread_id!)}>Open supplier email</button>}
+        <details><summary>Offer terms and evidence</summary><p>{gist(selected)}</p><p>{[selected.carrier,selected.payment_terms,selected.signer&&"Signer · "+selected.signer,selected.required_by&&"Required by "+when(selected.required_by),selected.expires_at&&"Expires "+when(selected.expires_at),selected.p_on_time!=null&&"On time "+Math.round(selected.p_on_time*100)+"%",selected.list_price!=null&&"Contract price "+selected.list_price].filter(Boolean).join(" · ")}</p>
+        {selected.history?.map((h,i)=><p key={i}>{when(h.at)} · {h.by} · {h.action} · {eur(h.terms.total_eur??null)}</p>)}</details>
+        {!available && <p className="muted">{selected.review_reason || STATUS[selected.status]}{selected.decided_by && " · "+selected.decided_by}</p>}
+        <div className="offers-actions">
+          <button className="primary-button" disabled={!available || !!busy} onClick={()=>prepare("approve")}>Approve</button>
+          <button className="ghost-button" disabled={!available || !!busy} onClick={()=>prepare("decline")}>Decline</button>
+          <button className="ghost-button" disabled={!!busy} onClick={()=>prepare("negotiate")}>Negotiate</button>
+        </div>
+        {draft && <section className="reply-review"><h4>{draft.action==="negotiate"?"Negotiation draft":draft.action==="approve"?"Review reservation request":"Review decline"}</h4>
+        {draft.action==="negotiate" ? <><label>Message to {selected.supplier}<textarea rows={6} value={draft.body} onChange={e=>setReply({...draft,body:e.target.value})}/></label>
+          {example || !selected.address ? <small className="muted">Copy this draft into your supplier correspondence.</small> :
+          <a className="ghost-button" href={`mailto:${encodeURIComponent(selected.address)}?subject=${encodeURIComponent("Re: "+product(selected.material))}&body=${encodeURIComponent(draft.body)}`}>Open in email app</a>}</> : <>
+          <p>{example?"Practice decision for ":draft.action==="approve"?"Queue a nonbinding reservation request to ":"Queue a decline email to "}<b>{selected.supplier}</b> · {(selected.order_quantity??selected.quantity)?.toLocaleString("en-US")} units · {eur(selected.total_eur)}.</p>
+          {!example && !currentUser && <label>Reviewed by<input autoComplete="name" maxLength={80} value={reviewer} onChange={e=>onReviewer(e.target.value)}/></label>}
+          <button className="primary-button" disabled={!available || !!busy || (!example&&!currentUser&&!reviewer.trim())} onClick={()=>{void decide(selected,draft.action as "approve"|"decline");setReply(null);}}>{draft.action==="approve"?"Confirm reservation request":"Confirm decline"}</button></>}
+          <button className="link-button" onClick={()=>setReply(null)}>Cancel</button>
+        </section>}
       </div>}
-      {current && covered.includes(current) && <p className="offers-covered muted">
-        {product(current)}: not short right now. Stock plus deliveries already on the way cover it, so nothing needs buying. The offers stay here in case a delivery slips.
-      </p>}
-
-      {tabNote && <p className="offers-tabnote">{tabNote}</p>}
-
-      {best.length > 0 && <div className="offers-best">
-        {best.map((d) => (
-          <div className="offers-best-item" key={d.id}>
-            <p className="offers-label">Best offer · {product(d.material)}</p>
-            <p className="offers-best-line"><strong>{example ? country(d) : d.supplier}</strong> · {d.quantity?.toLocaleString("en-US") ?? "?"} units · {d.offer_kind === "freight" ? d.carrier : unit(d)} · arrives {arrives(d)}</p>
-            <p className="muted">Total {eur(d.total_eur)} · {d.offer_kind === "freight" ? "Booking authorization" : "PO signer"} {d.signer} · {STATUS[d.status]}</p>
-          </div>
-        ))}
-      </div>}
-
-      {rows.length > 0 && <div className="offers-scroll">
-        <table className="offers-table">
-          <thead>
-            <tr><th scope="col">Supplier</th><th scope="col">Units in time</th><th scope="col">Unit price</th><th scope="col">Total</th><th scope="col">Arrives</th><th scope="col">On time</th><th scope="col">Proof</th><th scope="col">Terms</th><th scope="col">Decision</th></tr>
-          </thead>
-          <tbody>
-            {rows.map((d) => (
-              <tr key={d.id} className={d.best ? "is-best" : d.eligible ? "" : "is-backup"}>
-                <th scope="row">{example ? country(d) : d.supplier}{d.best ? <span className="offers-tag">Best</span> : null}
-                  {d.conditions && <p className="offers-cond">{d.conditions}</p>}
-                  {!example && d.required_by && <p className="muted small-text">Required by {when(d.required_by)}</p>}
-                  {(d.excerpt || d.quantity != null) && <Words d={d} example={example}/>}
-                </th>
-                <td className="num">{d.quantity?.toLocaleString("en-US") ?? "–"}<span className="muted"> / {d.needed.toLocaleString("en-US")}</span></td>
-                <td className="num">{d.offer_kind === "freight" ? "Freight service" : unit(d)}{d.list_price != null && d.unit_price != null && d.unit_price > d.list_price && <span className="muted"> (contract {d.list_price})</span>}</td>
-                <td className="num">{eur(d.total_eur)}</td>
-                <td>{arrives(d)}</td>
-                <td className="num">{d.p_on_time == null ? "–" : `${Math.round(d.p_on_time * 100)}%`}</td>
-                <td>{d.proof ?? "–"}</td>
-                <td>{[d.carrier, d.incoterm, d.payment_terms, d.moq ? `min ${d.moq.toLocaleString("en-US")}` : null].filter(Boolean).join(" · ") || "–"}</td>
-                <td>
-                  <p className="offers-status">{!example && d.status === "approved" ? "Reservation approved" : STATUS[d.status]}{d.decided_by && d.status !== "pending" && d.status !== "changed" ? ` (${d.decided_by})` : ""}</p>
-                  {!example && (!!d.eligible || d.offer_state === "approval_required") && <p className="muted small-text">{d.order_quantity?.toLocaleString("en-US")} units · {eur(d.total_eur)} · {d.offer_kind === "freight" ? "Booking authorization" : "PO signer"} {d.signer}{d.expires_at ? ` · Expires ${when(d.expires_at)}` : ""}</p>}
-                  {d.eligible && (d.status === "pending" || d.status === "changed") ? <div className="offers-actions">
-                    <button className="primary-button" disabled={busy !== null} onClick={() => void decide(d, "approve")}>{busy === d.id + "approve" ? "…" : example ? "Approve" : "Request reservation"}</button>
-                    <button className="ghost-button" disabled={busy !== null} onClick={() => void decide(d, "decline")}>{busy === d.id + "decline" ? "…" : "Decline"}</button>
-                  </div> : null}
-                  {!d.eligible && <p className="muted small-text">{d.review_reason ?? "No eligible offer for this delivery window."}</p>}
-                  {!example && !!d.history?.length && <details><summary>Decision history ({d.history.length})</summary>
-                    {d.history.map(h => <p key={h.revision}>{when(h.at)} · {h.by} · {h.action === "approved" ? "reservation approved" : "declined"} · {eur(h.terms.total_eur ?? null)}{h.revision !== d.revision ? " · prior terms" : ""}</p>)}
-                  </details>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>}
-    </section>
-  );
+    </>}
+  </section>;
 }

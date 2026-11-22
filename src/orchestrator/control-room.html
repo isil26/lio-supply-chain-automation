@@ -3,24 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Soony · Launch Control Room</title>
+<title>Manti · Launch dashboard</title>
 <style>
 :root{color-scheme:dark;--surface:#182126;--line:#344546;--text:#f5f2e9;--muted:#aebbb9;--green:#cbfa8d;--amber:#ffaf85}*{box-sizing:border-box}body{margin:0;background:#12191d;color:var(--text);font:15px/1.5 Arial,sans-serif}main{width:min(1336px,calc(100% - 96px));margin:0 auto;padding:41px 0 65px}header{display:flex;justify-content:space-between;align-items:flex-end;margin:0 0 27px;gap:24px}header h1{margin:0;font-size:clamp(30px,4vw,62px);font-weight:700;letter-spacing:-.048em;line-height:1.03}header p{margin:0 0 11px;color:var(--green);font:700 12px monospace;letter-spacing:.12em;text-transform:uppercase}header .right{text-align:right}header .right strong{font-size:23px;letter-spacing:-.02em}h2,h3,p{margin:0}h2{font-size:23px;letter-spacing:-.02em}h3{font-size:17px}.muted,small{color:var(--muted)}.mono{font:12px monospace;letter-spacing:.035em}button,select{font:inherit}button{color:inherit;background:#233234;border:1px solid #52625d;border-radius:5px;padding:8px 13px;cursor:pointer}button:hover,button:focus-visible{border-color:var(--green);outline:none}button:disabled{opacity:.55;cursor:default}.action{background:var(--green);color:#152114;font-weight:700;border-color:var(--green)}a{color:var(--green)}.strip{display:flex;gap:20px;align-items:center;justify-content:space-between;border:1px solid #42564a;border-left:3px solid var(--green);padding:12px 16px;background:#233230;margin-bottom:18px}.strip b{color:var(--green);margin-right:10px}.summary{display:grid;grid-template-columns:.8fr 1.1fr 1.1fr;gap:14px;margin-bottom:20px}.sheet,.metric{border:1px solid var(--line);background:var(--surface);border-radius:6px;min-width:0}.metric{padding:17px 20px}.metric .label{color:var(--muted);text-transform:uppercase;font:700 11px monospace;letter-spacing:.08em}.number{font-size:36px;font-weight:700;letter-spacing:-.05em;margin:5px 0}.bar{margin:12px 0 9px;height:5px;background:#354443;border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--green)}.prob{color:var(--amber)}.grid{display:grid;grid-template-columns:1.45fr 1fr;gap:18px;align-items:start}.sheet{padding:20px;margin-bottom:17px}.sheethead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 12px}.risk{width:100%;background:none;border:0;border-top:1px solid var(--line);padding:13px 0;border-radius:0;display:grid;grid-template-columns:1fr auto;gap:12px;text-align:left}.risk:hover{background:#233032}.risk:last-child{padding-bottom:1px}.risk span{display:block}.risk b.gap{font-size:22px;color:var(--amber);display:block;text-align:right;line-height:1.1}.risk-detail{margin:9px 0 0;font-size:13px;color:var(--muted);max-width:600px}.activity{border-top:1px solid var(--line);padding:11px 0;display:grid;grid-template-columns:1fr auto;gap:4px}.activity small{white-space:nowrap}.activity p{grid-column:1/-1;color:var(--muted);font-size:13px}.option-wrap,.thread-wrap{display:grid;gap:12px}.option-wrap select,.thread-wrap select{width:100%;border:1px solid var(--line);padding:8px;border-radius:4px;background:#263536;color:var(--text);min-width:0}.price{font-size:32px;font-weight:700;letter-spacing:-.05em;color:var(--green)}.note{color:var(--muted);font-size:13px}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.messages{border-left:2px solid var(--line);padding-left:12px}.messages article{margin:0 0 12px}.messages p{white-space:pre-wrap;font-size:14px;margin-top:5px}.msg-status{color:var(--amber);font-weight:bold}.toast{color:var(--amber);margin:7px 0}.toast:empty{display:none}dialog{color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px;width:min(740px,90vw);max-height:80vh;overflow:auto}dialog::backdrop{background:#080d10bb}dialog button{float:right}dialog li{margin:10px 0;overflow-wrap:anywhere}textarea{width:100%;min-height:76px;background:#263536;color:var(--text);font:inherit;padding:8px;border:1px solid var(--line)}@media(max-width:800px){main{width:calc(100% - 36px);padding-top:22px}.grid,.summary{grid-template-columns:1fr}.strip{align-items:start}header{align-items:start}.number{font-size:32px}}
+
+:root{--surface:#202429;--line:#383d42;--muted:#b3babe;--green:#b5c9bd;--amber:#e4ba91}body{display:grid;grid-template-columns:180px minmax(0,1fr);background:#131619;font-family:system-ui,sans-serif}
+.rail{position:sticky;top:0;height:100vh;background:#191d20;border-right:1px solid var(--line);padding:24px 14px}.rail .brand{display:flex;align-items:center;gap:6px;font-size:21px}.rail svg{width:34px;height:34px}.dough,.knot{fill:#737cda}.pleat{fill:none;stroke:#ffffff88;stroke-width:1.3}.knot{stroke:#191d20}.rail nav{display:grid;gap:6px;margin-top:40px}.rail a{padding:9px 11px;color:var(--muted);text-decoration:none;border-radius:7px}.rail a[aria-current]{background:#303a36;color:var(--text)}main{width:100%;padding:25px clamp(16px,3vw,45px) 48px}header{align-items:center}header h1{font-size:clamp(28px,3vw,42px)}.sheet,.metric,.strip{border-radius:13px}.metric:first-child{background:linear-gradient(115deg,#293139,#454858)}.metric.short{background:linear-gradient(115deg,#33292b,var(--surface));--green:#eda39e}.metric.complete{background:linear-gradient(115deg,#28362e,var(--surface));--green:#a0d3b0}.metric .number{color:var(--green)}.grid[hidden],[hidden]{display:none!important}.option-wrap{max-height:620px;overflow-y:auto}
+@media(max-width:800px){body{display:block}.rail{height:auto;position:static;display:flex;justify-content:space-between;align-items:center;padding:6px 12px}.rail nav{display:flex;margin:0}.summary{grid-template-columns:1fr 1fr}.metric:first-child{grid-column:1/-1}main{width:100%;padding:16px}.number{font-size:27px}.grid{grid-template-columns:1fr}}
 </style>
 </head>
-<body><main>
-<header><div><p>Soony · Procurement</p><h1>Launch Control Room</h1></div><div class="right"><strong id="launch">Grand Heist 6</strong><div class="muted mono" id="site">DC-HAM</div></div><form id="account" hidden method="post" action="/logout"><span id="username"></span> <button type="submit">Sign out</button></form></header>
+<body><aside class="rail"><div class="brand"><svg viewBox="0 0 32 32" class="brand-mark" aria-hidden="true">
+      <path d="M5 21.5C5 14 9.9 8.5 16 8.5S27 14 27 21.5c0 2.2-1.6 3.5-3.6 3.5H8.6C6.6 25 5 23.7 5 21.5Z" class="dough"/>
+      <path d="M16 8.5 10.5 24.6M16 8.5l5.5 16.1M16 8.5 7 19M16 8.5 25 19" class="pleat"/>
+      <circle cx="16" cy="7.2" r="2.4" class="knot"/>
+    </svg><b>Manti</b></div><nav aria-label="Workspace"><a href="#dashboard">Dashboard</a><a href="#activity">Activity Log</a></nav></aside><main>
+<header><div><p>Soony · Procurement</p><h1 id="page-name">Dashboard</h1></div><div class="right"><strong id="launch">Grand Heist 6</strong><div class="muted mono" id="site">DC-HAM</div></div><form id="account" hidden method="post" action="/logout"><span id="username"></span> <button type="submit">Sign out</button></form></header>
 <div class="strip"><span id="sync-status" role="status">Building launch snapshot…</span><button id="sync">Refresh inputs</button></div>
 <p id="data-health" class="muted mono" style="width:fit-content;margin:0 0 12px;padding:4px 8px;border:1px solid var(--line);border-radius:4px" hidden></p>
 <details id="source-reviews" class="sheet" hidden><summary id="review-summary"></summary><ul id="review-list"></ul></details>
 <p id="feedback" class="toast" role="status"></p>
 <section class="summary" aria-label="Launch readiness" id="summary"></section>
-<div class="grid">
+<div class="grid" id="dashboard-panels">
 <div><section class="sheet"><div class="sheethead"><h2>Component risks</h2><small>Open any row for evidence</small></div><div id="risks"></div></section>
 <section class="sheet"><div class="sheethead"><h2>Supplier threads</h2></div><div class="thread-wrap" id="threads"></div></section></div>
 <div><section class="sheet"><div class="sheethead"><h2>Approval inbox</h2><small>Procurement</small></div><div class="option-wrap" id="options"></div></section>
 <section class="sheet"><div class="sheethead"><h2>Agent activity</h2></div><div id="activity"></div></section></div>
 </div>
+<section id="history-panels" class="sheet" hidden><div class="sheethead"><h2>Decision history</h2></div><div id="past-decisions"></div></section>
 <dialog id="sources"><button id="close-sources" type="button">Close</button><h2 id="source-title">Evidence</h2><ul id="source-list"></ul></dialog>
 </main>
 <script>
@@ -89,14 +98,19 @@ function summaries(){
   cut.append(label("Time to launch","label"),label("","number"),label(date.format(new Date(state.launch.deadline))+" CET · "+state.launch.location));
   cut.children[1].id="countdown";
   $("summary").replaceChildren(cut);
-  for(const item of state.readiness){
+  for(const item of [...state.readiness].sort((a,b)=>Number(b.edition==="CE")-Number(a.edition==="CE"))){
     const metric=node("article",undefined,"metric");
-    metric.append(label(item.edition==="CE"?"Collector’s Edition":"Standard Edition","label"),label(format(item.packed)+" / "+format(item.target),"number"));
+    const expected=item.p50??item.packed, short=Math.max(0,item.target-expected), unit=item.missCostEur??item.stdCostEur;
+    metric.classList.add(short?"short":"complete");
+    metric.append(label(item.edition==="CE"?"Collector’s Edition":"Standard Edition","label"),label(format(short)+" short","number"));
     const bar=node("div",undefined,"bar");
     const fill=node("i");
-    fill.style.width=item.percent+"%";
+    const coverage=item.target?Math.min(100,100*expected/item.target):100;
+    fill.style.width=coverage+"%";
     bar.append(fill);
     metric.append(bar,label(format(item.probability*100)+"% modeled on time · "+format(item.p50)+" median packed","prob mono"));
+    metric.append(label(format(expected)+" / "+format(item.target)+" expected · "+format(Math.round(coverage*10)/10)+"%"));
+    metric.append(label(format(item.packed)+" already packed"+(unit==null?"":" · "+euro.format(short*unit)+(item.missCostEur==null?" at standard cost":item.missCostConfirmed===false?" potential loss (unconfirmed)":" at risk"))));
     if(item.firstStop) metric.append(label("First stoppage: "+item.firstStop));
     $("summary").append(metric);
   }
@@ -203,7 +217,27 @@ function drawThreads(){
     $("threads").append(reply,button("Import demo reply",()=>action("/api/threads/"+thread.id+"/demo-reply",reply.value.trim()?{text:reply.value}:{})));
   }
 }
+function navigate(){
+  const archive=location.hash==="#activity";
+  $("dashboard-panels").hidden=archive;
+  $("history-panels").hidden=!archive;
+  $("page-name").textContent=archive?"Activity Log":"Dashboard";
+  document.querySelectorAll(".rail nav a").forEach(a=>{
+    if(a.hash===(archive?"#activity":"#dashboard"))a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");
+  });
+}
+window.addEventListener("hashchange",navigate);
+navigate();
 function drawActivity(){
+  const past=state.pastDecisions??[];
+  $("past-decisions").replaceChildren(...past.map(d=>{
+    const row=node("article",undefined,"activity");
+    row.append(node("strong",d.title),label([d.status,d.effect?.by,d.decidedAt&&date.format(new Date(d.decidedAt))].filter(Boolean).join(" · ")));
+    if(d.effect?.lines)row.append(label(d.effect.lines.join(" ")));
+    return row;
+  }));
+  if(!past.length)$("past-decisions").append(label("No recorded decisions yet."));
+
   $("activity").replaceChildren(...state.activity.slice(0,8).map(item=>{
     const row=node("article",undefined,"activity");
     const detail=node("p",item.action);
@@ -227,7 +261,7 @@ async function refresh(){
       const freshness=age==null?"Sync pending":age<60?"Synced <1 min ago":`Synced ${Math.floor(age/60)} min ago`;
       $("data-health").textContent=`Data health · ${health.filesSeen} seen · ${health.filesParsed} parsed · ${health.needsReview} need review · ${health.errors} errors · ${freshness}`;
     }
-    const signature=JSON.stringify([live.launch,live.readiness,live.risks,live.options,live.threads,live.activity,live.drop,live.sync?.pendingDrop,live.sync?.error,live.sync?.warnings,live.documentReviews]);
+    const signature=JSON.stringify([live.launch,live.readiness,live.risks,live.options,live.threads,live.activity,live.pastDecisions,live.drop,live.sync?.pendingDrop,live.sync?.error,live.sync?.warnings,live.documentReviews]);
     if(signature===lastState) return;
     state=live;
     lastState=signature;

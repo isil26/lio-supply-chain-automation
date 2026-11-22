@@ -111,6 +111,16 @@ test('the live relay requires a provisioned account to forward a write', async (
   headers['x-soony-user'] = Buffer.from('murat').toString('base64url');
   assert.equal((await send()).status, 200);
   assert.equal(actor, 'murat');
+  // The password-only production edge maps only an authenticated, unnamed
+  // request to its dedicated shared principal. Named accounts keep their identity.
+  process.env.SOONY_USERS_JSON = JSON.stringify({ ...demoUsers, 'Shared team login': demoUsers.nick });
+  process.env.SOONY_SHARED_EDGE_ACCOUNT = 'Shared team login';
+  assert.equal((await send()).status, 200);
+  assert.equal(actor, 'murat');
+  delete headers['x-soony-user'];
+  assert.equal((await send()).status, 200);
+  assert.equal(actor, 'Shared team login');
+  delete process.env.SOONY_SHARED_EDGE_ACCOUNT;
   delete process.env.SOONY_USERS_JSON;
   delete process.env.SOONY_DEMO_ACCOUNTS;
   assert.equal((await send()).status, 503);

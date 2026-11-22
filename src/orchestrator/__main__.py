@@ -877,7 +877,7 @@ def handler(loop, gateway_token=None):
                     if action_match:
                         with loop.lock:
                             return self.update_action(con, *action_match.groups(), body)
-                    deal = re.fullmatch(r"/api/deals/([a-f0-9]{12})/(approve|decline)", path)
+                    deal = re.fullmatch(r"/api/deals/([a-f0-9]{12,16})/(approve|decline)", path)
                     if deal:  # T90 mail-agent: record the decision and draft the supplier email
                         from src.chaser import deals as supplier_deals
                         supplier_deals.schema(con)
