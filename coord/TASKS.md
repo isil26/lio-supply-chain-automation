@@ -163,3 +163,5 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 | Manti-Named-Live | Individual team accounts and auditable negotiations on Google Cloud | manti-dashboard | production authentication and offer history | done | T-Manti-18984 |
 
 | T-Manti-Demo-Restore | Restore the supplied demo design on the connected dashboard and deploy the unified Agents tab | manti-agent-map | dashboard presentation, scoped frontend release | in_progress | T-Agents-Tab |
+
+| Manti-Hackathon-Login | Use the existing five rehearsal credentials on the live hackathon dashboard | manti-dashboard | sign-in settings and verification | in_progress | Manti-Named-Live |
