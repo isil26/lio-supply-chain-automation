@@ -25,11 +25,12 @@ import { setAutoApprove } from "./api";
 import "./styles.css";
 import "./workspace.css";
 
-const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "moon" | "sun" | "check" | "arrow" }) => {
+const Icon = ({ name }: { name: "grid" | "risk" | "thread" | "approval" | "import" | "moon" | "sun" | "check" | "arrow" }) => {
   const paths: Record<typeof name, React.ReactNode> = {
     grid: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,
     risk: <><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5"/><path d="M12 17.5v.5"/></>,
     thread: <><path d="M4 5h16v12H8l-4 3V5Z"/><path d="M8 9h8M8 13h5"/></>,
+    import: <><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></>,
     approval: <><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></>,
     moon: <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/>,
     sun: <><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></>,
@@ -107,6 +108,12 @@ function EvidenceModal({ source, onClose, scenario }: { source: Source; onClose:
   </div>;
 }
 
+function workspacePage() {
+  if (location.hash === "#activity") return "activity";
+  if (location.hash === "#import") return "import";
+  return "dashboard";
+}
+
 function App() {
   const [baseData, setData] = useState<DashboardData | null>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
@@ -114,12 +121,13 @@ function App() {
   const practiceMode = hostedReplayBuild || uploadResult !== null;
   const [error, setError] = useState("");
   const [dark, setDark] = useState(true);
-  const [archive, setArchive] = useState(location.hash === "#activity");
+  const [page, setPage] = useState(workspacePage);
+  const archive = page === "activity";
   const [reviewer, setReviewer] = useState(() => {
     try { return localStorage.getItem("soony-reviewer") ?? ""; } catch { return ""; }
   });
   useEffect(() => {
-    const navigate = () => setArchive(location.hash === "#activity");
+    const navigate = () => setPage(workspacePage());
     window.addEventListener("hashchange", navigate);
     return () => window.removeEventListener("hashchange", navigate);
   }, []);
@@ -249,7 +257,7 @@ function App() {
   };
 
   const selectThread = (id: string, verified = mailView) => {
-    setArchive(false);
+    setPage("dashboard");
     setMailView(verified);
     setThreadId(id);
     const url = new URL(window.location.href);
@@ -352,8 +360,9 @@ function App() {
   const openDealThread = (id:string) => selectThread(id, !!data.mailHistory?.threads.some(t=>t.id===id));
   return <main className={`manti-workspace ${dark ? "theme-dark" : "theme-light"}`}>
     <aside className="workspace-rail"><MantiLogo/><nav aria-label="Workspace">
-      <a href="#dashboard" aria-current={!archive ? "page" : undefined}><Icon name="grid"/>Dashboard</a>
+      <a href="#dashboard" aria-current={page === "dashboard" ? "page" : undefined}><Icon name="grid"/>Dashboard</a>
       <a href="#activity" aria-current={archive ? "page" : undefined}><Icon name="approval"/>Activity Log</a>
+      <a href="#import" aria-current={page === "import" ? "page" : undefined}><Icon name="import"/>Data import</a>
     </nav><div className="rail-foot"><b>{data.launch.name}</b><span>{data.launch.location}</span></div></aside>
     <section className="page">
       <header className="topbar">
@@ -366,7 +375,12 @@ function App() {
         </div>
       </header>
 
-      <div className="workspace-heading"><h1>{archive ? "Activity Log" : "Dashboard"}</h1><p>{data.launch.name} · {data.launch.location} · {archive ? "Decision history" : "Launch operations"}</p></div>
+      <div className="workspace-heading"><h1>{page === "import" ? "Data import" : archive ? "Activity Log" : "Dashboard"}</h1><p>{data.launch.name} · {data.launch.location} · {page === "import" ? "Case files" : archive ? "Decision history" : uploadResult ? "Import scenario" : "Launch operations"}</p></div>
+      <div hidden={page !== "import"}>
+        {isStaticMode() ? <p className="notice">Open the connected Manti workspace to import data.</p> : <UploadData onResult={showUpload}/>}
+      </div>
+      {page !== "import" && <>
+      {uploadResult && <p className="notice">Viewing your import scenario. <a href="#import">Manage import</a></p>}
       {data.sync?.error && <div className="notice alert" role="alert">{data.sync.error}</div>}
       {data.sync?.portal?.error && <div className="notice alert" role="alert">
         {data.sync.portal.error} {data.sync.portal.snapshot ? "Showing the last verified Lio files." : "Showing the original case files."}
@@ -398,7 +412,6 @@ function App() {
       </div>
       {archive && <section className="card archived"><h3>Past actions</h3><PastList rows={past} onOpenThread={id=>selectThread(id,false)}/></section>}
       <div className="workspace-tools" hidden={archive}>
-      {!isStaticMode() && <UploadData onResult={showUpload}/>}
       {dropVisible && !uploadResult && data.drop && (pendingDrop || isStaticMode() || hostedReplayBuild) && <div className="notice">
         <span>{pendingDrop ? "Supplier files are ready to apply." : "Supplier update replay"}</span>
         <button className="primary-button small" onClick={() => void runSync(hostedReplayBuild && !pendingDrop)} disabled={syncBusy}>{syncBusy ? "Updating…" : hostedReplayBuild && !pendingDrop ? "Reset" : "Update"}</button>
@@ -576,6 +589,7 @@ function App() {
         {!uploadResult && <AgentTrace onEvidence={setSource} simulated={data.agents?.mode === "simulated"}/>}
       </details>
       </div>
+      </>}
     </section>
     {behind && <BehindScenes activity={data.activity} recording={data.recordedAgentRun} autoSend={data.autoSend} onClose={() => setBehind(false)} onEvidence={setSource}/>}
     {source && <EvidenceModal source={source} onClose={() => setSource(null)} scenario={uploadResult !== null}/>}

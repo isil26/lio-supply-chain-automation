@@ -157,6 +157,7 @@ def build_rows(
 ) -> tuple[dict[str, list[tuple]], dict[str, int], dict[str, list[str]]]:
     rows = {dataset.table: [] for dataset in DATASETS}
     counts = {}
+    seen = defaultdict(set)
     warnings = defaultdict(list)
     supplier_names: dict[str, set[str]] = defaultdict(set)
     # The tracker supplies names in place of IDs. Load profiles first.
@@ -166,8 +167,10 @@ def build_rows(
         resolved_names = {name: next(iter(ids)) for name, ids in supplier_names.items() if len(ids) == 1}
         table_rows = rows[entry.dataset.table]
         start = len(table_rows)
+        has_records = False
         try:
             for record in read_records(source, entry.body, entry.dataset, resolved_names):
+                has_records = True
                 if record.warnings:
                     warnings[source].extend(record.warnings)
                 if isinstance(record.value, Supplier):
@@ -175,11 +178,13 @@ def build_rows(
                         if name:
                             supplier_names[" ".join(name.casefold().split())].add(record.value.supplier_id)
                 values = tuple(sqlite_value(value) for value in record.value.model_dump().values())
-                table_rows.append((*values, source, record.sheet, record.row))
+                if values not in seen[entry.dataset.table]:
+                    seen[entry.dataset.table].add(values)
+                    table_rows.append((*values, source, record.sheet, record.row))
         except (ValueError, ParseError, BadZipFile, KeyError, IndexError, StopIteration) as exc:
             raise ValueError(f"{source}: {exc}") from exc
         counts[source] = len(table_rows) - start
-        if not counts[source] and Path(source).suffix == ".csv":
+        if not has_records and Path(source).suffix == ".csv":
             raise ValueError(f"{source}: CSV has no data rows")
     return rows, counts, dict(warnings)
 
@@ -229,7 +234,8 @@ def ingest(data: Path, state: Path, database: Path) -> dict:
         current_hashes = {source: entry.sha256 for source, entry in inputs.items()}
         changes = hash_diff({source: entry[1] for source, entry in previous_files.items()},
                             current_hashes)
-        if changes or prior is None:
+        previous_summary = json.loads(prior[1]) if prior else {}
+        if changes or not previous_summary.get("deduplicated_rows"):
             rows, counts, warnings = build_rows(inputs)
             tables = replace_rows(db, rows)
             db.execute("DELETE FROM ingest_files")
@@ -238,7 +244,7 @@ def ingest(data: Path, state: Path, database: Path) -> dict:
                 for source, entry in inputs.items()
             ))
         else:
-            warnings = json.loads(prior[1]).get("warnings", {})
+            warnings = previous_summary.get("warnings", {})
             counts = {source: entry[2] for source, entry in previous_files.items()}
             tables = {
                 dataset.table: {"rows": db.execute(f"SELECT count(*) FROM {dataset.table}").fetchone()[0],
@@ -252,6 +258,7 @@ def ingest(data: Path, state: Path, database: Path) -> dict:
             file["rows_before"] = previous[2] if previous else 0
             file["rows_after"] = counts.get(source, 0)
         summary = {
+            "deduplicated_rows": True,
             "hash_source": "bridge/state.json" if manifest is not None else "local files",
             "files": changes,
             "tables": tables,

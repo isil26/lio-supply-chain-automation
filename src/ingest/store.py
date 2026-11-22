@@ -317,7 +317,11 @@ def rows(con, kind):
                     item[field] = item[field].split("|") if item[field] else None
             yield item
         return
+    seen = set()
     for row in con.execute("SELECT * FROM records WHERE kind=? ORDER BY source,sheet,row_no", (kind,)):
+        if row["payload"] in seen:
+            continue
+        seen.add(row["payload"])
         item = json.loads(row["payload"])
         item["source"] = {"file": row["source"], "sheet": row["sheet"], "row": row["row_no"]}
         yield item

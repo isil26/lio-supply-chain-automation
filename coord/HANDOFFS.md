@@ -548,3 +548,7 @@ The [VM archive workflow](../.github/workflows/lio-vm.yml) now handles scheduled
 The production dashboard runs release `24ea508` on GCP. Dashboard and Activity Log share the Manti layout and use the existing forecast, supplier mail, decision and audit APIs. Supplier actions preview the actual message before a buyer queues it. Negotiation opens an editable draft. The standalone design stays in `design-demo/`.
 
 Verified the existing public URL with a session from before deployment and a fresh password sign-in. The public gateway preserves the shared password, signed cookie and upload-session isolation. Production actions show the shared login, while named rehearsal sessions keep individual attribution. The live portal was verified, with two edition forecasts, 41 threads and eight offers covering five products at rollout. Supplier write paths were exercised against dry-run fixtures. The focused suite passed 68 Python tests and five gateway tests. [Live dashboard](https://soony-manti-live.vercel.app/)
+
+## T-Data-Import — Manti workspace imports
+
+The Data import tab accepts the challenge ZIP, individual case files and the preconfigured Lio API. Both sources share the session’s private forecast. On the supplied baseline, the current portal imported 14 files and skipped 318. A repeated original challenge ZIP skipped all 303 entries. ERP workbooks without a verified operational mapping are indexed as cited rows for review.

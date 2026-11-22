@@ -24,3 +24,5 @@
 - 21 Nov, codex-chaser-deadline. Queued supplier dispatch uses the earliest of the stored deadline, the current launch and final packing cutoff, and the earliest open recovery decision for the material. A missing or expired deadline records one Procurement handoff per draft in the Action Queue. Reply timers are separate from that cutoff.
 
 - 22 Nov, codex-upload. The authenticated upload route stages an individual case file or ZIP against the signed-in visitor's private dry-run scenario. It accepts the candidate only after the existing ingest and forecast cycle succeeds. Uploads expire after one hour of inactivity and never dispatch email.
+
+- 22 Nov, manti-import. Both manual import sources use the authenticated visitor’s existing scenario. The server verifies the portal manifest and SHA-256 hashes. A duplicate-only run reports skips and preserves the current forecast.

@@ -3,17 +3,18 @@ from base64 import b64decode
 from binascii import Error as Base64Error
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from filecmp import cmp
+from hashlib import sha256
 import logging
 from pathlib import Path, PurePosixPath
 import re
 import shutil
 import stat
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, mkdtemp
 from threading import Lock
 from time import monotonic
 from zipfile import BadZipFile, ZipFile
 
+from bridge import live as portal
 from src.docs.pipeline import EXTENSIONS
 from src.ingest.readers import SOURCES
 from src.ingest.store import FILE_KINDS, key
@@ -85,26 +86,24 @@ def case_path(name, seed, existing):
     return path
 
 
-def stage_upload(payload, name, seed, staging):
+def stage_upload(payload, name, seed, staging, repeats=None):
     existing = {}
     for source in seed.rglob("*"):
         if source.is_file():
             existing.setdefault(source.name.casefold(), []).append(PurePosixPath(source.relative_to(seed).as_posix()))
     files = {}
-    seen = set()
+    seen = {}
 
-    def store_name(member):
-        relative = case_path(member, seed, existing)
-        if relative.as_posix().casefold() in seen:
-            raise UploadError(f"Archive contains duplicate case file {relative.as_posix()}.")
-        seen.add(relative.as_posix().casefold())
-        dest = staging / relative
+    def destination(member):
+        relative = case_path(member, seed, existing).as_posix()
+        previous = seen.setdefault(relative.casefold(), relative)
+        dest = staging / previous
         dest.parent.mkdir(parents=True, exist_ok=True)
-        files[relative.as_posix()] = dest
+        files[previous] = dest
         return dest
 
     if Path(name).suffix.lower() != ".zip":
-        shutil.copyfile(payload, store_name(name))
+        shutil.copyfile(payload, destination(name))
         return files
     try:
         with ZipFile(payload) as archive:
@@ -121,14 +120,52 @@ def stage_upload(payload, name, seed, staging):
                     continue
                 if not item.file_size:
                     raise UploadError(f"Empty ZIP entry {parts[-1]}.")
-                dest = store_name(item.filename)
-                with archive.open(item) as source, dest.open("xb") as out:
-                    shutil.copyfileobj(source, out)
+                dest = destination(item.filename)
+                with archive.open(item) as source:
+                    if dest.exists():
+                        if digest_stream(source) != digest_file(dest):
+                            raise UploadError(f"ZIP contains conflicting versions of {dest.name}.")
+                        if repeats is not None:
+                            repeats.append(dest.relative_to(staging).as_posix())
+                    else:
+                        with dest.open("xb") as out:
+                            shutil.copyfileobj(source, out)
     except (BadZipFile, NotImplementedError, RuntimeError, OSError) as exc:
         raise UploadError("The ZIP could not be read.") from exc
     if not files:
         raise UploadError("ZIP contains no case files.")
     return files
+
+
+def digest_stream(stream):
+    digest = sha256()
+    for block in iter(lambda: stream.read(256 * 1024), b""):
+        digest.update(block)
+    return digest.hexdigest()
+
+
+def digest_file(path):
+    with path.open("rb") as source:
+        return digest_stream(source)
+
+
+def changed_sources(seed, incoming):
+    """Keep revised files and one copy of new content across both sources."""
+    current = {p.relative_to(seed).as_posix(): digest_file(p)
+               for p in seed.rglob("*") if p.is_file()}
+    # Only content that survives the import can stand in for a renamed copy.
+    seen = {digest for name, digest in current.items() if incoming.get(name, digest) == digest}
+    changed = []
+    for name in sorted(incoming, key=lambda name: (name not in current, name)):
+        digest = incoming[name]
+        if name in current:
+            if current[name] == digest:
+                continue
+        elif digest in seen:
+            continue
+        seen.add(digest)
+        changed.append(name)
+    return changed
 
 
 @dataclass
@@ -141,6 +178,7 @@ class Session:
     size: int = 0
     received: int = 0
     result: dict | None = None
+    report: dict | None = None
     workspace: Path | None = None
     error: str | None = None
 
@@ -152,14 +190,15 @@ class Session:
         return {
             "status": self.status, "id": self.upload_id, "received": self.received,
             "name": self.name, "error": self.error,
-            **({"result": self.result} if include_result else {}),
+            **({"result": self.result, "report": self.report} if include_result else {}),
         }
 
 
 class Uploads:
-    def __init__(self, seed, evaluate):
+    def __init__(self, seed, evaluate, portal_token=lambda: None):
         self.seed = seed
         self.evaluate = evaluate
+        self.portal_token = portal_token
         self.sessions = {}
         self.lock = Lock()
         self.worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="upload")
@@ -183,13 +222,24 @@ class Uploads:
             if body is None:
                 if entry:
                     entry.touched = monotonic()
-                return entry.response(True) if entry else {"status": "idle"}
+                state = entry.response(True) if entry else {"status": "idle"}
+                return {**state, "portal": {"configured": bool(self.portal_token()),
+                                            "endpoint": portal.BASE + "/api/v1/files"}}
             if body == {"reset": True}:
                 if entry and entry.status == "processing":
                     raise UploadError("Wait for the current upload to finish.", 409)
                 self.remove(token)
                 return {"status": "idle"}
-            upload_id, name, size, offset, chunk = self.chunk(body)
+            api_import = body.get("source") == "portal"
+            if api_import:
+                upload_id = body.get("id")
+                if not isinstance(upload_id, str) or not TOKEN.fullmatch(upload_id):
+                    raise UploadError("Invalid import identifier.")
+                if not self.portal_token():
+                    raise UploadError("The challenge API credential is unavailable on the server.", 503)
+                name, size, offset = "Challenge API", 0, 0
+            else:
+                upload_id, name, size, offset, chunk = self.chunk(body)
             if entry and entry.upload_id == upload_id and (entry.name, entry.size) != (name, size):
                 raise UploadError("Upload metadata changed. Select the file again.", 409)
             if not entry or entry.upload_id != upload_id:
@@ -202,7 +252,12 @@ class Uploads:
                 entry.payload.unlink(missing_ok=True)
                 entry.upload_id, entry.name, entry.size = upload_id, name, size
                 entry.received, entry.status, entry.error = 0, "uploading", None
+                if api_import:
+                    entry.status = "processing"
+                    self.worker.submit(self.process, entry, True)
             entry.touched = monotonic()
+            if api_import:
+                return entry.response()
             if offset < entry.received and offset + len(chunk) <= entry.received:
                 return entry.response()
             if offset != entry.received or entry.status != "uploading":
@@ -235,37 +290,61 @@ class Uploads:
             raise UploadError("Invalid upload chunk size.")
         return upload_id, name, size, offset, chunk
 
-    def process(self, entry):
+    def process(self, entry, api_import=False):
         parent = Path(entry.directory.name)
-        candidate = parent / entry.upload_id
+        candidate = None
         try:
             seed = entry.workspace / "data" if entry.workspace else self.seed()
+            repeats = []
             with TemporaryDirectory(dir=parent) as stage:
-                files = stage_upload(entry.payload, entry.name, seed, Path(stage))
-                changed = {name: path for name, path in files.items()
-                           if not (seed / name).is_file() or not cmp(seed / name, path, shallow=False)}
-                result = self.evaluate(seed, candidate, changed)
-            result["id"] = entry.upload_id
-            result["files"] = [{"name": name, "status": "ingested" if name in changed else "unchanged"}
-                               for name in sorted(files)]
-        except UploadError as exc:
-            self.fail(entry, candidate, str(exc))
+                staging = Path(stage)
+                if api_import:
+                    token = self.portal_token()
+                    manifest = portal.inventory(portal.fetch("/api/v1/files", token, limit=MAX_BODY))
+                    if len(manifest) > MAX_FILES or sum(size for _, size in manifest.values()) > MAX_EXPANDED:
+                        raise UploadError("Portal inventory exceeds the import limits.", 413)
+                    incoming = {name: digest for name, (digest, _) in manifest.items()}
+                    changed = changed_sources(seed, incoming)
+                    files = {}
+                    for name in changed:
+                        path = staging / case_path(name, seed, {})
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        path.write_bytes(portal.download_file(name, token, *manifest[name]))
+                        files[name] = path
+                else:
+                    staged = stage_upload(entry.payload, entry.name, seed, staging, repeats)
+                    incoming = {name: digest_file(path) for name, path in staged.items()}
+                    changed = changed_sources(seed, incoming)
+                    files = {name: staged[name] for name in changed}
+
+                rows = [{"name": name, "status": "ingested" if name in files else "unchanged"}
+                        for name in sorted(incoming)]
+                rows.extend({"name": name, "status": "unchanged"} for name in repeats)
+                report = {"name": entry.name, "files": rows}
+                if files:
+                    candidate = Path(mkdtemp(dir=parent, prefix="scenario-"))
+                    result = self.evaluate(seed, candidate, files)
+                    result.update(id=entry.upload_id, files=rows)
         except Exception as exc:
-            logging.getLogger(__name__).warning("Upload evaluation failed (%s)", type(exc).__name__)
-            self.fail(entry, candidate, "The workflow could not process this upload.")
+            if isinstance(exc, (UploadError, portal.PortalError)):
+                error = str(exc)
+            else:
+                logging.getLogger(__name__).warning("Import evaluation failed (%s)", type(exc).__name__)
+                error = "The workflow could not process this import."
+            with self.lock:
+                if candidate:
+                    shutil.rmtree(candidate, ignore_errors=True)
+                entry.status, entry.error = "rejected", error
+                self.finish(entry)
         else:
             with self.lock:
-                previous = entry.workspace
-                entry.workspace, entry.result, entry.status = candidate, result, "ready"
+                if candidate:
+                    previous = entry.workspace
+                    entry.workspace, entry.result = candidate, result
+                    if previous:
+                        shutil.rmtree(previous, ignore_errors=True)
+                entry.report, entry.status = report, "ready"
                 self.finish(entry)
-                if previous:
-                    shutil.rmtree(previous, ignore_errors=True)
-
-    def fail(self, entry, candidate, error):
-        with self.lock:
-            shutil.rmtree(candidate, ignore_errors=True)
-            entry.status, entry.error = "rejected", error
-            self.finish(entry)
 
     @staticmethod
     def finish(entry):

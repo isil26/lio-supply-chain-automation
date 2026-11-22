@@ -156,6 +156,23 @@ class PipelineTests(unittest.TestCase):
                  return_value={"CMP-TST-004": (count, f"{count:,}".replace(",", " "))}):
             return run_pipeline(self.data, self.state, self.output, vision=self.client)
 
+    def test_erp_workbook_rows_are_available_for_review(self):
+        from openpyxl import Workbook
+        update = self.erp / "stock_update.xlsx"
+        book = Workbook()
+        book.active.title = "Components"
+        book.active.append(["Site", "Material", "Qty"])
+        book.active.append(["DC-HAM", "CMP-TST-004", 4500])
+        book.save(update)
+        self.write_state(update)
+        self.run_docs()
+        doc, = read_jsonl(self.output)
+        self.assertEqual(doc["source"], "soony/erp/stock_update.xlsx")
+        self.assertIn("unrecognized workbook layout", doc["review_reasons"])
+        row = doc["fields"]["rows"][1]
+        self.assertEqual((row["sheet"], row["row"]), ("Components", 2))
+        self.assertIn("4500", row["quote"])
+
     def test_cache_update_removal_erp_changes_and_sqlite_loader(self):
         self.assertEqual(self.run_docs()["cache_hits"], 0)
         doc, = read_jsonl(self.output)

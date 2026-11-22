@@ -30,7 +30,7 @@ from src import chaser
 from src.chaser import actions as action_delivery
 from src.chaser.reply_plan import demo_reply
 from src.chaser import mail_history, recovery, supplier_loop
-from src.decide import authorize, choose, decisions
+from src.decide import ONBOARDING, authorize, choose, decisions
 from src.decide.actions import action_queue, mark_action, recovery_reviews, source_proposals
 from src.decide.release_gate import release_gate
 from src.docs import documents, extract, reconcile_handwriting
@@ -732,6 +732,8 @@ def evaluate_upload(seed, workspace, files):
         if rejected:
             raise UploadError(f'{rejected["source"]}: {rejected["detail"]["error"]}', 422)
         imported = {source for (source,) in con.execute("SELECT source FROM records UNION SELECT source FROM ingest_files")}
+        # The planner reads the onboarding notes directly for launch time and rules.
+        imported.add(ONBOARDING)
         for document in documents(con):
             if document["source"] not in files:
                 continue
@@ -745,7 +747,15 @@ def evaluate_upload(seed, workspace, files):
 
 
 def handler(loop, gateway_token=None):
-    uploads = Uploads(lambda: loop.args.data if loop.args.demo else loop.root, evaluate_upload)
+    def portal_token():
+        if token := os.environ.get("SOONY_TOKEN"):
+            return token.strip()
+        paths = [ROOT / ".soony_token"]
+        if loop.portal:
+            paths.insert(0, loop.portal.token_file)
+        return next((path.read_text().strip() for path in paths if path.is_file()), None)
+
+    uploads = Uploads(lambda: loop.args.data if loop.args.demo else loop.root, evaluate_upload, portal_token)
 
     class Handler(BaseHTTPRequestHandler):
         def gateway_request(self):

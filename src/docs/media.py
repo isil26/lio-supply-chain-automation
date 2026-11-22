@@ -26,8 +26,12 @@ def pdf_text(path, work):
                  f"-sOutputFile={work / 'text-%05d.txt'}", str(path)])
         return [page.read_text(encoding="utf-8", errors="replace") for page in sorted(work.glob("text-*.txt"))]
     from pypdf import PdfReader
+    from pypdf.errors import PdfReadError
 
-    return [page.extract_text(extraction_mode="layout") or "" for page in PdfReader(path).pages]
+    try:
+        return [page.extract_text(extraction_mode="layout") or "" for page in PdfReader(path).pages]
+    except PdfReadError as error:
+        raise ValueError("The PDF could not be read.") from error
 
 
 def render_page(path, page, work):

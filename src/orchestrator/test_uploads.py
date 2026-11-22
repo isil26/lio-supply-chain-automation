@@ -1,5 +1,10 @@
 from base64 import b64encode
+from hashlib import sha256
+import json
 from pathlib import Path
+import shutil
+from unittest.mock import Mock, patch
+from uuid import uuid4
 import stat
 from tempfile import TemporaryDirectory
 from time import monotonic, sleep
@@ -42,6 +47,74 @@ class UploadTests(unittest.TestCase):
                 with self.assertRaises(UploadError):
                     stage_upload(path, "delivery.zip", self.seed, self.root / "zip")
 
+    def test_zip_and_portal_share_files_and_ignore_duplicates(self):
+        session = uuid4().hex
+        def evaluate(seed, candidate, files):
+            target = candidate / "data"
+            shutil.copytree(seed, target)
+            for name, source in files.items():
+                dest = target / name
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, dest)
+            return {"dashboard": {}}
+
+        service = Uploads(lambda: self.seed, Mock(wraps=evaluate), lambda: "fixture")
+        self.addCleanup(service.remove, session)
+        self.addCleanup(service.worker.shutdown)
+
+        name = "soony/context/onboarding_notes.md"
+        other = "soony/context/arrival.md"
+        raw = b"first batch"
+        payload = self.root / "case.zip"
+        with ZipFile(payload, "w") as archive:
+            archive.writestr(name, raw)
+            archive.writestr("case/" + name, raw)
+            archive.writestr("soony/context/renamed.md", raw)
+
+        def upload():
+            body = payload.read_bytes()
+            service.request(session, {"id": uuid4().hex, "name": payload.name, "size": len(body),
+                                      "offset": 0, "chunk": b64encode(body).decode()})
+
+        def finish():
+            service.worker.submit(lambda: None).result(timeout=5)
+            state = service.request(session)
+            self.assertEqual(state["status"], "ready", state.get("error"))
+            return [row["status"] for row in state["report"]["files"]]
+
+        upload()
+        self.assertCountEqual(finish(), ["ingested", "unchanged", "unchanged"])
+        expected = {name: raw, other: b"second batch"}
+        def fetch(path, token, *, limit):
+            self.assertEqual(token, "fixture")
+            if path == "/api/v1/files":
+                return json.dumps({"files": [{"path": key, "bytes": len(value),
+                                              "sha256": sha256(value).hexdigest()}
+                                             for key, value in expected.items()]}).encode()
+            return expected[path.removeprefix("/api/v1/files/")]
+
+        with patch("bridge.live.fetch", side_effect=fetch) as get:
+            service.request(session, {"id": uuid4().hex, "source": "portal"})
+            self.assertCountEqual(finish(), ["unchanged", "ingested"])
+            self.assertEqual(get.call_count, 2)
+            get.reset_mock()
+            service.request(session, {"id": uuid4().hex, "source": "portal"})
+            self.assertEqual(finish(), ["unchanged", "unchanged"])
+            self.assertEqual(get.call_count, 1)
+        with ZipFile(payload, "w") as archive:
+            archive.writestr(other, expected[other])
+        upload()
+        self.assertEqual(finish(), ["unchanged"])
+        self.assertEqual(service.evaluate.call_count, 2)
+
+    def test_conflicting_zip_paths_do_not_replace_each_other(self):
+        payload = self.root / "case.zip"
+        with ZipFile(payload, "w") as archive:
+            archive.writestr("soony/context/example.md", b"one")
+            archive.writestr("wrapper/soony/context/example.md", b"two")
+        with self.assertRaisesRegex(UploadError, "conflicting versions"):
+            stage_upload(payload, payload.name, self.seed, self.root / "stage")
+
     def test_session_retries_are_idempotent_and_rejection_preserves_result(self):
         def evaluate(seed, candidate, files):
             target = candidate / "data"
@@ -80,7 +153,7 @@ class UploadTests(unittest.TestCase):
         chunk(first, 3, 6, b"eip")
         accepted = finished()
         self.assertEqual(accepted["status"], "ready")
-        self.assertEqual(service.request("z" * 22), {"status": "idle"})
+        self.assertEqual(service.request("z" * 22)["status"], "idle")
         chunk("c" * 22, 0, 7, b"invalid")
         rejected = finished()
         self.assertEqual(rejected["status"], "rejected")
