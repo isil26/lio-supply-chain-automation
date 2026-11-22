@@ -184,3 +184,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-dashboard | Manti-Named-Live | Verified all five private named logins on production and tested offer attribution on the VM | done | Shared access preserved. Offer decisions require an individual account. | 22 Nov |
 
 | manti-agent-map | T-Manti-Demo-Restore | Dashboard presentation and release | in_progress | Promoting the tested unified Agents view and matching the connected Dashboard and Activity Log to the supplied Launch Desk demo. | 22 Nov |
+
+| manti-dashboard | Manti-Hackathon-Login | Reproduced the rejected rehearsal password at the live sign-in and staged the corrected setting | in_progress | Verify each public login | 22 Nov |
