@@ -96,12 +96,16 @@ function safeReturn(path) {
   return path;
 }
 
-function loginPage(response, { next = '/', sharedLogin, sharedAttempt, status = 200 }) {
+function loginPage(response, { next = '/', sharedLogin, sharedAttempt, publicEntry = false, status = 200 }) {
   const template = readFileSync(join(__dirname, 'login.html'), 'utf8');
   const message = status === 429 ? 'Sign-in is busy. Try again shortly.'
     : status === 401 ? (sharedLogin || sharedAttempt ? 'The team password is incorrect.' : 'The username or password is incorrect.') : '';
   respond(response, status, template
     .replace(/<!-- NAMED_ACCOUNT_START -->[\s\S]*?<!-- NAMED_ACCOUNT_END -->/, block => sharedLogin ? '' : block)
+    .replace('<!-- ENTRY_COPY -->', publicEntry ? 'Sign in or skip login to view the live workspace.' : 'Sign in to the workspace or explore the public sample.')
+    .replace('<!-- SKIP_FORM -->', publicEntry
+      ? '<form class="guest" method="post" action="/login"><input type="hidden" name="entry" value="guest"><!-- LOGIN_RETURN -->'
+      : '<form class="guest" method="get" action="/demo/index.html">')
     .replaceAll('<!-- LOGIN_RETURN -->', '<input type="hidden" name="next" value="' + next.replace(/&/g, "&amp;") + '">')
     .replace('<!-- LOGIN_ERROR -->', message ? '<p role="alert">' + message + '</p>' : ''), 'text/html; charset=utf-8');
 }
@@ -111,7 +115,7 @@ async function getLogin(request) {
     return new URLSearchParams();
   }
   if (typeof request.body === 'object' && request.body !== null && !Buffer.isBuffer(request.body)) {
-    return new URLSearchParams(['username', 'password', 'next'].map(name =>
+    return new URLSearchParams(['username', 'password', 'next', 'entry'].map(name =>
       [name, typeof request.body[name] === 'string' ? request.body[name] : '']));
   }
   let body = request.body || '';
@@ -140,7 +144,8 @@ module.exports = async function control(request, response, mode) {
   response.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
 
   const teamHash = process.env.SOONY_TEAM_PASSWORD_HASH;
-  const allowShared = mode === "production-team-accounts" && /^[a-f0-9]{64}$/.test(teamHash || '');
+  const publicEntry = mode === 'production-live-public';
+  const allowShared = (publicEntry || mode === "production-team-accounts") && /^[a-f0-9]{64}$/.test(teamHash || '');
   const users = sharedLogin
     ? (/^[a-f0-9]{64}$/.test(teamHash || '') ? new Map([[SHARED_ACCOUNT, teamHash]]) : null)
     : accounts();
@@ -188,14 +193,16 @@ module.exports = async function control(request, response, mode) {
     user = null;
     const credentials = await getLogin(request);
     const next = upstream ? safeReturn(credentials.get("next")) : "/";
-    const passwordOnly = sharedLogin || (allowShared && !credentials.get('username'));
-    const name = passwordOnly ? SHARED_ACCOUNT : credentials.get('username');
+    // Skip login starts the same provisioned hackathon session as signing in as test.
+    const guest = publicEntry && credentials.get('entry') === 'guest';
+    const passwordOnly = !guest && (sharedLogin || (allowShared && !credentials.get('username')));
+    const name = guest ? 'test' : passwordOnly ? SHARED_ACCOUNT : credentials.get('username');
     const password = credentials.get('password') || '';
-    const verified = passwordOnly
+    const verified = guest ? Boolean(upstream && users.has(name)) : passwordOnly
       ? Boolean(password) && equal(createHash('sha256').update(password).digest('hex'), teamHash)
       : await verifyPassword(users.get(name), password);
     if (!verified) return loginPage(response, {
-      next, sharedLogin, sharedAttempt: passwordOnly, status: verified === null ? 429 : 401,
+      next, sharedLogin, publicEntry, sharedAttempt: passwordOnly, status: verified === null ? 429 : 401,
     });
     user = name;
     setSession(response, key, {
@@ -210,7 +217,7 @@ module.exports = async function control(request, response, mode) {
 
   if ((op === 'home' || op === 'login' || target === '/live' || target === '/react' || target === '/game-cards') && method === 'GET' && !user && !trustedGateway) {
     const next = upstream ? (["/live", "/react", "/game-cards"].includes(target) ? target : loginReturn(url.searchParams)) : "/";
-    return loginPage(response, { next, sharedLogin });
+    return loginPage(response, { next, sharedLogin, publicEntry });
   }
   const serviceRead = trustedGateway && method === 'GET' && process.env.SOONY_DEMO_ACCOUNTS !== '0';
   if (!user && !serviceRead) return respond(response, 401, { error: 'Team login required' });

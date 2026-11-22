@@ -232,3 +232,42 @@ test('production team sign-in keeps uploads private to the signed-in session', a
     assert.deepEqual(await (await fetch(combined + '/api/session', {headers:{cookie}})).json(), {user});
   }
 });
+
+test('skip login and named sign-in open the same live release', async (t) => {
+  const requests = [];
+  const vm = await listener((req, res) => {
+    const user = Buffer.from(req.headers['x-soony-user'], 'base64url').toString();
+    requests.push([req.method, req.url, user]);
+    if (req.url === '/api/dashboard') {
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({currentUser: user, release: 'live', threads: ['A']}));
+    } else res.end('live application');
+  }, t);
+  Object.assign(process.env, { SOONY_USERS_JSON: JSON.stringify({...demoUsers, test: demoUsers.isil}),
+    SOONY_REPLAY_KEY: 'f'.repeat(64), SOONY_LIVE_UPSTREAM: vm });
+  const site = await listener((req, res) => control(req, res, 'production-live-public'), t);
+  const page = await (await fetch(site)).text();
+  assert.match(page, /name="entry" value="guest"/);
+  assert.doesNotMatch(page, /demo\/index\.html/);
+  const signIn = async fields => {
+    const r = await fetch(site + '/login', {method:'POST', headers:{origin:site},
+      body:new URLSearchParams({...fields,next:'/react'}), redirect:'manual'});
+    assert.equal(r.status, 303);
+    assert.equal(r.headers.get('location'), '/react');
+    return {cookie:r.headers.get('set-cookie').split(';')[0]};
+  };
+  const guest = await signIn({entry:'guest',username:'isil'});
+  const named = await signIn({username:'test',password:'12345'});
+  for (const [headers, user] of [[guest,'test'],[named,'test']]) {
+    assert.equal(await (await fetch(site + '/react', {headers})).text(), 'live application');
+    assert.deepEqual(await (await fetch(site + '/api/dashboard', {headers})).json(),
+      {currentUser:user,release:'live',threads:['A']});
+  }
+  assert.deepEqual(requests.map(r => r[2]), ['test','test','test','test']);
+  for (const headers of [guest,named]) {
+    assert.equal((await fetch(site + '/api/agents/run', {method:'POST',
+      headers:{...headers,origin:site,'content-type':'application/json'},body:'{}'})).status,200);
+  }
+  assert.deepEqual(requests.slice(-2),[['POST','/api/agents/run','test'],['POST','/api/agents/run','test']]);
+  assert.equal((await fetch(site + '/logout', {method:'POST',headers:{...guest,origin:site},redirect:'manual'})).status,303);
+});

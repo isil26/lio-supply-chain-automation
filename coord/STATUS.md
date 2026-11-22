@@ -214,3 +214,5 @@ Last human sync: Sat 21 Nov 2026
 | manti-guest | T-Public-Access | Published and verified the Manti login and guest dashboard | done | Verified both individual sign-in and password-free entry on production | 22 Nov |
 
 | manti-live-model | T-Live-OpenAI | Activating hosted inference and verifying the production agent trace | in_progress | Portal snapshot validated | 22 Nov |
+
+| manti-live-entry | T-Public-Live-Entry | Connect Skip login to the full live workspace | in_progress | Public access authorized for the hackathon | 22 Nov |

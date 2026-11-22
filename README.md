@@ -6,7 +6,7 @@ Soony's Grand Heist 6 ships Sunday 22 Nov at 20:00 from Hamburg, and the last 20
 
 | For the jury | Link |
 |---|---|
-| Live product | Choose **skip login** for the public sample dashboard. Judges can also sign in as `test` with the supplied password to open the live workspace. [Manti Live](https://soony-manti-live.vercel.app/) |
+| Live product | Choose **skip login** to enter the full live workspace. It opens the same session type and actions as signing in with the hackathon `test` account. [Manti Live](https://soony-manti-live.vercel.app/) |
 | Pitch deck | [Final PDF](docs/deck/Manti-pitch-deck-final.pdf) · [web version](docs/deck/final/index.html) · [3-min timing](docs/deck/final/TIMING.md) · earlier draft: [PDF](docs/deck/Manti-pitch-deck.pdf), [speaker notes](docs/deck/SPEAKER_NOTES.md) |
 | Demo video | Submitted with the hand-in (3 min) |
 | Business case | [docs/BUSINESS_CASE.md](docs/BUSINESS_CASE.md) |
