@@ -43,6 +43,9 @@ let started = Date.now();
 let forecast = [...baseline];
 let reviewer = '';
 let currentDraft = null;
+let limits = {};
+try { limits = JSON.parse(localStorage.getItem('manti-demo.offer-limits')) || {}; } catch {}
+const price = value => new Intl.NumberFormat('en-IE',{style:'currency',currency:'EUR',maximumFractionDigits:4}).format(value);
 const isArchive = () => location.hash === '#activity';
 const now = () => replayStart + Math.max(0, Date.now()-started);
 const validForecast = values => Array.isArray(values) && values.length === editions.length && values.every(n => Number.isSafeInteger(n) && n >= 0);
@@ -77,7 +80,7 @@ function statCards(values){
     const gap = Math.max(0,e.target-expected);
     const percent = Math.min(100,expected*100/e.target);
     const exposure = gap*e.unitLoss;
-    const lossLabel = i===0 ? 'Refund exposure' : 'Potential loss¹';
+    const lossLabel = i===0 ? 'Refund exposure' : 'Potential loss · estimate';
     return `<article class="stat edition ${gap?'short':'complete'}">
       <h2 class="stat-label"><span class="chip-icon">${icon(e.icon)}</span>${e.name}</h2>
       <div class="metric"><strong>${number(gap)}</strong><span>${gap?'boxes short':'short · target met'}</span></div>
@@ -123,11 +126,13 @@ function offerCard(){
       '<div class="recommend"><h3>No decisions recorded for this product</h3><p>Decisions appear here when a reviewer saves an email draft on the dashboard.</p></div>';
   } else {
     const e=emailEvidence[selectedOffer];
-    panel=`<div class="recommend"><div class="rec-top"><div class="rec-label">${icon('spark')}Recommended choice</div><span class="rec-due">${icon('clock')}${p.due}</span></div>
-      <h3>${p.title}</h3><p>${p.why}</p><div class="rec-cost"><b>${p.value}</b><small>${p.valueLabel}</small></div></div>`;
+    const offer = p.offers.find(o=>o.key===selectedOffer);
+    const first = p.offers[0] === offer;
+    panel=`<div class="recommend"><div class="rec-top"><div class="rec-label">${icon('spark')}${first?'Recommended choice':'Selected offer'}</div><span class="rec-due">${p.due}</span></div>
+      <h3>${esc(e.supplier)}</h3><p>${first?p.why:offer.summary}</p><div class="rec-cost"><b>${first?p.value:offer.detail}</b><small>${first?p.valueLabel:''}</small></div>
+      <div class="decision-buttons">${Object.entries(verbs).map(([k,v])=>`<button class="${k==='approve'?'btn':'outline-btn'}" data-action="${k}">${v}</button>`).join('')}</div></div>`;
     return '<section class="card offers-card">'+title('inbox','Supplier offers')+tabs()+
-      `<div role="tabpanel" id="product-panel" aria-labelledby="tab-${productId}">${panel}<div class="offers-heading"><b>Supplier emails</b><small>${p.offers.length} ${p.offers.length===1?'thread':'threads'}</small></div>${emailRows()}
-      <div class="decision-bar"><div class="decision-label">Reply to <b>${esc(e.supplier)}</b></div><div class="decision-buttons">${Object.entries(verbs).map(([k,v])=>`<button class="${k==='approve'?'btn':'outline-btn'}" data-action="${k}">${v}</button>`).join('')}</div></div></div></section>`;
+      `<div role="tabpanel" id="product-panel" aria-labelledby="tab-${productId}">${panel}<div class="offers-heading"><b>Supplier emails</b><small>${p.offers.length} ${p.offers.length===1?'thread':'threads'}</small></div>${emailRows()}${limitControl(p)}</div></section>`;
   }
   return '<section class="card offers-card">'+title('inbox','Supplier decisions')+tabs()+`<div role="tabpanel" id="product-panel" aria-labelledby="tab-${productId}">${panel}<div class="offers-heading"><b>Supplier emails</b></div>${emailRows()}</div></section>`;
 }
@@ -144,29 +149,37 @@ function historyCard(){
     `<button class="deadline-item" data-record="${esc(r.id)}" aria-pressed="${activeRecordId===r.id}"><span class="deadline-icon">${icon(products[r.product].icon)}</span><span class="deadline-copy"><b>${products[r.product].tab} · ${outcomes[r.action]}</b><small>${esc(r.by)} · ${esc(emailEvidence[r.offer].supplier)}</small></span><span class="due">${formatTime.format(r.at)}</span></button>`).join('')+
     (records.length?'':'<p class="empty">No saved decisions yet.</p>')+'</div></section>';
 }
-function insightCard(){
-  const r=archivedRecord(), p=products[productId];
-  const h=isArchive()?'Decision context':'Actionable insight';
-  const label=isArchive()?p.queue:'Protect Collector’s boxes first';
-  const description=isArchive()?(r?p.timing:'Select a recorded decision to see its planning window.'):'Each missed preorder means a €120 refund. Prioritize scarce game cards for Collector’s and pair the art-book delivery with a statue inspection.';
-  return '<section class="card insight">'+title('bulb',h)+'<h3>'+label+'</h3><p>'+description+'</p></section>';
+function limitControl(p){
+  const limit=limits[productId]||0;
+  const high=Math.max(...p.offers.map(o=>o.quoteEur||o.catalogEur))*1.5;
+  const step=Math.max(.0001,10**(Math.floor(Math.log10(high))-2));
+  const maximum=Number((Math.ceil(Number((high/step).toFixed(9)))*step).toFixed(4));
+  return `<div class="demo-ceiling"><label>Automatic approval ceiling <b id="ceiling-value">${limit?price(limit)+'/unit':'Off'}</b>
+    <input type="range" id="ceiling" min="0" max="${maximum}" step="${step}" value="${limit}" aria-label="${p.tab} automatic approval ceiling"></label>
+    <small>Off – ${price(maximum)} / unit · Supplier price range</small><p>Eligible offers within your ceiling can create a practice approval. You send the email.</p>
+    <button class="outline-btn" data-limit hidden>Save limit</button></div>`;
+}
+function priceChart(){
+  const p=products[productId];
+  const top=Math.max(...p.offers.map(o=>Math.max(o.catalogEur,o.quoteEur||0)));
+  return '<section class="card demo-chart">'+title('layers','Unit price comparison')+`<p>${p.tab} · EUR per unit</p>`+p.offers.map(o=>
+    `<div><b>${esc(emailEvidence[o.key].supplier)}</b><span class="demo-track"><i style="width:${o.catalogEur/top*100}%"></i></span>
+    <small>Catalogue ${price(o.catalogEur)} · Quote ${o.quoteEur?price(o.quoteEur):'unconfirmed'}</small></div>`).join('')+'</section>';
 }
 function render(){
   const archived=isArchive(), r=archivedRecord();
   const values=archived?(r?.forecast??baseline):forecast;
   const heading=archived?'Activity Log':'Dashboard';
   document.querySelector('#view-title').textContent=heading;
-  document.querySelector('#view-subtitle').textContent=archived?'Grand Heist 6 · Forecast and supplier decisions at the time of review':'Grand Heist 6 · Hamburg distribution center';
+  document.querySelector('#view-subtitle').textContent=archived?'Grand Heist 6 · Supplier decisions and reviewers':'Grand Heist 6 · Hamburg distribution center';
   document.title=heading+' · Manti';
   document.querySelectorAll('[data-nav]').forEach(a=>{
     if(a.dataset.nav===(archived?'activity':'overview')) a.setAttribute('aria-current','page');
     else a.removeAttribute('aria-current');
   });
   content.classList.toggle('archived',archived);
-  content.innerHTML=statCards(values)+'<div class="forecast-note"><span>¹ Standard assumes €32 per late box. Actual loss is unconfirmed.</span>'+
-    (!archived?'<button data-forecast class="quiet">'+icon('info')+(values.some((v,i)=>v!==baseline[i])?'Edit forecast scenario':'Forecast details')+'</button>':'')+'</div>'+
-    '<div class="body-grid">'+offerCard()+'<div class="side-stack">'+(archived?historyCard():deadlineCard())+insightCard()+'</div></div>'+
-    '<footer class="forecast-foot">Forecast · Sat 19:25 CET &nbsp;·&nbsp; Email replay · Sat 20:44 CET</footer>';
+  content.innerHTML=(archived?'':statCards(values)+'<div class="forecast-note"><button data-forecast class="quiet">'+icon('info')+'Forecast details</button></div>')+
+    '<div class="body-grid">'+offerCard()+'<div class="side-stack">'+(archived?historyCard():deadlineCard()+priceChart())+'</div></div>';
   tick();
   drawLaunchCargo(content.querySelector('canvas'));
 }
@@ -212,7 +225,7 @@ function savedDraft(r){
 function forecastDialog(){
   openDialog(`<div class="overline">Forecast scenario</div><h2 id="dialog-title">Expected boxes at launch</h2><p class="modal-p">The baseline is the median of 500 simulations. Change expected box counts to preview shortages and financial exposure.</p>
     <form class="editor" id="forecast-form">${editions.map((e,i)=>`<label>${e.name} · target ${number(e.target)}<input type="number" name="edition${i}" required min="0" max="${e.target}" step="1" value="${forecast[i]}"></label>`).join('')}
-    <p class="modal-p">Collector’s exposure uses €120 per missed preorder. Standard uses an unconfirmed €32 per late box. A delayed Standard box can still sell.</p>
+    <p class="modal-p">Collector’s exposure uses €120 per missed preorder. Standard exposure is an estimate.</p>
     <div class="dialog-actions"><button type="button" class="outline-btn" data-reset>Restore baseline</button><button class="btn" type="submit">Apply scenario</button></div></form>`);
 }
 dialog.addEventListener('submit',event=>{
@@ -230,11 +243,32 @@ dialog.addEventListener('submit',event=>{
   catch { document.querySelector('#draft-form button').textContent='Storage unavailable · retry';return; }
   reviewer=record.by;saveSession();readRecords();currentDraft=null;render();savedDraft(record);
 });
+content.addEventListener('input', event=>{
+  if(event.target.id!=='ceiling')return;
+  const value=Number(event.target.value);
+  document.querySelector('#ceiling-value').textContent=value?price(value)+'/unit':'Off';
+  content.querySelector('[data-limit]').hidden=value===(limits[productId]||0);
+});
 document.addEventListener('click',event=>{
   const btn=event.target.closest('button');if(!btn)return;
   const d=btn.dataset;
   if('close' in d){dialog.close();return;}
   if('reset' in d){forecast=[...baseline];saveSession();dialog.close();render();return;}
+  if('limit' in d){
+    const value=Number(document.querySelector('#ceiling').value);
+    limits[productId]=value;
+    try { localStorage.setItem('manti-demo.offer-limits',JSON.stringify(limits)); } catch {}
+    const offer=products[productId].offers.find(o=>o.reservationEligible && o.quoteEur && o.quoteEur<=value);
+    if(offer && !records.some(r=>r.product===productId && r.offer===offer.key)){
+      selectedOffer=offer.key;
+      const e=emailEvidence[offer.key];
+      const record={id:crypto.randomUUID(),product:productId,offer:offer.key,action:'approve',at:now(),
+        by:reviewer ? reviewer+' · price rule' : 'Practice price rule',subject:e.subject,
+        body:'Hello '+e.supplier+' team,\n\n'+replyTerms[offer.key].approve+'\n\nSoony launch team',forecast:[...forecast]};
+      try { localStorage.setItem(logPrefix+record.id,JSON.stringify(record)); readRecords(); } catch {}
+    }
+    render();return;
+  }
   if('forecast' in d){forecastDialog();return;}
   if(d.product){selectProduct(d.product);return;}
   if(d.mail){emailDialog(d.mail);return;}

@@ -73,7 +73,7 @@ def schema(con):
         excerpt TEXT, signer TEXT, status TEXT NOT NULL DEFAULT 'pending',
         decided_by TEXT, decided_at TEXT, note TEXT, email_id TEXT, updated_at TEXT NOT NULL)""")
     columns = {r[1] for r in con.execute("PRAGMA table_info(deals)")}
-    extra = {"required_by":"TEXT", "source_hash":"TEXT", "revision":"TEXT", "offer_state":"TEXT", "review_reason":"TEXT",
+    extra = {"awaiting_send":"INTEGER DEFAULT 0","required_by":"TEXT", "source_hash":"TEXT", "revision":"TEXT", "offer_state":"TEXT", "review_reason":"TEXT",
              "source_message":"TEXT","expires_at":"TEXT", "order_quantity":"INTEGER",
              "offer_kind":"TEXT", "freight_charge":"REAL", "carrier":"TEXT"}
     for name, typ in extra.items():
@@ -165,11 +165,18 @@ def _review(q, text, total, cutoff, now, expired, superseded, moq, kind, carrier
     return "quoted","Review the quantity, delivered terms and signer before requesting a reservation."
 
 
-def _archive(con, old):
+def _archive(con, old, *, capture_options=False):
     if old["status"] not in ("approved","declined"):
         return
     revision = old["revision"] or "legacy"
     terms = {k:old.get(k) for k in (*TERMS,"source_message","excerpt")}
+    if capture_options:
+        cursor = con.execute("""SELECT id,supplier,thread_id,quantity,order_quantity,price_eur,total_eur,
+                                       eta,offer_state,best FROM deals
+                                WHERE material=? AND required_by=? AND offer_state!='superseded'
+                                ORDER BY best DESC,supplier""", (old["material"], old["required_by"]))
+        names = [column[0] for column in cursor.description]
+        terms["alternatives"] = [dict(zip(names, row)) for row in cursor]
     con.execute("""INSERT OR IGNORE INTO deal_decision_history
         (deal_id,revision,action,actor,decided_at,note,email_id,terms) VALUES(?,?,?,?,?,?,?,?)""",
         (old["id"],revision,old["status"],old["decided_by"],old["decided_at"],old["note"],old["email_id"],
@@ -231,7 +238,7 @@ def _offer_row(quote, text, source, cutoff, now, fx, superseded):
 def _replace_decision(con, old):
     _archive(con, old)
     con.execute("UPDATE chases SET status='superseded' WHERE id=? AND status='draft'", (old["email_id"],))
-    return {"decided_by": None, "decided_at": None, "note": None, "email_id": None}
+    return {"awaiting_send": 0, "decided_by": None, "decided_at": None, "note": None, "email_id": None}
 
 
 def _store(con, row):
@@ -311,7 +318,7 @@ def list_deals(con):
         row["history"] = history.get(row["id"],[])
         if row["offer_state"]=="superseded" or row["thread_id"] in superseded:
             row.update(status="superseded", eligible=0, best=0)
-        if row["eligible"] and row["status"] in ("pending", "changed"):
+        if row["eligible"] and (row["status"] in ("pending", "changed") or (row["status"] == "approved" and row["awaiting_send"])):
             row["drafts"] = {action: _decision_email(row, action) for action in EMAIL}
     return {"deals":rows,"best":[r for r in rows if r["best"]]}
 
@@ -411,7 +418,17 @@ def _decision_email(deal, action):
     return {"id": email_id, "subject": f"[SOONY-{email_id}] " + subject.format(**values), "body": body.format(**values)}
 
 
-def decide(con, deal_id, action, by=None, note=None, *, revision=None):
+def _queue_email(con, deal, draft, lang):
+    email_id, subj = draft["id"], draft["subject"]
+    con.execute("""INSERT INTO chases
+        (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,parent_thread_id,based_on_reply_id)
+        VALUES(?,?,?,?,?,?,?,?,?,?,(SELECT deadline FROM chases WHERE id=?),?,(SELECT id FROM messages WHERE external_id=?))""",
+                (email_id, deal["supplier_id"],deal["supplier"],deal["address"],lang,subj,"draft",
+                 deal["material"],deal["order_quantity"],draft["body"],deal["thread_id"],deal["thread_id"],deal["source_message"]))
+    return email_id
+
+
+def decide(con, deal_id, action, by=None, note=None, *, revision=None, defer_send=False, confirm_held=False):
     """Record one immutable buyer decision and enqueue one nonbinding response per revision."""
     if action not in EMAIL:
         raise ValueError("Action must be approve or decline.")
@@ -425,9 +442,12 @@ def decide(con, deal_id, action, by=None, note=None, *, revision=None):
             raise ValueError("The offer has changed. Refresh before deciding.")
         _current(con,deal)
         status = "approved" if action=="approve" else "declined"
-        if deal["status"] == status:
+        release_held = bool(confirm_held and action == "approve" and deal["status"] == "approved" and deal["awaiting_send"])
+        if confirm_held and not release_held and deal["status"] != "approved":
+            raise ValueError("This reservation changed. Review the current offer.")
+        if deal["status"] == status and not release_held:
             return deal
-        if deal["status"] not in ("pending","changed"):
+        if not release_held and deal["status"] not in ("pending","changed"):
             raise ValueError("A decision is already recorded for this offer revision.")
         if not isinstance(by, str) or not by.strip():
             raise ValueError("Enter the name of the person reviewing this offer.")
@@ -438,18 +458,22 @@ def decide(con, deal_id, action, by=None, note=None, *, revision=None):
         check = Guardrails().validate_draft(text)
         if not check.ok:
             raise ValueError("Email failed guardrails: "+"; ".join(check.errors))
-        email_id, subj = draft["id"], draft["subject"]
-        con.execute("""INSERT INTO chases
-            (id,supplier_id,supplier,address,language,subject,status,material,qty,body,deadline,parent_thread_id,based_on_reply_id)
-            VALUES(?,?,?,?,?,?,?,?,?,?,(SELECT deadline FROM chases WHERE id=?),?,(SELECT id FROM messages WHERE external_id=?))""",
-                    (email_id, deal["supplier_id"],deal["supplier"],deal["address"],lang,subj,"draft",
-                     deal["material"],deal["order_quantity"],text,deal["thread_id"],deal["thread_id"],deal["source_message"]))
+        email_id = None if defer_send else _queue_email(con, deal, draft, lang)
+        if release_held:
+            con.execute("UPDATE deals SET email_id=?,awaiting_send=0 WHERE id=?", (email_id,deal_id))
+            con.execute("UPDATE deal_decision_history SET email_id=? WHERE deal_id=? AND revision=?",
+                        (email_id,deal_id,revision))
+            con.execute("INSERT INTO activity(time,agent,action,type) VALUES(?,?,?,?)",
+                        (_now(), by, f"Queued reviewed reservation request to {deal['supplier']} for {deal['material']}.", "info"))
+            return _stored(con,deal_id)
         when = _now()
-        con.execute("UPDATE deals SET status=?,decided_by=?,decided_at=?,note=?,email_id=? WHERE id=?",
-                    (status,by,when,note,email_id,deal_id))
+        con.execute("UPDATE deals SET status=?,decided_by=?,decided_at=?,note=?,email_id=?,awaiting_send=? WHERE id=?",
+                    (status,by,when,note,email_id,int(defer_send),deal_id))
         detail = f"Reservation request queued. PO signer: {deal['signer']}." if action=="approve" else "Decline response queued."
+        if defer_send:
+            detail = "Automatically approved. Supplier email awaits human review."
         con.execute("INSERT INTO activity(time,agent,action,type) VALUES(?,?,?,?)",
                     (when,"Mail Agent",f"{deal['supplier']} offer for {deal['material']} {status} by {by}. {detail}","info"))
         updated = _stored(con,deal_id)
-        _archive(con,updated)
+        _archive(con,updated,capture_options=True)
         return updated

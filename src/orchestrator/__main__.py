@@ -637,6 +637,9 @@ class Loop:
                         save_state(con, "forecastMailWatermark", mail_watermark)
                 recovery.advance(con, get_state(con, "truth", {}))
                 action_delivery.refresh(con)
+            from src.chaser import offer_limits
+            offer_limits.apply(con, get_state(con, "truth", {}) or {}, get_state(con, "forecastMailWatermark", 0),
+                               demo=self.args.demo)
             auto_approve(con, demo=self.args.demo)
             supplier_loop.advance(con, get_state(con, "truth", {}), get_state(con, "options", []),
                                   scope="demo" if self.args.demo else "live",
@@ -844,6 +847,8 @@ def handler(loop, gateway_token=None):
                         if deadline:
                             supplier_deals.sync(con, deadline)
                         listing = supplier_deals.list_deals(con)
+                        from src.chaser import offer_limits
+                        listing["limits"] = offer_limits.market(con, listing["deals"])
                         # Per part, what is still short after counted inbound: the offers tabs only show parts we must buy.
                         parts = (get_state(con, "truth", {}) or {}).get("parts", {})
                         listing["gaps"] = {m: parts[m].get("shortfall", 0) for m in {d["material"] for d in listing["deals"]} if m in parts}
@@ -932,6 +937,15 @@ def handler(loop, gateway_token=None):
                     if action_match:
                         with loop.lock:
                             return self.update_action(con, *action_match.groups(), body)
+                    if path == "/api/deals":
+                        from src.chaser import offer_limits
+                        try:
+                            offer_limits.set_limit(con, body.get("material"), body.get("limit"), body.get("previous"),
+                                                   self.account() or body.get("by"))
+                        except ValueError as exc:
+                            return self.out({"error": str(exc)}, 409)
+                        loop.trigger.set()
+                        return self.out({"ok": True})
                     deal = re.fullmatch(r"/api/deals/([a-f0-9]{12,16})/(approve|decline)", path)
                     if deal:  # T90 mail-agent: record the decision and draft the supplier email
                         from src.chaser import deals as supplier_deals
@@ -947,7 +961,7 @@ def handler(loop, gateway_token=None):
                         try:
                             row = supplier_deals.decide(con, deal[1], deal[2], body.get("by")[:80] if isinstance(body.get("by"), str) else None,
                                                         (str(body["note"])[:500] if body.get("note") else None),
-                                                        revision=body["revision"])
+                                                        revision=body["revision"], confirm_held=body.get("confirmHeld") is True)
                         except KeyError:
                             return self.out({"error": "Unknown offer. Refresh the page."}, 404)
                         except ValueError as exc:

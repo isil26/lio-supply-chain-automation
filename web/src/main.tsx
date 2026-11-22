@@ -358,6 +358,9 @@ function App() {
   }
   deadlines.sort((left, right) => dueTime(left.due) - dueTime(right.due));
   const openDealThread = (id:string) => selectThread(id, !!data.mailHistory?.threads.some(t=>t.id===id));
+  const decisionSidebar = archive ? <section className="card"><h3>Activity feed</h3><ul className="activity scroll-feed">{data.activity.map(a=><li key={a.id}><strong>{a.agent}</strong> {a.action}<small>{a.time}</small></li>)}</ul></section> : <>
+          <section className="card"><h3>Decision deadlines <small>{deadlines.length}</small></h3><div className="deadline-scroll" tabIndex={0} aria-label="Upcoming decisions">{deadlines.length?deadlines.map(d=><button key={d.id} onClick={()=>setRequestedAction({id:d.id})}><span><strong>{d.title}</strong><small>{d.owner}</small></span><time>{Number.isFinite(dueTime(d.due))?etaDate.format(new Date(d.due))+" CET":d.due || "Time unconfirmed"}</time></button>):<p className="empty">No decisions due.</p>}</div></section>
+        </>;
   return <main className={`manti-workspace ${dark ? "theme-dark" : "theme-light"}`}>
     <aside className="workspace-rail"><MantiLogo/><nav aria-label="Workspace">
       <a href="#dashboard" aria-current={page === "dashboard" ? "page" : undefined}><Icon name="grid"/>Dashboard</a>
@@ -389,7 +392,7 @@ function App() {
         <p className="muted">Last Lio check · {etaDate.format(new Date(data.sync.portal.checkedAt))} · {formatNumber(health?.filesSeen)} files verified</p>
       )}
       {error && <div className="notice alert">{error}<button className="link-button" onClick={() => setError("")}>Dismiss</button></div>}
-      <section className={`forecast-grid ${archive ? "archived" : ""}`} aria-label="Current launch forecast">
+      {!archive && <><section className="forecast-grid" aria-label="Current launch forecast">
         <article className="launch-tile"><h2>Time to launch</h2><Countdown deadline={data.launch.deadline}/><small>{etaDate.format(deadline)} CET</small></article>
         {[...editions].sort((a,b)=>Number(b.edition==="CE")-Number(a.edition==="CE")).map(item=>{
           const pct=item.target>0 ? Math.min(100,100*item.expected/item.target) : 100;
@@ -402,13 +405,10 @@ function App() {
           </article>;
         })}
       </section>
-      <div className="forecast-context">{archive ? "Current forecast" : onTrack ? "On track" : formatNumber(totalShort)+" boxes below target"}{!archive && shortEur!=null && !onTrack ? ` · ${euro(shortEur)} ${useMiss?"at stake":"at standard cost"}`:""}{data.readiness.some(r=>r.missCostConfirmed===false) && " · Standard loss estimate is unconfirmed."}</div>
+      <div className="forecast-context">{onTrack ? "On track" : formatNumber(totalShort)+" boxes below target"}{shortEur!=null && !onTrack ? ` · ${euro(shortEur)} ${useMiss?"at stake":"at standard cost"}`:""}</div></>}
       <div className={`decision-layout ${archive?"archived":""}`}>
-        {!uploadResult && <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={openDealThread}/>}
-        <aside className="decision-side">{archive ? <section className="card"><h3>Activity feed</h3><ul className="activity scroll-feed">{data.activity.map(a=><li key={a.id}><strong>{a.agent}</strong> {a.action}<small>{a.time}</small></li>)}</ul></section> : <>
-          <section className="card"><h3>Decision deadlines <small>{deadlines.length}</small></h3><div className="deadline-scroll" tabIndex={0} aria-label="Upcoming decisions">{deadlines.length?deadlines.map(d=><button key={d.id} onClick={()=>setRequestedAction({id:d.id})}><span><strong>{d.title}</strong><small>{d.owner}</small></span><time>{Number.isFinite(dueTime(d.due))?etaDate.format(new Date(d.due))+" CET":d.due || "Time unconfirmed"}</time></button>):<p className="empty">No decisions due.</p>}</div></section>
-          {approval && <section className="card insight-tile"><h3>Recommended action</h3><strong>{approval.title}</strong><p>{approval.recommendation}</p><button className="link-button" onClick={()=>setRequestedAction({id:approval.id})}>Review action</button></section>}
-        </>}</aside>
+        {!uploadResult ? <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={openDealThread}>{decisionSidebar}</Offers> : <aside className="decision-side">{decisionSidebar}</aside>}
+
       </div>
       {archive && <section className="card archived"><h3>Past actions</h3><PastList rows={past} onOpenThread={id=>selectThread(id,false)}/></section>}
       <div className="workspace-tools" hidden={archive}>
