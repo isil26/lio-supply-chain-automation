@@ -26,7 +26,6 @@
 .net-source { gap: 8px; color: var(--muted); font-size: .8rem; }
 .net-source i, .net-key i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; border: 1px solid var(--muted); }
 .net-source[data-online=true] i { background: var(--ok-text); border-color: var(--ok-text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok-text) 14%, transparent); }
-.net-grid { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(240px, 1fr); gap: 16px; }
 .manti-workspace .card:is(.net-map,.net-stream) { padding: 0; margin: 0; }
 .net-map, .net-stream { overflow: hidden; }
 .net-heading { min-height: 58px; padding: 13px 20px; border-bottom: 1px solid var(--line); }
@@ -41,7 +40,7 @@
   --plate: #232d30;
   position: relative;
   isolation: isolate;
-  height: clamp(315px, 27vw, 430px);
+  height: clamp(350px, 29vw, 455px);
   overflow: hidden;
   color: var(--ink);
   background-color: #1b2327;
@@ -50,7 +49,9 @@
     radial-gradient(circle, #9db3b72b .75px, transparent 1px);
   background-size: auto, auto, 13px 13px;
 }
-.net-plot.compact { height: 445px; }
+.net-plot.compact { height: 708px; }
+.net-junction { position: absolute; transform: translate(-50%,-50%); border: 1px solid #71828077; border-radius: 20px; padding: 5px 9px; background: #293235; color: #d9e3df; font: 500 .74rem/1.2 var(--net-mono); }
+.net-backbone { stroke: #b5abc0; opacity: .45; stroke-width: 1.5; }
 .net-plot [data-tone=sky] { --tone: #9cc4dd; }
 .net-plot [data-tone=sage] { --tone: #a6d3ba; }
 .net-plot [data-tone=lilac] { --tone: #c1b2ed; }
@@ -93,7 +94,7 @@
 .net-role, .net-playhead { margin: 0; padding: 10px 20px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: .85rem; line-height: 1.4; }
 .net-playhead { color: var(--accent); }
 .net-reset { border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 5px; font-size: 1.1rem; line-height: 1; padding: 3px 6px; }
-.net-event-list { list-style: none; padding: 4px 18px 10px 20px; margin: 0; overflow: auto; height: 0; flex: 1 1 0; scrollbar-width: thin; }
+.net-event-list { list-style: none; padding: 4px 18px 10px 20px; margin: 0; overflow: auto; max-height: 22rem; scrollbar-width: thin; }
 .net-event-list li { position: relative; padding: 13px 0 13px 18px; border-left: 1px solid var(--line); margin-left: 3px; }
 .net-event-list li::before { content: ""; position: absolute; top: 19px; left: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 0 3px var(--surface); }
 .net-event-list li.current::before { box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -105,16 +106,6 @@
 .net-empty { flex: 1; display: grid; place-content: center; justify-items: center; padding: 24px; text-align: center; color: var(--muted); font-size: .85rem; gap: 12px; }
 .net-empty svg { width: 26px; height: 26px; }
 .net-empty p { margin: 0; }
-@media (max-width: 1040px) { .net-grid { grid-template-columns: minmax(0,1.9fr) minmax(215px,1fr); } }
-@media (min-width: 501px) and (max-width: 760px) {
-  .net-grid { grid-template-columns: minmax(0,1.7fr) minmax(155px,1fr); gap: 10px; }
-  .net-heading { padding-inline: 12px; }
-  .net-stream .net-heading { flex-wrap: wrap; gap: 2px 8px; }
-}
-@media (max-width: 500px) {
-  .net-grid { grid-template-columns: 1fr; }
-  .net-stream { height: 285px; }
-}
 @media (max-width: 540px) {
   .net-source { font-size: .75rem; }
   .net-heading, .net-key { padding-left: 15px; padding-right: 15px; }.net-key { gap: 13px; }

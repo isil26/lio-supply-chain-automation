@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dashboardApi, hostedReplayBuild, isStaticMode, type DashboardData, type Source } from "../api";
 import { MantiLogo } from "../SupplyMap";
-import { activitySignals, findAgent, teams, type Agent, type Signal, type Team } from "./network";
+import { activitySignals, findAgent, teams, type Signal } from "./network";
 import "./agentGraph.css";
 
 const icons: Record<string, string> = {
@@ -79,44 +79,60 @@ function useRunHistory(data: DashboardData, scenario: boolean, enabled: boolean)
   return history?.id === id ? history : null;
 }
 
-function NetworkPlot({ agents, counts, selected, lit, onSelect }: {
-  agents: Agent[]; counts: Map<string, number>; selected: string | null; lit: Set<string>; onSelect: (name: string) => void;
+// The same constellation becomes two readable columns when the map is narrow.
+const nodes = Object.entries(teams).flatMap(([name, agents]) => {
+  const center = name === "Operations" ? 25 : 75;
+  return agents.map((agent, index) => {
+    const angle = -Math.PI / 2 + 2 * Math.PI * index / agents.length;
+    return {
+      agent, center,
+      desktop: { x: center + 17.5 * Math.cos(angle), y: 47 + 33 * Math.sin(angle) },
+      mobile: { x: center, y: 18 + index * 9 },
+    };
+  });
+});
+
+function NetworkPlot({ counts, selected, lit, onSelect }: {
+  counts: Map<string, number>; selected: string | null; lit: Set<string>; onSelect: (name: string) => void;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [compact, setCompact] = useState(false);
   useEffect(() => {
     const el = wrap.current;
     if (!el) return;
-    const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < 525));
+    const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < 760));
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  const hub = { x: 50, y: compact ? 10 : 50 };
-  const points = agents.map((_, i) => {
-    if (compact) return { x: i % 2 === 0 ? 25 : 75, y: 25 + Math.floor(i / 2) * 15 };
-    const angle = -Math.PI / 2 + 2 * Math.PI * i / agents.length;
-    return { x: 50 + 39 * Math.cos(angle), y: 49 + 36 * Math.sin(angle) };
-  });
-  return <div className={'net-plot' + (compact ? ' compact' : '')} ref={wrap}>
+  const layout = compact ? "mobile" : "desktop";
+  const hubY = compact ? 5 : 50;
+  return <div className={"net-plot" + (compact ? " compact" : "")} ref={wrap}>
     <svg className="net-wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       {!compact && <g className="net-orbits">
-        <ellipse cx="50" cy="49" rx="39" ry="36"/><ellipse cx="50" cy="49" rx="30" ry="27"/><ellipse cx="50" cy="49" rx="18" ry="16.5"/>
+        {[25, 75].map(x => <g key={x}>
+          <ellipse cx={x} cy="47" rx="17.5" ry="33"/><ellipse cx={x} cy="47" rx="12.3" ry="23.3"/>
+          <path className="net-backbone" d={`M50 50 L${x} 47`}/>
+        </g>)}
       </g>}
-      {agents.map((agent, i) => {
-        const { x, y } = points[i];
+      {nodes.map(node => {
+        const { agent, center } = node;
+        const { x, y } = node[layout];
         const litUp = lit.has(agent.name);
-        const d = compact ? `M50 ${hub.y} V${y - 5} Q50 ${y} ${x > 50 ? 54 : 46} ${y} H${x}`
-          : `M50 50 C${50 + (x - 50) * .45} 50 ${50 + (x - 50) * .5} ${y} ${x} ${y}`;
+        const bend = 47 + (y - 47) * .55;
+        const d = compact ? `M50 ${hubY} V${y - 5} Q50 ${y} ${x > 50 ? 54 : 46} ${y} H${x}`
+          : `M${center} 47 C${center} ${bend} ${x} ${bend} ${x} ${y}`;
         return <g key={agent.name} data-tone={agent.tone} className={litUp ? "lit" : ""}>
           <path d={d} className="net-wire"/>
           {litUp && <path d={d} pathLength="1" className="net-traveler"/>}
         </g>;
       })}
     </svg>
-    <div className="net-core" style={{left: hub.x + "%", top: hub.y + "%"}}><MantiLogo/></div>
-    {agents.map((agent, i) => <button key={agent.name} type="button" data-tone={agent.tone}
+    {Object.keys(teams).map(name => <span key={name} className="net-junction"
+      style={{left: name === "Operations" ? "25%" : "75%", top: compact ? "9%" : "47%"}}>{name}</span>)}
+    <div className="net-core" style={{left: "50%", top: hubY + "%"}}><MantiLogo/></div>
+    {nodes.map(({ agent, [layout]: position }) => <button key={agent.name} type="button" data-tone={agent.tone}
       className={"net-node" + (lit.has(agent.name) ? " lit" : "") + (counts.has(agent.name) ? " has-data" : "")}
-      style={{ left: points[i].x + "%", top: points[i].y + "%" }}
+      style={{ left: position.x + "%", top: position.y + "%" }}
       onClick={() => onSelect(agent.name)} aria-pressed={selected === agent.name}
       aria-label={agent.name + ", " + eventCount(counts.get(agent.name) ?? 0)}>
       <span className="net-disc"><Glyph icon={agent.icon}/></span>
@@ -125,83 +141,11 @@ function NetworkPlot({ agents, counts, selected, lit, onSelect }: {
   </div>;
 }
 
-type TeamRowProps = {
-  team: Team;
-  events: Signal[];
-  pulses: ReadonlyMap<string, number>;
-  source: string;
-  online: boolean;
-  historyUnavailable?: boolean;
-  reportedRoles?: string[];
-  onEvidence: (source: Source) => void;
-};
-
-function TeamRow({ team, events, pulses, source, online, historyUnavailable, reportedRoles, onEvidence }: TeamRowProps) {
-  const agents = teams[team];
-  const [selected, setSelected] = useState<string | null>(null);
-  const [replay, setReplay] = useState<{ events: Signal[]; index: number } | null>(null);
-  const frame = replay?.events[replay.index];
-  useEffect(() => {
-    if (!replay) return;
-    const timer = window.setTimeout(() => setReplay(replay.index + 1 < replay.events.length
-      ? { ...replay, index: replay.index + 1 } : null), 1250);
-    return () => window.clearTimeout(timer);
-  }, [replay]);
-  const lit = frame ? new Set([frame.agent.name]) : new Set(pulses.keys());
-  const counts = new Map<string, number>();
-  for (const { agent } of events) counts.set(agent.name, (counts.get(agent.name) ?? 0) + 1);
-  const picked = agents.find(agent => agent.name === selected);
-  const visible = replay ? replay.events.slice(0, replay.index + 1).reverse()
-    : events.filter(event => !selected || event.agent.name === selected);
-  const pick = (name: string) => { setReplay(null); setSelected(current => current === name ? null : name); };
-  const reading = frame ?? visible[0];
-  const readoutAgent = picked ?? reading?.agent;
-  const toggleReplay = () => {
-    if (replay) { setReplay(null); return; }
-    setReplay({ events: visible.slice(0, MAX_REPLAY).reverse(), index: 0 });
-  };
-
-  return <div className="net-grid">
-    <section className="card net-map" aria-label={team + " agent network"}>
-      <header className="net-heading">
-        <div className="net-title"><h2>{team}</h2>
-          <span className="net-source" data-online={online && !frame}><i/>{frame ? "Replaying activity" : source}</span>
-        </div>
-        <button className="net-replay" onClick={toggleReplay} disabled={!replay && !visible.length}>
-          <span aria-hidden="true">{replay ? "Ⅱ" : "▷"}</span>{replay ? "Stop replay" : "Replay activity"}</button></header>
-      <NetworkPlot agents={agents} counts={counts} selected={selected} lit={lit} onSelect={pick}/>
-      <div className="net-readout" data-tone={readoutAgent?.tone}>
-        <small>{replay ? "Replay" : picked ? "Selected" : "Latest"}</small>
-        <strong>{readoutAgent?.name ?? "Standing by"}</strong><span>{reading?.message ?? picked?.role ?? "Waiting for an agent event."}</span>
-      </div>
-      <footer className="net-key"><span><i className="signal"/>New event</span><span><i className="reported"/>Has history</span><span><i/>No events</span></footer>
-    </section>
-    <section className="card net-stream" aria-label={team + " event stream"}>
-      <header className="net-heading"><h2>{picked ? picked.name : "Event stream"}</h2>
-        {picked ? <button className="net-reset" onClick={() => {setSelected(null); setReplay(null);}} aria-label="Show all agents">×</button>
-          : <span className="net-total">{eventCount(events.length)}</span>}</header>
-      {picked && <p className="net-role">{picked.role}</p>}
-      {replay && <div className="net-playhead" role="status">Replaying event {replay.index + 1} of {replay.events.length}</div>}
-      {visible.length ? <ol className="net-event-list" aria-label={team + " activity"} key={team + (selected || "")}>
-        {visible.map(event => <li key={event.id} data-tone={event.agent.tone} className={event.id === frame?.id ? "current" : ""}>
-          <div className="net-event-line"><strong>{event.agent.name}</strong>{event.time && <small>{event.time}</small>}</div>
-          <p>{event.message}</p>
-          {event.sources?.map((source, i) => <button className="net-evidence" key={i} onClick={() => onEvidence(source)}>{(source.file ?? source.source_file)?.split("/").pop() ?? "Source evidence"}</button>)}
-        </li>)}
-      </ol> : <div className="net-empty"><Glyph icon={picked?.icon || "pulse"}/><strong>{historyUnavailable ? "Run history unavailable" : "No events in this feed"}</strong>
-        {!!reportedRoles?.length && <p>Reported roles · {reportedRoles.join(", ")}.</p>}
-      </div>}
-    </section>
-  </div>;
-}
-
 export function AgentGraph({ data, scenario, stale, onEvidence }: {
   data: DashboardData; scenario: boolean; stale: boolean; onEvidence: (source: Source) => void;
 }) {
   const signals = useMemo(() => activitySignals(data.activity), [data.activity]);
-  const operations = signals.filter(event => teams.Operations.includes(event.agent));
-  const specialists = signals.filter(event => teams.Specialists.includes(event.agent));
-  const needsHistory = !scenario && specialists.length === 0;
+  const needsHistory = !scenario && !signals.some(event => teams.Specialists.includes(event.agent));
   const run = useRunHistory(data, scenario, needsHistory);
   const recording = data.recordedAgentRun;
   const history = useMemo(() => {
@@ -222,10 +166,63 @@ export function AgentGraph({ data, scenario, stale, onEvidence }: {
     : simulated ? "Simulation" : "Live workspace";
   const reportedRoles = recording?.coverage === "summary_only"
     ? recording.reported_summary.roles.map(role => role.role) : run?.roles;
+  const events = useMemo(() => [...signals, ...history], [signals, history]);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [replay, setReplay] = useState<{ events: Signal[]; index: number } | null>(null);
+  const frame = replay?.events[replay.index];
+  useEffect(() => {
+    if (!replay) return;
+    const timer = window.setTimeout(() => setReplay(replay.index + 1 < replay.events.length
+      ? { ...replay, index: replay.index + 1 } : null), 1250);
+    return () => window.clearTimeout(timer);
+  }, [replay]);
+  const lit = frame ? new Set([frame.agent.name]) : new Set(pulses.keys());
+  const counts = new Map<string, number>();
+  for (const { agent } of events) counts.set(agent.name, (counts.get(agent.name) ?? 0) + 1);
+  const picked = selected ? findAgent(selected) : undefined;
+  const visible = replay ? replay.events.slice(0, replay.index + 1).reverse()
+    : events.filter(event => !selected || event.agent.name === selected);
+  const pick = (name: string) => { setReplay(null); setSelected(current => current === name ? null : name); };
+  const reading = frame ?? visible[0];
+  const readoutAgent = picked ?? reading?.agent;
+  const toggleReplay = () => {
+    if (replay) { setReplay(null); return; }
+    setReplay({ events: visible.slice(0, MAX_REPLAY).reverse(), index: 0 });
+  };
+
+  const historical = history.length > 0 && (signals.length === 0 || (picked && teams.Specialists.includes(picked)));
+  const source = historical && !stale ? "Last recorded run" : scope;
+  const specialistEmpty = needsHistory && (!picked || teams.Specialists.includes(picked));
   return <div className="net-view">
-    <TeamRow team="Operations" events={operations} pulses={pulses} source={scope} online={online} onEvidence={onEvidence}/>
-    <TeamRow team="Specialists" events={needsHistory ? history : specialists} pulses={pulses}
-      source={history.length && !stale ? "Last recorded run" : scope} online={online && !history.length}
-      historyUnavailable={needsHistory && run?.error} reportedRoles={needsHistory ? reportedRoles : undefined} onEvidence={onEvidence}/>
+    <section className="card net-map" aria-labelledby="agent-network-title">
+      <header className="net-heading">
+        <div className="net-title"><h2 id="agent-network-title">Agent network</h2>
+          <span className="net-source" data-online={online && !frame && !historical}><i/>{frame ? "Replaying activity" : source}</span>
+        </div>
+        <button className="net-replay" onClick={toggleReplay} disabled={!replay && !visible.length}>
+          <span aria-hidden="true">{replay ? "Ⅱ" : "▷"}</span>{replay ? "Stop replay" : "Replay activity"}</button></header>
+      <NetworkPlot counts={counts} selected={selected} lit={lit} onSelect={pick}/>
+      <div className="net-readout" data-tone={readoutAgent?.tone}>
+        <small>{replay ? "Replay" : picked ? "Selected" : "Latest"}</small>
+        <strong>{readoutAgent?.name ?? "Standing by"}</strong><span>{reading?.message ?? picked?.role ?? "Waiting for an agent event."}</span>
+      </div>
+      <footer className="net-key"><span><i className="signal"/>New event</span><span><i className="reported"/>Has history</span><span><i/>No events</span></footer>
+    </section>
+    <section className="card net-stream" aria-labelledby="agent-stream-title">
+      <header className="net-heading"><h2 id="agent-stream-title">Event stream</h2>
+        {picked ? <button className="net-reset" onClick={() => {setSelected(null); setReplay(null);}} aria-label="Show all agents">×</button>
+          : <span className="net-total">{eventCount(events.length)}</span>}</header>
+      {picked && <p className="net-role"><strong>{picked.name}</strong> · {picked.role}</p>}
+      {replay && <div className="net-playhead" role="status">Replaying event {replay.index + 1} of {replay.events.length}</div>}
+      {visible.length ? <ol className="net-event-list" aria-label={picked ? picked.name + " activity" : "All agent activity"} key={selected ?? "all"}>
+        {visible.map(event => <li key={event.id} data-tone={event.agent.tone} className={event.id === frame?.id ? "current" : ""}>
+          <div className="net-event-line"><strong>{event.agent.name}</strong>{event.time && <small>{event.time}</small>}</div>
+          <p>{event.message}</p>
+          {event.sources?.map((source, i) => <button className="net-evidence" key={i} onClick={() => onEvidence(source)}>{(source.file ?? source.source_file)?.split("/").pop() ?? "Source evidence"}</button>)}
+        </li>)}
+      </ol> : <div className="net-empty"><Glyph icon={picked?.icon || "pulse"}/><strong>{specialistEmpty && run?.error ? "Run history unavailable" : "No events in this feed"}</strong>
+        {specialistEmpty && !!reportedRoles?.length && <p>Reported roles · {reportedRoles.join(", ")}.</p>}
+      </div>}
+    </section>
   </div>;
 }

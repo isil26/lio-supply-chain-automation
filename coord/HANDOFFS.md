@@ -584,6 +584,8 @@ The VM passed 35 supplier and upload tests and five gateway tests. A disposable 
 
 Open Agents in the workspace rail or go to `/react#agents`. The nine Operations agents appear first, followed by the eight Specialists. Each map has a dedicated event stream on the right and independent selection and replay controls. On phones the stream follows its map. Newly observed events light the corresponding nodes. Verified both builds, 22 focused tests, and stream placement at desktop, compact and phone widths.
 
+The simplified Agents tab now opens directly to the full 17-agent network. One scrollable Event stream sits underneath on desktop and phone. Selecting a node filters the stream. Replay uses that same feed. The connected and hosted builds passed, along with the focused agent tests and browser checks at 1280px and 390px.
+
 ## T-Manti-18984 — Google Cloud dashboard release (manti-dashboard)
 
 Production serves revision `bd37f16` with the Dashboard, Agents, Activity Log and Data import tabs from the local dashboard on port 18984. The production root and `/react` both load the same JavaScript and CSS. Both files matched the local reference byte for byte when fetched through the signed-in public gateway. The existing production team password still works. The local rehearsal uses named accounts.
