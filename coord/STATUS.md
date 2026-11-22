@@ -215,4 +215,4 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-live-model | T-Live-OpenAI | Activating hosted inference and verifying the production agent trace | in_progress | Portal snapshot validated | 22 Nov |
 
-| manti-live-entry | T-Public-Live-Entry | Connect Skip login to the full live workspace | in_progress | Public access authorized for the hackathon | 22 Nov |
+| manti-live-entry | T-Public-Live-Entry | Verified Skip login on Manti Live | done | Browser opened the live dashboard as test. Both entry paths returned the same eight offers and accepted a session-local write. | 22 Nov |

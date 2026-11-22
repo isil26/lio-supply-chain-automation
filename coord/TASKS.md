@@ -192,4 +192,4 @@ See [agent instructions](../AGENTS.md) and [historical task specs](../archive/CO
 
 | T-Live-OpenAI | Activate and verify server-side OpenAI analysis of the accepted portal snapshot | manti-live-model | backend watcher and agent execution | in_progress | Manti Live |
 
-| T-Public-Live-Entry | Open the live dashboard from Skip login | manti-live-entry | live gateway, login and packaging | in_progress | T-Public-Access |
+| T-Public-Live-Entry | Open the live dashboard from Skip login | manti-live-entry | live gateway, login and packaging | done | T-Public-Access |
