@@ -188,7 +188,11 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
         from . import deals, mail_plan
         decision_mail = chase["status"] == "draft" and deals.check_draft(con, chase_id)
         action = None
-        if chase["status"] == "recovery draft":
+        if chase["status"] == "promise draft":
+            from . import promise_watch
+            if demo or not auto or not promise_watch.current(con, chase, datetime.now(timezone.utc)):
+                raise ValueError("The supplier promise is no longer due for follow-up")
+        elif chase["status"] == "recovery draft":
             from .recovery import eligible_draft
 
             action = eligible_draft(con, chase_id) if auto and not demo else None
@@ -202,7 +206,7 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
                 raise ValueError("This case requires a current supplier-loop draft")
         elif chase["status"] != "draft":
             raise ValueError("Only a current draft can be sent")
-        if not action and not decision_mail and (auto or chase["based_on_reply_id"] is not None):
+        if chase["status"] != "promise draft" and not action and not decision_mail and (auto or chase["based_on_reply_id"] is not None):
             mail_plan.check_draft(con, chase, simulated=demo)
         if action or auto or decision_mail:
             from .guardrails import Guardrails
@@ -254,7 +258,10 @@ def send(con, chase_id, demo=False, *, managed=False, auto=False):
                 if port != 465:
                     client.starttls(context=context)
                 authenticate(client)
-                deadlines.expire_transport_claim(con, chase_id, message_id)
+                if chase["status"] == "promise draft":
+                    deadlines.expire_transport_claim(con, chase_id, message_id, promise=True)
+                else:
+                    deadlines.expire_transport_claim(con, chase_id, message_id)
                 rejected = client.send_message(message)
                 if rejected:
                     raise smtplib.SMTPRecipientsRefused(rejected)
@@ -482,7 +489,7 @@ def list_threads(con, decision_states=None):
                 default_status = plan.get("disposition") or ("proposed" if plan.get("editions") or plan.get("holdUnits") else "pending")
                 plan["status"] = decision_states.get(plan.get("id"), default_status)
             thread["messages"].append(entry)
-        if not thread["messages"] and thread["status"] in {"draft", "loop draft", "superseded draft"}:
+        if not thread["messages"] and thread["status"] in {"draft", "loop draft", "promise draft", "superseded draft"}:
             thread["messages"] = [{
                 "sender": "Supplier Chaser", "side": "out", "text": row["body"], "time": "",
                 "transport": {"mode": "draft", "status": "draft", "to": row["address"], "subject": row["subject"]},

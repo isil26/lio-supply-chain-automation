@@ -105,6 +105,78 @@ class MailPlanningTest(unittest.TestCase):
         self.assertFalse(sent)
         self.assertEqual([(result["id"], result["result"]) for result in outcomes], [(reminder["draft_id"], "superseded")])
 
+    def promise_forecast(self, gap=24):
+        from src.ingest.store import save_state
+        with self.db:
+            save_state(self.db, "truth", {"deadline": "2031-08-12T12:00:00Z", "parts": {
+                "HINGE-7": {"shortfall": gap, "suppliers": [{"supplier_id": "SUP-74", "supplier": {"status": "active"}}]}}})
+
+    def test_due_nonbinding_followup_uses_current_scenario_and_sends_once(self):
+        from . import promise_watch
+        self.promise_forecast()
+        self.receive("A1", "We will send the quotation tomorrow morning CET.", "offered-update")
+        early = datetime(2031, 8, 10, 10, tzinfo=timezone.utc)
+        due = datetime(2031, 8, 10, 11, tzinfo=timezone.utc)
+        self.assertEqual(promise_watch.opportunities(self.db, early), {})
+        planned, = promise_watch.opportunities(self.db, due).values()
+        self.assertEqual(planned[1], 24)
+        self.assertIn("HINGE-7", planned[2])
+        self.assertNotIn("Hamburg", planned[2])
+        env = {"CHASER_REAL_SMTP":"1", "CHASER_SENDER":"team@example.test", "CHASER_SMTP_PORT":"587",
+               "CHASER_SMTP_HOST":"unused.test", "CHASER_AUTO_COOLDOWN_MIN":"0"}
+        class AtDueTime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return due
+        with patch.dict(os.environ, env), patch("src.chaser.mailenv.load_team_mail_env"), patch(
+                "src.chaser.datetime", AtDueTime), patch("src.chaser.deadlines.datetime", AtDueTime), patch(
+                "src.chaser.smtplib.SMTP") as smtp:
+            client = smtp.return_value.__enter__.return_value
+            client.send_message.return_value = {}
+            autosend.run(self.db, now=due)
+            self.db.close()
+            self.db = connect(self.path)
+            autosend.run(self.db, now=due)
+            self.assertEqual(client.send_message.call_count, 1)
+            message = client.send_message.call_args.args[0]
+            self.assertEqual(message["In-Reply-To"], "<offered-update>")
+            self.assertEqual(message["To"], "sales@suppliers.juliansibbing.de")
+
+    def test_promise_yields_to_closed_gap_new_decision_or_source_removal(self):
+        from . import promise_watch
+        self.promise_forecast()
+        self.receive("A1", "We will check the carrier availability.", "waiting")
+        clock = datetime(2031, 8, 10, 16, tzinfo=timezone.utc)
+        promise_watch.prepare(self.db, clock)
+        draft = self.db.execute("SELECT * FROM chases WHERE status='promise draft'").fetchone()
+        self.assertTrue(promise_watch.current(self.db, draft, clock))
+        self.promise_forecast(gap=0)
+        self.assertFalse(promise_watch.current(self.db, draft, clock))
+        from src.ingest.store import save_state
+        with self.db:
+            save_state(self.db, "truth", {"deadline": "2031-08-12T12:00:00Z", "parts": {
+                "HINGE-7": {"shortfall": 24, "suppliers": [{"supplier_id": "OTHER", "supplier": {"status": "active"}}]}}})
+        self.assertFalse(promise_watch.current(self.db, draft, clock))
+        self.promise_forecast()
+        self.receive("A1", "Please approve the freight charge before booking.", "authority", 11)
+        self.assertFalse(promise_watch.current(self.db, draft, clock))
+        sent = []
+        autosend.run(self.db, now=clock, prepare=False, send=lambda _, ref: sent.append(ref))
+        self.assertEqual(sent, [])
+        self.assertEqual(self.db.execute("SELECT status FROM chases WHERE id=?", (draft["id"],)).fetchone()[0], "superseded draft")
+
+    def test_relative_promises_and_other_timezones(self):
+        from .promise_watch import checkpoint
+        received = datetime(2031, 8, 9, 22, tzinfo=timezone.utc)
+        cutoff = datetime(2031, 8, 12, 12, tzinfo=timezone.utc)
+        self.assertEqual(checkpoint("We will reply within 3 hours.", received, cutoff),
+                         (datetime(2031, 8, 10, 1, tzinfo=timezone.utc), True))
+        self.assertEqual(checkpoint("We will reply tomorrow at 09:00 JST.", received, cutoff),
+                         (datetime(2031, 8, 11, tzinfo=timezone.utc), True))
+        self.assertEqual(checkpoint("We will reply on 2031-08-11 at 14:00 UTC.", received, cutoff),
+                         (datetime(2031, 8, 11, 14, tzinfo=timezone.utc), True))
+        self.assertFalse(checkpoint("We will reply next business day.", received, cutoff)[1])
+
     def test_generic_answer_replies_in_original_mail_chain(self):
         self.receive("A1", "Hinges ready for pickup at our warehouse.", "offer")
         planned, = answer_replies(self.db, save=True)

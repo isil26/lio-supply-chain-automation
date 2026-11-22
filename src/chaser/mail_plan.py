@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from .recovery import CANCELLED, CANCEL_NEGATED, RESTORED, WITHDRAWN, unquoted
 
@@ -38,7 +38,7 @@ ACKNOWLEDGEMENT = re.compile(
     r"received|dziękuję|谢谢|감사합니다)[.!。\s]*", re.I)
 
 PROMISE = re.compile(
-    r"(?:\b(?:I|we|the carrier) (?:will|'ll) (?:check|revert|come back|update|confirm|forward|reply|respond|return|provide|send(?= (?:you |over )?(?:the |a |our )?(?:quote|proposal|documents?|confirmation|paperwork|details|an update|tracking)))|"
+    r"(?:\b(?:I|we|the carrier)(?: will|[’']ll) (?:check|revert|come back|update|confirm|forward|reply|respond|return|provide|send(?= (?:you |over )?(?:the |a |our )?(?:quot(?:e|ation)|proposal|documents?|confirmation|paperwork|details|an update|tracking)))|"
     r"\b(?:I am|we are|we.re|we’re) (?:still )?(?:checking|awaiting|waiting for)|"
     r"still being checked|przekaż[ęe]|potwierdz[ęe] osobno|sprawdz[ęa]|po otrzymaniu odpowiedzi|(?:核实后|确认后).{0,15}(?:回复|通知)|"
     r"확인되는 대로|확인 후.{0,12}(?:회신|전달))", re.I)
@@ -141,10 +141,12 @@ def contexts(con, thread_id=None, *, simulated=False):
         plan = classify(body)
         if plan and plan["state"] == "waiting":
             try:
-                from .followup import _aware, wait_hours
+                from .followup import _aware
+                from .promise_watch import checkpoint
                 received, due = _aware(at), _aware(deadline)
                 # Internal checkpoint; the quoted supplier text is the actual promise.
-                plan["checkAt"] = min(due, received + timedelta(hours=wait_hours(received, due))).isoformat()
+                check, automatic = checkpoint(unquoted(body), received, due)
+                plan.update(checkAt=check.isoformat(), autoCheckpoint=automatic)
             except (ValueError, TypeError):
                 pass
         states[root] = dict(replyId=mid, messageId=external, plan=plan, root=root, sourceThread=thread, buyerDecided=mid in decided)

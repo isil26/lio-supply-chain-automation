@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 
-QUEUED = ("draft", "loop draft", "recovery draft", "awaiting click")
+QUEUED = ("draft", "loop draft", "recovery draft", "promise draft", "awaiting click")
 HAMBURG = ZoneInfo("Europe/Berlin")
 
 
@@ -99,7 +99,7 @@ def expire_queued(con, clock):
         if not con.in_transaction:
             con.execute("BEGIN IMMEDIATE")
         plan = current_plan(con)
-        drafts = con.execute("SELECT * FROM chases WHERE status IN (?,?,?,?) ORDER BY rowid", QUEUED).fetchall()
+        drafts = con.execute(f"SELECT * FROM chases WHERE status IN ({','.join('?' for _ in QUEUED)}) ORDER BY rowid", QUEUED).fetchall()
         for chase in drafts:
             if (chase["status"] == "draft" and managed(chase["supplier_id"], chase["material"])
                     and not is_decision_draft(con, chase["id"])):
@@ -109,14 +109,24 @@ def expire_queued(con, clock):
     return results
 
 
-def expire_transport_claim(con, chase_id, message_id):
+def expire_transport_claim(con, chase_id, message_id, *, promise=False):
+    stale = False
     with con:
         con.execute("BEGIN IMMEDIATE")
         chase = con.execute("SELECT * FROM chases WHERE id=? AND message_id=? AND status='sending'",
                             (chase_id, message_id)).fetchone()
         if not chase:
             raise ValueError("The email is no longer claimed for dispatch")
-        reason = record_if_expired(con, chase, datetime.now(timezone.utc), current_plan(con), message_id=message_id)
+        clock = datetime.now(timezone.utc)
+        reason = record_if_expired(con, chase, clock, current_plan(con), message_id=message_id)
+        if promise and not reason:
+            from . import promise_watch
+            stale = not promise_watch.current(con, chase, clock, claim=message_id)
+            if stale:
+                con.execute("DELETE FROM messages WHERE chase_id=? AND external_id=?", (chase_id, message_id))
+                con.execute("UPDATE chases SET status='superseded draft',message_id=NULL,due_at=NULL WHERE id=?", (chase_id,))
+    if stale:
+        raise ValueError("The supplier promise changed before dispatch")
     if reason:
         raise DeadlineHandoff(reason)
 

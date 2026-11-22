@@ -180,7 +180,7 @@ def run(con, *, send=None, now=None, prepare=True):
     """Prepare and send drafts. Returns a list of {id, supplier, result}."""
     from . import activity as _activity
     from . import send as chaser_send
-    from . import deadlines, deals, mail_plan
+    from . import deadlines, deals, mail_plan, promise_watch
     from .supplier_loop import managed
 
     def activity(con, agent, text, kind):
@@ -190,6 +190,10 @@ def run(con, *, send=None, now=None, prepare=True):
     send = send or partial(chaser_send, auto=True)
     now = now or datetime.now(timezone.utc)
     if prepare:
+        try:
+            promise_watch.prepare(con, now)
+        except Exception as exc:
+            activity(con, "Mail Agent", f"Promised offer follow-up planning failed ({exc.__class__.__name__}).", "warning")
         try:
             from .followup import due_reminders
             due_reminders(con, now, save=True)
@@ -219,9 +223,16 @@ def run(con, *, send=None, now=None, prepare=True):
     results = deadlines.expire_queued(con, now)
     drafts = con.execute("""
         SELECT id,supplier,address,body,supplier_id,material,status FROM chases
-        WHERE status IN ('draft','recovery draft') ORDER BY status='recovery draft' DESC,rowid
+        WHERE status IN ('draft','recovery draft','promise draft') ORDER BY status='recovery draft' DESC,rowid
     """).fetchall()
     for chase_id, supplier, address, body, supplier_id, material, status in drafts:
+        if status == "promise draft":
+            chase = con.execute("SELECT * FROM chases WHERE id=?", (chase_id,)).fetchone()
+            if not promise_watch.current(con, chase, now):
+                with con:
+                    con.execute("UPDATE chases SET status='superseded draft' WHERE id=? AND status='promise draft'", (chase_id,))
+                results.append({"id": chase_id, "supplier": supplier, "result": "superseded"})
+                continue
         if status == "draft":
             try:
                 decision = deals.check_draft(con, chase_id)
