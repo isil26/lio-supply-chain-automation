@@ -520,3 +520,7 @@ Run `./scripts/vm-ssh` from a local checkout with GitHub CLI signed into a write
 
 - 22 Nov · T103 · codex-login · The demo accounts and start command are in AGENTS.md and README.md. Filter gateway logs for `control_room.activity` and the desired `user`. Live-mail rollout requires named account configuration and a watcher restart as described in deploy/backend/README.md.
 [22 Nov] codex-portal-copy — T-Live-Update. The latest Lio update cites the matching receipt and reads the shortage, forecast and available recovery decision from the current plan. Older saved drops work immediately. Verified on a copy of the live store and in the browser.
+
+## GCP live cutover, 22 November 2026 (codex-gcp-access)
+
+The production Vercel deployment `dpl_2cKSNvxaProtuQCQoC2vRXDn3UDx` serves the VM with the existing team login. Final SQLite checks passed with 83 operational and 85 verified-history messages. The protected dashboard returned 41 threads and a verified portal snapshot. The backend, tunnel and supplier archive LaunchAgents on the Mac are stopped and disabled. Continue via `./scripts/vm-ssh` and `cd ~/work/lio-supply-chain-automation`. Development main and the pinned live revision have separate mirrors. [Operations](../deploy/backend/README.md) · [Verified release and archive run](https://github.com/isil26/lio-supply-chain-automation/actions/runs/44971458175)
