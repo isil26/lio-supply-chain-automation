@@ -62,3 +62,23 @@
   .workspace-rail { flex-wrap: wrap; }
   .workspace-rail nav { flex-wrap: wrap; }
 }
+
+.decision-side .deadline-scroll { max-height: clamp(280px, 54vh, 590px); }
+.price-ceiling, .price-chart { margin: 16px 0 0; padding: 16px 0 0; border-top: 1px solid var(--line); }
+.price-ceiling label, .price-chart figcaption { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.price-ceiling label span, .price-chart figcaption strong { font-weight: 650; }
+.price-ceiling label b { color: var(--accent); font-variant-numeric: tabular-nums; }
+.price-ceiling input { width: 100%; accent-color: var(--accent); margin: 6px 0 0; }
+.price-axis { display: flex; justify-content: space-between; }
+.price-axis, .price-ceiling p, .price-chart figcaption span, .price-series small, .price-key { font-size: .79rem; color: var(--muted); }
+.price-ceiling p { line-height: 1.45; margin: 7px 0; }
+.price-key { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+.price-key span::before { content: ''; display: inline-block; width: 9px; height: 7px; margin-right: 5px; border-radius: 2px; background: var(--accent); }
+.price-key span:nth-child(2)::before, .series-1 i { background: #8092a9; }
+.price-key span:nth-child(3)::before { width: 2px; height: 10px; background: var(--text); }
+.price-series { margin: 13px 0; }.price-series b { font-size: .85rem; }.price-plot { position: relative; margin: 6px 0 3px; display: grid; gap: 3px; }
+.price-track { height: 6px; background: var(--track); border-radius: 4px; overflow: hidden; }.price-track i { display: block; height: 100%; border-radius: inherit; }.series-0 i { background: var(--accent); }
+.limit-marker { position: absolute; inset-block: -2px; width: 1px; border-left: 1px dashed var(--text); z-index: 1; }
+.historical-option { display: grid; gap: 3px; padding: 8px 0; border-bottom: 1px solid var(--line); }.historical-option small { color: var(--muted); }.historical-option button { justify-self: start; }
+
+.decision-side .price-chart { margin: 0; padding: 0; border: 0; }

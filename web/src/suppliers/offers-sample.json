@@ -27,7 +27,8 @@
    "signer": "Buyer",
    "status": "pending",
    "decided_by": null,
-   "decided_at": null
+   "decided_at": null,
+   "catalog_eur": 9.016
   },
   {
    "id": "example00002",
@@ -56,7 +57,8 @@
    "signer": "Buyer",
    "status": "pending",
    "decided_by": null,
-   "decided_at": null
+   "decided_at": null,
+   "catalog_eur": 9.384
   },
   {
    "id": "example00003",
@@ -85,7 +87,8 @@
    "signer": "Buyer",
    "status": "pending",
    "decided_by": null,
-   "decided_at": null
+   "decided_at": null,
+   "catalog_eur": 11.407
   },
   {
    "id": "example00004",
@@ -114,7 +117,8 @@
    "signer": "Buyer",
    "status": "pending",
    "decided_by": null,
-   "decided_at": null
+   "decided_at": null,
+   "catalog_eur": 10.8303
   },
   {
    "id": "example00005",
@@ -125,7 +129,7 @@
    "quantity": 5900,
    "unit_price": 2.1,
    "currency": "EUR",
-   "price_eur": null,
+   "price_eur": 2.1,
    "total_eur": 12390,
    "eta": null,
    "eta_text": "not confirmed yet",
@@ -143,7 +147,8 @@
    "signer": "Buyer",
    "status": "pending",
    "decided_by": null,
-   "decided_at": null
+   "decided_at": null,
+   "catalog_eur": 2.1
   },
   {
    "id": "example00006",
@@ -154,7 +159,7 @@
    "quantity": 20000,
    "unit_price": 0.081,
    "currency": "EUR",
-   "price_eur": null,
+   "price_eur": 0.081,
    "total_eur": 486,
    "eta": null,
    "eta_text": "tonight, Sat 21 Nov (receipt not confirmed)",
@@ -172,7 +177,8 @@
    "signer": "Buyer",
    "status": "approved",
    "decided_by": "existing order",
-   "decided_at": null
+   "decided_at": null,
+   "catalog_eur": 0.06
   },
   {
    "id": "example00007",
@@ -201,7 +207,38 @@
    "signer": "Buyer",
    "status": "pending",
    "decided_by": null,
-   "decided_at": null
+   "decided_at": null,
+   "catalog_eur": 0.0518
+  },
+  {
+   "id": "example-case-pickup",
+   "supplier_id": "SUP-0029",
+   "supplier": "Guangzhou PackRight",
+   "material": "CMP-GAM-003",
+   "needed": 32000,
+   "quantity": 350000,
+   "unit_price": null,
+   "currency": null,
+   "price_eur": null,
+   "total_eur": null,
+   "eta": null,
+   "eta_text": "At Hamburg terminal",
+   "p_on_time": 0,
+   "score": null,
+   "best": 0,
+   "eligible": 0,
+   "proof": "supplier email",
+   "incoterm": null,
+   "payment_terms": "30 days",
+   "moq": null,
+   "list_price": null,
+   "conditions": "Terminal release and a Hamburg pickup appointment are pending.",
+   "excerpt": "我方记录显示，采购订单 4500318738 第 00020 行的 350,000 个 PR-CC-0312（CMP-GAM-003）已装载于 NHSU4471921，并于 11 月 19 日在汉堡卸船。货物在 FOB 盐田条件下交给 Nordhav 后，我方无法确认 11 月 22 日 20:00 CET 前可分批提取的数量、其余货物的可提日期，或德国段的提货地址、箱数/托盘数及毛重。",
+   "signer": "Warehouse / logistics",
+   "status": "pending",
+   "decided_by": null,
+   "decided_at": null,
+   "catalog_eur": 0.1794
   }
  ],
  "notes": {
