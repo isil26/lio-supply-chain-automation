@@ -18,7 +18,7 @@ fi
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 cp -R "$repo/web/src" "$work/"
-cp "$repo/web/"{index.html,package.json,package-lock.json,tsconfig*.json,vite.config.ts} "$work/"
+cp "$repo/web/"{index.html,check-gateway.cjs,package.json,package-lock.json,tsconfig*.json,vite.config.ts} "$work/"
 if [ -d "${SOONY_WEB_NODE_MODULES:-$repo/web/node_modules}" ]; then
   dependencies=$(cd -- "${SOONY_WEB_NODE_MODULES:-$repo/web/node_modules}" && pwd)
   ln -s "$dependencies" "$work/node_modules"
