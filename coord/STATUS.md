@@ -177,4 +177,4 @@ Last human sync: Sat 21 Nov 2026
 
 | manti-dashboard | T-Manti-Offers | Product ceilings, price comparison and historical supplier choices live | done | Eight offers across five products, all limits off. Verified sign-in and the private Data import route on production. | 22 Nov |
 
-| manti-agent-map | T-Agents-Tab | Agent map, workspace navigation and event timestamps | done | Verified the 17-agent map, real rehearsal tool pulse, replay and compact layout. | 22 Nov |
+| manti-agent-map | T-Agents-Tab | Agent graphs and layout | done | Verified both stacked maps, independent filtering and replay, and responsive stream placement. | 22 Nov |
