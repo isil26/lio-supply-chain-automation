@@ -607,3 +607,7 @@ The public sign-in gateway now accepts the same five usernames and password as t
 Published the selected version B of Launch Desk as application revision `a8958a4` and promoted it in `367847a`. The dashboard uses the demo layout for the forecast, supplier recommendations, email rows, approval ceiling, deadlines and unit price comparison. Activity Log uses the recorded supplier decisions and reviewers. Offers, pricing, negotiation records, account rules and private imports use the existing backend.
 
 The signed-in public root and React URLs served the same JavaScript and CSS as the tested build. The API returned two editions, eight offers and five price limits. Checked the product switch and draft preview on production. At 1360 px and 390 px, all 17 agents appeared in a single map with 128 events in the stream 16 px below it. Tested recording a negotiation and viewing its named history in a separate local replay.
+
+## T-Manti-Header — Workspace navigation
+
+Moved all four routes and the account menu into the header. The dashboard shows the baseline forecast directly. Both production builds passed, including an isolated copy with the in-progress branding. Verified navigation at 320px and 1280px and opened the account menu with a local test account.
