@@ -69,6 +69,16 @@ API keys, tokens and passwords NEVER go into git, docs, prompts, traces, cassett
 
 ## GCP VM access
 
+**Repo writers can log in with full sudo.** From the repo root, run the helper below on a machine with Python 3, OpenSSH and GitHub CLI signed into a repo writer's account (`gh auth login` if needed). Any writer can request a certificate, including when the VM owner is offline.
+
+```sh
+./scripts/vm-ssh
+```
+
+For an unattended check, run `./scripts/vm-ssh 'hostname && id -un && sudo -n id -u'`. Expect `instance-20261122-003928`, `lio-team` and `0`. The shared account has a writable `~/work` directory. Each workstation generates its own key under `~/.ssh/lio-team-vm/`. GitHub Actions signs its public key for eight hours and records the requesting GitHub identity in the certificate. The helper reuses a valid certificate on subsequent connections.
+
+The signer is stored in the encrypted Actions secret `LIO_VM_USER_CA`. To stop new sign-ins immediately, an administrator can remove its `cert-authority` line from `/home/lio-team/.ssh/authorized_keys` using the independent Mac login below. Removing the GitHub secret stops new issuance. Existing sessions retain their privileges.
+
 **Agents on the team Mac.** Sessions running as the macOS user `bakolas` can use the existing local SSH identity without signing into Google Cloud. This command was verified on 22 November 2026. Omit `'hostname && id -un'` for an interactive shell.
 
 ```sh
