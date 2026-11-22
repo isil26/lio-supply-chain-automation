@@ -264,9 +264,7 @@ def mail_password(backend):
     return settings["password"]
 
 
-def refresh(checkout, backend, publish):
-    run("git", "fetch", "--no-tags", "origin", "main", cwd=checkout)
-    run("git", "reset", "--hard", "FETCH_HEAD", cwd=checkout)
+def scan_archive(checkout, backend):
     archive = read_archive(checkout)
     dashboard_secret = (checkout / "deploy/vercel/team-password.txt").read_text(encoding="utf-8").strip()
     password = mail_password(backend)
@@ -279,6 +277,13 @@ def refresh(checkout, backend, publish):
         if status != "OK":
             raise ValueError("Gmail could not list the team mailbox folders.")
         touched, added = merge_mail(inbox, folders, archive, chases, ids, secrets)
+    return archive, touched, added, captured
+
+
+def refresh(checkout, backend, publish):
+    run("git", "fetch", "--no-tags", "origin", "main", cwd=checkout)
+    run("git", "reset", "--hard", "FETCH_HEAD", cwd=checkout)
+    archive, touched, added, captured = scan_archive(checkout, backend)
     if not added:
         print("No new verified supplier emails.")
         return True

@@ -1,0 +1,69 @@
+name: Lio VM release and private mail archive
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '3-58/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lio-vm-release
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'isil26/lio-supply-chain-automation' && github.ref == 'refs/heads/main' && github.event.repository.private != false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Prepare a short-lived release credential
+        env:
+          SIGNER: ${{ secrets.LIO_VM_USER_CA }}
+        run: |
+          set -euo pipefail
+          umask 077
+          cd "$RUNNER_TEMP"
+          trap 'rm -f lio-ca' EXIT
+          ssh-keygen -q -t ed25519 -N '' -f lio-release
+          printf '%s\n' "$SIGNER" > lio-ca
+          unset SIGNER
+          ssh-keygen -s lio-ca -I "release/$GITHUB_RUN_ID" -n lio-release -V '-1m:+10m' -O clear lio-release.pub
+      - name: Update the VM release mirror
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.private')" = true
+          git fetch origin main
+          git checkout -q --detach FETCH_HEAD
+          ssh_options="ssh -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$GITHUB_WORKSPACE/deploy/backend/vm_known_hosts -i $RUNNER_TEMP/lio-release"
+          echo "GIT_SSH_COMMAND=$ssh_options" >> "$GITHUB_ENV"
+          GIT_SSH_COMMAND="$ssh_options" git push lio-release@34.154.38.26:/srv/lio/main.git HEAD:refs/heads/main
+          production=$(cat deploy/backend/live-revision)
+          [[ "$production" =~ ^[0-9a-f]{40}$ ]]
+          git merge-base --is-ancestor "$production" HEAD
+          GIT_SSH_COMMAND="$ssh_options" git push lio-release@34.154.38.26:/srv/lio/production.git "$production:refs/heads/main"
+      - name: Publish verified mail changes to the private repository
+        if: github.event_name != 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          patch="$RUNNER_TEMP/mail.patch"
+          ssh -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=deploy/backend/vm_known_hosts -i "$RUNNER_TEMP/lio-release" \
+            lio-release@34.154.38.26 "archive-export $(git rev-parse HEAD)" > "$patch"
+          if [[ ! -s "$patch" ]]; then echo 'Archive is current.'; exit 0; fi
+          git apply --index --include='docs/supplier-email-archive/*' "$patch"
+          git diff --cached --check
+          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.private')" = true
+          git -c user.name=codex-mail-archive -c user.email=codex-mail-archive@users.noreply.github.com \
+            commit -m 'Sync verified supplier mail from the VM [codex-mail-archive]'
+          git push origin HEAD:main
+          git push lio-release@34.154.38.26:/srv/lio/main.git HEAD:refs/heads/main

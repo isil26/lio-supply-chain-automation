@@ -1,7 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
-bash "$here/package-live.sh" "$@"
+if [[ $# != 1 ]]; then echo 'Usage: package-vm.sh FRESH_DEPLOY_DIRECTORY' >&2; exit 2; fi
+revision=$(cat "$here/../backend/live-revision")
+source_dir=$(mktemp -d)
+trap 'rm -rf "$source_dir"' EXIT
+git -C "$here/../.." archive "$revision" deploy/vercel | tar -x -C "$source_dir"
+bash "$source_dir/deploy/vercel/package-live.sh" "$@"
 function_dir="$1/.vercel/output/functions/control.func"
 mv "$function_dir/index.cjs" "$function_dir/control.cjs"
 cp "$here/vm-transport/entry.cjs" "$function_dir/index.cjs"

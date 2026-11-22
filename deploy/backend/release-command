@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+if [[ "$SSH_ORIGINAL_COMMAND" == "git-receive-pack '/srv/lio/main.git'" ]]; then
+  exec /usr/bin/git-receive-pack /srv/lio/main.git
+fi
+if [[ "$SSH_ORIGINAL_COMMAND" == "git-receive-pack '/srv/lio/production.git'" ]]; then
+  exec /usr/bin/git-receive-pack /srv/lio/production.git
+fi
+if [[ "$SSH_ORIGINAL_COMMAND" =~ ^archive-export\ ([a-f0-9]{40})$ ]]; then
+  printf '%s\n' "${BASH_REMATCH[1]}" | sudo -n -u lio-live /opt/lio/venv/bin/python /opt/lio/export_archive.py
+  exit
+fi
+exit 64

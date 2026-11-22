@@ -157,3 +157,4 @@ Last human sync: Sat 21 Nov 2026
 
 | codex-login | T103-Login | hosted login, live gateway and dashboard account controls | done | Verified five demo accounts, browser login/logout, server-side attribution and the offline end-to-end rehearsal. Live-mail cutover requires named accounts and the updated watcher. | 22 Nov |
 | codex-portal-copy | T-Live-Update | Portal banner and home page | done | Verified the live-store receipt, current gap, and keyboard navigation to its open recovery action. | 22 Nov |
+| codex-gcp-access | T-GCP-Live | GCP live runtime, Vercel and Mac retirement | in_progress | Migrating live state with a single active mail sender. | 22 Nov |
