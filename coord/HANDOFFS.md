@@ -608,6 +608,10 @@ Published the selected version B of Launch Desk as application revision `a8958a4
 
 The signed-in public root and React URLs served the same JavaScript and CSS as the tested build. The API returned two editions, eight offers and five price limits. Checked the product switch and draft preview on production. At 1360 px and 390 px, all 17 agents appeared in a single map with 128 events in the stream 16 px below it. Tested recording a negotiation and viewing its named history in a separate local replay.
 
+## 22 Nov · T-Manti-Brand · manti-agent-map
+
+Manti Live serves the neutral charcoal workspace and white Manti logo from application revision `944a365`. The full wordmark and compact map symbol use a transparent web-size copy of `brand/manti-logo-white.png`. The Vercel sign-in, React shell and fallback dashboard share the same logo URL. Verified the public image against the source-derived asset, signed-in dashboard and session, desktop and mobile logo rendering, and the 17-agent map with its event stream below.
+
 ## T-Manti-Header — Workspace navigation
 
 Moved all four routes and the account menu into the header. The dashboard shows the baseline forecast directly. Both production builds passed, including an isolated copy with the in-progress branding. Verified navigation at 320px and 1280px and opened the account menu with a local test account.
