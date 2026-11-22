@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""Open SSH on the team VM using the current repo writer's GitHub CLI login."""
+
+import json
+import os
+from pathlib import Path
+import secrets
+import subprocess
+import sys
+import tempfile
+import time
+
+REPO = "isil26/lio-supply-chain-automation"
+WORKFLOW = "team-vm-ssh.yml"
+HOST = "lio-team@34.154.38.26"
+HOST_KEYS = Path(__file__).resolve().parents[1] / "deploy/backend/vm_known_hosts"
+KEY_DIR = Path.home() / ".ssh" / "lio-team-vm"
+KEY = KEY_DIR / "id_ed25519"
+CERT = KEY_DIR / "id_ed25519-cert.pub"
+
+
+def github(*args, capture=False):
+    return subprocess.run(
+        ["gh", *args, "--repo", REPO], check=True, text=True,
+        stdout=subprocess.PIPE if capture else sys.stderr,
+    ).stdout
+
+
+def renew():
+    KEY_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with tempfile.TemporaryDirectory(dir=KEY_DIR) as scratch:
+        directory = Path(scratch)
+        if not KEY.exists():
+            private_key = directory / "new-key"
+            subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "",
+                            "-C", "lio-team-vm", "-f", private_key], check=True)
+            try:
+                os.link(private_key, KEY)
+            except FileExistsError:
+                pass  # Another simultaneous login created the workstation identity.
+        public = subprocess.check_output(["ssh-keygen", "-y", "-f", KEY], text=True)
+        request = secrets.token_hex(12)
+        github("workflow", "run", WORKFLOW, "--ref", "main", "-f", f"request_id={request}",
+               "-f", "public_key=" + " ".join(public.split()[:2]))
+        title = f"VM SSH {request}"
+        for _ in range(45):
+            runs = json.loads(github("run", "list", "--workflow", WORKFLOW, "--branch", "main",
+                                     "--event", "workflow_dispatch", "--limit", "50",
+                                     "--json", "databaseId,displayTitle", capture=True))
+            run_id = next((str(r["databaseId"]) for r in runs if r["displayTitle"] == title), None)
+            if run_id:
+                break
+            time.sleep(2)
+        else:
+            sys.exit(f"GitHub accepted the SSH request but the run was not found: {title}")
+        github("run", "watch", run_id, "--exit-status", "--interval", "3")
+        github("run", "download", run_id, "--name", "ssh-certificate", "--dir", scratch)
+        os.replace(directory / "lio-user-cert.pub", CERT)
+
+
+def main():
+    options = ["ssh", "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes",
+               "-o", "StrictHostKeyChecking=yes", "-o", f"UserKnownHostsFile={HOST_KEYS}",
+               "-o", "HostKeyAlgorithms=ssh-ed25519", "-o", "ConnectTimeout=12",
+               "-i", str(KEY), "-o", f"CertificateFile={CERT}", HOST]
+    if KEY.exists() and CERT.exists():
+        probe = subprocess.run([*options, "true"], capture_output=True, text=True,
+                               env={**os.environ, "LC_ALL": "C"})
+        if probe.returncode == 0:
+            os.execvp("ssh", [*options, *sys.argv[1:]])
+        if "Permission denied (publickey" not in probe.stderr:
+            sys.exit(probe.stderr.strip() or "Could not reach the team VM.")
+    print("Requesting an eight-hour SSH certificate through GitHub Actions…", file=sys.stderr)
+    renew()
+    os.execvp("ssh", [*options, *sys.argv[1:]])
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except FileNotFoundError as exc:
+        sys.exit(f"Required command or file is missing: {exc.filename}")
+    except subprocess.CalledProcessError as exc:
+        sys.exit(exc.returncode)

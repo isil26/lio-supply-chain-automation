@@ -1,0 +1,46 @@
+name: Team VM SSH certificate
+run-name: VM SSH ${{ inputs.request_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: Unique request label from scripts/vm-ssh
+        required: true
+        type: string
+      public_key:
+        description: Local Ed25519 public key
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  sign:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Issue an eight-hour certificate for the team VM
+        shell: bash
+        env:
+          SIGNER: ${{ secrets.LIO_VM_USER_CA }}
+          USER_KEY: ${{ inputs.public_key }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "$USER_KEY" =~ ^ssh-ed25519\ [A-Za-z0-9+/]+=*$ ]]
+          cd "$RUNNER_TEMP"
+          trap 'rm -f vm-ca' EXIT
+          printf '%s\n' "$SIGNER" > vm-ca
+          unset SIGNER
+          printf '%s\n' "$USER_KEY" > lio-user.pub
+          ssh-keygen -l -f lio-user.pub
+          ssh-keygen -s vm-ca -I "$GITHUB_ACTOR/run-$GITHUB_RUN_ID" -z "$GITHUB_RUN_ID" \
+            -n lio-team -V '-2m:+8h' -O clear -O permit-pty lio-user.pub
+      - name: Return the signed public certificate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ssh-certificate
+          path: ${{ runner.temp }}/lio-user-cert.pub
+          if-no-files-found: error
+          retention-days: 1
