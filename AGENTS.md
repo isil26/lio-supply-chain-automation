@@ -112,3 +112,5 @@ To check access from a script, append `--command='hostname && id -un'`.
 ## Mailbox credentials
 
 Keep Gmail app passwords in the runner environment or the ignored local file `deploy/mail/team-gmail.env`. Enable the staged and outgoing history checks in each new clone with `git config core.hooksPath .githooks`. After a history cleanup, start from a fresh clone and reapply unpublished changes. Merging an old branch can restore the password.
+
+Provision OpenAI keys and Vercel deployment tokens through the runtime or CI secret store. Keep local environment files and Vercel CLI state private. The credential check scans staged changes and outgoing history.
