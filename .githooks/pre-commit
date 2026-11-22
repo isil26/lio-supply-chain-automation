@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 scripts/check_mail_credentials.py --staged
