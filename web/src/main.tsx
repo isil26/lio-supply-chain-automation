@@ -328,11 +328,27 @@ function App() {
   const past = data.pastDecisions ?? (data.options ?? []).filter(o => o.decidedAt || o.effect || practice.decisions[o.id]).map(o => ({
     ...o, status: practice.decisions[o.id] ?? o.status ?? "review", decidedAt: o.decidedAt ?? o.effect?.at ?? "", evidence: undefined
   }));
-  const deadlines = (data.options ?? []).filter(o => !["approved","done","dismissed"].includes(practice.decisions[o.id] ?? o.status ?? "") && (o.status !== "blocked" || o.approvalMode)).map(o => {
-    const review = data.recoveryApprovals?.find(r => r.id === o.id);
-    const due = review?.dueAt ?? o.latest_action ?? o.deadline;
-    return {id:o.id, title:o.title, owner:review?.approver ?? o.owner, due, at:Date.parse(due)};
-  }).sort((a,b) => (Number.isFinite(a.at)?a.at:Infinity) - (Number.isFinite(b.at)?b.at:Infinity));
+  const options = data.options ?? [];
+  const optionIds = new Set(options.map(option => option.id));
+  const recovery = data.recoveryApprovals ?? [];
+  const deadlines = options.flatMap(option => {
+    const status = (practiceMode && practice.decisions[option.id]) || option.status || "pending";
+    if (status !== "pending" && !(status === "blocked" && option.approvalMode)) return [];
+    const review = recovery.find(item => item.id === option.id);
+    const due = review?.dueAt ?? option.latest_action ?? option.deadline;
+    return [{ id: option.id, title: review?.title ?? option.title,
+      owner: review?.approver ?? option.approvalMode?.approver ?? option.owner, due }];
+  });
+  for (const review of recovery) {
+    if (!optionIds.has(review.id)) {
+      deadlines.push({ id: review.id, title: review.title, owner: review.approver, due: review.dueAt ?? "" });
+    }
+  }
+  function dueTime(value: string) {
+    const time = Date.parse(value);
+    return Number.isFinite(time) ? time : Infinity;
+  }
+  deadlines.sort((left, right) => dueTime(left.due) - dueTime(right.due));
   const openDealThread = (id:string) => selectThread(id, !!data.mailHistory?.threads.some(t=>t.id===id));
   return <main className={`manti-workspace ${dark ? "theme-dark" : "theme-light"}`}>
     <aside className="workspace-rail"><MantiLogo/><nav aria-label="Workspace">
@@ -376,7 +392,7 @@ function App() {
       <div className={`decision-layout ${archive?"archived":""}`}>
         {!uploadResult && <Offers archive={archive} currentUser={data.currentUser} reviewer={reviewer} onReviewer={value=>{setReviewer(value);try{localStorage.setItem("soony-reviewer",value);}catch{}}} openThread={openDealThread}/>}
         <aside className="decision-side">{archive ? <section className="card"><h3>Activity feed</h3><ul className="activity scroll-feed">{data.activity.map(a=><li key={a.id}><strong>{a.agent}</strong> {a.action}<small>{a.time}</small></li>)}</ul></section> : <>
-          <section className="card"><h3>Decision deadlines <small>{deadlines.length}</small></h3><div className="deadline-scroll" tabIndex={0} aria-label="Upcoming decisions">{deadlines.length?deadlines.map(d=><button key={d.id} onClick={()=>setRequestedAction({id:d.id})}><span><strong>{d.title}</strong><small>{d.owner}</small></span><time>{Number.isFinite(d.at)?etaDate.format(new Date(d.at))+" CET":d.due || "Time unconfirmed"}</time></button>):<p className="empty">No decisions due.</p>}</div></section>
+          <section className="card"><h3>Decision deadlines <small>{deadlines.length}</small></h3><div className="deadline-scroll" tabIndex={0} aria-label="Upcoming decisions">{deadlines.length?deadlines.map(d=><button key={d.id} onClick={()=>setRequestedAction({id:d.id})}><span><strong>{d.title}</strong><small>{d.owner}</small></span><time>{Number.isFinite(dueTime(d.due))?etaDate.format(new Date(d.due))+" CET":d.due || "Time unconfirmed"}</time></button>):<p className="empty">No decisions due.</p>}</div></section>
           {approval && <section className="card insight-tile"><h3>Recommended action</h3><strong>{approval.title}</strong><p>{approval.recommendation}</p><button className="link-button" onClick={()=>setRequestedAction({id:approval.id})}>Review action</button></section>}
         </>}</aside>
       </div>
